@@ -16,9 +16,7 @@
 </div>
 
 @if ($message = Session::get('success'))
-<div class="alert alert-success">
-  <p>{{ $message }}</p>
-</div>
+<flash class="alert-flash" message="{{ $message }}"></flash>
 @endif
 
 <table class="table table-bordered">

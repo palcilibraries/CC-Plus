@@ -34,7 +34,7 @@ class ReportFieldsTableSeeder extends Seeder
             DB::table($table)->insert(['id' => 7,'report_id' => 1,'is_alertable' => 1,
                                        'legend' => 'Limit Exceeded']);
             DB::table($table)->insert(['id' => 8,'report_id' => 1,'is_alertable' => 1,
-                                       'legend' => 'Not Licensed']);
+                                       'legend' => 'No License']);
 
            // TR Report info and optional fields
             DB::table($table)->insert(['id' =>  9,'report_id' => 1,'legend' => 'Title']);
@@ -73,9 +73,9 @@ class ReportFieldsTableSeeder extends Seeder
             DB::table($table)->insert(['id' => 32,'report_id' => 2,'is_alertable' => 1,
                                        'legend' => 'Unique Title Requests']);
             DB::table($table)->insert(['id' => 33,'report_id' => 2,'is_alertable' => 1,
-                                       'legend' => 'License Limit']);
+                                       'legend' => 'Limit Exceeded']);
             DB::table($table)->insert(['id' => 34,'report_id' => 2,'is_alertable' => 1,
-                                       'legend' => 'Not Licensed']);
+                                       'legend' => 'No License']);
            // DR Report Info and Optional fields
             DB::table($table)->insert(['id' => 35,'report_id' => 2,'legend' => 'Database']);
             DB::table($table)->insert(['id' => 36,'report_id' => 2,'legend' => 'Provider']);

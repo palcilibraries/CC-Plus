@@ -22,9 +22,13 @@ class CreateTrReportDataTable extends Migration
             $table->unsignedInteger('plat_id');
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
+            $table->string('DOI', 128);
+            $table->string('PropID', 128);
+            $table->string('URI', 128);
             $table->string('data_type', 40);
-            $table->string('access_type', 40)->nullable();
             $table->string('section_type', 40)->nullable();
+            $table->string('YOP', 9);
+            $table->string('access_type', 40)->nullable();
             $table->string('access_method', 10)->default('Regular');
             $table->unsignedInteger('total_item_investigations');
             $table->unsignedInteger('total_item_requests');
@@ -32,8 +36,8 @@ class CreateTrReportDataTable extends Migration
             $table->unsignedInteger('unique_item_requests');
             $table->unsignedInteger('unique_title_investigations');
             $table->unsignedInteger('unique_title_requests');
-            $table->unsignedInteger('license_limit');
-            $table->unsignedInteger('not_licensed');
+            $table->unsignedInteger('limit_exceeded');
+            $table->unsignedInteger('no_license');
             $table->timestamps();
 
             $table->foreign('jrnl_id')->references('id')->on($global_db . '.journals');

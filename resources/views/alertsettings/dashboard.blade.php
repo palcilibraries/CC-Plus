@@ -23,9 +23,7 @@
 </div>
 
 @if ($message = Session::get('success'))
-<div class="alert alert-success">
-  <p>{{ $message }}</p>
-</div>
+<flash class="alert-flash" message="{{ $message }}"></flash>
 @endif
 <form method="POST" action="{{route('alertsettings.store')}}">
  <input type="hidden" name="_token" value="{{ csrf_token() }}">

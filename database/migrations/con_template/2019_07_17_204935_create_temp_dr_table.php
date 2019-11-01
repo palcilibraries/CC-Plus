@@ -15,12 +15,14 @@ class CreateTempDrTable extends Migration
     {
         Schema::create('temp_dr', function (Blueprint $table) {
             $global_db = DB::connection('globaldb')->getDatabaseName();
-            
+
             $table->unsignedInteger('db_id');
             $table->unsignedInteger('prov_id');
             $table->unsignedInteger('plat_id');
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
+            $table->string('data_type', 40);
+            $table->string('access_method', 10)->default('Regular');
             $table->unsignedInteger('searches_automated');
             $table->unsignedInteger('searches_federated');
             $table->unsignedInteger('searches_regular');
@@ -30,8 +32,8 @@ class CreateTempDrTable extends Migration
             $table->unsignedInteger('unique_item_requests');
             $table->unsignedInteger('unique_title_investigations');
             $table->unsignedInteger('unique_title_requests');
-            $table->unsignedInteger('license_limit');
-            $table->unsignedInteger('not_licensed');
+            $table->unsignedInteger('limit_exceeded');
+            $table->unsignedInteger('no_license');
             $table->timestamps();
             $table->foreign('db_id')->references('id')->on($global_db . '.databases');
             $table->foreign('prov_id')->references('id')->on('providers');

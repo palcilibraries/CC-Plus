@@ -20,7 +20,7 @@ class Book extends Model
      * @var array
      */
     protected $fillable = [
-        'Title', 'ISBN', 'eISBN', 'URI', 'DOI', 'PropID',
+        'Title', 'ISBN'
     ];
 
     public function TRreports()

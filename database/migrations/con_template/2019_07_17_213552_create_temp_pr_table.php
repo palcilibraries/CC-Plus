@@ -15,11 +15,13 @@ class CreateTempPrTable extends Migration
     {
         Schema::create('temp_pr', function (Blueprint $table) {
             $global_db = DB::connection('globaldb')->getDatabaseName();
-            
+
             $table->unsignedInteger('plat_id');
             $table->unsignedInteger('prov_id');
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
+            $table->string('data_type', 40);
+            $table->string('access_method', 10)->default('Regular');
             $table->unsignedInteger('searches_platform');
             $table->unsignedInteger('total_item_investigations');
             $table->unsignedInteger('total_item_requests');

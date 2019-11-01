@@ -17,12 +17,6 @@ class CreateBooksTable extends Migration
             $table->bigIncrements('id');
             $table->string('Title');
             $table->string('ISBN', 9);
-            $table->string('eISBN', 9);
-            $table->string('URI', 128);
-            $table->string('DOI', 128);
-            $table->string('PropID', 128);
-            $table->string('YOP', 9);
-
             $table->timestamps();
         });
     }

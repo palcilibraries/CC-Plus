@@ -24,6 +24,7 @@ class RolesTableSeeder extends Seeder
         if (DB::table($table)->get()->count() == 0) {
             DB::table($table)->insert([
             ['id' =>  1, 'name' => 'User'],
+            ['id' => 25, 'name' => 'Viewer'],
             ['id' => 50, 'name' => 'Manager'],
             ['id' => 99, 'name' => 'Admin']
             ]);

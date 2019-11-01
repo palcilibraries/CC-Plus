@@ -20,10 +20,10 @@ class TRreport extends Model
      * @var array
      */
     protected $fillable = [
-         'jrnl_id', 'book_id', 'prov_id', 'plat_id', 'inst_id', 'yearmon', 'YOP', 'access_type',
-         'total_item_investigations', 'total_item_requests', 'unique_item_investigations',
-         'unique_item_requests', 'unique_title_investigations', 'unique_title_requests',
-         'license_limit', 'not_licensed'
+         'jrnl_id', 'book_id', 'prov_id', 'plat_id', 'inst_id', 'yearmon', 'DOI', 'PropID', 'URI', 'data_type',
+         'section_type', 'YOP', 'access_type', 'access_method', 'total_item_investigations', 'total_item_requests',
+         'unique_item_investigations', 'unique_item_requests', 'unique_title_investigations', 'unique_title_requests',
+         'limit_exceeded', 'not_license'
     ];
 
     public function journals()

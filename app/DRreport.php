@@ -23,8 +23,8 @@ class DRreport extends Model
          'db_id', 'prov_id', 'plat_id', 'inst_id', 'yearmon', 'searches_automated',
          'searches_federated', 'searches_regular', 'total_item_investigations',
          'total_item_requests', 'unique_item_investigations', 'unique_item_requests',
-         'unique_title_investigations', 'unique_title_requests', 'license_limit',
-         'not_licensed'
+         'unique_title_investigations', 'unique_title_requests', 'limit_exceeded',
+         'not_license'
     ];
 
     public function databases()

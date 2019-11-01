@@ -42,7 +42,7 @@ return [
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
-        
+
         'globaldb' => [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL'),
@@ -62,7 +62,7 @@ return [
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
-        
+
         'con_template' => [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL'),
@@ -82,15 +82,17 @@ return [
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
-        
+
         'consodb' => [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
             'database' => '',
-            'username' => env('DB_CONSO_USER', 'not-defined'),
-            'password' => env('DB_CONSO_PASS', 'pw-notset'),
+            // 'username' => env('DB_CONSO_USER', 'not-defined'),
+            // 'password' => env('DB_CONSO_PASS', 'pw-notset'),
+            'username' => env('DB_USERNAME', 'not-defined'),
+            'password' => env('DB_PASSWORD', 'pw-notset'),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',

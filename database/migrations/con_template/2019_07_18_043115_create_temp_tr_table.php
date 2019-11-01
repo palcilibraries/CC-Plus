@@ -15,23 +15,29 @@ class CreateTempTrTable extends Migration
     {
         Schema::create('temp_tr', function (Blueprint $table) {
             $global_db = DB::connection('globaldb')->getDatabaseName();
-            
+
             $table->bigInteger('jrnl_id')->unsigned();
             $table->bigInteger('book_id')->unsigned();
             $table->unsignedInteger('prov_id');
             $table->unsignedInteger('plat_id');
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
+            $table->string('DOI', 128);
+            $table->string('PropID', 128);
+            $table->string('URI', 128);
+            $table->string('data_type', 40);
+            $table->string('section_type', 40)->nullable();
             $table->string('YOP', 9);
-            $table->string('access_type', 10);
+            $table->string('access_type', 40)->nullable();
+            $table->string('access_method', 10)->default('Regular');
             $table->unsignedInteger('total_item_investigations');
             $table->unsignedInteger('total_item_requests');
             $table->unsignedInteger('unique_item_investigations');
             $table->unsignedInteger('unique_item_requests');
             $table->unsignedInteger('unique_title_investigations');
             $table->unsignedInteger('unique_title_requests');
-            $table->unsignedInteger('license_limit');
-            $table->unsignedInteger('not_licensed');
+            $table->unsignedInteger('limit_exceeded');
+            $table->unsignedInteger('no_license');
             $table->timestamps();
 
             $table->foreign('jrnl_id')->references('id')->on($global_db . '.journals');

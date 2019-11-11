@@ -42,7 +42,7 @@ class Provider extends Model
         return $this->belongsTo('App\Institution', 'inst_id');
     }
 
-    public function sushisettings()
+    public function sushiSettings()
     {
         return $this->hasMany('App\SushiSetting', 'prov_id');
     }
@@ -60,23 +60,23 @@ class Provider extends Model
           ->withTimestamps();
     }
 
-    public function TRreports()
+    public function titleReports()
     {
-        return $this->hasMany('App\TRreport');
+        return $this->hasMany('App\TitleReport');
     }
 
-    public function DRreports()
+    public function databaseReports()
     {
-        return $this->hasMany('App\DRreport');
+        return $this->hasMany('App\DatabaseReport');
     }
 
-    public function PRreports()
+    public function platformReports()
     {
-        return $this->hasMany('App\PRreport');
+        return $this->hasMany('App\PlatformReport');
     }
 
-    public function IRreports()
+    public function itemReports()
     {
-        return $this->hasMany('App\IRreport');
+        return $this->hasMany('App\ItemReport');
     }
 }

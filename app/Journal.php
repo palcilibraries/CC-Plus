@@ -23,8 +23,8 @@ class Journal extends Model
         'Title', 'ISSN', 'eISSN'
     ];
 
-    public function TRreports()
+    public function titleReports()
     {
-        return $this->hasMany('App\TRreport');
+        return $this->hasMany('App\TitleReport');
     }
 }

@@ -44,10 +44,10 @@
   <tr>
     <td width="10%">
       {!! Form::checkbox('cb_'.$setting->id,null,$setting->is_active) !!}
-      <input type="hidden" name="met_{{ $setting->id }}" value="{{ $setting->reportfield->id }}">
+      <input type="hidden" name="met_{{ $setting->id }}" value="{{ $setting->reportField->id }}">
     </td>
-    <?php $condition = $setting->reportfield->report->name."(v".$setting->reportfield->report->revision.")".
-                       " :: ".$setting->reportfield->legend;?>
+    <?php $condition = $setting->reportField->report->name."(v".$setting->reportField->report->revision.")".
+                       " :: ".$setting->reportField->legend;?>
     <td width="35%">{{ $condition }}</td>
     @if ( auth()->user()->hasRole('Admin') )
        <?php $_inst_name = ($setting->institution->id < 2) ? 'Entire Consortium' : $setting->institution->name; ?>

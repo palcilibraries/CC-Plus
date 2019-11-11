@@ -21,7 +21,7 @@ class CreateDrReportDataTable extends Migration
             $table->unsignedInteger('plat_id');
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
-            $table->string('data_type', 40);
+            $table->string('data_type', 128);
             $table->string('access_method', 10)->default('Regular');
             $table->unsignedInteger('searches_automated');
             $table->unsignedInteger('searches_federated');

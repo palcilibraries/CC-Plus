@@ -98,7 +98,7 @@ class InstitutionController extends Controller
         $providers = Provider::pluck('name', 'id')->all();
         $providers[0] = 'Choose a Provider';
         ksort($providers);
-        $inst_groups = $institution->institutiongroups()->pluck('institution_group_id')->all();
+        $inst_groups = $institution->institutionGroups()->pluck('institution_group_id')->all();
 
         return view('institutions.edit', compact('institution', 'types', 'all_groups', 'inst_groups', 'providers'));
     }
@@ -125,10 +125,10 @@ class InstitutionController extends Controller
 
        // Update the record and assign groups
         $institution->update($input);
-        $institution->institutiongroups()->detach();
+        $institution->institutionGroups()->detach();
         if (isset($input['institutiongroups'])) {
             foreach ($request->input('institutiongroups') as $g) {
-                $institution->institutiongroups()->attach($g);
+                $institution->institutionGroups()->attach($g);
             }
         }
 

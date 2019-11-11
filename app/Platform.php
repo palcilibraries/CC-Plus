@@ -24,23 +24,23 @@ class Platform extends Model
   /**
    * Methods for connections to reports
    */
-    public function TRreports()
+    public function titleReports()
     {
-        return $this->hasMany('App\TRreport');
+        return $this->hasMany('App\TitleReport');
     }
 
-    public function DRreports()
+    public function databaseReports()
     {
-        return $this->hasMany('App\DRreport');
+        return $this->hasMany('App\DatabaseReport');
     }
 
-    public function PRreports()
+    public function platformReports()
     {
-        return $this->hasMany('App\PRreport');
+        return $this->hasMany('App\PlatformReport');
     }
 
-    public function IRreports()
+    public function itemReports()
     {
-        return $this->hasMany('App\IRreport');
+        return $this->hasMany('App\ItemReport');
     }
 }

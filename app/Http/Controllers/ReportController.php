@@ -43,7 +43,7 @@ class ReportController extends Controller
     public function show($id)
     {
         $report = Report::findOrFail($id);
-        $fields = $report->reportfields();
+        $fields = $report->reportFields();
         return view('reports.show', compact('report', 'fields'));
     }
 }

@@ -38,12 +38,12 @@ class Institution extends Model
         return false;
     }
 
-    public function institutiontype()
+    public function institutionType()
     {
         return $this->belongsTo('App\InstitutionType', 'type_id');
     }
 
-    public function institutiongroups()
+    public function institutionGroups()
     {
         return $this
             ->belongsToMany('App\InstitutionGroup')
@@ -68,37 +68,37 @@ class Institution extends Model
         return $this->hasMany('App\Provider');
     }
 
-    public function sushisettings()
+    public function sushiSettings()
     {
         return $this->hasMany('App\SushiSetting', 'inst_id');
     }
 
-    public function alertsettings()
+    public function alertSettings()
     {
         return $this->hasMany('App\AlertSetting', 'inst_id');
     }
 
-    public function TRreports()
+    public function titleReports()
     {
-        return $this->hasMany('App\TRreport');
+        return $this->hasMany('App\TitleReport');
     }
 
-    public function DRreports()
+    public function databaseReports()
     {
-        return $this->hasMany('App\DRreport');
+        return $this->hasMany('App\DatabaseReport');
     }
 
-    public function PRreports()
+    public function platformReports()
     {
-        return $this->hasMany('App\PRreport');
+        return $this->hasMany('App\PlatformReport');
     }
 
-    public function IRreports()
+    public function itemReports()
     {
-        return $this->hasMany('App\IRreport');
+        return $this->hasMany('App\ItemReport');
     }
 
-//    public function ingestlogs() {
+//    public function ingestLogs() {
 //        return $this->hasMany('App\IngestLog','inst_id');
 //    }
 }

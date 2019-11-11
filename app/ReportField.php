@@ -24,7 +24,7 @@ class ReportField extends Model
         return $this->belongsTo('App\Report', 'report_id');
     }
 
-    public function savedreports()
+    public function savedReports()
     {
         $_db = config('database.connections.consodb.database');
         return $this
@@ -32,7 +32,7 @@ class ReportField extends Model
            ->withTimestamps();
     }
 
-    public function alertsettings()
+    public function alertSettings()
     {
         return $this->hasMany('App\AlertSetting');
     }

@@ -28,8 +28,8 @@
   </tr>
   @foreach ($data as $key => $record)
   <tr>
-      <td>{{ $record->sushisetting->provider->name }}</td>
-      <td>{{ $record->sushisetting->institution->name }}</td>
+      <td>{{ $record->sushiSetting->provider->name }}</td>
+      <td>{{ $record->sushiSetting->institution->name }}</td>
       <td>{{ $record->report->name }}</td>
       <td>{{ $record->yearmon }}</td>
       <td>{{ $record->process_step }}</td>

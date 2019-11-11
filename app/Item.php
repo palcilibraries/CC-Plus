@@ -26,8 +26,8 @@ class Item extends Model
         'parent_eISSN', 'parent_URI', 'data_type', 'access_type',
     ];
 
-    public function IRreports()
+    public function itemReports()
     {
-        return $this->hasMany('App\IRreport');
+        return $this->hasMany('App\ItemReport');
     }
 }

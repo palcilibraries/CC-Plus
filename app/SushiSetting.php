@@ -33,12 +33,12 @@ class SushiSetting extends Model
         return $this->belongsTo('App\Provider', 'prov_id');
     }
 
-    public function ingestlogs()
+    public function ingestLogs()
     {
         return $this->hasMany('App\IngestLog');
     }
 
-    public function failedingests()
+    public function failedIngests()
     {
         return $this->hasMany('App\FailedIngest');
     }

@@ -25,7 +25,7 @@ class CreateTrReportDataTable extends Migration
             $table->string('DOI', 128);
             $table->string('PropID', 128);
             $table->string('URI', 128);
-            $table->string('data_type', 40);
+            $table->string('data_type', 128);
             $table->string('section_type', 40)->nullable();
             $table->string('YOP', 9);
             $table->string('access_type', 40)->nullable();

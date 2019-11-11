@@ -21,8 +21,8 @@ class DataBase extends Model
      */
     protected $fillable = ['name', 'platform_id'];
 
-    public function DRreports()
+    public function databaseReports()
     {
-        return $this->hasMany('App\DRreport');
+        return $this->hasMany('App\DatabaseReport');
     }
 }

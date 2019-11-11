@@ -23,8 +23,8 @@ class Book extends Model
         'Title', 'ISBN'
     ];
 
-    public function TRreports()
+    public function titleReports()
     {
-        return $this->hasMany('App\TRreport');
+        return $this->hasMany('App\TitleReport');
     }
 }

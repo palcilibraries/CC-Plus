@@ -132,9 +132,9 @@ class UserController extends Controller
 
         // Set choices for roles; disallow choosing roles higher current user's max role
         $roles = Role::where('id', '<=', auth()->user()->maxRole())->pluck('name', 'id');
-        $userRole = $user->roles()->pluck('role_id')->all();
+        $user_roles = $user->roles()->pluck('role_id')->all();
 
-        return view('users.edit', compact('user', 'roles', 'userRole', 'institutions'));
+        return view('users.edit', compact('user', 'roles', 'user_roles', 'institutions'));
     }
 
     /**

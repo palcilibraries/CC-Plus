@@ -4,14 +4,13 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use DB;
-// use DateTime;
 use App\Provider;
 use App\Platform;
 use App\Institution;
-use App\PRreport;
-use App\TRreport;
-use App\DRreport;
-use App\IRreport;
+use App\PlatformReport;
+use App\TitleReport;
+use App\DatabaseReport;
+use App\ItemReport;
 
 class Counter5Processor extends Model
 {
@@ -65,11 +64,11 @@ class Counter5Processor extends Model
         $ICounts = ['Total_Item_Investigations' => 0, 'Total_Item_Requests' => 0,
                     'Unique_Item_Investigations' => 0, 'Unique_Item_Requests' => 0,
                     'Unique_Title_Investigations' => 0, 'Unique_Title_Requests' => 0,
-                    'Limit_Exceeded' => 0, 'No_License' =>0];
+                    'Limit_Exceeded' => 0, 'No_License' => 0];
         $_metric_keys = array_keys($ICounts);
         $_metric_count = count($ICounts);
 
-       // Decode JSON and put header and report records into variables
+       // Decode JSON and put header and records into variables
         $header = $json_report->Report_Header;
         $ReportItems = $json_report->Report_Items;
 
@@ -93,7 +92,6 @@ class Counter5Processor extends Model
 
        // Loop through all ReportItems
         foreach ($ReportItems as $item) {
-
            // Put Item fields into variables
             $_title = (isset($item->Title)) ? $item->Title : "";
             $_platform = (isset($item->Platform)) ? $item->Platform : "";
@@ -121,8 +119,8 @@ class Counter5Processor extends Model
            // Data_Type is optional... if null, decide what this is based on IS*N field(s)
            // (If ISBN *and* one of ISSN/eISSN are present, treat it as a Journal)
             if ($_datatype == "") {
-                if ( $_ISSN == "" && $_eISSN = "") {
-                    if ( $_ISBN == "") {
+                if ($_ISSN == "" && $_eISSN = "") {
+                    if ($_ISBN == "") {
                        // No IS*N provided... skip the record (signal error?)
                         continue;
                     } else {
@@ -132,7 +130,8 @@ class Counter5Processor extends Model
                     $_datatype = "Journal";
                 }
             } else {
-                if ($_datatype != "Journal" && $_datatype != "Book")) {
+                if ($_datatype != "Journal" && $_datatype != "Book") {
+                    )
                    // Unrecognized Data_Type... skip the record (signal error?)
                     continue;
                 }
@@ -140,19 +139,21 @@ class Counter5Processor extends Model
 
            // Get or Create Journal-or-Book entries based on Title / ISSNs / ISBN
             if ($_datatype == "Journal") {
-                $journal = self::getJournal($_title,$_ISSN,$_eISSN);
+                $journal = self::getJournal($_title, $_ISSN, $_eISSN);
                 $_jrnl_id = $journal->id;
                 $_book_id = 0;
             } else {    // Book
-                $book = self::getBook($_title,$_ISBN);
+                $book = self::getBook($_title, $_ISBN);
                 $_book_id = $book->id;
                 $_jrnl_id = 0;
             }
 
            // Loop $item->Performance elements and store counts when time-periods match
             foreach ($item->Performance as $perf) {
-                if ($perf->Period->Begin_Date == self::$begin  &&
-                    $perf->Period->End_Date == self::$end) {
+                if (
+                    $perf->Period->Begin_Date == self::$begin  &&
+                    $perf->Period->End_Date == self::$end
+                ) {
                     foreach ($perf->Instance as $instance) {
                         $ICounts[$instance->Metric_Type] += $instance->Count;
                     }
@@ -160,7 +161,7 @@ class Counter5Processor extends Model
             }         // foreach performance clause
 
            // Insert the record
-            TRreport::insert(['jrnl_id' => $_jrnl_id, 'book_id' => $_book_id, 'prov_id' => self::$prov,
+            TitleReport::insert(['jrnl_id' => $_jrnl_id, 'book_id' => $_book_id, 'prov_id' => self::$prov,
                   'plat_id' => $platform->id, 'inst_id' => self::$inst, 'yearmon' => self::$yearmon, 'DOI' => $_DOI,
                   'PropID' => $_PropID, 'URI' => $_URI, 'data_type' => $_datatype, 'section_type' => $_sectiontype,
                   'YOP' => $_YOP, 'access_type' => $_accesstype, 'access_method' => $_accessmethod,
@@ -189,7 +190,6 @@ class Counter5Processor extends Model
             for ($_m = 0; $_m < $_metric_count; $_m++) {
                 $ICounts[$_metric_keys[$_m]] = 0;
             }
-
         }     // foreach $ReportItems
 
        // Close output file
@@ -211,11 +211,11 @@ class Counter5Processor extends Model
     public static function DR($json_report)
     {
        // Setup array to hold per-item counts
-        $ICounts = ['Searches_Automated' => 0, 'Searches_Federated' => 0, 'Searches_Regular' =>0,
+        $ICounts = ['Searches_Automated' => 0, 'Searches_Federated' => 0, 'Searches_Regular' => 0,
                     'Total_Item_Investigations' => 0, 'Total_Item_Requests' => 0,
                     'Unique_Item_Investigations' => 0, 'Unique_Item_Requests' => 0,
                     'Unique_Title_Investigations' => 0, 'Unique_Title_Requests' => 0,
-                    'Limit_Exceeded' => 0, 'No_License' =>0];
+                    'Limit_Exceeded' => 0, 'No_License' => 0];
         $_metric_keys = array_keys($ICounts);
         $_metric_count = count($ICounts);
 
@@ -245,17 +245,17 @@ class Counter5Processor extends Model
         foreach ($ReportItems as $item) {
             // Platform is required; if Null, skip the item.
              $_platform = (isset($item->Platform)) ? $item->Platform : "";
-             if ($_platform == "") {
-                 continue;
-             }
+            if ($_platform == "") {
+                continue;
+            }
             // Get or create Platform for this item.
              $platform = self::getPlatform($item->Platform);
 
             // Database is required; if Null, skip the item.
              $_database = (isset($item->Database)) ? $item->Database : "";
-             if ($_database == "") {
-                 continue;
-             }
+            if ($_database == "") {
+                continue;
+            }
             // Get or create DataBase for this item.
              $database = self::getDataBase($item->Database);
 
@@ -264,17 +264,19 @@ class Counter5Processor extends Model
              $_accessmethod = (isset($item->Access_Method)) ? $item->Access_Method : "";
 
             // Loop $item->Performance elements and store counts when time-periods match
-             foreach ($item->Performance as $perf) {
-                 if ($perf->Period->Begin_Date == self::$begin  &&
-                     $perf->Period->End_Date == self::$end) {
-                     foreach ($perf->Instance as $instance) {
-                         $ICounts[$instance->Metric_Type] += $instance->Count;
-                     }
-                 }
-             }         // foreach performance clause
+            foreach ($item->Performance as $perf) {
+                if (
+                    $perf->Period->Begin_Date == self::$begin  &&
+                    $perf->Period->End_Date == self::$end
+                ) {
+                    foreach ($perf->Instance as $instance) {
+                        $ICounts[$instance->Metric_Type] += $instance->Count;
+                    }
+                }
+            }         // foreach performance clause
 
             // Insert the record
-             DRreport::insert(['db_id' => $database->id, 'prov_id' => self::$prov, 'plat_id' => $platform->id,
+             DatabaseReport::insert(['db_id' => $database->id, 'prov_id' => self::$prov, 'plat_id' => $platform->id,
                        'inst_id' => self::$inst, 'yearmon' => self::$yearmon,
                        'data_type' => $_datatype, 'access_method' => $_accessmethod,
                        'searches_automated' => $ICounts['Searches_Automated'],
@@ -289,21 +291,20 @@ class Counter5Processor extends Model
                        'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License']]);
 
              // Send a record to the output file
-              if (self::$out_csv != "") {
-                  $output_line = "\"" . $_database . "\",\"" . $_platform . "\",\"" . $_datatype . "\",\"" .
-                                 $_accessmethod . "\"";
-                  for ($_m = 0; $_m < $_metric_count; $_m++) {
-                      $output_line .= "," . $ICounts[$_metric_keys[$_m]];
-                  }
-                  $output_line .= "\n";
-                  fwrite($csv_file, $output_line);
-              }
+            if (self::$out_csv != "") {
+                $output_line = "\"" . $_database . "\",\"" . $_platform . "\",\"" . $_datatype . "\",\"" .
+                               $_accessmethod . "\"";
+                for ($_m = 0; $_m < $_metric_count; $_m++) {
+                    $output_line .= "," . $ICounts[$_metric_keys[$_m]];
+                }
+                $output_line .= "\n";
+                fwrite($csv_file, $output_line);
+            }
 
              // Reset metric counts
-              for ($_m = 0; $_m < $_metric_count; $_m++) {
-                  $ICounts[$_metric_keys[$_m]] = 0;
-              }
-
+            for ($_m = 0; $_m < $_metric_count; $_m++) {
+                $ICounts[$_metric_keys[$_m]] = 0;
+            }
         }     // foreach $ReportItems
 
        // Close output file
@@ -380,7 +381,7 @@ class Counter5Processor extends Model
             }         // foreach performance clause
 
            // Insert the record
-            PRreport::insert(['plat_id' => $platform->id, 'prov_id' => self::$prov, 'inst_id' => self::$inst,
+            PlatformReport::insert(['plat_id' => $platform->id, 'prov_id' => self::$prov, 'inst_id' => self::$inst,
                       'yearmon' => self::$yearmon, 'data_type' => $_datatype, 'access_method' => $_accessmethod,
                       'searches_platform' => $ICounts['Searches_Platform'],
                       'total_item_investigations' => $ICounts['Total_Item_Investigations'],
@@ -455,36 +456,36 @@ class Counter5Processor extends Model
      *
      * @return Journal
      */
-     private static function getJournal($title,$print_issn,$online_issn)
-     {
-         $_journal = Journal::where('Title', '=', $title)
-                        ->orWhere('ISSN', '=', $print_issn)
-                        ->orWhere('eISSN', '=', $online_issn)
-                        ->first();
-         if ($_journal === null) {   // create it
-             $_journal = new Journal(['Title' => $title, 'ISSN' => $print_issn,
-                                   'eISSN' => $online_issn]);
-             $_journal->save();
-         }
-         return $_journal;
-     }
+    private static function getJournal($title, $print_issn, $online_issn)
+    {
+        $_journal = Journal::where('Title', '=', $title)
+                       ->orWhere('ISSN', '=', $print_issn)
+                       ->orWhere('eISSN', '=', $online_issn)
+                       ->first();
+        if ($_journal === null) {   // create it
+            $_journal = new Journal(['Title' => $title, 'ISSN' => $print_issn,
+                                  'eISSN' => $online_issn]);
+            $_journal->save();
+        }
+        return $_journal;
+    }
 
      /**
       * Function to find-or-create a Book and return it
       *
       * @return Book
       */
-      private static function getBook($title,$isbn)
-      {
-          $_book = Book::where('Title', '=', $title)
-                         ->orWhere('ISBN', '=', $isbn)
-                         ->first();
-          if ($_book === null) {   // create it
-              $_book = new Book(['Title' => $title, 'ISBN' => $isbn]);
-              $_book->save();
-          }
-          return $_book;
-      }
+    private static function getBook($title, $isbn)
+    {
+        $_book = Book::where('Title', '=', $title)
+                       ->orWhere('ISBN', '=', $isbn)
+                       ->first();
+        if ($_book === null) {   // create it
+            $_book = new Book(['Title' => $title, 'ISBN' => $isbn]);
+            $_book->save();
+        }
+        return $_book;
+    }
 
     /**
      * Function to find-or-create a DataBase by name and return it
@@ -492,14 +493,13 @@ class Counter5Processor extends Model
      * @param  $name
      * @return DataBase
      */
-     private static function getDataBase($name)
-     {
-         $_data_base = DataBase::where('name', '=', $name)->first();
-         if ($_data_base === null) {   // create it
-             $_data_base = new DataBase(['name' => $name]);
-             $_data_base->save();
-         }
-         return $_data_base;
-     }
-
+    private static function getDataBase($name)
+    {
+        $_data_base = DataBase::where('name', '=', $name)->first();
+        if ($_data_base === null) {   // create it
+            $_data_base = new DataBase(['name' => $name]);
+            $_data_base->save();
+        }
+        return $_data_base;
+    }
 }

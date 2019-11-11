@@ -23,7 +23,7 @@ class SavedReport extends Model
       'title', 'user_id', 'months'
     ];
 
-    public function reportfields()
+    public function reportFields()
     {
         return $this->belongsToMany('App\ReportField')->withTimestamps();
     }

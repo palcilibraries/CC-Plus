@@ -4,7 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class DRreport extends Model
+class DatabaseReport extends Model
 {
   /**
    * The database table used by the model.

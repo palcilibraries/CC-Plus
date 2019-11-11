@@ -25,7 +25,7 @@ class Report extends Model
         'name', 'legend', 'type', 'revision', 'parent_id', 'inherited_fields'
     ];
 
-    public function reportfields()
+    public function reportFields()
     {
        // Get and return collection of ReportFields (not a relationship)
         if ($this->parent_id == 0) {
@@ -36,7 +36,7 @@ class Report extends Model
         }
     }
 
-    public function failedingests()
+    public function failedIngests()
     {
         return $this->hasMany('App\FailedIngest');
     }

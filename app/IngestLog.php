@@ -26,7 +26,7 @@ class IngestLog extends Model
         return $this->belongsTo('App\Report', 'report_id');
     }
 
-    public function sushisetting()
+    public function sushiSetting()
     {
         return $this->belongsTo('App\SushiSetting', 'sushisettings_id');
     }

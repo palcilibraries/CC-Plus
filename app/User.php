@@ -80,7 +80,7 @@ class User extends Authenticatable
         return $this->hasMany('App\Alert', 'modified_by');
     }
 
-    public function savedreports()
+    public function savedReports()
     {
         return $this->hasMany('App\SavedReport', 'modified_by');
     }

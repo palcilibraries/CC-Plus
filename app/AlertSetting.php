@@ -33,7 +33,7 @@ class AlertSetting extends Model
         return $this->belongsTo('App\Institution', 'inst_id');
     }
 
-    public function reportfield()
+    public function reportField()
     {
         return $this->belongsTo('App\ReportField', 'field_id');
     }

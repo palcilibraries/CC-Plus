@@ -21,7 +21,7 @@ class FailedIngest extends Model
       'sushisettings_id', 'report_id', 'yearmon', 'process_step', 'retry_count', 'detail'
     ];
 
-    public function sushisetting()
+    public function sushiSetting()
     {
         return $this->belongsTo('App\SushiSetting', 'sushisettings_id');
     }

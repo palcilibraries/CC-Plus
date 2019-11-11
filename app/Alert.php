@@ -41,12 +41,12 @@ class Alert extends BaseModel
         return $this->belongsTo('App\Provider', 'prov_id');
     }
 
-    public function alertsetting()
+    public function alertSetting()
     {
         return $this->belongsTo('App\AlertSetting', 'alertsettings_id');
     }
 
-    public function failedingest()
+    public function failedIngest()
     {
         return $this->belongsTo('App\FailedIngest', 'failed_id');
     }
@@ -61,27 +61,27 @@ class Alert extends BaseModel
     public function institution()
     {
         if ($this->failed_id == 0) {
-            return $this->failedingest->alertsetting->institution;
+            return $this->failedIngest->alertSetting->institution;
         } else {
-            return $this->failedingest->sushisetting->institution;
+            return $this->failedIngest->sushiSetting->institution;
         }
     }
 
     public function detail()
     {
         if ($this->failed_id == 0) {
-            return $this->alertsetting->metric->legend;
+            return $this->alertSetting->metric->legend;
         } else {
-            return $this->failedingest->detail;
+            return $this->failedIngest->detail;
         }
     }
 
     public function reportName()
     {
         if ($this->failed_id == 0) {
-            return $this->alertsetting->metric->report->name;
+            return $this->alertSetting->metric->report->name;
         } else {
-            return $this->failedingest->report->name;
+            return $this->failedIngest->report->name;
         }
     }
 }

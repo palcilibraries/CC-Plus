@@ -22,6 +22,7 @@ class SushiIngestCommand extends Command
      * @var string
      */
     protected $signature = 'sushi:ingest {consortium : The Consortium ID}
+                             {--A|auto : Limit ingest to provider day_of_month [FALSE]}
                              {--M|month= : YYYY-MM to process  [lastmonth]}
                              {--P|provider= : Provider ID to process [ALL]}
                              {--I|institution= : Institution ID to process[ALL]}
@@ -62,6 +63,7 @@ class SushiIngestCommand extends Command
         $report_path = env('CCP_REPORTS') . $consortium->ccp_key;
 
        // Handle input options
+        $auto  = is_null($this->option('auto')) ? false : true;
         $month  = is_null($this->option('month')) ? 'lastmonth' : $this->option('month');
         $prov_id = is_null($this->option('provider')) ? 0 : $this->option('provider');
         $inst_id = is_null($this->option('institution')) ? 0 : $this->option('institution');
@@ -110,8 +112,8 @@ class SushiIngestCommand extends Command
         $logmessage = false;
         $client = new Client();   //GuzzleHttp\Client
         foreach ($providers as $provider) {
-          // Skip silently to next provider if today is not the day to run
-            if ($provider->day_of_month != date('j')) {
+          // If running as "Auto", skip silently to next provider if today is not the day to run
+            if ($auto && $provider->day_of_month != date('j')) {
                 continue;
             }
 

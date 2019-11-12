@@ -15,7 +15,6 @@ class Kernel extends ConsoleKernel
     protected $commands = [
       Commands\ConsortiumCommand::class,
       Commands\SushiIngestCommand::class,
-      Commands\SushiTestCommand::class,
     ];
 
     /**

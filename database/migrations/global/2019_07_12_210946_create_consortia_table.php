@@ -15,7 +15,7 @@ class CreateConsortiaTable extends Migration
     {
         Schema::create('consortia', function (Blueprint $table) {
             $table->Increments('id');
-            $table->string('ccp_key', 10)->unique();
+            $table->string('ccp_key', 13)->unique();
             $table->string('name');
             $table->string('email')->nullable();
             $table->boolean('is_active')->default(false);

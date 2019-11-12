@@ -46,7 +46,7 @@ class ConsortiumCommand extends Command
         $conso_data['ccp_key'] = $this->ask('Provide a unique database key for the consortium
   (default creates a random string) []');
         if ($conso_data['ccp_key'] == "") {
-            $conso_data['ccp_key'] = $this->ccpKeyGen();
+            $conso_data['ccp_key'] = uniqid();
         }
      // Make sure the new database to be created doesn't already exist
         $conso_db = "ccplus_" . $conso_data['ccp_key'];
@@ -137,25 +137,5 @@ class ConsortiumCommand extends Command
 
         $this->line('<fg=cyan>New consortium : ' . $conso_data['name'] . ' Successfully Created.');
     }
-
-    //
-    // Generate a unique key by encoding the current date and time
-    //
-    private function ccpKeyGen()
-    {
-        $key  = chr(intval(substr(date("Y"), 0, 2)) + 45);
-        $key .= chr(intval(intval(substr(date("Y"), 2, 2)) / 4) + 65);
-        $key .= chr(date("m") + 64);
-        $dval = date("d");
-        $key .= ($dval < 27) ? chr($dval + 64) : chr(($dval - 26) + 48);
-        $key .= chr(date("H") + 65);
-        $ival = intval(date("i") / 2);
-        $key .= ($ival < 26) ? chr($ival + 65) : chr(($ival - 26) + 48);
-        $sval = intval(date("s") / 2);
-        $key .= ($sval < 26) ? chr($sval + 65) : chr(($sval - 26) + 48);
-        $_usec = explode(" ", microtime());
-        $uval = (intval(substr($_usec[0], 2, 4)) % 26);
-        $key .= chr($uval + 65);
-        return $key;
-    }
+    
 }

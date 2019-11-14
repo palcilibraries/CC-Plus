@@ -63,7 +63,6 @@ class SushiIngestCommand extends Command
         $report_path = env('CCP_REPORTS') . $consortium->ccp_key;
 
        // Handle input options
-        $auto  = is_null($this->option('auto')) ? false : true;
         $month  = is_null($this->option('month')) ? 'lastmonth' : $this->option('month');
         $prov_id = is_null($this->option('provider')) ? 0 : $this->option('provider');
         $inst_id = is_null($this->option('institution')) ? 0 : $this->option('institution');
@@ -93,61 +92,79 @@ class SushiIngestCommand extends Command
             exit;
         }
 
-        // Get Institution data
-        if ($inst_id == 0) {
-            $institutions = Institution::where('is_active', '=', true)->pluck('name', 'id');
-        } else {
-            $institutions = Institution::findOrFail($inst_id)->where('is_active', '=', true)
-                                         ->pluck('name', 'id');
-        }
-
-       // Get Provider data
+       // Get Provider data as a collection regardless of whether we just need one
         if ($prov_id == 0) {
             $providers = Provider::where('is_active', '=', true)->get();
         } else {
-            $providers = Provider::findOrFail($prov_id)->where('is_active', '=', true)->get();
+            // $providers = Provider::where('is_active', '=', true)->findOrFail($prov_id);
+            $providers = Provider::where('is_active', '=', true)->where('id', '=', $prov_id)->get();
         }
 
-       // Loop through all vendors
+       // Get Institution data
+        if ($inst_id == 0) {
+            $institutions = Institution::where('is_active', '=', true)->pluck('name', 'id');
+        } else {
+            // $institutions = Institution::findOrFail($inst_id)->where('is_active', '=', true)
+            //                              ->pluck('name', 'id');
+            $institutions = Institution::where('is_active', '=', true)->where('id', '=', $inst_id)
+                                       ->pluck('name', 'id');
+        }
+
+       // Loop through providers
         $logmessage = false;
         $client = new Client();   //GuzzleHttp\Client
         foreach ($providers as $provider) {
-          // If running as "Auto", skip silently to next provider if today is not the day to run
-            if ($auto && $provider->day_of_month != date('j')) {
+
+           // If running as "Auto", skip silently to next provider if today is not the day to run
+            if ($this->option('auto') && $provider->day_of_month != date('j')) {
                 continue;
             }
 
-          // Skip this provider if there are no sushi settings for it
+           // Skip this provider if there are no reports defined for it
+            if (count($provider->reports) == 0) {
+                $this->line($provider->name . " has no reports defined; skipping...");
+                continue;
+            }
+
+           // Skip this provider if there are no sushi settings for it
             if (count($provider->sushisettings) == 0) {
                 $this->line($provider->name . " has no sushi settings defined; skipping...");
                 continue;
             }
 
-          // Begin setting up the URI for the request
+           // Begin setting up the URI for the request
             if ($logmessage) {
                 $this->line("Sushi Requests Begin for Consortium: " . $consortium->ccp_key);
             }
             $base_uri = preg_replace('/\/?$/', '/', $provider->server_url_r5); // ensure slash-ending
             $uri_args = "/?begin_date=" . $begin . "&end_date=" . $end;
 
-          // Loop through all sushisettings for this provider
+           // Loop through all sushisettings for this provider
             foreach ($provider->sushisettings as $setting) {
-              // Construct and execute the Request
+
+               // Skip this setting if we're just processing a single inst and the IDs don't match
+                if ( ($inst_id != 0) && ($setting->inst_id != $inst_id) ) {
+                    continue;
+                }
+
+               // Construct and execute the Request
                 $uri_args .= "&customer_id=" . $setting->customer_id;
                 $uri_args .= "&requestor_id=" . $setting->requestor_id;
 
-              // Create the processor object
+               // Create the processor object
                 $C5processor = new Counter5Processor($provider->id, $setting->inst_id, $begin, $end, "");
 
-              // Loop through all sushisettings for this provider
-                foreach ($reports as $report) {
-                  // Set output filename
+               // Loop through all reports for this provider
+                foreach ($provider->reports as $report) {
+                    $this->line("Requesting " . $report->name . " for " . $provider->name);
+
+                   // Set output filename
                     if (!is_null(env('CCP_REPORTS'))) {
                         $C5processor->setOutCsv($report_path . '/' . $setting->institution->name . '/' .
                                  $provider->name . '/' . $report->name . $begin . '_' . $end . '.csv');
                     }
 
-                  // Setup attributes for the request
+                   // Setup attributes for the request
                     if ($report->name == "TR") {
                         $uri_atts  = "&attributes_to_show=Data_Type%7CAccess_Method%7CAccess_Type%7C";
                         $uri_atts .= "Section_Type%7CYOP";
@@ -163,10 +180,10 @@ class SushiIngestCommand extends Command
                         continue;
                     }
 
-                  // Construct URI for the request
+                   // Construct URI for the request
                     $request_uri = $base_uri . $report->name . $uri_args . $uri_atts;
 
-                  // Loop up to retry-limit asking for the report
+                   // Loop up to retry-limit asking for the report
                     $queue_retries = 0;
                     $req_state = "queued";
 
@@ -179,28 +196,30 @@ class SushiIngestCommand extends Command
                             $req_state = "done";
                         } else {
                             foreach ($json_result as $_resp) {
-                                // print_r($resp);
+                                if ( !isset($_resp->Code) ) {
+                                    $this->line("No response code - requested URI was: " . $request_uri);
+                                    exit;
+                                }
                                 if ($_resp->Code == 1011) {
                                     $queue_retries++;
-                                    print "Queued ... sleeping: " . $_resp->Message .
-                                    "(" . $_resp->Code . ") ...";
+                                    $this->line("Queued and sleeping: " . $_resp->Message . "(" . $_resp->Code . ")");
                                     sleep(env('SUSHI_RETRY_SLEEP', 30));
-                                    print "Retrying\n";
+                                    $this->line("Retrying");
                                     $req_state = "queued";
                                     break;
                                 } else {
-                                    print "Unknown return status: " . $_resp->Code . "\n";
-                                    print "Message: " . $_resp->Message . "\n";
+                                    $this->line("Unknown return status: " . $_resp->Code);
+                                    $this->line("Message: " . $_resp->Message);
                                     exit();
                                 }
                             }
                         }
                     } // while retries remaining
 
-                  // Validate report
+                   // Validate report
                     $C5validator = new Counter5Validator($json_result);
 
-                  // Parse and store the report if it's valid
+                   // Parse and store the report if it's valid
                     if ($C5validator->{$report->name}()) {
                         $result = $C5processor->{$report->name}($C5validator->report);
                     } else {

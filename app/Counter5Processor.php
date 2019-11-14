@@ -95,12 +95,23 @@ class Counter5Processor extends Model
            // Put Item fields into variables
             $_title = (isset($item->Title)) ? $item->Title : "";
             $_platform = (isset($item->Platform)) ? $item->Platform : "";
-            $_DOI = (isset($item->DOI)) ? $item->DOI : "";
-            $_ISBN = (isset($item->ISBN)) ? $item->ISBN : "";
-            $_ISSN = (isset($item->ISSN)) ? $item->ISSN : "";
-            $_eISSN = (isset($item->eISSN)) ? $item->eISSN : "";
-            $_PropID = (isset($item->Proprietary_ID)) ? $item->Proprietary_ID : "";
-            $_URI = (isset($item->URI)) ? $item->URI : "";
+
+           // Initialize identifiers
+            $_PropID = "";
+            $_ISBN = "";
+            $_ISSN = "";
+            $_eISSN = "";
+            $_DOI = "";
+            $_URI = "";
+            foreach ( $item->Item_ID as $_id ) {
+                if ( $_id->Type == "Proprietary" ) { $_PropID = $_id->Value; }
+                if ( $_id->Type == "ISBN" ) { $_ISBN = $_id->Value; }
+                if ( $_id->Type == "Print_ISSN" ) { $_ISSN = $_id->Value; }
+                if ( $_id->Type == "Online_ISSN" ) { $_eISSN = $_id->Value; }
+                if ( $_id->Type == "DOI" ) { $_DOI = $_id->Value; }
+                if ( $_id->Type == "URI" ) { $_URI = $_id->Value; }
+            }
+
            // Pick up the optional attributes
             $_datatype = (isset($item->Data_Type)) ? $item->Data_Type : "";
             $_sectiontype = (isset($item->Section_Type)) ? $item->Section_Type : "";
@@ -114,7 +125,7 @@ class Counter5Processor extends Model
             }
 
            // Get or create Platform for this item.
-            $platform = self::getPlatform($_platform);
+            $platform = Platform::firstOrCreate(['name' => $_platform]);
 
            // Data_Type is optional... if null, decide what this is based on IS*N field(s)
            // (If ISBN *and* one of ISSN/eISSN are present, treat it as a Journal)
@@ -131,7 +142,6 @@ class Counter5Processor extends Model
                 }
             } else {
                 if ($_datatype != "Journal" && $_datatype != "Book") {
-                    )
                    // Unrecognized Data_Type... skip the record (signal error?)
                     continue;
                 }
@@ -141,11 +151,11 @@ class Counter5Processor extends Model
             if ($_datatype == "Journal") {
                 $journal = self::getJournal($_title, $_ISSN, $_eISSN);
                 $_jrnl_id = $journal->id;
-                $_book_id = 0;
+                $_book_id = null;
             } else {    // Book
                 $book = self::getBook($_title, $_ISBN);
                 $_book_id = $book->id;
-                $_jrnl_id = 0;
+                $_jrnl_id = null;
             }
 
            // Loop $item->Performance elements and store counts when time-periods match
@@ -249,7 +259,7 @@ class Counter5Processor extends Model
                 continue;
             }
             // Get or create Platform for this item.
-             $platform = self::getPlatform($item->Platform);
+             $platform = Platform::firstOrCreate(['name' => $item->Platform]);
 
             // Database is required; if Null, skip the item.
              $_database = (isset($item->Database)) ? $item->Database : "";
@@ -257,7 +267,7 @@ class Counter5Processor extends Model
                 continue;
             }
             // Get or create DataBase for this item.
-             $database = self::getDataBase($item->Database);
+             $database = Database::firstOrCreate(['name' => $item->Database]);
 
             // Pick up the optional attributes
              $_datatype = (isset($item->Data_Type)) ? $item->Data_Type : "";
@@ -362,7 +372,7 @@ class Counter5Processor extends Model
             }
 
            // Get or create Platform for this item.
-            $platform = self::getPlatform($item->Platform);
+            $platform = Platform::firstOrCreate(['name' => $item->Platform]);
 
            // Pick up the optional attributes
             $_datatype = (isset($item->Data_Type)) ? $item->Data_Type : "";
@@ -430,29 +440,10 @@ class Counter5Processor extends Model
         $status = true;
     }
 
-   /**
-    * Function to find-or-create a Platform by name and return it
-    *
-    * @param  $name
-    * @return Platform
-    */
-    private static function getPlatform($name)
-    {
-
-        $platform = Platform::where('name', '=', $name)->first();
-        if ($platform === null) {   // create it
-            $platform = new Platform(['name' => $name]);
-            $platform->save();
-        }
-        return $platform;
-    }
-
-//     $journal = self::getJournal($item->Title,$item->Print_ISSN,$item->Online_ISSN,$item->Proprietary_ID);
-// } else if ($item->Data_Type == "Book") {
-//     $book = self::getBook($item->Title,$item->ISBN,$item->Proprietary_ID);
-
     /**
      * Function to find-or-create a Journal and return it
+     * firstOrCreate would be nice, but we only want to create when
+     * NONE of the 3 fields (title, issn, or eissn) match.
      *
      * @return Journal
      */
@@ -472,6 +463,8 @@ class Counter5Processor extends Model
 
      /**
       * Function to find-or-create a Book and return it
+      * firstOrCreate would be nice, but we only want to create if
+      * neither of the 2 fields (title, or isbn) match.
       *
       * @return Book
       */
@@ -487,19 +480,4 @@ class Counter5Processor extends Model
         return $_book;
     }
 
-    /**
-     * Function to find-or-create a DataBase by name and return it
-     *
-     * @param  $name
-     * @return DataBase
-     */
-    private static function getDataBase($name)
-    {
-        $_data_base = DataBase::where('name', '=', $name)->first();
-        if ($_data_base === null) {   // create it
-            $_data_base = new DataBase(['name' => $name]);
-            $_data_base->save();
-        }
-        return $_data_base;
-    }
 }

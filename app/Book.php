@@ -12,7 +12,7 @@ class Book extends Model
     * @var string
     */
     protected $connection = 'globaldb';
-    protected $table = 'platforms';
+    protected $table = 'books';
 
     /**
      * The attributes that are mass assignable.

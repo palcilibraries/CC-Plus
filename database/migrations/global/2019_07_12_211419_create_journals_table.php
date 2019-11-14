@@ -16,8 +16,8 @@ class CreateJournalsTable extends Migration
         Schema::create('journals', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('Title');
-            $table->string('ISSN', 9);
-            $table->string('eISSN', 9);
+            $table->string('ISSN');
+            $table->string('eISSN');
             $table->timestamps();
 
             // $table->foreign('owner_id')->references('id')->on('users');

@@ -20,8 +20,8 @@ class ItemReport extends Model
      * @var array
      */
     protected $fillable = [
-         'item_id', 'prov_id', 'plat_id', 'inst_id', 'yearmon', 'total_item_requests',
-         'unique_item_requests'
+         'item_id', 'prov_id', 'plat_id', 'inst_id', 'yearmon', 'datatype_id', 'accesstype_id', 'accessmethod_id',
+         'total_item_requests', 'unique_item_requests'
     ];
 
     public function items()
@@ -43,4 +43,20 @@ class ItemReport extends Model
     {
         return $this->belongsToMany('App\Institution', 'inst_id');
     }
+
+    public function accessMethod()
+    {
+        return $this->belongsTo('App\AccessMethod', 'accessmethod_id');
+    }
+
+    public function accessType()
+    {
+        return $this->belongsTo('App\AccessType', 'accesstype_id');
+    }
+
+    public function dataType()
+    {
+        return $this->belongsTo('App\DataType', 'datatype_id');
+    }
+
 }

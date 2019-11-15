@@ -17,6 +17,9 @@ class DatabaseSeeder extends Seeder
           InstitutionTypesTableSeeder::class,
           InstitutionsTableSeeder::class,
           RolesTableSeeder::class,
+          AccessMethodsTableSeeder::class,
+          AccessTypesTableSeeder::class,
+          DataTypesTableSeeder::class,
         ]);
     }
 }

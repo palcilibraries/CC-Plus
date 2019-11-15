@@ -21,9 +21,9 @@ class CreateIrReportDataTable extends Migration
             $table->unsignedInteger('plat_id');
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
-            $table->string('data_type', 128);
-            $table->string('access_type', 40)->nullable();
-            $table->string('access_method', 10)->default('Regular');
+            $table->unsignedInteger('datatype_id')->nullable();
+            $table->unsignedInteger('accesstype_id')->nullable();
+            $table->unsignedInteger('accessmethod_id')->default(1);
             $table->unsignedInteger('total_item_requests');
             $table->unsignedInteger('unique_item_requests');
             $table->timestamps();
@@ -32,6 +32,9 @@ class CreateIrReportDataTable extends Migration
             $table->foreign('prov_id')->references('id')->on('providers');
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');
             $table->foreign('inst_id')->references('id')->on('institutions');
+            $table->foreign('accessmethod_id')->references('id')->on($global_db . '.accessmethods');
+            $table->foreign('accesstype_id')->references('id')->on($global_db . '.accesstypes');
+            $table->foreign('datatype_id')->references('id')->on($global_db . '.datatypes');
         });
     }
 

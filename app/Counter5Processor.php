@@ -11,6 +11,10 @@ use App\PlatformReport;
 use App\TitleReport;
 use App\DatabaseReport;
 use App\ItemReport;
+use App\DataType;
+use App\AccessMethod;
+use App\AccessType;
+use App\SectionType;
 
 class Counter5Processor extends Model
 {
@@ -60,6 +64,10 @@ class Counter5Processor extends Model
    */
     public static function TR($json_report)
     {
+       // Pull datatypes for Book and Journal and store for later
+        $book_datatype = DataType::firstOrCreate(['name' => "Book"]);
+        $journal_datatype = DataType::firstOrCreate(['name' => "Journal"]);
+
        // Setup array to hold per-item counts
         $ICounts = ['Total_Item_Investigations' => 0, 'Total_Item_Requests' => 0,
                     'Unique_Item_Investigations' => 0, 'Unique_Item_Requests' => 0,
@@ -113,11 +121,34 @@ class Counter5Processor extends Model
             }
 
            // Pick up the optional attributes
-            $_datatype = (isset($item->Data_Type)) ? $item->Data_Type : "";
-            $_sectiontype = (isset($item->Section_Type)) ? $item->Section_Type : "";
             $_YOP = (isset($item->YOP)) ? $item->YOP : "";
-            $_accesstype = (isset($item->Access_Type)) ? $item->Access_Type : "";
-            $_accessmethod = (isset($item->Access_Method)) ? $item->Access_Method : "";
+
+            if (isset($item->Access_Type)) {
+                $accesstype = AccessType::firstOrCreate(['name' => $item->Access_Type]);
+                $accesstype_id = $accesstype->id;
+                $accesstype_name = $accesstype->name;
+            } else {
+                $accesstype_id = null;
+                $accesstype_name = "";
+            }
+
+            if (isset($item->Access_Method)) {
+                $accessmethod = AccessMethod::firstOrCreate(['name' => $item->Access_Method]);
+                $accessmethod_id = $accessmethod->id;
+                $accessmethod_name = $accessmethod->name;
+            } else {
+                $accessmethod_id = null;
+                $accessmethod_name = "";
+            }
+
+            if (isset($item->Section_Type)) {
+                $sectiontype = SectionType::firstOrCreate(['name' => $item->Section_Type]);
+                $sectiontype_id = $sectiontype->id;
+                $sectiontype_name = $sectiontype->name;
+            } else {
+                $sectiontype_id = null;
+                $sectiontype_name = "";
+            }
 
            // If title or platform are null skip the item.
             if ($_title == "" || $_platform == "") {
@@ -127,35 +158,37 @@ class Counter5Processor extends Model
            // Get or create Platform for this item.
             $platform = Platform::firstOrCreate(['name' => $_platform]);
 
-           // Data_Type is optional... if null, decide what this is based on IS*N field(s)
+           // Data_Type is also optional... if null, try to solve what this is based on IS*N field(s)
            // (If ISBN *and* one of ISSN/eISSN are present, treat it as a Journal)
-            if ($_datatype == "") {
+           // Since this is a TR report... if its neither a Journal OR a Book, skip it.
+            $_data_type = (isset($item->Data_Type)) ? $item->Data_Type : "";
+            if ($_data_type == "") {
                 if ($_ISSN == "" && $_eISSN = "") {
                     if ($_ISBN == "") {
-                       // No IS*N provided... skip the record (signal error?)
+                       // No IS*N provided... skip the record
                         continue;
                     } else {
-                        $_datatype = "Book";
-                    }
+                        $_data_type = "Book";                    }
                 } else {
-                    $_datatype = "Journal";
-                }
-            } else {
-                if ($_datatype != "Journal" && $_datatype != "Book") {
-                   // Unrecognized Data_Type... skip the record (signal error?)
-                    continue;
+                    $_data_type = "Journal";                    }
                 }
             }
+            if ($_data_type != "Journal" && $_data_type != "Book") {
+                // Unrecognized Data_Type... skip the record
+                 continue;
+             }
 
            // Get or Create Journal-or-Book entries based on Title / ISSNs / ISBN
-            if ($_datatype == "Journal") {
+            if ($_data_type == "Journal") {
                 $journal = self::getJournal($_title, $_ISSN, $_eISSN);
                 $_jrnl_id = $journal->id;
                 $_book_id = null;
+                $datatype_id = $journal_datatype->id;
             } else {    // Book
                 $book = self::getBook($_title, $_ISBN);
                 $_book_id = $book->id;
                 $_jrnl_id = null;
+                $datatype_id = $book_datatype->id;
             }
 
            // Loop $item->Performance elements and store counts when time-periods match
@@ -172,9 +205,10 @@ class Counter5Processor extends Model
 
            // Insert the record
             TitleReport::insert(['jrnl_id' => $_jrnl_id, 'book_id' => $_book_id, 'prov_id' => self::$prov,
-                  'plat_id' => $platform->id, 'inst_id' => self::$inst, 'yearmon' => self::$yearmon, 'DOI' => $_DOI,
-                  'PropID' => $_PropID, 'URI' => $_URI, 'data_type' => $_datatype, 'section_type' => $_sectiontype,
-                  'YOP' => $_YOP, 'access_type' => $_accesstype, 'access_method' => $_accessmethod,
+                  'plat_id' => $platform->id, 'inst_id' => self::$inst, 'yearmon' => self::$yearmon,
+                  'DOI' => $_DOI, 'PropID' => $_PropID, 'URI' => $_URI, 'datatype_id' => $datatype_id,
+                  'sectiontype_id' => $sectiontype_id, 'YOP' => $_YOP, 'accesstype_id' => $accesstype_id,
+                  'accessmethod_id' => $accessmethod_id,
                   'total_item_investigations' => $ICounts['Total_Item_Investigations'],
                   'total_item_requests' => $ICounts['Total_Item_Requests'],
                   'unique_item_investigations' => $ICounts['Unique_Item_Investigations'],
@@ -187,8 +221,8 @@ class Counter5Processor extends Model
             if (self::$out_csv != "") {
                 $output_line = "\"" . $_title . "\",\"" . $_platform . "\"," . $_DOI . "\",\"" . $propID .
                                "\",\"" . $_ISBN . "\",\"" . $_ISSN . "\",\"" . $_eISSN . "\",\"" . $_URI .
-                               "\",\"" . $_datatype . "\",\"" . $_sectiontype . "\",\"" . $_YOP .
-                               "\",\"" . $_accesstype . "\",\"" . $_accessmethod . "\",";
+                               "\",\"" . $_data_type . "\",\"" . $sectiontype_name . "\",\"" . $_YOP .
+                               "\",\"" . $accesstype_name . "\",\"" . $accessmethod_name . "\",";
                 for ($_m = 0; $_m < $_metric_count; $_m++) {
                     $output_line .= "," . $ICounts[$_metric_keys[$_m]];
                 }
@@ -259,7 +293,7 @@ class Counter5Processor extends Model
                 continue;
             }
             // Get or create Platform for this item.
-             $platform = Platform::firstOrCreate(['name' => $item->Platform]);
+             $platform = Platform::firstOrCreate(['name' => $_platform]);
 
             // Database is required; if Null, skip the item.
              $_database = (isset($item->Database)) ? $item->Database : "";
@@ -267,11 +301,26 @@ class Counter5Processor extends Model
                 continue;
             }
             // Get or create DataBase for this item.
-             $database = Database::firstOrCreate(['name' => $item->Database]);
+             $database = Database::firstOrCreate(['name' => $_database]);
 
             // Pick up the optional attributes
-             $_datatype = (isset($item->Data_Type)) ? $item->Data_Type : "";
-             $_accessmethod = (isset($item->Access_Method)) ? $item->Access_Method : "";
+            if (isset($item->Data_Type)) {
+                $datatype = DataType::firstOrCreate(['name' => $item->Data_Type]);
+                $datatype_id = $datatype->id;
+                $datatype_name = $datatype->name;
+            } else {
+                $datatype_id = null;
+                $datatype_name = "";
+            }
+
+            if (isset($item->Access_Method)) {
+                $accessmethod = AccessMethod::firstOrCreate(['name' => $item->Access_Method]);
+                $accessmethod_id = $accessmethod->id;
+                $accessmethod_name = $accessmethod->name;
+            } else {
+                $accessmethod_id = null;
+                $accessmethod_name = "";
+            }
 
             // Loop $item->Performance elements and store counts when time-periods match
             foreach ($item->Performance as $perf) {
@@ -288,7 +337,7 @@ class Counter5Processor extends Model
             // Insert the record
              DatabaseReport::insert(['db_id' => $database->id, 'prov_id' => self::$prov, 'plat_id' => $platform->id,
                        'inst_id' => self::$inst, 'yearmon' => self::$yearmon,
-                       'data_type' => $_datatype, 'access_method' => $_accessmethod,
+                       'datatype_id' => $datatype_id, 'accessmethod_id' => $accessmethod_id,
                        'searches_automated' => $ICounts['Searches_Automated'],
                        'searches_federated' => $ICounts['Searches_Federated'],
                        'searches_regular' => $ICounts['Searches_Regular'],
@@ -302,8 +351,8 @@ class Counter5Processor extends Model
 
              // Send a record to the output file
             if (self::$out_csv != "") {
-                $output_line = "\"" . $_database . "\",\"" . $_platform . "\",\"" . $_datatype . "\",\"" .
-                               $_accessmethod . "\"";
+                $output_line = "\"" . $_database . "\",\"" . $_platform . "\",\"" . $datatype_name . "\",\"" .
+                               $accessmethod_name . "\"";
                 for ($_m = 0; $_m < $_metric_count; $_m++) {
                     $output_line .= "," . $ICounts[$_metric_keys[$_m]];
                 }
@@ -374,9 +423,24 @@ class Counter5Processor extends Model
            // Get or create Platform for this item.
             $platform = Platform::firstOrCreate(['name' => $item->Platform]);
 
-           // Pick up the optional attributes
-            $_datatype = (isset($item->Data_Type)) ? $item->Data_Type : "";
-            $_accessmethod = (isset($item->Access_Method)) ? $item->Access_Method : "";
+            // Pick up the optional attributes
+            if (isset($item->Data_Type)) {
+                $datatype = DataType::firstOrCreate(['name' => $item->Data_Type]);
+                $datatype_id = $datatype->id;
+                $datatype_name = $datatype->name;
+            } else {
+                $datatype_id = null;
+                $datatype_name = "";
+            }
+
+            if (isset($item->Access_Method)) {
+                $accessmethod = AccessMethod::firstOrCreate(['name' => $item->Access_Method]);
+                $accessmethod_id = $accessmethod->id;
+                $accessmethod_name = $accessmethod->name;
+            } else {
+                $accessmethod_id = null;
+                $accessmethod_name = "";
+            }
 
            // Loop $item->Performance elements and store counts when time-periods match
             foreach ($item->Performance as $perf) {
@@ -392,7 +456,7 @@ class Counter5Processor extends Model
 
            // Insert the record
             PlatformReport::insert(['plat_id' => $platform->id, 'prov_id' => self::$prov, 'inst_id' => self::$inst,
-                      'yearmon' => self::$yearmon, 'data_type' => $_datatype, 'access_method' => $_accessmethod,
+                      'yearmon' => self::$yearmon, 'datatype_id' => $datatype_id, 'accessmethod_id' => $accessmethod_id,
                       'searches_platform' => $ICounts['Searches_Platform'],
                       'total_item_investigations' => $ICounts['Total_Item_Investigations'],
                       'total_item_requests' => $ICounts['Total_Item_Requests'],
@@ -403,7 +467,7 @@ class Counter5Processor extends Model
 
            // Send a record to the output file
             if (self::$out_csv != "") {
-                $output_line = "\"" . $_platform . "\",\"" . $_datatype . "\",\"" . $_accessmethod . "\"";
+                $output_line = "\"" . $_platform . "\",\"" . $datatype_name . "\",\"" . $accessmethod_name . "\"";
                 for ($_m = 0; $_m < $_metric_count; $_m++) {
                     $output_line .= "," . $ICounts[$_metric_keys[$_m]];
                 }

@@ -25,11 +25,11 @@ class CreateTrReportDataTable extends Migration
             $table->string('DOI', 128)->nullable();
             $table->string('PropID', 128)->nullable();
             $table->string('URI', 128)->nullable();
-            $table->string('data_type', 128);
-            $table->string('section_type', 40)->nullable();
+            $table->unsignedInteger('datatype_id')->nullable();
+            $table->unsignedInteger('sectiontype_id')->nullable();
             $table->string('YOP', 9)->nullable();
-            $table->string('access_type', 40)->nullable();
-            $table->string('access_method', 10)->default('Regular');
+            $table->unsignedInteger('accesstype_id')->nullable();
+            $table->unsignedInteger('accessmethod_id')->default(1);
             $table->unsignedInteger('total_item_investigations')->default(0);
             $table->unsignedInteger('total_item_requests')->default(0);
             $table->unsignedInteger('unique_item_investigations')->default(0);
@@ -45,6 +45,10 @@ class CreateTrReportDataTable extends Migration
             $table->foreign('prov_id')->references('id')->on('providers');
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');
             $table->foreign('inst_id')->references('id')->on('institutions');
+            $table->foreign('datatype_id')->references('id')->on($global_db . '.datatypes');
+            $table->foreign('sectiontype_id')->references('id')->on($global_db . '.sectiontypes');
+            $table->foreign('accesstype_id')->references('id')->on($global_db . '.accesstypes');
+            $table->foreign('accessmethod_id')->references('id')->on($global_db . '.accessmethods');
         });
     }
 

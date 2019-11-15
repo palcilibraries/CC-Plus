@@ -21,8 +21,8 @@ class CreateTempDrTable extends Migration
             $table->unsignedInteger('plat_id');
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
-            $table->string('data_type', 40);
-            $table->string('access_method', 10)->default('Regular');
+            $table->unsignedInteger('datatype_id')->nullable();
+            $table->unsignedInteger('accessmethod_id')->default(1);
             $table->unsignedInteger('searches_automated');
             $table->unsignedInteger('searches_federated');
             $table->unsignedInteger('searches_regular');
@@ -39,6 +39,8 @@ class CreateTempDrTable extends Migration
             $table->foreign('prov_id')->references('id')->on('providers');
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');
             $table->foreign('inst_id')->references('id')->on('institutions');
+            $table->foreign('datatype_id')->references('id')->on($global_db . '.datatypes');
+            $table->foreign('accessmethod_id')->references('id')->on($global_db . '.accessmethods');
         });
     }
 

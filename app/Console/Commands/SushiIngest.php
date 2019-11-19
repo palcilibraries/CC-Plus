@@ -115,7 +115,7 @@ class SushiIngestCommand extends Command
         $client = new Client();   //GuzzleHttp\Client
         foreach ($providers as $provider) {
 
-           // If running as "Auto", skip silently to next provider if today is not the day to run
+           // If running as "Auto" and today is not the day to run, skip silently to next provider
             if ($this->option('auto') && $provider->day_of_month != date('j')) {
                 continue;
             }
@@ -158,11 +158,10 @@ class SushiIngestCommand extends Command
                 foreach ($provider->reports as $report) {
                     $this->line("Requesting " . $report->name . " for " . $provider->name);
 
-                   // Set output filename
-                    if (!is_null(env('CCP_REPORTS'))) {
-                        $C5processor->setOutCsv($report_path . '/' . $setting->institution->name . '/' .
-                                 $provider->name . '/' . $report->name . $begin . '_' . $end . '.csv');
-                    }
+                   // Set output filename for raw data
+                    if (!is_null(env('CCP_REPORTS')))
+                        $raw_datafile = $report_path . '/' . $setting->institution->name . '/' . $provider->name .
+                                        '/' . $report->name . '_' . $begin . '_' . $end . '.json';
 
                    // Setup attributes for the request
                     if ($report->name == "TR") {
@@ -187,37 +186,61 @@ class SushiIngestCommand extends Command
                     $queue_retries = 0;
                     $req_state = "queued";
 
+                   // Error-Handling needs work... and probably needs a class unto itself
+                   // This is currently catches "Queued" response and sleeps to retry.
+                   // Any other error/exception is treated as fatal...
                     while ($queue_retries <= env('SUSHI_RETRY_LIMIT', 20)  && $req_state == "queued") {
-                      // Make the request and convert into JSON
+                       // Make the request and convert into JSON
                         $result = $client->get($request_uri);
-                        $json_result = json_decode($result->getBody());
+                        $json = json_decode($result->getBody());
 
-                        if (isset($json_result->Report_Header) && isset($json_result->Report_Items)) {
-                            $req_state = "done";
-                        } else {
-                            foreach ($json_result as $_resp) {
-                                if ( !isset($_resp->Code) ) {
-                                    $this->line("No response code - requested URI was: " . $request_uri);
-                                    exit;
-                                }
-                                if ($_resp->Code == 1011) {
-                                    $queue_retries++;
-                                    $this->line("Queued and sleeping: " . $_resp->Message . "(" . $_resp->Code . ")");
-                                    sleep(env('SUSHI_RETRY_SLEEP', 30));
-                                    $this->line("Retrying");
-                                    $req_state = "queued";
-                                    break;
-                                } else {
-                                    $this->line("Unknown return status: " . $_resp->Code);
-                                    $this->line("Message: " . $_resp->Message);
-                                    exit();
+                        if (isset($json->Code)) {
+                            if ($json->Code == 1011 ) {
+                                $queue_retries++;
+                                $this->line("Queued ... sleeping: " . $json->Message . "(" . $json->Code . ") ...");
+                                sleep(SUSHI_RETRY_SLEEP);
+                                $this->line("Retrying");
+                                $req_state = "queued";
+                                continue;
+                            } else {
+                               $this->line("Error returned: (" . $json->Severity . "),  Code: " . $json->Code);
+                               $this->line("Message: " . $json->Message);
+                               exit();
+                            }
+                        }
+                        if (isset($json->Report_Header)) {
+                            if (isset($json->Report_Header->Exceptions)) {
+                                foreach ($json->Report_Header->Exceptions as $_exep) {
+                                    if ( $_exep->Code == 1011 ) {
+                                        $queue_retries++;
+                                        $this->line("Queued ... sleeping: " . $_exep->Message . "(" .
+                                                                              $_exep->Code . ") ...");
+                                        sleep(SUSHI_RETRY_SLEEP);
+                                        $this->line("Retrying");
+                                        $req_state = "queued";
+                                        continue 2;
+                                    } else {
+                                       $this->line("Exception: (" . $_exep->Severity . "), Code: " . $_exep->Code);
+                                       $this->line("Message: " . $_exep->Message);
+                                       exit();
+                                    }
                                 }
                             }
+                            if (isset($json->Report_Items)) {
+                                $req_state = "done";
+                                if (!is_null(env('CCP_REPORTS'))) file_put_contents($raw_datafile,$json);
+                            } else {
+                                $this->line("SUSHI error - no Report_Items! Requested URI was: " . $request_uri);
+                                exit;
+                            }
+                        } else {
+                            $this->line("SUSHI error - no Report_Header! Requested URI was: " . $request_uri);
+                            exit;
                         }
                     } // while retries remaining
 
                    // Validate report
-                    $C5validator = new Counter5Validator($json_result);
+                    $C5validator = new Counter5Validator($json);
 
                    // Parse and store the report if it's valid
                     if ($C5validator->{$report->name}()) {

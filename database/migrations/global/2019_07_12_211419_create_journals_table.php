@@ -18,6 +18,9 @@ class CreateJournalsTable extends Migration
             $table->string('Title');
             $table->string('ISSN');
             $table->string('eISSN');
+            $table->string('DOI', 128)->nullable();
+            $table->string('PropID', 128)->nullable();
+            $table->string('URI', 128)->nullable();
             $table->timestamps();
 
             // $table->foreign('owner_id')->references('id')->on('users');

@@ -19,12 +19,10 @@ class CreateTrReportDataTable extends Migration
             $table->bigInteger('jrnl_id')->unsigned()->nullable();
             $table->bigInteger('book_id')->unsigned()->nullable();
             $table->unsignedInteger('prov_id');
+            $table->unsignedInteger('publisher_id');
             $table->unsignedInteger('plat_id');
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
-            $table->string('DOI', 128)->nullable();
-            $table->string('PropID', 128)->nullable();
-            $table->string('URI', 128)->nullable();
             $table->unsignedInteger('datatype_id')->nullable();
             $table->unsignedInteger('sectiontype_id')->nullable();
             $table->string('YOP', 9)->nullable();
@@ -43,6 +41,7 @@ class CreateTrReportDataTable extends Migration
             $table->foreign('jrnl_id')->references('id')->on($global_db . '.journals');
             $table->foreign('book_id')->references('id')->on($global_db . '.books');
             $table->foreign('prov_id')->references('id')->on('providers');
+            $table->foreign('publisher_id')->references('id')->on($global_db . '.publishers');
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');
             $table->foreign('inst_id')->references('id')->on('institutions');
             $table->foreign('datatype_id')->references('id')->on($global_db . '.datatypes');

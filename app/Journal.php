@@ -20,7 +20,7 @@ class Journal extends Model
      * @var array
      */
     protected $fillable = [
-        'Title', 'ISSN', 'eISSN'
+        'Title', 'ISSN', 'eISSN', 'DOI', 'PropID', 'URI'
     ];
 
     public function titleReports()

@@ -17,6 +17,9 @@ class CreateBooksTable extends Migration
             $table->bigIncrements('id');
             $table->string('Title');
             $table->string('ISBN');
+            $table->string('DOI', 128)->nullable();
+            $table->string('PropID', 128)->nullable();
+            $table->string('URI', 128)->nullable();
             $table->timestamps();
         });
     }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use DB;
 use App\Provider;
 use App\Platform;
+use App\Publisher;
 use App\Institution;
 use App\PlatformReport;
 use App\TitleReport;
@@ -25,24 +26,17 @@ class Counter5Processor extends Model
     private static $begin;
     private static $end;
     private static $yearmon;
-    private static $out_csv = "";
 
   /**
    * Class Constructor and setting methods
    */
-    public function __construct($_prov, $_inst, $_begin, $_end, $_out_csv = "")
+    public function __construct($_prov, $_inst, $_begin, $_end)
     {
         self::$prov = $_prov;
         self::$inst = $_inst;
         self::$begin = $_begin;
         self::$end = $_end;
-        self::$out_csv = $_out_csv;
         self::$yearmon = substr($_begin, 0, 7);
-    }
-
-    public function setOutCsv($_out_csv)
-    {
-        self::$out_csv = $_out_csv;
     }
 
     public function setBegin($_begin)
@@ -80,31 +74,38 @@ class Counter5Processor extends Model
         $header = $json_report->Report_Header;
         $ReportItems = $json_report->Report_Items;
 
-       // Put out report header and total rows
-        if (self::$out_csv != "") {
-            $csv_file = fopen(self::$out_csv, 'w');
-            fwrite($csv_file, "Title Master Report (R5)\n");
-            fwrite($csv_file, "Publisher: " . (string) $header->Publisher . "\n");
-            fwrite($csv_file, "Institution: " . (string) $header->Institution_Name . "\n");
-            fwrite($csv_file, "CustomerID: " . (string) $header->Customer_ID . "\n");
-            fwrite($csv_file, "Created: " . (string) $header->Created . "\n");
-            fwrite($csv_file, "Created By: " . (string) $header->Created_By . "\n");
-            fwrite($csv_file, "Period covered by Report: ");
-            fwrite($csv_file, self::$begin . " to " . self::$end . "\n");
-            $colhdr  = "\nTitle,Platform,DOI,Proprietary ID,ISBN,Print ISSN,Online ISSN,URI,Data Type,Section Type,";
-            $colhdr .= "YOP,Access Type,Access Method,Total Item Investigations,Total Item Requests,";
-            $colhdr .= "Unique Item Investigations,Unique Item Requests,Unique Title Investigations,";
-            $colhdr .= "Unique Title Requests,Limit Exceeded,No License\n";
-            fwrite($csv_file, $colhdr);
-        }
-
        // Loop through all ReportItems
         foreach ($ReportItems as $item) {
-           // Put Item fields into variables
-            $_title = (isset($item->Title)) ? $item->Title : "";
-            $_platform = (isset($item->Platform)) ? $item->Platform : "";
+            // Put Item, Publisher, and Platform fields into variables
+             $_title = (isset($item->Title)) ? $item->Title : "";
+             $_publisher = (isset($item->Publisher)) ? $item->Publisher : "";
+             $_platform = (isset($item->Platform)) ? $item->Platform : "";
 
-           // Initialize identifiers
+            // If title, publisher or platform are null skip the item.
+             if ($_title == "" || $_publisher == "" || $_platform == "") {
+                 continue;
+             }
+
+             // Get or create Platform for this item.
+              $platform = Platform::firstOrCreate(['name' => $_platform]);
+
+            // Allow a null value for Publisher_ID
+             $_publisher_id = (isset($item->Publisher_ID)) ? $item->Publisher_ID : "";
+            // Get or create Publisher for this item
+             $publisher = Publisher::firstOrCreate(['name' => $_publisher], ['Publisher_ID' => $_publisher_id]);
+            // Update Publisher_ID if saved value is null and this item has a value
+             if ( ($publisher->Publisher_ID=="") && ($_publisher_id!="") ) {
+                 $publisher->Publisher_ID = $_publisher_id;
+                 $publisher->save();
+             }
+
+            // Database is required; if Null, skip the item.
+             $_database = (isset($item->Database)) ? $item->Database : "";
+            if ($_database == "") {
+                continue;
+            }
+
+           // Initialize variables for Item_ID fields and set from the record
             $_PropID = "";
             $_ISBN = "";
             $_ISSN = "";
@@ -150,15 +151,7 @@ class Counter5Processor extends Model
                 $sectiontype_name = "";
             }
 
-           // If title or platform are null skip the item.
-            if ($_title == "" || $_platform == "") {
-                continue;
-            }
-
-           // Get or create Platform for this item.
-            $platform = Platform::firstOrCreate(['name' => $_platform]);
-
-           // Data_Type is also optional... if null, try to solve what this is based on IS*N field(s)
+           // Data_Type is optional... if null, try to solve what this is based on IS*N field(s)
            // (If ISBN *and* one of ISSN/eISSN are present, treat it as a Journal)
            // Since this is a TR report... if its neither a Journal OR a Book, skip it.
             $_data_type = (isset($item->Data_Type)) ? $item->Data_Type : "";
@@ -168,9 +161,10 @@ class Counter5Processor extends Model
                        // No IS*N provided... skip the record
                         continue;
                     } else {
-                        $_data_type = "Book";                    }
+                        $_data_type = "Book";
+                    }
                 } else {
-                    $_data_type = "Journal";                    }
+                    $_data_type = "Journal";
                 }
             }
             if ($_data_type != "Journal" && $_data_type != "Book") {
@@ -178,25 +172,41 @@ class Counter5Processor extends Model
                  continue;
              }
 
-           // Get or Create Journal-or-Book entries based on Title / ISSNs / ISBN
+           // Get or Create Journal-or-Book entries based on Title and Proprietary_ID
+           // Store the other Item_ID fields in the Journal/Book table
             if ($_data_type == "Journal") {
-                $journal = self::getJournal($_title, $_ISSN, $_eISSN);
+                $journal = firstOrCreate(['Title' => $_title, 'PropID' => $_PropID],
+                                         ['ISSN' => $_ISSN, 'eISSN' => $_eISSN, 'DOI' => $_DOI, 'URI' => $_URI]);
                 $_jrnl_id = $journal->id;
                 $_book_id = null;
                 $datatype_id = $journal_datatype->id;
+               // If existing journal fields are null try to update them
+                if ($journal->wasRecentlyCreated() === false ) {
+                    if ($journal->ISSN == "" && $_ISSN != "") $journal->ISSN = $_ISSN;
+                    if ($journal->eISSN == "" && $_eISSN != "") $journal->eISSN = $_eISSN;
+                    if ($journal->DOI == "" && $_DOI != "") $journal->DOI = $_DOI;
+                    if ($journal->URI == "" && $_URI != "") $journal->URI = $_URI;
+                    if ($journal->ISSN != $_ISSN || $journal->eISSN != $_eISSN ||
+                        $journal->DOI != $_DOI || $journal->URI != $_URI) $journal->save();
+                }
             } else {    // Book
-                $book = self::getBook($_title, $_ISBN);
+                $book = firstOrCreate(['Title' => $_title, 'PropID' => $_PropID],
+                                      ['ISBN' => $_ISBN, 'DOI' => $_DOI, 'URI' => $_URI]);
                 $_book_id = $book->id;
                 $_jrnl_id = null;
                 $datatype_id = $book_datatype->id;
+               // If existing book fields are null try to update them
+                if ($book->wasRecentlyCreated() === false ) {
+                    if ($book->ISBN == "" && $_ISBN != "") $book->ISBN = $_ISBN;
+                    if ($book->DOI == "" && $_DOI != "") $book->DOI = $_DOI;
+                    if ($book->URI == "" && $_URI != "") $book->URI = $_URI;
+                    if ($book->ISBN != $_ISBN || $book->DOI != $_DOI || $book->URI != $_URI) $book->save();
+                 }
             }
 
            // Loop $item->Performance elements and store counts when time-periods match
             foreach ($item->Performance as $perf) {
-                if (
-                    $perf->Period->Begin_Date == self::$begin  &&
-                    $perf->Period->End_Date == self::$end
-                ) {
+                if ($perf->Period->Begin_Date == self::$begin  && $perf->Period->End_Date == self::$end) {
                     foreach ($perf->Instance as $instance) {
                         $ICounts[$instance->Metric_Type] += $instance->Count;
                     }
@@ -205,10 +215,10 @@ class Counter5Processor extends Model
 
            // Insert the record
             TitleReport::insert(['jrnl_id' => $_jrnl_id, 'book_id' => $_book_id, 'prov_id' => self::$prov,
-                  'plat_id' => $platform->id, 'inst_id' => self::$inst, 'yearmon' => self::$yearmon,
-                  'DOI' => $_DOI, 'PropID' => $_PropID, 'URI' => $_URI, 'datatype_id' => $datatype_id,
-                  'sectiontype_id' => $sectiontype_id, 'YOP' => $_YOP, 'accesstype_id' => $accesstype_id,
-                  'accessmethod_id' => $accessmethod_id,
+                  'publisher_id' => $publisher->id, 'plat_id' => $platform->id, 'inst_id' => self::$inst,
+                  'yearmon' => self::$yearmon, 'DOI' => $_DOI, 'PropID' => $_PropID, 'URI' => $_URI,
+                  'datatype_id' => $datatype_id, 'sectiontype_id' => $sectiontype_id, 'YOP' => $_YOP,
+                  'accesstype_id' => $accesstype_id, 'accessmethod_id' => $accessmethod_id,
                   'total_item_investigations' => $ICounts['Total_Item_Investigations'],
                   'total_item_requests' => $ICounts['Total_Item_Requests'],
                   'unique_item_investigations' => $ICounts['Unique_Item_Investigations'],
@@ -217,29 +227,11 @@ class Counter5Processor extends Model
                   'unique_title_requests' => $ICounts['Unique_Title_Requests'],
                   'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License']]);
 
-           // Send a record to the output file
-            if (self::$out_csv != "") {
-                $output_line = "\"" . $_title . "\",\"" . $_platform . "\"," . $_DOI . "\",\"" . $propID .
-                               "\",\"" . $_ISBN . "\",\"" . $_ISSN . "\",\"" . $_eISSN . "\",\"" . $_URI .
-                               "\",\"" . $_data_type . "\",\"" . $sectiontype_name . "\",\"" . $_YOP .
-                               "\",\"" . $accesstype_name . "\",\"" . $accessmethod_name . "\",";
-                for ($_m = 0; $_m < $_metric_count; $_m++) {
-                    $output_line .= "," . $ICounts[$_metric_keys[$_m]];
-                }
-                $output_line .= "\n";
-                fwrite($csv_file, $output_line);
-            }
-
            // Reset metric counts
             for ($_m = 0; $_m < $_metric_count; $_m++) {
                 $ICounts[$_metric_keys[$_m]] = 0;
             }
         }     // foreach $ReportItems
-
-       // Close output file
-        if (self::$out_csv != "") {
-             fclose($csv_file);
-        }
 
        // Set status to success
         $status = true;
@@ -267,31 +259,28 @@ class Counter5Processor extends Model
         $header = $json_report->Report_Header;
         $ReportItems = $json_report->Report_Items;
 
-       // Put out report header and total rows
-        if (self::$out_csv != "") {
-            $csv_file = fopen(self::$out_csv, 'w');
-            fwrite($csv_file, "Database Master Report (R5)\n");
-            fwrite($csv_file, "Publisher: " . (string) $header->Publisher . "\n");
-            fwrite($csv_file, "Institution: " . (string) $header->Institution_Name . "\n");
-            fwrite($csv_file, "CustomerID: " . (string) $header->Customer_ID . "\n");
-            fwrite($csv_file, "Created: " . (string) $header->Created . "\n");
-            fwrite($csv_file, "Created By: " . (string) $header->Created_By . "\n");
-            fwrite($csv_file, "Period covered by Report: ");
-            fwrite($csv_file, self::$begin . " to " . self::$end . "\n");
-            $colhdr  = "\nDatabase,Platform,Data Type,Access Method,Automated Searches,Federated Searches,";
-            $colhdr .= "Regular Searches,Total Item Investigations,Total Item Requests,Unique Item Investigations,";
-            $colhdr .= "Unique Item Requests,Unique Title Investigations,Unique Title Requests";
-            $colhdr .= "Limit Exceeded,No License\n";
-            fwrite($csv_file, $colhdr);
-        }
-
        // Loop through all ReportItems
         foreach ($ReportItems as $item) {
+            // Publisher is required; if Null, skip the item.
+            // Allow a null value for Publisher_ID
+             $_publisher = (isset($item->Publisher)) ? $item->Publisher : "";
+             $_publisher_id = (isset($item->Publisher_ID)) ? $item->Publisher_ID : "";
+             if ($_publisher == "") {
+                 continue;
+             }
+            // Get or create Publisher for this item
+             $publisher = Publisher::firstOrCreate(['name' => $_publisher], ['Publisher_ID' => $_publisher_id]);
+            // Update Publisher_ID if saved value is null and this item has a value
+             if ( ($publisher->Publisher_ID=="") && ($_publisher_id!="") ) {
+                 $publisher->Publisher_ID = $_publisher_id;
+                 $publisher->save();
+             }
+
             // Platform is required; if Null, skip the item.
              $_platform = (isset($item->Platform)) ? $item->Platform : "";
-            if ($_platform == "") {
-                continue;
-            }
+             if ($_platform == "") {
+                 continue;
+             }
             // Get or create Platform for this item.
              $platform = Platform::firstOrCreate(['name' => $_platform]);
 
@@ -300,8 +289,23 @@ class Counter5Processor extends Model
             if ($_database == "") {
                 continue;
             }
+
+            // Get DOI for this item.
+             $_PropID = "";
+             if (isset($item->PropID)) {
+                 foreach ( $item->PropID as $_id ) {
+                     if ( $_id->Type == "Proprietary" ) { $_PropID = $_id->Value; }
+                 }
+             }
+
             // Get or create DataBase for this item.
              $database = Database::firstOrCreate(['name' => $_database]);
+
+            // Update DOI if necessary
+             if ( ($_PropID!="") && ($_PropID!=$database->PropID) ) {
+                 $database->PropID = $_PropID;
+                 $database->save();
+             }
 
             // Pick up the optional attributes
             if (isset($item->Data_Type)) {
@@ -349,27 +353,11 @@ class Counter5Processor extends Model
                        'unique_title_requests' => $ICounts['Unique_Title_Requests'],
                        'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License']]);
 
-             // Send a record to the output file
-            if (self::$out_csv != "") {
-                $output_line = "\"" . $_database . "\",\"" . $_platform . "\",\"" . $datatype_name . "\",\"" .
-                               $accessmethod_name . "\"";
-                for ($_m = 0; $_m < $_metric_count; $_m++) {
-                    $output_line .= "," . $ICounts[$_metric_keys[$_m]];
-                }
-                $output_line .= "\n";
-                fwrite($csv_file, $output_line);
-            }
-
-             // Reset metric counts
+           // Reset metric counts
             for ($_m = 0; $_m < $_metric_count; $_m++) {
                 $ICounts[$_metric_keys[$_m]] = 0;
             }
         }     // foreach $ReportItems
-
-       // Close output file
-        if (self::$out_csv != "") {
-             fclose($csv_file);
-        }
 
        // Set status to success
         $status = true;
@@ -394,23 +382,6 @@ class Counter5Processor extends Model
        // Decode JSON and put header and report records into variables
         $header = $json_report->Report_Header;
         $ReportItems = $json_report->Report_Items;
-
-       // Put out report header and total rows
-        if (self::$out_csv != "") {
-            $csv_file = fopen(self::$out_csv, 'w');
-            fwrite($csv_file, "Platform Master Report (R5)\n");
-            fwrite($csv_file, "Publisher: " . (string) $header->Publisher . "\n");
-            fwrite($csv_file, "Institution: " . (string) $header->Institution_Name . "\n");
-            fwrite($csv_file, "CustomerID: " . (string) $header->Customer_ID . "\n");
-            fwrite($csv_file, "Created: " . (string) $header->Created . "\n");
-            fwrite($csv_file, "Created By: " . (string) $header->Created_By . "\n");
-            fwrite($csv_file, "Period covered by Report: ");
-            fwrite($csv_file, self::$begin . " to " . self::$end . "\n");
-            $colhdr  = "\nPlatform,Data Type,Access Method,Platform Searches,Total Item Investigations,";
-            $colhdr .= "Total Item Requests,Unique Item Investigations,Unique Item Requests,";
-            $colhdr .= "Unique Title Investigations,Unique Title Requests\n";
-            fwrite($csv_file, $colhdr);
-        }
 
        // Loop through all ReportItems
         foreach ($ReportItems as $item) {
@@ -465,26 +436,11 @@ class Counter5Processor extends Model
                       'unique_title_investigations' => $ICounts['Unique_Title_Investigations'],
                       'unique_title_requests' => $ICounts['Unique_Title_Requests']]);
 
-           // Send a record to the output file
-            if (self::$out_csv != "") {
-                $output_line = "\"" . $_platform . "\",\"" . $datatype_name . "\",\"" . $accessmethod_name . "\"";
-                for ($_m = 0; $_m < $_metric_count; $_m++) {
-                    $output_line .= "," . $ICounts[$_metric_keys[$_m]];
-                }
-                $output_line .= "\n";
-                fwrite($csv_file, $output_line);
-            }
-
            // Reset metric counts
             for ($_m = 0; $_m < $_metric_count; $_m++) {
                 $ICounts[$_metric_keys[$_m]] = 0;
             }
         }     // foreach $ReportItems
-
-      // Close output file
-        if (self::$out_csv != "") {
-            fclose($csv_file);
-        }
 
        // Set status to success
         $status = true;
@@ -502,46 +458,6 @@ class Counter5Processor extends Model
 
       // Set status to success
         $status = true;
-    }
-
-    /**
-     * Function to find-or-create a Journal and return it
-     * firstOrCreate would be nice, but we only want to create when
-     * NONE of the 3 fields (title, issn, or eissn) match.
-     *
-     * @return Journal
-     */
-    private static function getJournal($title, $print_issn, $online_issn)
-    {
-        $_journal = Journal::where('Title', '=', $title)
-                       ->orWhere('ISSN', '=', $print_issn)
-                       ->orWhere('eISSN', '=', $online_issn)
-                       ->first();
-        if ($_journal === null) {   // create it
-            $_journal = new Journal(['Title' => $title, 'ISSN' => $print_issn,
-                                  'eISSN' => $online_issn]);
-            $_journal->save();
-        }
-        return $_journal;
-    }
-
-     /**
-      * Function to find-or-create a Book and return it
-      * firstOrCreate would be nice, but we only want to create if
-      * neither of the 2 fields (title, or isbn) match.
-      *
-      * @return Book
-      */
-    private static function getBook($title, $isbn)
-    {
-        $_book = Book::where('Title', '=', $title)
-                       ->orWhere('ISBN', '=', $isbn)
-                       ->first();
-        if ($_book === null) {   // create it
-            $_book = new Book(['Title' => $title, 'ISBN' => $isbn]);
-            $_book->save();
-        }
-        return $_book;
     }
 
 }

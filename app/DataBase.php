@@ -19,7 +19,7 @@ class DataBase extends Model
      *
      * @var array
      */
-    protected $fillable = ['name', 'platform_id'];
+    protected $fillable = ['name', 'PropID'];
 
     public function databaseReports()
     {

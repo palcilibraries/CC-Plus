@@ -18,6 +18,7 @@ class CreateTempDrTable extends Migration
 
             $table->unsignedInteger('db_id');
             $table->unsignedInteger('prov_id');
+            $table->unsignedInteger('publisher_id');
             $table->unsignedInteger('plat_id');
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
@@ -37,6 +38,7 @@ class CreateTempDrTable extends Migration
             $table->timestamps();
             $table->foreign('db_id')->references('id')->on($global_db . '.databases');
             $table->foreign('prov_id')->references('id')->on('providers');
+            $table->foreign('publisher_id')->references('id')->on($global_db . '.publishers');
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');
             $table->foreign('inst_id')->references('id')->on('institutions');
             $table->foreign('datatype_id')->references('id')->on($global_db . '.datatypes');

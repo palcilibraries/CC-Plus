@@ -20,7 +20,7 @@ class TitleReport extends Model
      * @var array
      */
     protected $fillable = [
-         'jrnl_id', 'book_id', 'prov_id', 'publisher_id', 'plat_id', 'inst_id', 'yearmon', 'datatype_id',
+         'jrnl_id', 'book_id', 'item_id', 'prov_id', 'publisher_id', 'plat_id', 'inst_id', 'yearmon', 'datatype_id',
          'sectiontype_id', 'YOP', 'accesstype_id', 'accessmethod_id', 'total_item_investigations', 'total_item_requests',
          'unique_item_investigations', 'unique_item_requests', 'unique_title_investigations', 'unique_title_requests',
          'limit_exceeded', 'not_license'
@@ -34,6 +34,11 @@ class TitleReport extends Model
     public function books()
     {
         return $this->belongsToMany('App\Book', 'book_id');
+    }
+
+    public function items()
+    {
+        return $this->belongsToMany('App\Item', 'item_id');
     }
 
     public function providers()

@@ -18,12 +18,12 @@ class CreateTempDrTable extends Migration
 
             $table->unsignedInteger('db_id');
             $table->unsignedInteger('prov_id');
-            $table->unsignedInteger('publisher_id');
-            $table->unsignedInteger('plat_id');
+            $table->unsignedInteger('publisher_id')->nullable();
+            $table->unsignedInteger('plat_id')->nullable();
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
             $table->unsignedInteger('datatype_id')->nullable();
-            $table->unsignedInteger('accessmethod_id')->default(1);
+            $table->unsignedInteger('accessmethod_id')->nullable();
             $table->unsignedInteger('searches_automated');
             $table->unsignedInteger('searches_federated');
             $table->unsignedInteger('searches_regular');
@@ -36,6 +36,7 @@ class CreateTempDrTable extends Migration
             $table->unsignedInteger('limit_exceeded');
             $table->unsignedInteger('no_license');
             $table->timestamps();
+
             $table->foreign('db_id')->references('id')->on($global_db . '.databases');
             $table->foreign('prov_id')->references('id')->on('providers');
             $table->foreign('publisher_id')->references('id')->on($global_db . '.publishers');

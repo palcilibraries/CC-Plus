@@ -21,7 +21,7 @@ class CreateTempPrTable extends Migration
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
             $table->unsignedInteger('datatype_id')->nullable();
-            $table->unsignedInteger('accessmethod_id')->default(1);
+            $table->unsignedInteger('accessmethod_id')->nullable();
             $table->unsignedInteger('searches_platform');
             $table->unsignedInteger('total_item_investigations');
             $table->unsignedInteger('total_item_requests');

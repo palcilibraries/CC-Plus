@@ -19,7 +19,7 @@ class Publisher extends Model
    *
    * @var array
    */
-    protected $fillable = ['id', 'name', 'Publisher_ID'];
+    protected $fillable = ['id', 'name'];
 
   /**
    * Methods for connections to reports

@@ -58,10 +58,6 @@ class Counter5Processor extends Model
    */
     public static function TR($json_report)
     {
-       // Pull datatypes for Book and Journal and store for later
-        $book_datatype = DataType::firstOrCreate(['name' => "Book"]);
-        $journal_datatype = DataType::firstOrCreate(['name' => "Journal"]);
-
        // Setup array to hold per-item counts
         $ICounts = ['Total_Item_Investigations' => 0, 'Total_Item_Requests' => 0,
                     'Unique_Item_Investigations' => 0, 'Unique_Item_Requests' => 0,
@@ -76,36 +72,28 @@ class Counter5Processor extends Model
 
        // Loop through all ReportItems
         foreach ($ReportItems as $item) {
-            // Put Item, Publisher, and Platform fields into variables
-             $_title = (isset($item->Title)) ? $item->Title : "";
-             $_publisher = (isset($item->Publisher)) ? $item->Publisher : "";
-             $_platform = (isset($item->Platform)) ? $item->Platform : "";
 
-            // If title, publisher or platform are null skip the item.
-             if ($_title == "" || $_publisher == "" || $_platform == "") {
-                 continue;
-             }
-
-             // Get or create Platform for this item.
-              $platform = Platform::firstOrCreate(['name' => $_platform]);
-
-            // Allow a null value for Publisher_ID
-             $_publisher_id = (isset($item->Publisher_ID)) ? $item->Publisher_ID : "";
-            // Get or create Publisher for this item
-             $publisher = Publisher::firstOrCreate(['name' => $_publisher], ['Publisher_ID' => $_publisher_id]);
-            // Update Publisher_ID if saved value is null and this item has a value
-             if ( ($publisher->Publisher_ID=="") && ($_publisher_id!="") ) {
-                 $publisher->Publisher_ID = $_publisher_id;
-                 $publisher->save();
-             }
-
-            // Database is required; if Null, skip the item.
-             $_database = (isset($item->Database)) ? $item->Database : "";
-            if ($_database == "") {
-                continue;
+           // Get Publisher
+            $publisher_id = null;
+            $_publisher = (isset($item->Publisher)) ? $item->Publisher : "";
+            if ($_publisher != "") {
+               // Get or create Publisher for this item
+                $publisher = Publisher::firstOrCreate(['name' => $_publisher]);
+                $publisher_id = $publisher->id;
             }
 
-           // Initialize variables for Item_ID fields and set from the record
+           // Get Platform
+            $platform_id = null;
+            $_platform = (isset($item->Platform)) ? $item->Platform : "";
+            if ($_platform != "") {
+               // Get or create Platform for this item.
+                $platform = Platform::firstOrCreate(['name' => $_platform]);
+                $platform_id = $platform->id;
+            }
+
+           // Initialize variables for Title and Item_ID fields
+           // We'll use these as a basis for trying to match against known titles
+            $_title = (isset($item->Title)) ? $item->Title : "";
             $_PropID = "";
             $_ISBN = "";
             $_ISSN = "";
@@ -124,84 +112,91 @@ class Counter5Processor extends Model
            // Pick up the optional attributes
             $_YOP = (isset($item->YOP)) ? $item->YOP : "";
 
+            $accesstype_id = null;
             if (isset($item->Access_Type)) {
-                $accesstype = AccessType::firstOrCreate(['name' => $item->Access_Type]);
-                $accesstype_id = $accesstype->id;
-                $accesstype_name = $accesstype->name;
-            } else {
-                $accesstype_id = null;
-                $accesstype_name = "";
-            }
-
-            if (isset($item->Access_Method)) {
-                $accessmethod = AccessMethod::firstOrCreate(['name' => $item->Access_Method]);
-                $accessmethod_id = $accessmethod->id;
-                $accessmethod_name = $accessmethod->name;
-            } else {
-                $accessmethod_id = null;
-                $accessmethod_name = "";
-            }
-
-            if (isset($item->Section_Type)) {
-                $sectiontype = SectionType::firstOrCreate(['name' => $item->Section_Type]);
-                $sectiontype_id = $sectiontype->id;
-                $sectiontype_name = $sectiontype->name;
-            } else {
-                $sectiontype_id = null;
-                $sectiontype_name = "";
-            }
-
-           // Data_Type is optional... if null, try to solve what this is based on IS*N field(s)
-           // (If ISBN *and* one of ISSN/eISSN are present, treat it as a Journal)
-           // Since this is a TR report... if its neither a Journal OR a Book, skip it.
-            $_data_type = (isset($item->Data_Type)) ? $item->Data_Type : "";
-            if ($_data_type == "") {
-                if ($_ISSN == "" && $_eISSN = "") {
-                    if ($_ISBN == "") {
-                       // No IS*N provided... skip the record
-                        continue;
-                    } else {
-                        $_data_type = "Book";
-                    }
-                } else {
-                    $_data_type = "Journal";
+                if ($item->Access_Type != "") {
+                    $accesstype = AccessType::firstOrCreate(['name' => $item->Access_Type]);
+                    $accesstype_id = $accesstype->id;
                 }
             }
-            if ($_data_type != "Journal" && $_data_type != "Book") {
-                // Unrecognized Data_Type... skip the record
-                 continue;
-             }
+
+            $accessmethod_id = null;
+            if (isset($item->Access_Method)) {
+                if ($item->Access_Method != "") {
+                    $accessmethod = AccessMethod::firstOrCreate(['name' => $item->Access_Method]);
+                    $accessmethod_id = $accessmethod->id;
+                }
+            }
+
+            $sectiontype_id = null;
+            if (isset($item->Section_Type)) {
+                if ($item->Section_Type != "") {
+                    $sectiontype = SectionType::firstOrCreate(['name' => $item->Section_Type]);
+                    $sectiontype_id = $sectiontype->id;
+                }
+            }
+
+            $datatype_id = null;
+            if (isset($item->Data_Type)) {
+                if ($item->Data_Type != "") {
+                    $datatype = DataType::firstOrCreate(['name' => $item->Data_Type]);
+                    $datatype_id = $datatype->id;
+                }
+            }
 
            // Get or Create Journal-or-Book entries based on Title and Proprietary_ID
            // Store the other Item_ID fields in the Journal/Book table
-            if ($_data_type == "Journal") {
-                $journal = firstOrCreate(['Title' => $_title, 'PropID' => $_PropID],
+           // ALL 3 sections need re-working ... live w/ this for the time-being
+            $jrnl_id = null;
+            $book_id = null;
+            $item_id = null;
+            if ($datatype->name == "Journal") {
+                $journal = Journal::firstOrCreate(['Title' => $_title, 'PropID' => $_PropID],
                                          ['ISSN' => $_ISSN, 'eISSN' => $_eISSN, 'DOI' => $_DOI, 'URI' => $_URI]);
-                $_jrnl_id = $journal->id;
-                $_book_id = null;
-                $datatype_id = $journal_datatype->id;
+                $jrnl_id = $journal->id;
                // If existing journal fields are null try to update them
-                if ($journal->wasRecentlyCreated() === false ) {
-                    if ($journal->ISSN == "" && $_ISSN != "") $journal->ISSN = $_ISSN;
-                    if ($journal->eISSN == "" && $_eISSN != "") $journal->eISSN = $_eISSN;
-                    if ($journal->DOI == "" && $_DOI != "") $journal->DOI = $_DOI;
-                    if ($journal->URI == "" && $_URI != "") $journal->URI = $_URI;
-                    if ($journal->ISSN != $_ISSN || $journal->eISSN != $_eISSN ||
-                        $journal->DOI != $_DOI || $journal->URI != $_URI) $journal->save();
+                $save_it = false;
+                if ($journal->ISSN == "" && $_ISSN != "") {
+                    $save_it = true;
+                    $journal->ISSN = $_ISSN;
                 }
-            } else {    // Book
-                $book = firstOrCreate(['Title' => $_title, 'PropID' => $_PropID],
+                if ($journal->eISSN == "" && $_eISSN != "") {
+                    $save_it = true;
+                    $journal->eISSN = $_eISSN;
+                }
+                if ($journal->DOI == "" && $_DOI != "") {
+                    $save_it = true;
+                    $journal->DOI = $_DOI;
+                }
+                if ($journal->URI == "" && $_URI != "") {
+                    $save_it = true;
+                    $journal->URI = $_URI;
+                }
+                if ($save_it) $journal->save();
+            } else if ($datatype->name == "Book") {
+                $book = Book::firstOrCreate(['Title' => $_title, 'PropID' => $_PropID],
                                       ['ISBN' => $_ISBN, 'DOI' => $_DOI, 'URI' => $_URI]);
-                $_book_id = $book->id;
-                $_jrnl_id = null;
-                $datatype_id = $book_datatype->id;
+                $book_id = $book->id;
                // If existing book fields are null try to update them
-                if ($book->wasRecentlyCreated() === false ) {
-                    if ($book->ISBN == "" && $_ISBN != "") $book->ISBN = $_ISBN;
-                    if ($book->DOI == "" && $_DOI != "") $book->DOI = $_DOI;
-                    if ($book->URI == "" && $_URI != "") $book->URI = $_URI;
-                    if ($book->ISBN != $_ISBN || $book->DOI != $_DOI || $book->URI != $_URI) $book->save();
-                 }
+                $save_it = false;
+                if ($journal->ISBN == "" && $_ISBN != "") {
+                    $save_it = true;
+                    $book->ISBN = $_ISBN;
+                }
+                if ($book->DOI == "" && $_DOI != "") {
+                    $save_it = true;
+                    $book->DOI = $_DOI;
+                }
+                if ($book->URI == "" && $_URI != "") {
+                    $save_it = true;
+                    $book->URI = $_URI;
+                }
+                if ($save_it) $book->save();
+            } else {   // Not a Journal or Book, treat as an Item
+                $item = Item::firstOrCreate(['Title' => $_title, 'PropID' => $_PropID],
+                                      ['DOI' => $_DOI, 'URI' => $_URI, 'YOP' => $_YOP, 'ISSN' => $_ISSN,
+                                       'ISBN' => $_ISBN, 'eISSN' => $_eISSN]);
+                $item_id = $item->id;
             }
 
            // Loop $item->Performance elements and store counts when time-periods match
@@ -214,11 +209,11 @@ class Counter5Processor extends Model
             }         // foreach performance clause
 
            // Insert the record
-            TitleReport::insert(['jrnl_id' => $_jrnl_id, 'book_id' => $_book_id, 'prov_id' => self::$prov,
-                  'publisher_id' => $publisher->id, 'plat_id' => $platform->id, 'inst_id' => self::$inst,
-                  'yearmon' => self::$yearmon, 'DOI' => $_DOI, 'PropID' => $_PropID, 'URI' => $_URI,
-                  'datatype_id' => $datatype_id, 'sectiontype_id' => $sectiontype_id, 'YOP' => $_YOP,
-                  'accesstype_id' => $accesstype_id, 'accessmethod_id' => $accessmethod_id,
+            TitleReport::insert(['jrnl_id' => $jrnl_id, 'book_id' => $book_id, 'item_id' => $item_id,
+                  'prov_id' => self::$prov, 'publisher_id' => $publisher_id, 'plat_id' => $platform_id,
+                  'inst_id' => self::$inst, 'yearmon' => self::$yearmon, 'datatype_id' => $datatype_id,
+                  'sectiontype_id' => $sectiontype_id, 'YOP' => $_YOP, 'accesstype_id' => $accesstype_id,
+                  'accessmethod_id' => $accessmethod_id,
                   'total_item_investigations' => $ICounts['Total_Item_Investigations'],
                   'total_item_requests' => $ICounts['Total_Item_Requests'],
                   'unique_item_investigations' => $ICounts['Unique_Item_Investigations'],
@@ -261,72 +256,55 @@ class Counter5Processor extends Model
 
        // Loop through all ReportItems
         foreach ($ReportItems as $item) {
-            // Publisher is required; if Null, skip the item.
-            // Allow a null value for Publisher_ID
-             $_publisher = (isset($item->Publisher)) ? $item->Publisher : "";
-             $_publisher_id = (isset($item->Publisher_ID)) ? $item->Publisher_ID : "";
-             if ($_publisher == "") {
-                 continue;
-             }
-            // Get or create Publisher for this item
-             $publisher = Publisher::firstOrCreate(['name' => $_publisher], ['Publisher_ID' => $_publisher_id]);
-            // Update Publisher_ID if saved value is null and this item has a value
-             if ( ($publisher->Publisher_ID=="") && ($_publisher_id!="") ) {
-                 $publisher->Publisher_ID = $_publisher_id;
-                 $publisher->save();
-             }
+           // Database is required; if Null, skip the record.
+            $_database = (isset($item->Database)) ? $item->Database : "";
+            if ($_database == "") continue;
+            $database = DataBase::firstOrCreate(['name' => $_database]);
 
-            // Platform is required; if Null, skip the item.
-             $_platform = (isset($item->Platform)) ? $item->Platform : "";
-             if ($_platform == "") {
-                 continue;
-             }
-            // Get or create Platform for this item.
-             $platform = Platform::firstOrCreate(['name' => $_platform]);
-
-            // Database is required; if Null, skip the item.
-             $_database = (isset($item->Database)) ? $item->Database : "";
-            if ($_database == "") {
-                continue;
+           // Get Publisher
+            $publisher_id = null;
+            $_publisher = (isset($item->Publisher)) ? $item->Publisher : "";
+            if ($_publisher != "") {
+               // Get or create Publisher for this item
+                $publisher = Publisher::firstOrCreate(['name' => $_publisher]);
+                $publisher_id = $publisher->id;
             }
 
-            // Get DOI for this item.
-             $_PropID = "";
-             if (isset($item->PropID)) {
-                 foreach ( $item->PropID as $_id ) {
-                     if ( $_id->Type == "Proprietary" ) { $_PropID = $_id->Value; }
-                 }
-             }
+           // Get Platform
+            $platform_id = null;
+            $_platform = (isset($item->Platform)) ? $item->Platform : "";
+            if ($_platform != "") {
+               // Get or create Platform for this item.
+                $platform = Platform::firstOrCreate(['name' => $_platform]);
+                $platform_id = $platform->id;
+            }
 
-            // Get or create DataBase for this item.
-             $database = Database::firstOrCreate(['name' => $_database]);
+           // Get DOI for this item, and update model if necessary
+            $_PropID = "";
+            if (isset($item->PropID)) {
+                foreach ( $item->PropID as $_id ) {
+                    if ($_id->Type == "Proprietary") $_PropID = $_id->Value;
+                }
+                if ($_PropID!=$database->PropID) {
+                    $database->PropID = $_PropID;
+                    $database->save();
+                }
+            }
 
-            // Update DOI if necessary
-             if ( ($_PropID!="") && ($_PropID!=$database->PropID) ) {
-                 $database->PropID = $_PropID;
-                 $database->save();
-             }
-
-            // Pick up the optional attributes
+           // Pick up the optional attributes
+            $datatype_id = null;
             if (isset($item->Data_Type)) {
                 $datatype = DataType::firstOrCreate(['name' => $item->Data_Type]);
                 $datatype_id = $datatype->id;
-                $datatype_name = $datatype->name;
-            } else {
-                $datatype_id = null;
-                $datatype_name = "";
             }
 
+            $accessmethod_id = null;
             if (isset($item->Access_Method)) {
                 $accessmethod = AccessMethod::firstOrCreate(['name' => $item->Access_Method]);
                 $accessmethod_id = $accessmethod->id;
-                $accessmethod_name = $accessmethod->name;
-            } else {
-                $accessmethod_id = null;
-                $accessmethod_name = "";
             }
 
-            // Loop $item->Performance elements and store counts when time-periods match
+           // Loop $item->Performance elements and store counts when time-periods match
             foreach ($item->Performance as $perf) {
                 if (
                     $perf->Period->Begin_Date == self::$begin  &&
@@ -338,9 +316,8 @@ class Counter5Processor extends Model
                 }
             }         // foreach performance clause
 
-            // Insert the record
-             DatabaseReport::insert(['db_id' => $database->id, 'prov_id' => self::$prov, 'plat_id' => $platform->id,
-                       'inst_id' => self::$inst, 'yearmon' => self::$yearmon,
+            DatabaseReport::insert(['db_id' => $database->id, 'prov_id' => self::$prov, 'plat_id' => $platform_id,
+                       'publisher_id' => $publisher_id, 'inst_id' => self::$inst, 'yearmon' => self::$yearmon,
                        'datatype_id' => $datatype_id, 'accessmethod_id' => $accessmethod_id,
                        'searches_automated' => $ICounts['Searches_Automated'],
                        'searches_federated' => $ICounts['Searches_Federated'],
@@ -387,30 +364,24 @@ class Counter5Processor extends Model
         foreach ($ReportItems as $item) {
            // Platform is required; if Null, skip the item.
             $_platform = (isset($item->Platform)) ? $item->Platform : "";
-            if ($_platform == "") {
-                continue;
-            }
-
-           // Get or create Platform for this item.
+            if ($_platform == "") continue;
             $platform = Platform::firstOrCreate(['name' => $item->Platform]);
 
-            // Pick up the optional attributes
+           // Pick up the optional attributes
+            $datatype_id = null;
             if (isset($item->Data_Type)) {
-                $datatype = DataType::firstOrCreate(['name' => $item->Data_Type]);
-                $datatype_id = $datatype->id;
-                $datatype_name = $datatype->name;
-            } else {
-                $datatype_id = null;
-                $datatype_name = "";
+                if ($item->Data_Type != "") {
+                    $datatype = DataType::firstOrCreate(['name' => $item->Data_Type]);
+                    $datatype_id = $datatype->id;
+                }
             }
 
+            $accessmethod_id = null;
             if (isset($item->Access_Method)) {
-                $accessmethod = AccessMethod::firstOrCreate(['name' => $item->Access_Method]);
-                $accessmethod_id = $accessmethod->id;
-                $accessmethod_name = $accessmethod->name;
-            } else {
-                $accessmethod_id = null;
-                $accessmethod_name = "";
+                if ($item->Access_Method != "") {
+                    $accessmethod = AccessMethod::firstOrCreate(['name' => $item->Access_Method]);
+                    $accessmethod_id = $accessmethod->id;
+                }
             }
 
            // Loop $item->Performance elements and store counts when time-periods match

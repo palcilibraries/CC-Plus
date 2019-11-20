@@ -156,6 +156,7 @@ class SushiIngestCommand extends Command
 
                // Loop through all reports for this provider
                 foreach ($provider->reports as $report) {
+                    if ( $report->name =="TR") continue;
                     $this->line("Requesting " . $report->name . " for " . $provider->name);
 
                    // Set output filename for raw data
@@ -189,7 +190,8 @@ class SushiIngestCommand extends Command
                    // Error-Handling needs work... and probably needs a class unto itself
                    // This is currently catches "Queued" response and sleeps to retry.
                    // Any other error/exception is treated as fatal...
-                    while ($queue_retries <= env('SUSHI_RETRY_LIMIT', 20)  && $req_state == "queued") {
+                    // while ($queue_retries <= env('SUSHI_RETRY_LIMIT', 20)  && $req_state == "queued") {
+                    while ($queue_retries <= 20  && $req_state == "queued") {
                        // Make the request and convert into JSON
                         $result = $client->get($request_uri);
                         $json = json_decode($result->getBody());
@@ -198,7 +200,8 @@ class SushiIngestCommand extends Command
                             if ($json->Code == 1011 ) {
                                 $queue_retries++;
                                 $this->line("Queued ... sleeping: " . $json->Message . "(" . $json->Code . ") ...");
-                                sleep(SUSHI_RETRY_SLEEP);
+                                // sleep(SUSHI_RETRY_SLEEP);
+                                sleep(30);
                                 $this->line("Retrying");
                                 $req_state = "queued";
                                 continue;
@@ -215,7 +218,8 @@ class SushiIngestCommand extends Command
                                         $queue_retries++;
                                         $this->line("Queued ... sleeping: " . $_exep->Message . "(" .
                                                                               $_exep->Code . ") ...");
-                                        sleep(SUSHI_RETRY_SLEEP);
+                                        // sleep(SUSHI_RETRY_SLEEP);
+                                        sleep(30);
                                         $this->line("Retrying");
                                         $req_state = "queued";
                                         continue 2;

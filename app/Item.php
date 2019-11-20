@@ -20,7 +20,7 @@ class Item extends Model
      * @var array
      */
     protected $fillable = [
-        'name', 'platform_id', 'authors', 'pub_date', 'article_version', 'DOI',
+        'Title', 'authors', 'pub_date', 'article_version', 'DOI',
         'PropID', 'ISBN', 'ISSN', 'eISSN', 'URI',  'parent_title', 'parent_authors',
         'parent_article_version', 'parent_DOI', 'parent_PropID', 'parent_ISSN',
         'parent_eISSN', 'parent_URI', 'data_type', 'access_type',

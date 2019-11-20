@@ -18,7 +18,8 @@ class CreateIrReportDataTable extends Migration
 
             $table->bigInteger('item_id')->unsigned();
             $table->unsignedInteger('prov_id');
-            $table->unsignedInteger('plat_id');
+            $table->unsignedInteger('publisher_id')->nullable();
+            $table->unsignedInteger('plat_id')->nullable();
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
             $table->unsignedInteger('datatype_id')->nullable();

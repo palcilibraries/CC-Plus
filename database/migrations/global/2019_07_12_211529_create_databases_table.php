@@ -16,7 +16,7 @@ class CreateDatabasesTable extends Migration
         Schema::create('databases', function (Blueprint $table) {
             $table->Increments('id');
             $table->string('name');
-            $table->string('PropID', 128);
+            $table->string('PropID', 128)->nullable();
             $table->timestamps();
         });
     }

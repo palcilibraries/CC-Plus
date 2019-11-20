@@ -15,8 +15,7 @@ class CreateItemsTable extends Migration
     {
         Schema::create('items', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('name');
-            $table->unsignedInteger('platform_id');
+            $table->string('Title')->nullable();
             $table->string('authors')->nullable();
             $table->string('pub_date', 10)->nullable();
             $table->string('article_version', 10)->nullable();
@@ -49,8 +48,6 @@ class CreateItemsTable extends Migration
             $table->string('component_eISSN', 9)->nullable();
             $table->string('component_URI', 128)->nullable();
             $table->timestamps();
-
-            $table->foreign('platform_id')->references('id')->on('platforms');
         });
     }
 

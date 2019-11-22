@@ -14,27 +14,25 @@ use App\Institution;
 use App\Counter5Validator;
 use App\Counter5Processor;
 
-class SushiIngestCommand extends Command
+class C5TestCommand extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'sushi:ingest {consortium : The Consortium ID}
-                             {--A|auto : Limit ingest to provider day_of_month [FALSE]}
+    protected $signature = 'sushi:C5test {infile : The input file}
                              {--M|month= : YYYY-MM to process  [lastmonth]}
                              {--P|provider= : Provider ID to process [ALL]}
                              {--I|institution= : Institution ID to process[ALL]}
-                             {--R|report= : Report Name to request [ALL]}
-                             {--retry= : ID of a failedingest to rerun}';
+                             {--R|report= : Report Name to request [ALL]}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Run SUSHI Ingest for a single consortium';
+    protected $description = 'Test Counter processing for a given input file';
 
     /**
      * Create a new command instance.
@@ -54,8 +52,8 @@ class SushiIngestCommand extends Command
     public function handle()
     {
        // Required arguments
-        $con_id = $this->argument('consortium');
-        $consortium = Consortium::findOrFail($con_id);
+        $infile = $this->argument('infile');
+        $consortium = Consortium::findOrFail(1);
 
        // Aim the consodb connection at specified consortium's database
         config(['database.connections.consodb.database' => 'ccplus_' . $consortium->ccp_key]);
@@ -66,8 +64,7 @@ class SushiIngestCommand extends Command
         $month  = is_null($this->option('month')) ? 'lastmonth' : $this->option('month');
         $prov_id = is_null($this->option('provider')) ? 0 : $this->option('provider');
         $inst_id = is_null($this->option('institution')) ? 0 : $this->option('institution');
-        $rept = is_null($this->option('report')) ? 'ALL' : $this->option('report');
-        $retry_id = is_null($this->option('retry')) ? 0 : $this->option('retry');
+        $rept = $this->option('report');
 
        // Setup month string for pulling the report and begin/end for parsing
        //
@@ -81,44 +78,24 @@ class SushiIngestCommand extends Command
         $begin .= '-01';
         $end .= '-' . date('t', strtotime($end . '-01'));
 
-       // Get detail on reports requested
-        if (strtoupper($rept) == 'ALL') {
-            $rept = Report::all();
-        } else {
-            $reports = Report::where('name', '=', $rept)->get();
-        }
+       // Get detail on report
+        $reports = Report::where('name', '=', $rept)->get();
         if ($reports->isEmpty()) {
             $this->error("No matching reports found");
             exit;
         }
 
        // Get Provider data as a collection regardless of whether we just need one
-        if ($prov_id == 0) {
-            $providers = Provider::where('is_active', '=', true)->get();
-        } else {
-            // $providers = Provider::where('is_active', '=', true)->findOrFail($prov_id);
-            $providers = Provider::where('is_active', '=', true)->where('id', '=', $prov_id)->get();
-        }
+        $providers = Provider::where('is_active', '=', true)->where('id', '=', $prov_id)->get();
 
        // Get Institution data
-        if ($inst_id == 0) {
-            $institutions = Institution::where('is_active', '=', true)->pluck('name', 'id');
-        } else {
-            // $institutions = Institution::findOrFail($inst_id)->where('is_active', '=', true)
-            //                              ->pluck('name', 'id');
-            $institutions = Institution::where('is_active', '=', true)->where('id', '=', $inst_id)
+        $institutions = Institution::where('is_active', '=', true)->where('id', '=', $inst_id)
                                        ->pluck('name', 'id');
-        }
 
        // Loop through providers
         $logmessage = false;
         $client = new Client();   //GuzzleHttp\Client
         foreach ($providers as $provider) {
-
-           // If running as "Auto" and today is not the day to run, skip silently to next provider
-            if ($this->option('auto') && $provider->day_of_month != date('j')) {
-                continue;
-            }
 
            // Skip this provider if there are no reports defined for it
             if (count($provider->reports) == 0) {
@@ -156,7 +133,7 @@ class SushiIngestCommand extends Command
 
                // Loop through all reports for this provider
                 foreach ($provider->reports as $report) {
-                    // if ( $report->name =="TR") continue;
+                    if ( $report->name != $rept) continue;
                     $this->line("Requesting " . $report->name . " for " . $provider->name);
 
                    // Set output filename for raw data
@@ -182,66 +159,17 @@ class SushiIngestCommand extends Command
 
                    // Construct URI for the request
                     $request_uri = $base_uri . $report->name . $uri_args . $uri_atts;
+                    $this->line("Requested URI would be: " . $request_uri);
 
-                   // Loop up to retry-limit asking for the report
-                    $queue_retries = 0;
-                    $req_state = "queued";
-
-                   // Error-Handling needs work... and probably needs a class unto itself
-                   // This is currently catches "Queued" response and sleeps to retry.
-                   // Any other error/exception is treated as fatal...
-                    // while ($queue_retries <= env('SUSHI_RETRY_LIMIT', 20)  && $req_state == "queued") {
-                    while ($queue_retries <= 20  && $req_state == "queued") {
-                       // Make the request and convert into JSON
-                        $result = $client->get($request_uri);
-                        $json = json_decode($result->getBody());
-
-                        if (isset($json->Code)) {
-                            if ($json->Code == 1011 ) {
-                                $queue_retries++;
-                                $this->line("Queued ... sleeping: " . $json->Message . "(" . $json->Code . ") ...");
-                                // sleep(SUSHI_RETRY_SLEEP);
-                                sleep(30);
-                                $this->line("Retrying");
-                                $req_state = "queued";
-                                continue;
-                            } else {
-                               $this->line("Error returned: (" . $json->Severity . "),  Code: " . $json->Code);
-                               $this->line("Message: " . $json->Message);
-                               exit();
-                            }
-                        }
-                        if (isset($json->Report_Header)) {
-                            if (isset($json->Report_Header->Exceptions)) {
-                                foreach ($json->Report_Header->Exceptions as $_exep) {
-                                    if ( $_exep->Code == 1011 ) {
-                                        $queue_retries++;
-                                        $this->line("Queued ... sleeping: " . $_exep->Message . "(" .
-                                                                              $_exep->Code . ") ...");
-                                        // sleep(SUSHI_RETRY_SLEEP);
-                                        sleep(30);
-                                        $this->line("Retrying");
-                                        $req_state = "queued";
-                                        continue 2;
-                                    } else {
-                                       $this->line("Exception: (" . $_exep->Severity . "), Code: " . $_exep->Code);
-                                       $this->line("Message: " . $_exep->Message);
-                                       exit();
-                                    }
-                                }
-                            }
-                            if (isset($json->Report_Items)) {
-                                $req_state = "done";
-                                if (!is_null(env('CCP_REPORTS'))) file_put_contents($raw_datafile,$json);
-                            } else {
-                                $this->line("SUSHI error - no Report_Items! Requested URI was: " . $request_uri);
-                                exit;
-                            }
-                        } else {
-                            $this->line("SUSHI error - no Report_Header! Requested URI was: " . $request_uri);
-                            exit;
-                        }
-                    } // while retries remaining
+                    $json_text = file_get_contents($infile);
+                    if ($json_text === false) {
+                        $this->line("System Error - reading file {$infile} failed");
+                        exit;
+                    }
+                    $json = json_decode($json_text);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        $this->line("Error decoding JSON - " . json_last_error_msg());
+                    }
 
                    // Validate report
                     $C5validator = new Counter5Validator($json);
@@ -249,13 +177,10 @@ class SushiIngestCommand extends Command
                    // Parse and store the report if it's valid
                     if ($C5validator->{$report->name}()) {
                         $result = $C5processor->{$report->name}($C5validator->report);
-                    } else {
-                        // Signal / Log / Report error
-                        // $C5validator->error holds detail
                     }
                 }  // foreach reports
             }  // foreach sushisettings
         }  // foreach providers
-        $this->line("Ingest completed: " . date("Y-m-d H:i:s"));
+        $this->line("Test completed: " . date("Y-m-d H:i:s"));
     }
 }

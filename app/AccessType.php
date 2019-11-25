@@ -11,18 +11,18 @@ class AccessType extends Model
      *
      * @var string
      */
-     protected $connection = 'globaldb';
-     protected $table = 'accesstypes';
+    protected $connection = 'globaldb';
+    protected $table = 'accesstypes';
 
      /**
       * The attributes that are mass assignable.
       *
       * @var array
       */
-     protected $fillable = [ 'id', 'name'];
+    protected $fillable = [ 'id', 'name'];
 
-     public function titleReports()
-     {
-         return $this->hasMany('App\TitleReport');
-     }
- }
+    public function titleReports()
+    {
+        return $this->hasMany('App\TitleReport');
+    }
+}

@@ -49,5 +49,4 @@ class PlatformReport extends Model
     {
         return $this->belongsTo('App\DataType', 'datatype_id');
     }
-
 }

@@ -11,34 +11,33 @@ class DataType extends Model
      *
      * @var string
      */
-     protected $connection = 'globaldb';
-     protected $table = 'datatypes';
+    protected $connection = 'globaldb';
+    protected $table = 'datatypes';
 
      /**
       * The attributes that are mass assignable.
       *
       * @var array
       */
-     protected $fillable = [ 'id', 'name'];
+    protected $fillable = [ 'id', 'name'];
 
-     public function databaseReports()
-     {
-         return $this->hasMany('App\DatabaseReport');
-     }
+    public function databaseReports()
+    {
+        return $this->hasMany('App\DatabaseReport');
+    }
 
-     public function platformReports()
-     {
-         return $this->hasMany('App\PlatformReport');
-     }
+    public function platformReports()
+    {
+        return $this->hasMany('App\PlatformReport');
+    }
 
-     public function titleReports()
-     {
-         return $this->hasMany('App\TitleReport');
-     }
+    public function titleReports()
+    {
+        return $this->hasMany('App\TitleReport');
+    }
 
-     public function itemReports()
-     {
-         return $this->hasMany('App\ItemReport');
-     }
-
+    public function itemReports()
+    {
+        return $this->hasMany('App\ItemReport');
+    }
 }

@@ -114,7 +114,6 @@ class SushiIngestCommand extends Command
         $logmessage = false;
         $client = new Client();   //GuzzleHttp\Client
         foreach ($providers as $provider) {
-
            // If running as "Auto" and today is not the day to run, skip silently to next provider
             if ($this->option('auto') && $provider->day_of_month != date('j')) {
                 continue;
@@ -141,9 +140,8 @@ class SushiIngestCommand extends Command
 
            // Loop through all sushisettings for this provider
             foreach ($provider->sushisettings as $setting) {
-
                // Skip this setting if we're just processing a single inst and the IDs don't match
-                if ( ($inst_id != 0) && ($setting->inst_id != $inst_id) ) {
+                if (($inst_id != 0) && ($setting->inst_id != $inst_id)) {
                     continue;
                 }
 
@@ -160,9 +158,10 @@ class SushiIngestCommand extends Command
                     $this->line("Requesting " . $report->name . " for " . $provider->name);
 
                    // Set output filename for raw data
-                    if (!is_null(env('CCP_REPORTS')))
+                    if (!is_null(env('CCP_REPORTS'))) {
                         $raw_datafile = $report_path . '/' . $setting->institution->name . '/' . $provider->name .
                                         '/' . $report->name . '_' . $begin . '_' . $end . '.json';
+                    }
 
                    // Setup attributes for the request
                     if ($report->name == "TR") {
@@ -197,7 +196,7 @@ class SushiIngestCommand extends Command
                         $json = json_decode($result->getBody());
 
                         if (isset($json->Code)) {
-                            if ($json->Code == 1011 ) {
+                            if ($json->Code == 1011) {
                                 $queue_retries++;
                                 $this->line("Queued ... sleeping: " . $json->Message . "(" . $json->Code . ") ...");
                                 // sleep(SUSHI_RETRY_SLEEP);
@@ -206,15 +205,15 @@ class SushiIngestCommand extends Command
                                 $req_state = "queued";
                                 continue;
                             } else {
-                               $this->line("Error returned: (" . $json->Severity . "),  Code: " . $json->Code);
-                               $this->line("Message: " . $json->Message);
-                               exit();
+                                $this->line("Error returned: (" . $json->Severity . "),  Code: " . $json->Code);
+                                $this->line("Message: " . $json->Message);
+                                exit();
                             }
                         }
                         if (isset($json->Report_Header)) {
                             if (isset($json->Report_Header->Exceptions)) {
                                 foreach ($json->Report_Header->Exceptions as $_exep) {
-                                    if ( $_exep->Code == 1011 ) {
+                                    if ($_exep->Code == 1011) {
                                         $queue_retries++;
                                         $this->line("Queued ... sleeping: " . $_exep->Message . "(" .
                                                                               $_exep->Code . ") ...");
@@ -224,15 +223,17 @@ class SushiIngestCommand extends Command
                                         $req_state = "queued";
                                         continue 2;
                                     } else {
-                                       $this->line("Exception: (" . $_exep->Severity . "), Code: " . $_exep->Code);
-                                       $this->line("Message: " . $_exep->Message);
-                                       exit();
+                                        $this->line("Exception: (" . $_exep->Severity . "), Code: " . $_exep->Code);
+                                        $this->line("Message: " . $_exep->Message);
+                                        exit();
                                     }
                                 }
                             }
                             if (isset($json->Report_Items)) {
                                 $req_state = "done";
-                                if (!is_null(env('CCP_REPORTS'))) file_put_contents($raw_datafile,$json);
+                                if (!is_null(env('CCP_REPORTS'))) {
+                                    file_put_contents($raw_datafile, $json);
+                                }
                             } else {
                                 $this->line("SUSHI error - no Report_Items! Requested URI was: " . $request_uri);
                                 exit;

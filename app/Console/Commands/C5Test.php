@@ -96,7 +96,6 @@ class C5TestCommand extends Command
         $logmessage = false;
         $client = new Client();   //GuzzleHttp\Client
         foreach ($providers as $provider) {
-
            // Skip this provider if there are no reports defined for it
             if (count($provider->reports) == 0) {
                 $this->line($provider->name . " has no reports defined; skipping...");
@@ -118,9 +117,8 @@ class C5TestCommand extends Command
 
            // Loop through all sushisettings for this provider
             foreach ($provider->sushisettings as $setting) {
-
                // Skip this setting if we're just processing a single inst and the IDs don't match
-                if ( ($inst_id != 0) && ($setting->inst_id != $inst_id) ) {
+                if (($inst_id != 0) && ($setting->inst_id != $inst_id)) {
                     continue;
                 }
 
@@ -133,13 +131,16 @@ class C5TestCommand extends Command
 
                // Loop through all reports for this provider
                 foreach ($provider->reports as $report) {
-                    if ( $report->name != $rept) continue;
+                    if ($report->name != $rept) {
+                        continue;
+                    }
                     $this->line("Requesting " . $report->name . " for " . $provider->name);
 
                    // Set output filename for raw data
-                    if (!is_null(env('CCP_REPORTS')))
+                    if (!is_null(env('CCP_REPORTS'))) {
                         $raw_datafile = $report_path . '/' . $setting->institution->name . '/' . $provider->name .
                                         '/' . $report->name . '_' . $begin . '_' . $end . '.json';
+                    }
 
                    // Setup attributes for the request
                     if ($report->name == "TR") {

@@ -16,14 +16,12 @@ class CreateJournalsTable extends Migration
         Schema::create('journals', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('Title');
-            $table->string('ISSN');
-            $table->string('eISSN');
+            $table->string('ISSN')->nullable();
+            $table->string('eISSN')->nullable();
             $table->string('DOI', 128)->nullable();
             $table->string('PropID', 128)->nullable();
             $table->string('URI', 128)->nullable();
             $table->timestamps();
-
-            // $table->foreign('owner_id')->references('id')->on('users');
         });
     }
 

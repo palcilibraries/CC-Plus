@@ -137,5 +137,4 @@ class ConsortiumCommand extends Command
 
         $this->line('<fg=cyan>New consortium : ' . $conso_data['name'] . ' Successfully Created.');
     }
-    
 }

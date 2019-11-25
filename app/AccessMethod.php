@@ -11,18 +11,18 @@ class AccessMethod extends Model
      *
      * @var string
      */
-     protected $connection = 'globaldb';
-     protected $table = 'accessmethods';
+    protected $connection = 'globaldb';
+    protected $table = 'accessmethods';
 
      /**
       * The attributes that are mass assignable.
       *
       * @var array
       */
-     protected $fillable = [ 'id', 'name'];
+    protected $fillable = [ 'id', 'name'];
 
-     public function titleReports()
-     {
-         return $this->hasMany('App\TitleReport');
-     }
+    public function titleReports()
+    {
+        return $this->hasMany('App\TitleReport');
+    }
 }

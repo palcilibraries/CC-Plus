@@ -20,10 +20,8 @@ class Item extends Model
      * @var array
      */
     protected $fillable = [
-        'Title', 'authors', 'pub_date', 'article_version', 'DOI',
-        'PropID', 'ISBN', 'ISSN', 'eISSN', 'URI',  'parent_title', 'parent_authors',
-        'parent_article_version', 'parent_DOI', 'parent_PropID', 'parent_ISSN',
-        'parent_eISSN', 'parent_URI', 'data_type', 'access_type',
+        'Name', 'authors', 'pub_date', 'article_version', 'DOI', 'PropID', 'ISBN', 'ISSN', 'eISSN', 'URI',
+        'parent_id', 'parent_datatype_id', 'component_id', 'component_datatype_id'
     ];
 
     public function itemReports()

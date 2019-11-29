@@ -22,11 +22,16 @@ class CreateTempIrTable extends Migration
             $table->unsignedInteger('plat_id')->nullable();
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
+            $table->string('YOP', 9)->nullable();
             $table->unsignedInteger('datatype_id')->nullable();
             $table->unsignedInteger('accesstype_id')->nullable();
             $table->unsignedInteger('accessmethod_id')->default(1);
             $table->unsignedInteger('total_item_requests');
+            $table->unsignedInteger('total_item_investigations');
             $table->unsignedInteger('unique_item_requests');
+            $table->unsignedInteger('unique_item_investigations');
+            $table->unsignedInteger('limit_exceeded');
+            $table->unsignedInteger('no_license');
             $table->timestamps();
 
             $table->foreign('item_id')->references('id')->on($global_db . '.items');

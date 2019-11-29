@@ -4,18 +4,6 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use DB;
-use App\Provider;
-use App\Platform;
-use App\Publisher;
-use App\Institution;
-use App\PlatformReport;
-use App\TitleReport;
-use App\DatabaseReport;
-use App\ItemReport;
-use App\DataType;
-use App\AccessMethod;
-use App\AccessType;
-use App\SectionType;
 
 class Counter5Processor extends Model
 {
@@ -79,8 +67,12 @@ class Counter5Processor extends Model
             $platform_id = (isset($reportitem->Platform)) ? self::getPlatform($reportitem->Platform) : null;
 
            // Get Title and Item_ID fields
-            $_title = (isset($reportitem->Title)) ? $reportitem->Title : "";
-            $Item_ID = self::itemIDValues($reportitem->Item_ID);
+            $_title = (isset($reportitem->Title)) ? substr($reportitem->Title,0,256) : "";
+
+           // If no Title or Item_ID skip the item..
+            if ($_title == "" && !isset($reportitem->Item_ID)) continue;
+            $_item_id = (isset($reportitem->Item_ID)) ? $reportitem->Item_ID : array();
+            $Item_ID = self::itemIDValues($_item_id);
 
            // Pick up the optional attributes
             $_YOP = (isset($reportitem->YOP)) ? $reportitem->YOP : "";
@@ -100,37 +92,21 @@ class Counter5Processor extends Model
             $book_id = null;
             $item_id = null;
             if ($datatype->name == "Journal") {
-                $journal = self::journalFindOrCreate(
-                    $_title,
-                    $Item_ID['PropID'],
-                    $Item_ID['ISSN'],
-                    $Item_ID['eISSN'],
-                    $Item_ID['DOI'],
-                    $Item_ID['URI']
+                $journal = self::journalFindOrCreate($_title,$Item_ID['PropID'],$Item_ID['ISSN'],$Item_ID['eISSN'],
+                                                     $Item_ID['DOI'],$Item_ID['URI']
                 );
-                if (is_null($journal)) {
-                    continue;
-                }
+                if (is_null($journal)) continue;
                 $jrnl_id = $journal->id;
             } elseif ($datatype->name == "Book") {
-                $book = self::bookFindOrCreate(
-                    $_title,
-                    $Item_ID['PropID'],
-                    $Item_ID['ISBN'],
-                    $Item_ID['DOI'],
-                    $Item_ID['URI']
-                );
-                if (is_null($book)) {
-                    continue;
-                }
+                $book = self::bookFindOrCreate($_title,$Item_ID['PropID'],$Item_ID['ISBN'],$Item_ID['DOI'],
+                                               $Item_ID['URI']);
+                if (is_null($book)) continue;
                 $book_id = $book->id;
             } else {   // Not a Journal or Book, treat as an Item
-                $item = Item::firstOrCreate(
-                    ['Title' => $_title, 'PropID' => $Item_ID['PropID']],
-                    ['DOI' => $Item_ID['DOI'], 'URI' => $Item_ID['URI'], 'YOP' => $_YOP,
-                                       'ISSN' => $Item_ID['ISSN'], 'ISBN' => $Item_ID['ISBN'],
-                    'eISSN' => $Item_ID['eISSN']]
-                );
+                $item = Item::firstOrCreate(['Name' => $_title, 'PropID' => $Item_ID['PropID'], 'YOP' => $_YOP],
+                                            ['DOI' => $Item_ID['DOI'], 'URI' => $Item_ID['URI'],
+                                             'ISSN' => $Item_ID['ISSN'], 'ISBN' => $Item_ID['ISBN'],
+                                             'eISSN' => $Item_ID['eISSN']]);
                 $item_id = $item->id;
             }
 
@@ -205,10 +181,11 @@ class Counter5Processor extends Model
              $platform_id = (isset($reportitem->Platform)) ? self::getPlatform($reportitem->Platform) : null;
 
            // Get PropID for this item, and update model if necessary
-            $Item_ID = self::itemIDValues($reportitem->Item_ID);
+            $_item_id = (isset($reportitem->Item_ID)) ? $reportitem->Item_ID : array();
+            $Item_ID = self::itemIDValues($_item_id);
             if ($Item_ID['PropID'] != $database->PropID) {
-                    $database->PropID = $Item_ID['PropID'];
-                    $database->save();
+                $database->PropID = $Item_ID['PropID'];
+                $database->save();
             }
 
            // Pick up the optional attributes
@@ -329,9 +306,9 @@ class Counter5Processor extends Model
     public static function IR($json_report)
     {
        // Setup array to hold per-item counts
-        $ICounts = ['Total_Item_Investigations' => 0, 'Total_Item_Requests' => 0,
-                    'Unique_Item_Investigations' => 0, 'Unique_Item_Requests' => 0,
-                    'Unique_Title_Investigations' => 0, 'Unique_Title_Requests' => 0];
+        $ICounts = ['Total_Item_Requests' => 0, 'Total_Item_Investigations' => 0,
+                    'Unique_Item_Requests' => 0, 'Unique_Item_Investigations' => 0,
+                    'Limit_Exceeded' => 0, 'No_License' => 0];
         $_metric_keys = array_keys($ICounts);
         $_metric_count = count($ICounts);
 
@@ -339,20 +316,29 @@ class Counter5Processor extends Model
         $header = $json_report->Report_Header;
         $ReportItems = $json_report->Report_Items;
 
+        $authors = "";  // skipping this for the time-being
+
        // Loop through all ReportItems
         foreach ($ReportItems as $reportitem) {
+           // Author(s) processing would go here
+            // $authors = (isset($reportitem->Item_Contributors)) ? $reportitem->Item_Contributors) : "";
+
            // Get Publisher
             $publisher_id = (isset($reportitem->Publisher)) ? self::getPublisher($reportitem->Publisher) : null;
 
            // Get Platform
             $platform_id = (isset($reportitem->Platform)) ? self::getPlatform($reportitem->Platform) : null;
 
-           // Get Title and Item_ID fields
-            $_title = (isset($reportitem->Title)) ? $reportitem->Title : "";
-            $Item_ID = self::itemIDValues($reportitem->Item_ID);
+           // Get Name and Item_ID fields
+            $Name = (isset($reportitem->Item)) ? substr($reportitem->Item,0,256) : "";
+
+           // If no Name or Item_ID skip the item..
+            if ($Name == "" && !isset($reportitem->Item_ID)) continue;
+            $_item_id = (isset($reportitem->Item_ID)) ? $reportitem->Item_ID : array();
+            $Item_ID = self::itemIDValues($_item_id);
 
            // Pick up the optional attributes
-            $_YOP = (isset($reportitem->YOP)) ? $reportitem->YOP : "";
+            $YOP = (isset($reportitem->YOP)) ? $reportitem->YOP : "";
             $accesstype_id = (isset($reportitem->Access_Type)) ? self::getAccessType($reportitem->Access_Type)
                                                                : null;
             $accessmethod_id = (isset($reportitem->Access_Method)) ? self::getAccessMethod($reportitem->Access_Method)
@@ -360,21 +346,71 @@ class Counter5Processor extends Model
             $datatype = (isset($reportitem->Data_Type)) ? self::getDataType($reportitem->Data_Type)
                                                         : self::getDataType("Unknown");
 
-           // Get Parent
-            $parent_id = null;
-            $parent = (isset($reportitem->Parent)) ? $reportitem->Parent : "";
-            if ($parent != "") {
-                $parent_name = (isset($parent->Item_Name)) ? $parent->Item_Name : "";
-                $parent_datatype = (isset($parent->Data_Type)) ? $parent->Data_Type : "";
-                $parent_itemid = (isset($parent->Item_ID)) ? $parent->Item_ID : "";
-                if ($parent_name != "" && $parent_datatype != "" && $parent_itemid != "") {
-                    $item_ID = self::itemIDValues($parent_itemid);
-
-                   // parent datatype
-                    $parent_datatype = (isset($parent->Data_Type)) ? self::getDataType($parent->Data_Type)
-                                                                   : self::getDataType("Unknown");
+           // Get publication date and article version
+            $pub_date = "";
+            $item_dates = (isset($reportitem->Item_Dates)) ? $reportitem->Item_Dates : "";
+            if ($item_dates != "") {
+                foreach ($item_dates as $date) {
+                    if ($date->Type == "Publication_Date") {
+                        $pub_date = $date->Value;
+                        break;
+                    }
                 }
             }
+            $article_version = "";
+            $item_attributes = (isset($reportitem->Item_Attributes)) ? $reportitem->Item_Attributes : "";
+            if ($item_attributes != "") {
+                foreach ($item_attributes as $attrib) {
+                    if ($attrib->Type == "Article_Version") {
+                        $article_version = $attrib->Value;
+                        break;
+                    }
+                }
+            }
+
+           // Ignore Components for now...
+            $component_id = null;
+            $component_datatype_id = null;
+
+           // Find or Create the Parent
+            $parent_id = null;
+            $parent_datatype_id = null;
+            $item_parent = (isset($reportitem->Item_Parent)) ? $reportitem->Item_Parent : "";
+            if ($item_parent != "") {
+                $parent_name = (isset($item_parent->Item_Name)) ? substr($item_parent->Item_Name,0,256) : "";
+                $parent_itemid = (isset($item_parent->Item_ID)) ? $item_parent->Item_ID : array();
+                if (sizeof($parent_itemid) > 0) {
+                    $_pitem_ID = self::itemIDValues($parent_itemid);
+
+                   // parent datatype
+                   $_pdatatype = (isset($item_parent->Data_Type)) ? $item_parent->Data_Type : "Unknown";
+                   $parent_datatype = self::getDataType($_pdatatype);
+
+                   // Get or create the parent
+                    if ($parent_datatype->name == "Journal") {
+                        $_jrnl = self::journalFindOrCreate($parent_name,$_pitem_ID['PropID'],$_pitem_ID['ISSN'],
+                                                         $_pitem_ID['eISSN'], $_pitem_ID['DOI'],$_pitem_ID['URI']);
+                        if (is_null($_jrnl)) continue;
+                        $parent_id = $_jrnl->id;
+                    } elseif ($parent_datatype->name == "Book") {
+                        $_book = self::bookFindOrCreate($parent_name,$_pitem_ID['PropID'],$_pitem_ID['ISBN'],
+                                                       $_pitem_ID['DOI'], $_pitem_ID['URI']);
+                        if (is_null($_book)) continue;
+                        $parent_id = $_book->id;
+                    } else {   // Parent is Not a Journal or Book, findorcreate  as an Item
+                        $_item = self::itemFindOrCreate($parent_name,$_pitem_ID['PropID'],$_pitem_ID['ISSN'],
+                                                         $_pitem_ID['eISSN'], $_pitem_ID['ISBN'], $_pitem_ID['DOI'],
+                                                         $_pitem_ID['URI']);
+                        $parent_id = $_item->id;
+                    }
+                    $parent_datatype_id = $parent_datatype->id;
+                }
+            }
+
+           // Get or create the Item in the global table
+            $_item = self::itemFindOrCreate($Name, $Item_ID['PropID'], $Item_ID['ISSN'], $Item_ID['eISSN'],
+                                            $Item_ID['ISBN'], $Item_ID['DOI'], $Item_ID['URI'], $pub_date,
+                                            $article_version, $parent_id, $parent_datatype_id);
 
            // Loop $reportitem->Performance elements and store counts when time-periods match
             foreach ($reportitem->Performance as $perf) {
@@ -384,6 +420,21 @@ class Counter5Processor extends Model
                     }
                 }
             }         // foreach performance clause
+
+           // Insert the record
+            ItemReport::insert(['item_id' => $_item->id, 'prov_id' => self::$prov, 'publisher_id' => $publisher_id,
+                'plat_id' => $platform_id, 'inst_id' => self::$inst, 'yearmon' => self::$yearmon, 'YOP' => $YOP,
+                'datatype_id' => $datatype->id, 'accesstype_id' => $accesstype_id,'accessmethod_id' => $accessmethod_id,
+                'total_item_requests' => $ICounts['Total_Item_Requests'],
+                'total_item_investigations' => $ICounts['Total_Item_Investigations'],
+                'unique_item_requests' => $ICounts['Unique_Item_Requests'],
+                'unique_item_investigations' => $ICounts['Unique_Item_Investigations'],
+                'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License']]);
+
+           // Reset metric counts
+            for ($_m = 0; $_m < $_metric_count; $_m++) {
+                $ICounts[$_metric_keys[$_m]] = 0;
+            }
         }
 
        // Set status to success
@@ -507,12 +558,12 @@ class Counter5Processor extends Model
      */
     private static function itemIDValues($Item_ID)
     {
-        // Initialize variables for Title and Item_ID fields
-        // We'll use these as a basis for trying to match against known titles
-         $Values = ['PropID' => "", 'ISBN' => "", 'ISSN' => "", 'eISSN' => "", 'DOI' => "", 'URI' => ""];
+       // Initialize variables for Title and Item_ID fields
+       // We'll use these as a basis for trying to match against known titles
+        $Values = ['PropID' => "", 'ISBN' => "", 'ISSN' => "", 'eISSN' => "", 'DOI' => "", 'URI' => ""];
         foreach ($Item_ID as $_id) {
             if ($_id->Type == "Proprietary") {
-                $Values['PropID'] = $_id->Value;
+                $Values['PropID'] = substr($_id->Value,0,256);
             }
             if ($_id->Type == "ISBN") {
                 $Values['ISBN'] = $_id->Value;
@@ -524,13 +575,13 @@ class Counter5Processor extends Model
                 $Values['eISSN'] = $_id->Value;
             }
             if ($_id->Type == "DOI") {
-                $Values['DOI'] = $_id->Value;
+                $Values['DOI'] = substr($_id->Value,0,256);
             }
             if ($_id->Type == "URI") {
-                $Values['URI'] = $_id->Value;
+                $Values['URI'] = substr($_id->Value,0,256);
             }
         }
-         return $Values;
+        return $Values;
     }
 
     /**
@@ -560,56 +611,29 @@ class Counter5Processor extends Model
         foreach ($matches as $journal) {
             $matched = false;
            // If title matches and other input fields are null, call it a match
-            if (
-                $title != ""
-                && $title == $journal->Title
-                && (
-                ($propID == ""
-                && $issn == ""
-                && $eissn == ""
-                && $doi == ""
-                && $uri == "")
-                || ($journal->propID == ""
-                && $journal->issn == ""
-                && $journal->eissn == ""
-                 && $journal->doi == ""
-                 && $journal->uri == "") )
-            ) {
+            if ($title != "" && $title == $journal->Title &&
+                ( ($propID == "" && $issn == "" && $eissn == "" && $doi == "" && $uri == "") ||
+                  ($journal->propID == "" && $journal->issn == "" && $journal->eissn == "" &&
+                   $journal->doi == "" && $journal->uri == "")
+                ) ) {
                 $matched = true;
             }
 
            // If URI matches and other input fields are null, call it a match
-            if (
-                $uri != ""
-                && $uri == $journal->URI
-                && (
-                ($title == ""
-                && $propID == ""
-                && $issn == ""
-                && $eissn == ""
-                && $doi == "")
-                || ($journal->title == ""
-                && $journal->propID == ""
-                && $journal->issn == ""
-                 && $journal->eissn == ""
-                 && $journal->doi == "") )
-            ) {
+            if ($uri != "" && $uri == $journal->URI &&
+                ( ($title == "" && $propID == "" && $issn == "" && $eissn == "" && $doi == "") ||
+                  ($journal->title == "" && $journal->propID == "" && $journal->issn == "" &&
+                   $journal->eissn == "" && $journal->doi == "")
+                ) ) {
                 $matched = true;
             }
 
            // Test the remaining identifiers - except URI. If match is found, update fields in the
            // model that we have values for.
-            if (
-                $matched
-                || ($propID != ""
-                && $journal->PropID == $propID)
-                || ($doi != ""
-                && $journal->DOI == $doi)
-                || ($issn != ""
-                && $journal->ISSN == $issn)
-                || ($eissn != ""
-                && $journal->eISSN == $eissn)
-            ) {
+            if ($matched ||
+                ($propID != "" && $journal->PropID == $propID) || ($doi != "" && $journal->DOI == $doi) ||
+                ($issn != "" && $journal->ISSN == $issn) || ($eissn != "" && $journal->eISSN == $eissn) ) {
+
                // Check matched fields, don't overwrite non-null model values with null
                 if ($title != "" && $journal->Title != $title) {
                     $save_it = true;
@@ -662,6 +686,7 @@ class Counter5Processor extends Model
         if ($title == "" && $propID = "" && $isbn == "" && $doi == "" && $uri == "") {
             return null;
         }
+
        // Get any potential matches
         $matches = Book::where([['Title', '<>',''],['Title', '=',$title]])->
                        orWhere([['PropID','<>',''],['PropID','=',$propID]])->
@@ -672,40 +697,30 @@ class Counter5Processor extends Model
        // Loop through all the possibles
         $save_it = false;
         foreach ($matches as $book) {
-            // If title matches and other input fields are null, we're done
-            if (
-                 $title != ""
-                 && $title == $book->Title
-                 && $propID == ""
-                 && $isbn == ""
-                 && $doi == ""
-                 && $uri == ""
-            ) {
-                return $book;
-            }
-            // If URI matches and other input fields are null, we're done
-            if (
-                 $uri != ""
-                 && $uri == $book->URI
-                 && $title == ""
-                 && $propID == ""
-                 && $isbn == ""
-                 && $doi == ""
-            ) {
-                return $book;
+            $matched = false;
+           // If title matches and other input fields are null, call it a match
+            if ($title != "" && $title == $book->Title &&
+                ( ($propID == "" && $isbn == "" && $doi == "" && $uri == "") ||
+                  ($book->propID == "" && $book->ISBN == "" && $book->DOI == "" && $book->URI == "")
+                ) ) {
+                $matched = true;
             }
 
-            // Test the remaining identifiers - except URI. If match is found, update fields in the
-            // model that we have values for.
-            if (
-                 ($propID != ""
-                 && $book->PropID == $propID)
-                 || ($doi != ""
-                 && $book->DOI == $doi)
-                 || ($isbn != ""
-                 && $book->ISBN == $isbn)
-            ) {
-                // Check matched fields, don't overwrite non-null model values with null
+           // If URI matches and other input fields are null, call it a match
+            if ($uri != "" && $uri == $book->URI &&
+                ( ($title == "" && $propID == "" && $isbn == "" && $doi == "") ||
+                  ($book->Title == "" && $book->propID == "" && $book->ISBN == "" && $book->DOI == "")
+                ) ) {
+                $matched = true;
+            }
+
+           // Test the remaining identifiers - except URI. If match is found, update fields in the
+           // model that we have values for.
+            if ( $matched ||
+                ($propID != "" && $book->PropID == $propID) || ($doi != "" && $book->DOI == $doi) ||
+                ($isbn != ""  && $book->ISBN == $isbn) ) {
+
+               // Check matched fields, don't overwrite non-null model values with null
                 if ($title != "" && $book->Title != $title) {
                     $save_it = true;
                     $book->Title = $title;
@@ -738,4 +753,120 @@ class Counter5Processor extends Model
         $book->save();
         return $book;
     }
+
+    /**
+     * Function to find-or-create an Item in/from the global table
+     *
+     * @param $name, $propID, $isbn, $doi, $uri, $pub, $ver, $parent_id, $parent_datatype_id
+     * @return Item or null for errors/missing input
+     *
+     *    $item = self::itemFindOrCreate($name, $propID, $issn, $eissn, $isbn, $doi, $uri
+     *                                   [, $pub][, $ver][, $parent_id][, $parent_datatype_id]);
+     */
+    private static function itemFindOrCreate($name, $propID, $issn, $eissn, $isbn, $doi, $uri,
+                                             $pub="", $ver="", $parent_id=null, $parent_datatype_id=null)
+    {
+        if ($name == "" && $propID = "" && $issn == "" && $eissn == "" && $isbn == "" && $doi == "" && $uri == "") {
+            return null;
+        }
+
+       // Get any potential matches
+        $matches = Item::where([['Name',  '<>',''],['Name',  '=',$name]])->
+                       orWhere([['PropID','<>',''],['PropID','=',$propID]])->
+                       orWhere([['ISSN',  '<>',''],['ISSN',  '=',$issn]])->
+                       orWhere([['eISSN', '<>',''],['eISSN', '=',$eissn]])->
+                       orWhere([['ISBN',  '<>',''],['ISBN',  '=',$isbn]])->
+                       orWhere([['DOI',   '<>',''],['DOI',   '=',$doi]])->
+                       orWhere([['URI',   '<>',''],['URI',   '=',$uri]])->get();
+
+       // Loop through all the possibles
+        $save_it = false;
+        foreach ($matches as $item) {
+            $matched = false;
+           // If name matches and other input fields are null, call it a match
+            if ($name != "" && $name == $item->Name &&
+                ( ($propID == "" && $issn == "" && $eissn == "" && $isbn == "" && $doi == "" && $uri == "" &&
+                   $pub == "" && $ver == "") ||
+                  ($item->propID == "" && $item->ISSN == "" && $item->eISSN == "" && $item->ISBN == "" &&
+                   $item->DOI == "" && $item->URI == "" && $item->pub_date == "" && $item->article_version == "")
+                ) ) {
+                $matched = true;
+            }
+
+           // If URI matches and other input fields are null, call it a match
+            if ($uri != "" && $uri == $item->URI &&
+                ( ($name == "" && $propID == "" && $issn == "" && $eissn == "" && $isbn == "" && $doi == "" &&
+                   $pub == "" && $ver == "") ||
+                  ($item->Name == "" && $item->propID == "" && $item->ISSN == "" && $item->eISSN == "" &&
+                   $item->ISBN == "" && $item->DOI == "" && $item->pub_date == "" && $item->article_version == "")
+                ) ) {
+                $matched = true;
+            }
+
+           // Test the remaining identifiers - except URI. If match is found, update fields in the
+           // model that we have values for.
+            if ( $matched ||
+                   (
+                      // It's only a match when pub_date and article_version match
+                       ($item->pub_date == $pub && $item->article_version == $ver) &&
+                       (
+                           ($propID != "" && $item->PropID == $propID) || ($doi != "" && $item->DOI == $doi) ||
+                           ($issn != "" && $item->ISSN == $issn) || ($eissn != "" && $item->eISSN == $eissn) ||
+                           ($isbn != "" && $item->ISBN == $isbn)
+                       )
+                   )
+               ) {
+
+               // Check matched fields, don't overwrite non-null model values with null
+                if ($name != "" && $item->Name != $name) {
+                    $save_it = true;
+                    $item->Name = $name;
+                }
+                if ($propID != "" && $item->PropID != $propID) {
+                    $save_it = true;
+                    $item->PropID = $propID;
+                }
+                if ($doi != "" && $item->DOI != $doi) {
+                    $save_it = true;
+                    $item->DOI = $doi;
+                }
+                if ($issn != "" && $item->ISSN != $issn) {
+                    $save_it = true;
+                    $item->ISSN = $issn;
+                }
+                if ($eissn != "" && $item->eISSN != $eissn) {
+                    $save_it = true;
+                    $item->eISSN = $eissn;
+                }
+                if ($isbn != "" && $item->ISBN != $isbn) {
+                    $save_it = true;
+                    $item->ISBN = $isbn;
+                }
+                if ($uri != "" && $item->URI != $uri) {
+                    $save_it = true;
+                    $item->URI = $uri;
+                }
+                if ($pub != "" && $item->pub_date != $pub) {
+                    $save_it = true;
+                    $item->pub_date = $pub;
+                }
+                if ($ver != "" && $item->article_version != $ver) {
+                    $save_it = true;
+                    $item->article_version = $ver;
+                }
+                if ($save_it) {
+                    $item->save();
+                }
+                return $item;
+            }
+        }
+
+       // If no match, create it
+        $item = new Item(['Name' => $name, 'ISSN' => $issn, 'eISSN' => $eissn, 'ISBN' => $isbn, 'DOI' => $doi,
+                          'PropID' => $propID, 'URI' => $uri, 'pub_date' => $pub, 'article_version' => $ver,
+                          'parent_id' => $parent_id, 'parent_datatype_id' => $parent_datatype_id]);
+        $item->save();
+        return $item;
+    }
+
 }

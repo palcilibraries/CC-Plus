@@ -135,7 +135,7 @@ class SushiIngestCommand extends Command
             if ($logmessage) {
                 $this->line("Sushi Requests Begin for Consortium: " . $consortium->ccp_key);
             }
-            $base_uri = preg_replace('/\/?$/', '/', $provider->server_url_r5); // ensure slash-ending
+            $base_uri = rtrim($provider->server_url_r5,'/') . "/";
             $uri_args = "/?begin_date=" . $begin . "&end_date=" . $end;
 
            // Loop through all sushisettings for this provider

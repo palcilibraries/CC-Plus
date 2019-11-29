@@ -20,8 +20,9 @@ class ItemReport extends Model
      * @var array
      */
     protected $fillable = [
-         'item_id', 'prov_id', 'plat_id', 'inst_id', 'yearmon', 'datatype_id', 'accesstype_id', 'accessmethod_id',
-         'total_item_requests', 'unique_item_requests'
+        'item_id', 'prov_id', 'plat_id', 'inst_id', 'yearmon', 'YOP', 'datatype_id', 'accesstype_id', 'accessmethod_id',
+        'total_item_requests', 'unique_item_requests', 'total_item_investigations', 'unique_item_investigations',
+        'limit_exceeded', 'not_license'
     ];
 
     public function items()

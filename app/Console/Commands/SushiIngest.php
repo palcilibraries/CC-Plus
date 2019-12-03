@@ -13,6 +13,9 @@ use App\Provider;
 use App\Institution;
 use App\Counter5Validator;
 use App\Counter5Processor;
+use \ubfr\c5tools\RawReport;
+use \ubfr\c5tools\JsonR5Report;
+use \ubfr\c5tools\ParseException;
 
 class SushiIngestCommand extends Command
 {
@@ -60,7 +63,7 @@ class SushiIngestCommand extends Command
        // Aim the consodb connection at specified consortium's database
         config(['database.connections.consodb.database' => 'ccplus_' . $consortium->ccp_key]);
         DB::reconnect();
-        $report_path = env('CCP_REPORTS') . $consortium->ccp_key;
+        $report_path = config('ccplus.reports_path') . $consortium->ccp_key;
 
        // Handle input options
         $month  = is_null($this->option('month')) ? 'lastmonth' : $this->option('month');
@@ -158,7 +161,7 @@ class SushiIngestCommand extends Command
                     $this->line("Requesting " . $report->name . " for " . $provider->name);
 
                    // Set output filename for raw data
-                    if (!is_null(env('CCP_REPORTS'))) {
+                    if (!is_null(config('ccplus.reports_path'))) {
                         $raw_datafile = $report_path . '/' . $setting->institution->name . '/' . $provider->name .
                                         '/' . $report->name . '_' . $begin . '_' . $end . '.json';
                     }
@@ -189,18 +192,20 @@ class SushiIngestCommand extends Command
                    // Error-Handling needs work... and probably needs a class unto itself
                    // This is currently catches "Queued" response and sleeps to retry.
                    // Any other error/exception is treated as fatal...
-                    // while ($queue_retries <= env('SUSHI_RETRY_LIMIT', 20)  && $req_state == "queued") {
-                    while ($queue_retries <= 20  && $req_state == "queued") {
+                    while ($queue_retries <= config('ccplus.sushi_retry_limit')  && $req_state == "queued") {
                        // Make the request and convert into JSON
                         $result = $client->get($request_uri);
                         $json = json_decode($result->getBody());
+                        if (json_last_error() !== JSON_ERROR_NONE) {
+                            throw new ParseException("Error decoding JSON - " . json_last_error_msg());
+                            exit();
+                        }
 
                         if (isset($json->Code)) {
                             if ($json->Code == 1011) {
                                 $queue_retries++;
                                 $this->line("Queued ... sleeping: " . $json->Message . "(" . $json->Code . ") ...");
-                                // sleep(SUSHI_RETRY_SLEEP);
-                                sleep(30);
+                                sleep(config('ccplus.sushi_retry_sleep'));
                                 $this->line("Retrying");
                                 $req_state = "queued";
                                 continue;
@@ -217,8 +222,7 @@ class SushiIngestCommand extends Command
                                         $queue_retries++;
                                         $this->line("Queued ... sleeping: " . $_exep->Message . "(" .
                                                                               $_exep->Code . ") ...");
-                                        // sleep(SUSHI_RETRY_SLEEP);
-                                        sleep(30);
+                                        sleep(config('ccplus.sushi_retry_sleep'));
                                         $this->line("Retrying");
                                         $req_state = "queued";
                                         continue 2;
@@ -231,7 +235,7 @@ class SushiIngestCommand extends Command
                             }
                             if (isset($json->Report_Items)) {
                                 $req_state = "done";
-                                if (!is_null(env('CCP_REPORTS'))) {
+                                if (!is_null(config('ccplus.reports_path'))) {
                                     file_put_contents($raw_datafile, $json);
                                 }
                             } else {
@@ -245,18 +249,31 @@ class SushiIngestCommand extends Command
                     } // while retries remaining
 
                    // Validate report
-                    $C5validator = new Counter5Validator($json);
+                   // $C5validator = new Counter5Validator($json);
+                   $validJson = self::validateJson($json);
+                   $result = $C5processor->{$report->name}($validJson);
 
-                   // Parse and store the report if it's valid
-                    if ($C5validator->{$report->name}()) {
-                        $result = $C5processor->{$report->name}($C5validator->report);
-                    } else {
-                        // Signal / Log / Report error
-                        // $C5validator->error holds detail
-                    }
                 }  // foreach reports
             }  // foreach sushisettings
         }  // foreach providers
         $this->line("Ingest completed: " . date("Y-m-d H:i:s"));
+    }
+
+    protected static function validateJson($json)
+    {
+
+        try {
+            $release = RawReport::getReleaseFromJson($json);
+        } catch (\Exception $e) {
+            throw new ParseException("Could not determine COUNTER Release - " . $e->getMessage());
+        }
+        if ($release !== '5') {
+            throw new ParseException("COUNTER Release '{$release}' invalid/unsupported");
+        }
+
+        $report = new JsonR5Report($json);
+        unset($json);
+
+        return $report;
     }
 }

@@ -11,8 +11,10 @@ use App\Report;
 use App\Consortium;
 use App\Provider;
 use App\Institution;
-use App\Counter5Validator;
 use App\Counter5Processor;
+use \ubfr\c5tools\RawReport;
+use \ubfr\c5tools\JsonR5Report;
+use \ubfr\c5tools\ParseException;
 
 class C5TestCommand extends Command
 {
@@ -58,7 +60,7 @@ class C5TestCommand extends Command
        // Aim the consodb connection at specified consortium's database
         config(['database.connections.consodb.database' => 'ccplus_' . $consortium->ccp_key]);
         DB::reconnect();
-        $report_path = env('CCP_REPORTS') . $consortium->ccp_key;
+        $report_path = config('ccplus.reports_path') . $consortium->ccp_key;
 
        // Handle input options
         $month  = is_null($this->option('month')) ? 'lastmonth' : $this->option('month');
@@ -137,7 +139,7 @@ class C5TestCommand extends Command
                     $this->line("Requesting " . $report->name . " for " . $provider->name);
 
                    // Set output filename for raw data
-                    if (!is_null(env('CCP_REPORTS'))) {
+                    if (!is_null(config('ccplus.reports_path'))) {
                         $raw_datafile = $report_path . '/' . $setting->institution->name . '/' . $provider->name .
                                         '/' . $report->name . '_' . $begin . '_' . $end . '.json';
                     }
@@ -173,15 +175,35 @@ class C5TestCommand extends Command
                     }
 
                    // Validate report
-                    $C5validator = new Counter5Validator($json);
+                   $validJson = self::validateJson($json);
 
                    // Parse and store the report if it's valid
-                    if ($C5validator->{$report->name}()) {
-                        $result = $C5processor->{$report->name}($C5validator->report);
-                    }
+                   $result = $C5processor->{$report->name}($validJson);
+                    // if ($C5validator->{$report->name}()) {
+                    //     $result = $C5processor->{$report->name}($C5validator->report);
+                    // }
+
                 }  // foreach reports
             }  // foreach sushisettings
         }  // foreach providers
         $this->line("Test completed: " . date("Y-m-d H:i:s"));
+    }
+
+    protected static function validateJson($json)
+    {
+
+        try {
+            $release = RawReport::getReleaseFromJson($json);
+        } catch (\Exception $e) {
+            throw new ParseException("Could not determine COUNTER Release - " . $e->getMessage());
+        }
+        if ($release !== '5') {
+            throw new ParseException("COUNTER Release '{$release}' invalid/unsupported");
+        }
+
+        $report = new JsonR5Report($json);
+        unset($json);
+
+        return $report;
     }
 }

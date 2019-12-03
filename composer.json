@@ -7,6 +7,12 @@
         "laravel"
     ],
     "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "/usr/local/c5tools"
+        }
+    ],
     "require": {
         "php": "^7.1.3",
         "doctrine/dbal": "v2.4.2",
@@ -15,7 +21,8 @@
         "laravel/framework": "6.0.*",
         "laravel/helpers": "^1.1",
         "laravel/tinker": "^1.0",
-        "laravelcollective/html": "^6.0"
+        "laravelcollective/html": "^6.0",
+        "ubfr/c5tools": "1.0.*"
     },
     "require-dev": {
         "beyondcode/laravel-dump-server": "^1.0",

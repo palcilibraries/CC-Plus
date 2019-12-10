@@ -6,8 +6,12 @@
 
 require('./bootstrap');
 
-window.Jquery = require('jquery');
-window.Vue = require('vue');
+import Vue from 'vue';
+import axios from 'axios';
+import Form from './core/Form';
+
+window.axios = axios;
+window.Form = Form;
 
 /**
  * The following block of code may be used to automatically register your
@@ -21,6 +25,8 @@ window.Vue = require('vue');
 // files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default));
 
 Vue.component('flash', require('./components/Flash.vue').default);
+Vue.component('sushi-by-inst', require('./components/SushiByInst.vue').default);
+Vue.component('sushi-by-prov', require('./components/SushiByProv.vue').default);
 
 /**
  * Next, we will create a fresh Vue application instance and attach it to

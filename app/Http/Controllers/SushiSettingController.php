@@ -36,8 +36,9 @@ class SushiSettingController extends Controller
         $_where = ['inst_id' => $request->inst_id,
                  'prov_id' => $request->prov_id];
         $data = SushiSetting::where($_where)->first();
-        $return = (is_null($data)) ? array('count' => 0) : array('settings' => $data->toArray());
 
+        // $return = (is_null($data)) ? array('count' => 0) : array('settings' => $data->toArray());
+        $return = (is_null($data)) ? array('settings' => array('count' => 0)) : array('settings' => $data->toArray());
         return response()->json($return);
     }
 

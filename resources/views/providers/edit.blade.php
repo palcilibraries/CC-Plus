@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-<script type="text/javascript" src="{{ URL::asset('js/providers.js') }}"></script>
 <div class="row">
     <div class="col-lg-12 margin-tb">
         <div class="pull-left">
@@ -120,52 +119,10 @@
     </td>
     <td>&nbsp;</td>
     <td valign="top">
-      <form method="post" id="sushi_settings">
-      @csrf
-      <input type="hidden" value="{{ $provider->id }}" name="prov_id" id="PROV">
-      <div class="row">
-        <div class="col-xs-12 col-sm-12 col-md-12">
-            <div class="form-group">
-                <strong>Institution:</strong>
-                @if ( auth()->user()->hasRole('Admin') && $provider->inst_id == 1)
-                    {!! Form::select('inst_id', $sushi_insts, $provider->inst_id,
-                                      array('class' => 'form-control', 'id' =>'Inst')) !!}
-                @else
-                  <span style="padding-left: 20px; display:inline-block">
-                      <input type='hidden' name='inst_id' value='{{ $provider->inst_id }}' />
-                      <strong>{{ $provider->institution->name }}</strong>
-                  </span>
-                @endif
-            </div>
-        </div>
-        <div class="col-xs-12 col-sm-12 col-md-12">
-            <div class="form-group">
-                <strong>Customer ID:</strong>
-                {!! Form::text('customer_id', null, array('placeholder' => 'Customer ID',
-                               'class' => 'form-control', 'id' => 'Sushi_CustID')) !!}
-            </div>
-        </div>
-        <div class="col-xs-12 col-sm-12 col-md-12">
-            <div class="form-group">
-                <strong>RequestorID:</strong>
-                {!! Form::text('requestor_id', null, array('placeholder' => 'Requestor ID',
-                               'class' => 'form-control', 'id' => 'Sushi_ReqID')) !!}
-            </div>
-        </div>
-        <div class="col-xs-12 col-sm-12 col-md-12">
-            <div class="form-group">
-                <strong>API Key:</strong>
-                {!! Form::text('API_key', null, array('placeholder' => 'API Key',
-                               'class' => 'form-control', 'id' => 'Sushi_APIkey')) !!}
-            </div>
-        </div>
-        <div class="col-xs-12 col-sm-12 col-md-12 text-center">
-          <button type="button" id="SaveSushi" class="btn btn-primary">Update Sushi Settings</button>
-        </div>
-      </div>
-      {!! Form::close() !!}
+        <sushi-by-inst :prov_id="{{ $provider->id }}" :institutions="{{ json_encode($sushi_insts) }}"></sushi-by-inst>
     </td>
     <td>&nbsp;</td>
   </tr>
 </table>
+
 @endsection

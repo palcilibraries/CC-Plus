@@ -105,7 +105,7 @@ class ProviderController extends Controller
             $sushi_insts = $institutions;
         }
 
-      // Get all R5 master reports and which are currently enabled (ProvReports)
+      // Get all R5 master reports and which are currently enabled
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
                                  ->pluck('name', 'id');
         $provider_reports = $provider->reports()->pluck('report_id')->all();

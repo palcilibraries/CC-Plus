@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-<script type="text/javascript" src="{{ URL::asset('js/institutions.js') }}"></script>
 <div class="row">
     <div class="col-lg-12 margin-tb">
         <div class="pull-right">
@@ -88,47 +87,10 @@
     </td>
     <td>&nbsp;</td>
     <td valign="top">
-      <form method="post" id="sushi_settings">
-      @csrf
-      <input type="hidden" value="{{ $institution->id }}" name="inst_id" id="INST">
-      <div class="row">
-        <div class="col-xs-12 col-sm-12 col-md-12">
-            <div class="form-group">
-                <strong>Provider:</strong>
-                {!! Form::select('prov_id', $providers, 0, array('class' => 'form-control', 'id' => 'Prov')) !!}
-            </div>
-        </div>
-        <div class="col-xs-12 col-sm-12 col-md-12">
-            <div class="form-group">
-                <strong>Customer ID:</strong>
-                {!! Form::text('customer_id', null, array('placeholder' => 'Customer ID','class' => 'form-control',
-                'id' => 'Sushi_CustID')) !!}
-            </div>
-        </div>
-        <div class="col-xs-12 col-sm-12 col-md-12">
-            <div class="form-group">
-                <strong>Requestor ID:</strong>
-                {!! Form::text('requestor_id', null, array('placeholder' => 'Requestor ID','class' => 'form-control',
-                                                          'id' => 'Sushi_ReqID')) !!}
-            </div>
-        </div>
-        <div class="col-xs-12 col-sm-12 col-md-12">
-            <div class="form-group">
-                <strong>API Key:</strong>
-                {!! Form::text('API_key', null, array('placeholder' => 'API Key','class' => 'form-control',
-                                                          'id' => 'Sushi_APIkey')) !!}
-            </div>
-        </div>
-
-        <div class="col-xs-12 col-sm-12 col-md-12 text-center">
-          <button type="button" id="SaveSushi" class="btn btn-primary">Update Sushi Settings</button>
-        </div>
-      </div>
-      {!! Form::close() !!}
+      <sushi-by-prov :inst_id="{{ $institution->id }}" :providers="{{ json_encode($providers) }}"></sushi-by-prov>
     </td>
     <td>&nbsp;</td>
   </tr>
 </table>
-{!! Form::close() !!}
 
 @endsection

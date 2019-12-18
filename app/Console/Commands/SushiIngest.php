@@ -13,7 +13,7 @@ use App\Provider;
 use App\Institution;
 use App\Counter5Validator;
 use App\Counter5Processor;
-use \ubfr\c5tools\RawReport;
+use \ubfr\c5tools\Report as RawReport;
 use \ubfr\c5tools\JsonR5Report;
 use \ubfr\c5tools\ParseException;
 

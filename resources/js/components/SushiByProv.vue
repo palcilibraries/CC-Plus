@@ -71,6 +71,10 @@
                 this.form.post('/sushisettings-update')
                     .then( function(response) {
                         self.form.prov_id=0;
+                        self.message = '';
+                        self.form.customer_id = '';
+                        self.form.requestor_id = '';
+                        self.form.API_key = '';
                     });
             },
             onProvChange (event) {

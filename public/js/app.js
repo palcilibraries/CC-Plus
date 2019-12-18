@@ -1939,6 +1939,10 @@ __webpack_require__.r(__webpack_exports__);
       var self = this;
       this.form.post('/sushisettings-update').then(function (response) {
         self.form.inst_id = 1;
+        self.message = '';
+        self.form.customer_id = '';
+        self.form.requestor_id = '';
+        self.form.API_key = '';
       });
     },
     onInstChange: function onInstChange(event) {
@@ -2054,6 +2058,10 @@ __webpack_require__.r(__webpack_exports__);
       var self = this;
       this.form.post('/sushisettings-update').then(function (response) {
         self.form.prov_id = 0;
+        self.message = '';
+        self.form.customer_id = '';
+        self.form.requestor_id = '';
+        self.form.API_key = '';
       });
     },
     onProvChange: function onProvChange(event) {
@@ -38125,7 +38133,7 @@ var render = function() {
         on: {
           submit: function($event) {
             $event.preventDefault()
-            return _vm.onSubmit($event)
+            return _vm.formSubmit($event)
           },
           keydown: function($event) {
             return _vm.form.errors.clear($event.target.name)

@@ -1,7 +1,7 @@
 <template>
   <div>
     <span class="form-info" role="alert" v-text="message"></span>
-    <form method="POST" action='/sushisettings-update' @submit.prevent="onSubmit"
+    <form method="POST" action='/sushisettings-update' @submit.prevent="formSubmit"
           @keydown="form.errors.clear($event.target.name)">
       <input v-model="prov_id" type="hidden">
       <div class="row">
@@ -69,6 +69,10 @@
                 this.form.post('/sushisettings-update')
                     .then( function(response) {
                         self.form.inst_id=1;
+                        self.message = '';
+                        self.form.customer_id = '';
+                        self.form.requestor_id = '';
+                        self.form.API_key = '';
                     });
             },
             onInstChange (event) {

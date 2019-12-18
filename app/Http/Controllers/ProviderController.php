@@ -24,7 +24,7 @@ class ProviderController extends Controller
     public function index(Request $request)
     {
         $this->middleware(['role:Admin,Manager']);
-        $data = Provider::orderBy('name', 'ASC')->paginate(5);
+        $data = Provider::orderBy('name', 'ASC')->paginate(10);
 
         return view('providers.index', compact('data'))
              ->with('i', ($request->input('page', 1) - 1) * 10);
@@ -134,14 +134,14 @@ class ProviderController extends Controller
             'name' => 'required',
             'is_active' => 'required',
             'inst_id' => 'required',
-//            'r5reports' => 'required',
         ]);
         $input = $request->all();
-      // Update the record and assign reports in $r5reports
+
+      // Update the record and assign reports in master_reports
         $provider->update($input);
         $provider->reports()->detach();
-        if (!is_null($request->input('r5reports'))) {
-            foreach ($request->input('r5reports') as $r) {
+        if (!is_null($request->input('master_reports'))) {
+            foreach ($request->input('master_reports') as $r) {
                 $provider->reports()->attach($r);
             }
         }

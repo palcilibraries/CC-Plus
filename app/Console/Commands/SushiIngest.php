@@ -11,11 +11,10 @@ use App\Report;
 use App\Consortium;
 use App\Provider;
 use App\Institution;
-use App\Counter5Validator;
+use App\SushiError;
 use App\Counter5Processor;
 use \ubfr\c5tools\Report as RawReport;
 use \ubfr\c5tools\JsonR5Report;
-use \ubfr\c5tools\ParseException;
 
 class SushiIngestCommand extends Command
 {
@@ -29,7 +28,7 @@ class SushiIngestCommand extends Command
                              {--M|month= : YYYY-MM to process  [lastmonth]}
                              {--P|provider= : Provider ID to process [ALL]}
                              {--I|institution= : Institution ID to process[ALL]}
-                             {--R|report= : Report Name to request [ALL]}
+                             {--R|report= : Master report NAME to ingest [ALL]}
                              {--retry= : ID of a failedingest to rerun}';
 
     /**
@@ -60,10 +59,13 @@ class SushiIngestCommand extends Command
         $con_id = $this->argument('consortium');
         $consortium = Consortium::findOrFail($con_id);
 
-       // Aim the consodb connection at specified consortium's database
+       // Aim the consodb connection at specified consortium's database and setup
+       // path for keeping raw report responses
         config(['database.connections.consodb.database' => 'ccplus_' . $consortium->ccp_key]);
         DB::reconnect();
-        $report_path = config('ccplus.reports_path') . $consortium->ccp_key;
+        if (!is_null(config('ccplus.reports_path'))) {
+            $report_path = config('ccplus.reports_path') . $consortium->ccp_key;
+        }
 
        // Handle input options
         $month  = is_null($this->option('month')) ? 'lastmonth' : $this->option('month');
@@ -151,6 +153,9 @@ class SushiIngestCommand extends Command
                // Construct and execute the Request
                 $uri_args .= "&customer_id=" . $setting->customer_id;
                 $uri_args .= "&requestor_id=" . $setting->requestor_id;
+                if ( !is_null($setting->API_key) ) {
+                    $uri_args .= "&requestor_id=" . $setting->requestor_id;
+                }
 
                // Create the processor object
                 $C5processor = new Counter5Processor($provider->id, $setting->inst_id, $begin, $end, "");
@@ -160,10 +165,13 @@ class SushiIngestCommand extends Command
                     // if ( $report->name =="TR") continue;
                     $this->line("Requesting " . $report->name . " for " . $provider->name);
 
-                   // Set output filename for raw data
+                   // Set output filename for raw data. Create the folder path, if necessary
                     if (!is_null(config('ccplus.reports_path'))) {
-                        $raw_datafile = $report_path . '/' . $setting->institution->name . '/' . $provider->name .
-                                        '/' . $report->name . '_' . $begin . '_' . $end . '.json';
+                        $full_path = $report_path . '/' . $setting->institution->name . '/' . $provider->name . '/';
+                        if (!is_dir($full_path)) {
+                            mkdir($full_path, 0755, true);
+                        }
+                        $raw_datafile = $full_path . '/' . $report->name . '_' . $begin . '_' . $end . '.json';
                     }
 
                    // Setup attributes for the request
@@ -184,96 +192,126 @@ class SushiIngestCommand extends Command
 
                    // Construct URI for the request
                     $request_uri = $base_uri . $report->name . $uri_args . $uri_atts;
+                    $this->line("Requesting via: " . $request_uri);
 
                    // Loop up to retry-limit asking for the report
-                    $queue_retries = 0;
+                    $retries = 0;
                     $req_state = "queued";
 
-                   // Error-Handling needs work... and probably needs a class unto itself
-                   // This is currently catches "Queued" response and sleeps to retry.
-                   // Any other error/exception is treated as fatal...
-                    while ($queue_retries <= config('ccplus.sushi_retry_limit')  && $req_state == "queued") {
+                   // This currently catches "Queued" response and sleeps to retry.
+                    while ($retries <= config('ccplus.sushi_retry_limit')  && $req_state == "queued") {
+
                        // Make the request and convert into JSON
                         $result = $client->get($request_uri);
                         $json = json_decode($result->getBody());
                         if (json_last_error() !== JSON_ERROR_NONE) {
-                            throw new ParseException("Error decoding JSON - " . json_last_error_msg());
-                            exit();
+                            $this->line("Error decoding JSON - " . json_last_error_msg());
+                            continue 2;
                         }
 
-                        if (isset($json->Code)) {
-                            if ($json->Code == 1011) {
-                                $queue_retries++;
-                                $this->line("Queued ... sleeping: " . $json->Message . "(" . $json->Code . ") ...");
-                                sleep(config('ccplus.sushi_retry_sleep'));
-                                $this->line("Retrying");
-                                $req_state = "queued";
+                       // Make sure $json is a proper object
+                        if (! is_object($json)) {
+                            $this->line('JSON must be an object, found ' . (is_array($json) ? 'an array' : 'a scalar'));
+                            continue 2;
+                        }
+
+                       // Check for Exceptions; retry if queued
+                        if (property_exists($json, 'Exception')) {
+                            $Code = $json->Exception->Code;
+                            $Severity = $json->Exception->Severity;
+                            $Message = $json->Exception->Message;
+                        } else if (property_exists($json, 'Code') && property_exists($json, 'Message')) {
+                            $Code = $json->Code;
+                            $Severity = $json->Severity;
+                            $Message = $json->Message;
+                        }
+                        if (property_exists($json, 'Exception') ||
+                            (property_exists($json, 'Code') && property_exists($json, 'Message'))) {
+                            if ($Code == 1011) {
+                                self::retrySleep();
+                                $retries++;
                                 continue;
+                            }
+                            $_severity = strtoupper($Severity);
+                            if ( $_severity == 'ERROR' || $_severity == 'FATAL') {
+                                $error = SushiError::firstOrCreate(['id' => $Code],
+                                    ['id' => $Code, 'message' => $Message, 'severity' => $Severity]
+                                );
+                                $this->line('Exception returned ('.$error->id.') '.$error->message);
+
+                                // Need to drop a record in failedingests...
+                                continue 2;
                             } else {
-                                $this->line("Error returned: (" . $json->Severity . "),  Code: " . $json->Code);
-                                $this->line("Message: " . $json->Message);
-                                exit();
+                                $this->line("Non-Fatal Exception: (" . $Code . ") : " . $Message);
                             }
                         }
-                        if (isset($json->Report_Header)) {
-                            if (isset($json->Report_Header->Exceptions)) {
-                                foreach ($json->Report_Header->Exceptions as $_exep) {
-                                    if ($_exep->Code == 1011) {
-                                        $queue_retries++;
-                                        $this->line("Queued ... sleeping: " . $_exep->Message . "(" .
-                                                                              $_exep->Code . ") ...");
-                                        sleep(config('ccplus.sushi_retry_sleep'));
-                                        $this->line("Retrying");
-                                        $req_state = "queued";
-                                        continue 2;
-                                    } else {
-                                        $this->line("Exception: (" . $_exep->Severity . "), Code: " . $_exep->Code);
-                                        $this->line("Message: " . $_exep->Message);
-                                        exit();
-                                    }
-                                }
-                            }
-                            if (isset($json->Report_Items)) {
-                                $req_state = "done";
-                                if (!is_null(config('ccplus.reports_path'))) {
-                                    file_put_contents($raw_datafile, $json);
-                                }
-                            } else {
-                                $this->line("SUSHI error - no Report_Items! Requested URI was: " . $request_uri);
-                                exit;
-                            }
-                        } else {
-                            $this->line("SUSHI error - no Report_Header! Requested URI was: " . $request_uri);
-                            exit;
-                        }
-                    } // while retries remaining
+                        $req_state = "done";
+                    } // while queued with retries remaining
+
+                   // Save raw data
+                    if (!is_null(config('ccplus.reports_path'))) {
+                        file_put_contents($raw_datafile, $json);
+                    }
 
                    // Validate report
-                   // $C5validator = new Counter5Validator($json);
-                   $validJson = self::validateJson($json);
-                   $result = $C5processor->{$report->name}($validJson);
+                    try {
+                        $validJson = self::validateJson($json);
+                    } catch (\Exception $e) {
+                        $this->line("COUNTER Validation Failed: " . $e->getMessage());
+                        continue;
+                    }
+
+                   // Process the report and save in the datanase
+                    $result = $C5processor->{$report->name}($validJson);
 
                 }  // foreach reports
             }  // foreach sushisettings
         }  // foreach providers
+
         $this->line("Ingest completed: " . date("Y-m-d H:i:s"));
+    }
+
+    protected static function retrySleep()
+    {
+        $this->line("Queued by provider - sleeping...");
+        sleep(config('ccplus.sushi_retry_sleep'));
+        $this->line("Retrying");
     }
 
     protected static function validateJson($json)
     {
+        // Confirm Report_Header is present and a valid object, store in $header
+         if (! property_exists($json, 'Report_Header')) {
+             throw new \Exception('Report_Header is missing');
+         }
+         $header = $json->Report_Header;
+         if (! is_object($header)) {
+             throw new \Exception('Report_Header must be an object, found ' .
+                                  (is_array($header) ? 'an array' : 'a scalar'));
+         }
 
-        try {
-            $release = RawReport::getReleaseFromJson($json);
-        } catch (\Exception $e) {
-            throw new ParseException("Could not determine COUNTER Release - " . $e->getMessage());
-        }
-        if ($release !== '5') {
-            throw new ParseException("COUNTER Release '{$release}' invalid/unsupported");
-        }
+        // Get release value; we're only handling Release 5
+         if (! property_exists($header, 'Release')) {
+             throw new \Exception("Could not determine COUNTER Release");
+         }
+         if (! is_scalar($header->Release)) {
+             throw new \Exception('Report_Header.Release must be a scalar, found an ' .
+                                  (is_array($header->Release) ? 'array' : 'object'));
+         }
+         $release = trim($header->Release);
+         if ($release !== '5') {
+             throw new \Exception("COUNTER Release '{$release}' invalid/unsupported");
+         }
 
-        $report = new JsonR5Report($json);
-        unset($json);
+        // Make sure there are Report_Items to process
+         if (!isset($json->Report_Items)) {
+             throw new \Exception("SUSHI error: no Report_Items included in JSON response.");
+         }
 
-        return $report;
+        // Make sure there are Report_Items to process
+         $report = new JsonR5Report($json);
+         unset($json);
+         return $report;
     }
+
 }

@@ -22,11 +22,12 @@ class CreateFailedIngestsTable extends Migration
             $table->string('yearmon', 7);
             $table->string('process_step');
             $table->unsignedInteger('retry_count');
-            $table->string('detail');
+            $table->unsignedInteger('error_id')->nullable();
             $table->timestamps();
 
             $table->foreign('sushisettings_id')->references('id')->on('sushisettings');
             $table->foreign('report_id')->references('id')->on($global_db . '.reports');
+            $table->foreign('error_id')->references('id')->on($global_db . '.sushierrors');
         });
     }
 

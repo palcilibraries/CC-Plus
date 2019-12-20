@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
           AccessMethodsTableSeeder::class,
           AccessTypesTableSeeder::class,
           DataTypesTableSeeder::class,
+          SushiErrorsTableSeeder::class,
         ]);
     }
 }

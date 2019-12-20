@@ -18,12 +18,17 @@ class FailedIngest extends Model
    * @var array
    */
     protected $fillable = [
-      'sushisettings_id', 'report_id', 'yearmon', 'process_step', 'retry_count', 'detail'
+      'sushisettings_id', 'report_id', 'yearmon', 'process_step', 'retry_count', 'error_id'
     ];
 
     public function sushiSetting()
     {
         return $this->belongsTo('App\SushiSetting', 'sushisettings_id');
+    }
+
+    public function sushiError()
+    {
+        return $this->belongsTo('App\SushiError', 'error_id');
     }
 
     public function report()
@@ -35,4 +40,5 @@ class FailedIngest extends Model
     {
         return $this->hasOne('App\Alert', 'failed_id');
     }
+
 }

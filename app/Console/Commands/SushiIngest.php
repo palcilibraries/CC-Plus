@@ -88,11 +88,11 @@ class SushiIngestCommand extends Command
 
        // Get detail on reports requested
         if (strtoupper($rept) == 'ALL') {
-            $rept = Report::all();
+            $requested_reports = Report::all()->pluck('name')->toArray();
         } else {
-            $reports = Report::where('name', '=', $rept)->get();
+            $requested_reports = Report::where('name', '=', $rept)->pluck('name')->toArray();
         }
-        if ($reports->isEmpty()) {
+        if (count($requested_reports) == 0) {
             $this->error("No matching reports found");
             exit;
         }
@@ -145,6 +145,7 @@ class SushiIngestCommand extends Command
 
            // Loop through all sushisettings for this provider
             foreach ($provider->sushisettings as $setting) {
+
                // Skip this setting if we're just processing a single inst and the IDs don't match
                 if (($inst_id != 0) && ($setting->inst_id != $inst_id)) {
                     continue;
@@ -160,14 +161,18 @@ class SushiIngestCommand extends Command
                // Create the processor object
                 $C5processor = new Counter5Processor($provider->id, $setting->inst_id, $begin, $end, "");
 
-               // Loop through all reports for this provider
+               // Loop through all reports defined as available for this provider
                 foreach ($provider->reports as $report) {
-                    // if ( $report->name =="TR") continue;
-                    $this->line("Requesting " . $report->name . " for " . $provider->name);
+
+                   // if this report hasn't been requested (cmd-line argument above), then skip it
+                    if ( !in_array($report->name,$requested_reports)) continue;
+                    $this->line("Requesting " . $report->name . " from " . $provider->name .
+                                " for " . $setting->institution->name);
 
                    // Set output filename for raw data. Create the folder path, if necessary
                     if (!is_null(config('ccplus.reports_path'))) {
-                        $full_path = $report_path . '/' . $setting->institution->name . '/' . $provider->name . '/';
+                        // $full_path = $report_path . '/' . $setting->institution->name . '/' . $provider->name . '/';
+                        $full_path = realpath($report_path.'/'.$setting->institution->name.'/'.$provider->name.'/');
                         if (!is_dir($full_path)) {
                             mkdir($full_path, 0755, true);
                         }
@@ -202,7 +207,20 @@ class SushiIngestCommand extends Command
                     while ($retries <= config('ccplus.sushi_retry_limit')  && $req_state == "queued") {
 
                        // Make the request and convert into JSON
-                        $result = $client->get($request_uri);
+                        try {
+                            $result = $client->get($request_uri);
+                        } catch (\Exception $e) {
+                            $message = "Report request failed, client returned no response; check URL.";
+                            if ( $e->hasResponse() ) {
+                                $response = $e->getResponse();
+                                $message = "Error requesting report: ";
+                                $message .= "(" . $response->getStatusCode() . ") ";
+                                $message .= $response->getReasonPhrase();
+                            }
+                            $this->line($message);
+                            continue 2;
+                        }
+
                         $json = json_decode($result->getBody());
                         if (json_last_error() !== JSON_ERROR_NONE) {
                             $this->line("Error decoding JSON - " . json_last_error_msg());
@@ -248,11 +266,6 @@ class SushiIngestCommand extends Command
                         $req_state = "done";
                     } // while queued with retries remaining
 
-                   // Save raw data
-                    if (!is_null(config('ccplus.reports_path'))) {
-                        file_put_contents($raw_datafile, $json);
-                    }
-
                    // Validate report
                     try {
                         $validJson = self::validateJson($json);
@@ -261,7 +274,12 @@ class SushiIngestCommand extends Command
                         continue;
                     }
 
-                   // Process the report and save in the datanase
+                    // Save raw data
+                     if (!is_null(config('ccplus.reports_path'))) {
+                         file_put_contents($raw_datafile, json_encode($json,JSON_PRETTY_PRINT));
+                     }
+
+                   // Process the report and save in the database
                     $result = $C5processor->{$report->name}($validJson);
 
                 }  // foreach reports
@@ -311,7 +329,7 @@ class SushiIngestCommand extends Command
         // Make sure there are Report_Items to process
          $report = new JsonR5Report($json);
          unset($json);
-         return $report;
+         return $report->json;
     }
 
 }

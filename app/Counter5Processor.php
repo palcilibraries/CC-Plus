@@ -14,6 +14,7 @@ class Counter5Processor extends Model
     private static $begin;
     private static $end;
     private static $yearmon;
+    private static $now;
 
   /**
    * Class Constructor and setting methods
@@ -25,6 +26,8 @@ class Counter5Processor extends Model
         self::$begin = $_begin;
         self::$end = $_end;
         self::$yearmon = substr($_begin, 0, 7);
+        $curTime = new \DateTime();
+        self::$now = $curTime->format("Y-m-d H:i:s");
     }
 
     public function setBegin($_begin)
@@ -103,10 +106,8 @@ class Counter5Processor extends Model
                 if (is_null($book)) continue;
                 $book_id = $book->id;
             } else {   // Not a Journal or Book, treat as an Item
-                $item = Item::firstOrCreate(['Name' => $_title, 'PropID' => $Item_ID['PropID'], 'YOP' => $_YOP],
-                                            ['DOI' => $Item_ID['DOI'], 'URI' => $Item_ID['URI'],
-                                             'ISSN' => $Item_ID['ISSN'], 'ISBN' => $Item_ID['ISBN'],
-                                             'eISSN' => $Item_ID['eISSN']]);
+                $item = self::itemFindOrCreate($_title, $Item_ID['PropID'], $Item_ID['ISSN'], $Item_ID['eISSN'],
+                                               $Item_ID['ISBN'], $Item_ID['DOI'], $Item_ID['URI']);
                 $item_id = $item->id;
             }
 
@@ -131,7 +132,8 @@ class Counter5Processor extends Model
                   'unique_item_requests' => $ICounts['Unique_Item_Requests'],
                   'unique_title_investigations' => $ICounts['Unique_Title_Investigations'],
                   'unique_title_requests' => $ICounts['Unique_Title_Requests'],
-                  'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License']]);
+                  'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License'],
+                  'created_at' => self::$now]);
 
            // Reset metric counts
             for ($_m = 0; $_m < $_metric_count; $_m++) {
@@ -215,7 +217,8 @@ class Counter5Processor extends Model
                        'unique_item_requests' => $ICounts['Unique_Item_Requests'],
                        'unique_title_investigations' => $ICounts['Unique_Title_Investigations'],
                        'unique_title_requests' => $ICounts['Unique_Title_Requests'],
-                       'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License']]);
+                       'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License'],
+                       'created_at' => self::$now]);
 
            // Reset metric counts
             for ($_m = 0; $_m < $_metric_count; $_m++) {
@@ -239,7 +242,7 @@ class Counter5Processor extends Model
        // Setup array to hold per-item counts
         $ICounts = ['Searches_Platform' => 0, 'Total_Item_Investigations' => 0, 'Total_Item_Requests' => 0,
                     'Unique_Item_Investigations' => 0, 'Unique_Item_Requests' => 0,
-                    'Limit_Exceeded' => 0, 'No_License' => 0];
+                    'Unique_Title_Investigations' => 0, 'Unique_Title_Requests' => 0];
         $_metric_keys = array_keys($ICounts);
         $_metric_count = count($ICounts);
 
@@ -284,7 +287,7 @@ class Counter5Processor extends Model
                     'unique_item_investigations' => $ICounts['Unique_Item_Investigations'],
                     'unique_item_requests' => $ICounts['Unique_Item_Requests'],
                     'unique_title_investigations' => $ICounts['Unique_Title_Investigations'],
-                    'unique_title_requests' => $ICounts['Unique_Title_Requests']]);
+                    'unique_title_requests' => $ICounts['Unique_Title_Requests'], 'created_at' => self::$now]);
 
            // Reset metric counts
             for ($_m = 0; $_m < $_metric_count; $_m++) {
@@ -429,7 +432,8 @@ class Counter5Processor extends Model
                 'total_item_investigations' => $ICounts['Total_Item_Investigations'],
                 'unique_item_requests' => $ICounts['Unique_Item_Requests'],
                 'unique_item_investigations' => $ICounts['Unique_Item_Investigations'],
-                'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License']]);
+                'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License'],
+                'created_at' => self::$now]);
 
            // Reset metric counts
             for ($_m = 0; $_m < $_metric_count; $_m++) {

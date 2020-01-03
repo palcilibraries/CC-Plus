@@ -2,7 +2,7 @@
 
 use Illuminate\Database\Seeder;
 
-class SushiErrorsTableSeeder extends Seeder
+class CcplusErrorsTableSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -13,10 +13,19 @@ class SushiErrorsTableSeeder extends Seeder
     {
         // Make sure we're talking to the global database
         $_db = \Config::get('database.connections.globaldb.database');
-        $table = $_db . ".sushierrors";
+        $table = $_db . ".ccplus_errors";
 
         // Make sure table is empty
         if (DB::table($table)->get()->count() == 0) {
+           // CCPLUS errors : 00XX - 09XX
+            DB::table($table)->insert([
+            ['id'=>0, 'message'=>'Undefined error', 'severity'=>'Warning'],
+            ['id'=>10, 'message'=>'SUSHI HTTP request failed, verify URL','severity'=>'Fatal'],
+            ['id'=>20, 'message'=>'Error decoding JSON', 'severity'=>'Fatal'],
+            ['id'=>30, 'message'=>'JSON is not an object', 'severity'=>'Fatal'],
+            ['id'=>100, 'message'=>'COUNTER report failed validation', 'severity'=>'Fatal'],
+            ]);
+           // SUSHI errors : 1XXX - 3XXX
             DB::table($table)->insert([
             ['id'=>1000, 'message'=>'Service Not Available', 'severity'=>'Fatal'],
             ['id'=>1010, 'message'=>'Service Busy', 'severity'=>'Fatal'],

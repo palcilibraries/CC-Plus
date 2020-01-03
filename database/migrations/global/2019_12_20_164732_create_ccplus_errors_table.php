@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateSushierrorsTable extends Migration
+class CreateCCplusErrorsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,7 @@ class CreateSushierrorsTable extends Migration
      */
     public function up()
     {
-        Schema::create('sushierrors', function (Blueprint $table) {
+        Schema::create('ccplus_errors', function (Blueprint $table) {
             $table->unsignedInteger('id')->unique();
             $table->string('message');
             $table->enum('severity', array('Info', 'Debug', 'Warning', 'Error', 'Fatal'))->default('Warning');
@@ -27,6 +27,6 @@ class CreateSushierrorsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('sushierrors');
+        Schema::dropIfExists('ccplus_errors');
     }
 }

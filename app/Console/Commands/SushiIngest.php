@@ -11,8 +11,10 @@ use App\Report;
 use App\Consortium;
 use App\Provider;
 use App\Institution;
-use App\SushiError;
+use App\CcplusError;
 use App\Counter5Processor;
+use App\FailedIngest;
+use App\IngestLog;
 use \ubfr\c5tools\Report as RawReport;
 use \ubfr\c5tools\JsonR5Report;
 
@@ -116,9 +118,10 @@ class SushiIngestCommand extends Command
         }
 
        // Loop through providers
-        $logmessage = false;
         $client = new Client();   //GuzzleHttp\Client
+        $this->line("Ingest begins for " . $consortium->ccp_key . " at " . date("Y-m-d H:i:s"));
         foreach ($providers as $provider) {
+
            // If running as "Auto" and today is not the day to run, skip silently to next provider
             if ($this->option('auto') && $provider->day_of_month != date('j')) {
                 continue;
@@ -137,9 +140,6 @@ class SushiIngestCommand extends Command
             }
 
            // Begin setting up the URI for the request
-            if ($logmessage) {
-                $this->line("Sushi Requests Begin for Consortium: " . $consortium->ccp_key);
-            }
             $base_uri = rtrim($provider->server_url_r5,'/') . "/";
             $uri_args = "/?begin_date=" . $begin . "&end_date=" . $end;
 
@@ -197,7 +197,7 @@ class SushiIngestCommand extends Command
 
                    // Construct URI for the request
                     $request_uri = $base_uri . $report->name . $uri_args . $uri_atts;
-                    $this->line("Requesting via: " . $request_uri);
+                    // $this->line("Requesting via: " . $request_uri);
 
                    // Loop up to retry-limit asking for the report
                     $retries = 0;
@@ -206,30 +206,55 @@ class SushiIngestCommand extends Command
                    // This currently catches "Queued" response and sleeps to retry.
                     while ($retries <= config('ccplus.sushi_retry_limit')  && $req_state == "queued") {
 
+                        $ts = date("Y-m-d H:i:s");
+
                        // Make the request and convert into JSON
                         try {
                             $result = $client->get($request_uri);
                         } catch (\Exception $e) {
-                            $message = "Report request failed, client returned no response; check URL.";
                             if ( $e->hasResponse() ) {
                                 $response = $e->getResponse();
-                                $message = "Error requesting report: ";
-                                $message .= "(" . $response->getStatusCode() . ") ";
-                                $message .= $response->getReasonPhrase();
+                                $detail  = "(" . $response->getStatusCode() . ") ";
+                                $detail .= $response->getReasonPhrase();
+                            } else {
+                                $detail ="No response from provider.";
                             }
-                            $this->line($message);
+
+                           // Update logs
+                            FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                                  'yearmon' => $yearmon, 'process_step' => 'HTTP',
+                                                  'error_id' => 10, 'detail' => $detail, 'created_at' => $ts]);
+                            IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                               'yearmon' => $yearmon, 'status' => 'Failed', 'created_at' => $ts]);
+                            $this->line("SUSHI HTTP request failed, verify URL : " . $detail);
                             continue 2;
                         }
 
                         $json = json_decode($result->getBody());
                         if (json_last_error() !== JSON_ERROR_NONE) {
-                            $this->line("Error decoding JSON - " . json_last_error_msg());
+                            $detail = json_last_error_msg();
+
+                           // Update logs
+                            FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                                  'yearmon' => $yearmon, 'process_step' => 'JSON',
+                                                  'error_id' => 20, 'detail' => $detail, 'created_at' => $ts]);
+                            IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                               'yearmon' => $yearmon, 'status' => 'Failed', 'created_at' => $ts]);
+                            $this->line("Error decoding JSON : " . $detail);
                             continue 2;
                         }
 
                        // Make sure $json is a proper object
                         if (! is_object($json)) {
-                            $this->line('JSON must be an object, found ' . (is_array($json) ? 'an array' : 'a scalar'));
+                            $detail = " request returned " . (is_array($json) ? 'an array' : 'a scalar');
+
+                           // Update logs
+                            FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                                  'yearmon' => $yearmon, 'process_step' => 'JSON',
+                                                  'error_id' => 30, 'detail' => $detail, 'created_at' => $ts]);
+                            IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                               'yearmon' => $yearmon, 'status' => 'Failed', 'created_at' => $ts]);
+                            $this->line('JSON is not an object : ' . $detail);
                             continue 2;
                         }
 
@@ -246,18 +271,24 @@ class SushiIngestCommand extends Command
                         if (property_exists($json, 'Exception') ||
                             (property_exists($json, 'Code') && property_exists($json, 'Message'))) {
                             if ($Code == 1011) {
-                                self::retrySleep();
                                 $retries++;
+                                $this->line('Report queued for processing, sleeping ('.$retries.')');
+                                self::retrySleep();
                                 continue;
                             }
                             $_severity = strtoupper($Severity);
                             if ( $_severity == 'ERROR' || $_severity == 'FATAL') {
-                                $error = SushiError::firstOrCreate(['id' => $Code],
-                                    ['id' => $Code, 'message' => $Message, 'severity' => $Severity]
+                                $error = CcplusError::firstOrCreate(['id' => $Code],
+                                         ['id' => $Code, 'message' => $Message, 'severity' => $Severity]
                                 );
-                                $this->line('Exception returned ('.$error->id.') '.$error->message);
 
-                                // Need to drop a record in failedingests...
+                               // Update logs
+                                FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                                      'yearmon' => $yearmon, 'process_step' => 'SUSHI',
+                                                      'error_id' => $error->id, 'created_at' => $ts]);
+                                IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                                   'yearmon' => $yearmon, 'status' => 'Failed', 'created_at' => $ts]);
+                                $this->line('Exception returned ('.$error->id.') '.$error->message);
                                 continue 2;
                             } else {
                                 $this->line("Non-Fatal Exception: (" . $Code . ") : " . $Message);
@@ -270,7 +301,14 @@ class SushiIngestCommand extends Command
                     try {
                         $validJson = self::validateJson($json);
                     } catch (\Exception $e) {
-                        $this->line("COUNTER Validation Failed: " . $e->getMessage());
+
+                       // Update logs
+                        FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                              'yearmon' => $yearmon, 'process_step' => 'COUNTER', 'error_id' => 100,
+                                              'detail' => $e->getMessage(), 'created_at' => $ts]);
+                        IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                           'yearmon' => $yearmon, 'status' => 'Failed', 'created_at' => $ts]);
+                        $this->line("COUNTER report failed validation : " . $e->getMessage());
                         continue;
                     }
 
@@ -282,11 +320,19 @@ class SushiIngestCommand extends Command
                    // Process the report and save in the database
                     $result = $C5processor->{$report->name}($validJson);
 
+                   // Add record to ingest log on success
+                    $_status = 'Saved';
+                    if ( !$C5processor->status ) {
+                        $_status = 'Failed';
+                    }
+                    IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                       'yearmon' => $yearmon, 'status' => $_status, 'created_at' => $ts]);
+
                 }  // foreach reports
             }  // foreach sushisettings
         }  // foreach providers
 
-        $this->line("Ingest completed: " . date("Y-m-d H:i:s"));
+        $this->line("Ingest ends at : " . date("Y-m-d H:i:s"));
     }
 
     protected static function retrySleep()

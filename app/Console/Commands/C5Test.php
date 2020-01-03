@@ -11,7 +11,7 @@ use App\Report;
 use App\Consortium;
 use App\Provider;
 use App\Institution;
-use App\SushiError;
+use App\CcplusError;
 use App\Counter5Processor;
 use \ubfr\c5tools\Report as RawReport;
 use \ubfr\c5tools\JsonR5Report;

@@ -18,7 +18,7 @@ class FailedIngest extends Model
    * @var array
    */
     protected $fillable = [
-      'sushisettings_id', 'report_id', 'yearmon', 'process_step', 'retry_count', 'error_id'
+      'sushisettings_id', 'report_id', 'yearmon', 'process_step', 'retry_count', 'error_id', 'detail'
     ];
 
     public function sushiSetting()
@@ -26,9 +26,9 @@ class FailedIngest extends Model
         return $this->belongsTo('App\SushiSetting', 'sushisettings_id');
     }
 
-    public function sushiError()
+    public function ccplusError()
     {
-        return $this->belongsTo('App\SushiError', 'error_id');
+        return $this->belongsTo('App\CcplusError', 'error_id');
     }
 
     public function report()

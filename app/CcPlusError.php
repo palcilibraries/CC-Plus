@@ -4,7 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class SushiError extends Model
+class CcplusError extends Model
 {
     /**
      * The database table used by the model.
@@ -12,7 +12,7 @@ class SushiError extends Model
      * @var string
      */
     protected $connection = 'globaldb';
-    protected $table = 'sushierrors';
+    protected $table = 'ccplus_errors';
 
      /**
       * The attributes that are mass assignable.

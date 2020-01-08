@@ -15,8 +15,8 @@ class CreateItemsTable extends Migration
     {
         Schema::create('items', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('Name',256)->nullable();
-            $table->string('authors',256)->nullable();
+            $table->string('Name', 256)->nullable();
+            $table->string('authors', 256)->nullable();
             $table->string('pub_date', 10)->nullable();
             $table->string('article_version', 10)->nullable();
             $table->string('DOI', 256)->nullable();

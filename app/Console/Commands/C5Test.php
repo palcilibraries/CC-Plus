@@ -78,7 +78,6 @@ class C5TestCommand extends Command
        // Loop on providers
         $logmessage = false;
         foreach ($providers as $provider) {
-
            // Skip this provider if there are no reports defined for it
             if (count($provider->reports) == 0) {
                 $this->line($provider->name . " has no reports defined; skipping...");
@@ -134,8 +133,7 @@ class C5TestCommand extends Command
                     }
 
                    // Parse and store the report if it's valid
-                   $result = $C5processor->{$report->name}($validJson);
-
+                    $result = $C5processor->{$report->name}($validJson);
                 }  // foreach reports
             }  // foreach sushisettings
         }  // foreach providers
@@ -145,32 +143,32 @@ class C5TestCommand extends Command
     protected static function validateJson($json)
     {
         // Confirm Report_Header is present and a valid object, store in $header
-         if (! property_exists($json, 'Report_Header')) {
-             throw new \Exception('Report_Header is missing');
-         }
+        if (! property_exists($json, 'Report_Header')) {
+            throw new \Exception('Report_Header is missing');
+        }
          $header = $json->Report_Header;
-         if (! is_object($header)) {
-             throw new \Exception('Report_Header must be an object, found ' .
-                                  (is_array($header) ? 'an array' : 'a scalar'));
-         }
+        if (! is_object($header)) {
+            throw new \Exception('Report_Header must be an object, found ' .
+                                 (is_array($header) ? 'an array' : 'a scalar'));
+        }
 
         // Get release value; we're only handling Release 5
-         if (! property_exists($header, 'Release')) {
-             throw new \Exception("Could not determine COUNTER Release");
-         }
-         if (! is_scalar($header->Release)) {
-             throw new \Exception('Report_Header.Release must be a scalar, found an ' .
-                                  (is_array($header->Release) ? 'array' : 'object'));
-         }
+        if (! property_exists($header, 'Release')) {
+            throw new \Exception("Could not determine COUNTER Release");
+        }
+        if (! is_scalar($header->Release)) {
+            throw new \Exception('Report_Header.Release must be a scalar, found an ' .
+                                 (is_array($header->Release) ? 'array' : 'object'));
+        }
          $release = trim($header->Release);
-         if ($release !== '5') {
-             throw new \Exception("COUNTER Release '{$release}' invalid/unsupported");
-         }
+        if ($release !== '5') {
+            throw new \Exception("COUNTER Release '{$release}' invalid/unsupported");
+        }
 
         // Make sure there are Report_Items to process
-         if (!isset($json->Report_Items)) {
-             throw new \Exception("SUSHI error: no Report_Items included in JSON response.");
-         }
+        if (!isset($json->Report_Items)) {
+            throw new \Exception("SUSHI error: no Report_Items included in JSON response.");
+        }
 
         // Make sure there are Report_Items to process
          $report = new JsonR5Report($json);

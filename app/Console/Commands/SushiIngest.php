@@ -4,18 +4,16 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Client;
 use DB;
+use App\Sushi;
 use App\Report;
 use App\Consortium;
 use App\Provider;
 use App\Institution;
-use App\CcplusError;
 use App\Counter5Processor;
 use App\FailedIngest;
 use App\IngestLog;
-use \ubfr\c5tools\Report as RawReport;
+// use \ubfr\c5tools\Report as RawReport;
 use \ubfr\c5tools\JsonR5Report;
 
 class SushiIngestCommand extends Command
@@ -103,7 +101,6 @@ class SushiIngestCommand extends Command
         if ($prov_id == 0) {
             $providers = Provider::where('is_active', '=', true)->get();
         } else {
-            // $providers = Provider::where('is_active', '=', true)->findOrFail($prov_id);
             $providers = Provider::where('is_active', '=', true)->where('id', '=', $prov_id)->get();
         }
 
@@ -111,17 +108,15 @@ class SushiIngestCommand extends Command
         if ($inst_id == 0) {
             $institutions = Institution::where('is_active', '=', true)->pluck('name', 'id');
         } else {
-            // $institutions = Institution::findOrFail($inst_id)->where('is_active', '=', true)
-            //                              ->pluck('name', 'id');
             $institutions = Institution::where('is_active', '=', true)->where('id', '=', $inst_id)
                                        ->pluck('name', 'id');
         }
 
        // Loop through providers
-        $client = new Client();   //GuzzleHttp\Client
+        $sushi = new Sushi($begin, $end);
+
         $this->line("Ingest begins for " . $consortium->ccp_key . " at " . date("Y-m-d H:i:s"));
         foreach ($providers as $provider) {
-
            // If running as "Auto" and today is not the day to run, skip silently to next provider
             if ($this->option('auto') && $provider->day_of_month != date('j')) {
                 continue;
@@ -139,23 +134,11 @@ class SushiIngestCommand extends Command
                 continue;
             }
 
-           // Begin setting up the URI for the request
-            $base_uri = rtrim($provider->server_url_r5,'/') . "/";
-            $uri_args = "/?begin_date=" . $begin . "&end_date=" . $end;
-
            // Loop through all sushisettings for this provider
             foreach ($provider->sushisettings as $setting) {
-
                // Skip this setting if we're just processing a single inst and the IDs don't match
                 if (($inst_id != 0) && ($setting->inst_id != $inst_id)) {
                     continue;
-                }
-
-               // Construct and execute the Request
-                $uri_args .= "&customer_id=" . $setting->customer_id;
-                $uri_args .= "&requestor_id=" . $setting->requestor_id;
-                if ( !is_null($setting->API_key) ) {
-                    $uri_args .= "&requestor_id=" . $setting->requestor_id;
                 }
 
                // Create the processor object
@@ -163,149 +146,84 @@ class SushiIngestCommand extends Command
 
                // Loop through all reports defined as available for this provider
                 foreach ($provider->reports as $report) {
+                    // Only accept the 4 COUNTER-5 master reports
+                    if (
+                        $report->name != "TR"
+                        && $report->name != "PR"
+                        && $report->name == "DR"
+                          && $report->name == "IR"
+                    ) {
+                         $this->error("Unsupported report? : " . self::$report->name . " defined for: " .
+                                      self::$setting->provider->name);
+                         continue;
+                    }
 
                    // if this report hasn't been requested (cmd-line argument above), then skip it
-                    if ( !in_array($report->name,$requested_reports)) continue;
+                    if (!in_array($report->name, $requested_reports)) {
+                        continue;
+                    }
                     $this->line("Requesting " . $report->name . " from " . $provider->name .
                                 " for " . $setting->institution->name);
 
                    // Set output filename for raw data. Create the folder path, if necessary
                     if (!is_null(config('ccplus.reports_path'))) {
-                        // $full_path = $report_path . '/' . $setting->institution->name . '/' . $provider->name . '/';
-                        $full_path = realpath($report_path.'/'.$setting->institution->name.'/'.$provider->name.'/');
+                        $full_path = realpath($report_path . '/' . $setting->institution->name . '/' .
+                                              $provider->name . '/');
                         if (!is_dir($full_path)) {
                             mkdir($full_path, 0755, true);
                         }
                         $raw_datafile = $full_path . '/' . $report->name . '_' . $begin . '_' . $end . '.json';
                     }
 
-                   // Setup attributes for the request
-                    if ($report->name == "TR") {
-                        $uri_atts  = "&attributes_to_show=Data_Type%7CAccess_Method%7CAccess_Type%7C";
-                        $uri_atts .= "Section_Type%7CYOP";
-                    } elseif ($report->name == "DR") {
-                        $uri_atts = "";
-                    } elseif ($report->name == "PR") {
-                        $uri_atts = "&attributes_to_show=Data_Type%7CAccess_Method";
-                    } elseif ($report->name == "IR") {
-                        $uri_atts = "";
-                    } else {
-                        $this->error("Unknown report: " . $report->name . " defined for: " .
-                                $provider->name);
-                        continue;
-                    }
-
                    // Construct URI for the request
-                    $request_uri = $base_uri . $report->name . $uri_args . $uri_atts;
+                    $request_uri = $sushi->buildUri($setting, $report);
                     // $this->line("Requesting via: " . $request_uri);
 
                    // Loop up to retry-limit asking for the report
                     $retries = 0;
-                    $req_state = "queued";
+                    $req_state = "Queued";
+                    $ts = date("Y-m-d H:i:s");
 
-                   // This currently catches "Queued" response and sleeps to retry.
-                    while ($retries <= config('ccplus.sushi_retry_limit')  && $req_state == "queued") {
+                   // Sleeps for sushi_retry_sleep seconds, and retries sushi_retry_limit times if request is queued.
+                    while ($retries <= config('ccplus.sushi_retry_limit')  && $req_state == "Queued") {
+                       // Make the request
+                        $json = $sushi->request($request_uri);
 
-                        $ts = date("Y-m-d H:i:s");
+                       // Check status of request and returned $json
+                        if ($sushi->status == "Queued") {
+                            $retries++;
+                            $this->line('Report queued for processing, sleeping (' . $retries . ')');
+                            self::retrySleep();
+                            continue;
+                        }
 
-                       // Make the request and convert into JSON
-                        try {
-                            $result = $client->get($request_uri);
-                        } catch (\Exception $e) {
-                            if ( $e->hasResponse() ) {
-                                $response = $e->getResponse();
-                                $detail  = "(" . $response->getStatusCode() . ") ";
-                                $detail .= $response->getReasonPhrase();
-                            } else {
-                                $detail ="No response from provider.";
-                            }
-
-                           // Update logs
-                            FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
-                                                  'yearmon' => $yearmon, 'process_step' => 'HTTP',
-                                                  'error_id' => 10, 'detail' => $detail, 'created_at' => $ts]);
+                       // If request failed, insert an IngestLog and a FailedIngest record
+                        if ($sushi->status == "Fail") {
                             IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
                                                'yearmon' => $yearmon, 'status' => 'Failed', 'created_at' => $ts]);
-                            $this->line("SUSHI HTTP request failed, verify URL : " . $detail);
+                            FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
+                                                  'yearmon' => $yearmon, 'process_step' => $sushi->step,
+                                                  'error_id' => 10, 'detail' => $sushi->detail, 'created_at' => $ts]);
+                            $this->line($sushi->message . $sushi->detail);
                             continue 2;
                         }
 
-                        $json = json_decode($result->getBody());
-                        if (json_last_error() !== JSON_ERROR_NONE) {
-                            $detail = json_last_error_msg();
-
-                           // Update logs
-                            FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
-                                                  'yearmon' => $yearmon, 'process_step' => 'JSON',
-                                                  'error_id' => 20, 'detail' => $detail, 'created_at' => $ts]);
-                            IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
-                                               'yearmon' => $yearmon, 'status' => 'Failed', 'created_at' => $ts]);
-                            $this->line("Error decoding JSON : " . $detail);
-                            continue 2;
-                        }
-
-                       // Make sure $json is a proper object
-                        if (! is_object($json)) {
-                            $detail = " request returned " . (is_array($json) ? 'an array' : 'a scalar');
-
-                           // Update logs
-                            FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
-                                                  'yearmon' => $yearmon, 'process_step' => 'JSON',
-                                                  'error_id' => 30, 'detail' => $detail, 'created_at' => $ts]);
-                            IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
-                                               'yearmon' => $yearmon, 'status' => 'Failed', 'created_at' => $ts]);
-                            $this->line('JSON is not an object : ' . $detail);
-                            continue 2;
-                        }
-
-                       // Check for Exceptions; retry if queued
-                        if (property_exists($json, 'Exception')) {
-                            $Code = $json->Exception->Code;
-                            $Severity = $json->Exception->Severity;
-                            $Message = $json->Exception->Message;
-                        } else if (property_exists($json, 'Code') && property_exists($json, 'Message')) {
-                            $Code = $json->Code;
-                            $Severity = $json->Severity;
-                            $Message = $json->Message;
-                        }
-                        if (property_exists($json, 'Exception') ||
-                            (property_exists($json, 'Code') && property_exists($json, 'Message'))) {
-                            if ($Code == 1011) {
-                                $retries++;
-                                $this->line('Report queued for processing, sleeping ('.$retries.')');
-                                self::retrySleep();
-                                continue;
-                            }
-                            $_severity = strtoupper($Severity);
-                            if ( $_severity == 'ERROR' || $_severity == 'FATAL') {
-                                $error = CcplusError::firstOrCreate(['id' => $Code],
-                                         ['id' => $Code, 'message' => $Message, 'severity' => $Severity]
-                                );
-
-                               // Update logs
-                                FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
-                                                      'yearmon' => $yearmon, 'process_step' => 'SUSHI',
-                                                      'error_id' => $error->id, 'created_at' => $ts]);
-                                IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
-                                                   'yearmon' => $yearmon, 'status' => 'Failed', 'created_at' => $ts]);
-                                $this->line('Exception returned ('.$error->id.') '.$error->message);
-                                continue 2;
-                            } else {
-                                $this->line("Non-Fatal Exception: (" . $Code . ") : " . $Message);
-                            }
+                       // Print out non-fatal message from sushi request
+                        if ($sushi->message != "") {
+                            $this->line($sushi->message . $sushi->detail);
                         }
                         $req_state = "done";
-                    } // while queued with retries remaining
+                    } // while Queued with retries remaining
 
                    // Validate report
                     try {
-                        $validJson = self::validateJson($json);
+                        $validReport = self::validateJson($json);
                     } catch (\Exception $e) {
-
                        // Update logs
                         FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
                                               'yearmon' => $yearmon, 'process_step' => 'COUNTER', 'error_id' => 100,
-                                              'detail' => $e->getMessage(), 'created_at' => $ts]);
+                                              'detail' => 'Validation error: ' . $e->getMessage(),
+                                              'created_at' => $ts]);
                         IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
                                            'yearmon' => $yearmon, 'status' => 'Failed', 'created_at' => $ts]);
                         $this->line("COUNTER report failed validation : " . $e->getMessage());
@@ -313,21 +231,19 @@ class SushiIngestCommand extends Command
                     }
 
                     // Save raw data
-                     if (!is_null(config('ccplus.reports_path'))) {
-                         file_put_contents($raw_datafile, json_encode($json,JSON_PRETTY_PRINT));
-                     }
+                    if (!is_null(config('ccplus.reports_path'))) {
+                        file_put_contents($raw_datafile, json_encode($json, JSON_PRETTY_PRINT));
+                    }
 
                    // Process the report and save in the database
-                    $result = $C5processor->{$report->name}($validJson);
-
-                   // Add record to ingest log on success
-                    $_status = 'Saved';
-                    if ( !$C5processor->status ) {
-                        $_status = 'Failed';
+                    $_status = $C5processor->{$report->name}($json);
+                    if ( $_status = 'Saved') {
+                        $this->line("Data saved successfully for: " . $report->name . " report.");
                     }
+
+                   // Add record to ingest log
                     IngestLog::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
                                        'yearmon' => $yearmon, 'status' => $_status, 'created_at' => $ts]);
-
                 }  // foreach reports
             }  // foreach sushisettings
         }  // foreach providers
@@ -345,37 +261,35 @@ class SushiIngestCommand extends Command
     protected static function validateJson($json)
     {
         // Confirm Report_Header is present and a valid object, store in $header
-         if (! property_exists($json, 'Report_Header')) {
-             throw new \Exception('Report_Header is missing');
-         }
+        if (! property_exists($json, 'Report_Header')) {
+            throw new \Exception('Report_Header is missing');
+        }
          $header = $json->Report_Header;
-         if (! is_object($header)) {
-             throw new \Exception('Report_Header must be an object, found ' .
-                                  (is_array($header) ? 'an array' : 'a scalar'));
-         }
+        if (! is_object($header)) {
+            throw new \Exception('Report_Header must be an object, found ' .
+                                 (is_array($header) ? 'an array' : 'a scalar'));
+        }
 
         // Get release value; we're only handling Release 5
-         if (! property_exists($header, 'Release')) {
-             throw new \Exception("Could not determine COUNTER Release");
-         }
-         if (! is_scalar($header->Release)) {
-             throw new \Exception('Report_Header.Release must be a scalar, found an ' .
-                                  (is_array($header->Release) ? 'array' : 'object'));
-         }
+        if (! property_exists($header, 'Release')) {
+            throw new \Exception("Could not determine COUNTER Release");
+        }
+        if (! is_scalar($header->Release)) {
+            throw new \Exception('Report_Header.Release must be a scalar, found an ' .
+                                 (is_array($header->Release) ? 'array' : 'object'));
+        }
          $release = trim($header->Release);
-         if ($release !== '5') {
-             throw new \Exception("COUNTER Release '{$release}' invalid/unsupported");
-         }
+        if ($release !== '5') {
+            throw new \Exception("COUNTER Release '{$release}' invalid/unsupported");
+        }
 
         // Make sure there are Report_Items to process
-         if (!isset($json->Report_Items)) {
-             throw new \Exception("SUSHI error: no Report_Items included in JSON response.");
-         }
+        if (!isset($json->Report_Items)) {
+            throw new \Exception("SUSHI error: no Report_Items included in JSON response.");
+        }
 
         // Make sure there are Report_Items to process
          $report = new JsonR5Report($json);
-         unset($json);
-         return $report->json;
+         return $report;
     }
-
 }

@@ -26,6 +26,7 @@ Route::resource('/failedingests', 'FailedIngestController');
 Route::resource('/alertsettings', 'AlertSettingController')->middleware(['auth','role:Admin,Manager']);
 
 Auth::routes();
+Route::get('logout', 'Auth\LoginController@logout');
 // Route::get('/globaladmin', 'GlobalAdminController@index')->middleware('auth','role:GlobalAdmin');
 Route::get('/', 'ReportController@index')->name('reports')->middleware('auth');
 Route::get('/admin', 'AdminController@index')->name('admin')->middleware(['auth','role:Admin,Manager']);

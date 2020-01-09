@@ -238,7 +238,7 @@ class SushiIngestCommand extends Command
                    // Process the report and save in the database
                     $_status = $C5processor->{$report->name}($json);
                     if ( $_status = 'Saved') {
-                        $this->line("Data saved successfully for: " . $report->name . " report.");
+                        $this->line($report->name . " report data successfully saved.");
                     }
 
                    // Add record to ingest log

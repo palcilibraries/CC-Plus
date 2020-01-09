@@ -14,6 +14,7 @@ class Sushi extends Model
     public $status;     // Success, Fail, or Queued
     public $message;
     public $detail;
+    public $error_id;
     public $step;
 
   /**
@@ -37,6 +38,7 @@ class Sushi extends Model
         $this->message = "";
         $this->detail = "";
         $this->step = "";
+        $this->error_id = 0;
         $client = new Client();   //GuzzleHttp\Client
 
        // Make the request and convert into JSON
@@ -52,6 +54,7 @@ class Sushi extends Model
             }
             $this->status = "Fail";
             $this->step = "HTTP";
+            $this->error_id = 10;
             $this->message = "SUSHI HTTP request failed, verify URL : ";
             return "";
         }
@@ -62,6 +65,7 @@ class Sushi extends Model
               $this->detail = json_last_error_msg();
               $this->status = "Fail";
               $this->step = "JSON";
+              $this->error_id = 20;
               $this->message = "Error decoding JSON : ";
               return "";
         }
@@ -72,6 +76,7 @@ class Sushi extends Model
             $this->status = "Fail";
             $this->step = "JSON";
             $this->message = "JSON is not an object : ";
+            $this->error_id = 30;
             return "";
         }
 
@@ -98,6 +103,7 @@ class Sushi extends Model
             }
 
            // Not queued, signal error
+            $this->error_id = $Code;
             if ($Severity == 'ERROR' || $Severity == 'FATAL') {
                // Get/Create entry from the sushi_errors table
                 $error = CcplusError::firstOrCreate(

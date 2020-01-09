@@ -167,12 +167,11 @@ class SushiIngestCommand extends Command
 
                    // Set output filename for raw data. Create the folder path, if necessary
                     if (!is_null(config('ccplus.reports_path'))) {
-                        $full_path = realpath($report_path . '/' . $setting->institution->name . '/' .
-                                              $provider->name . '/');
+                        $full_path = $report_path . '/' . $setting->institution->name . '/' . $provider->name . '/';
                         if (!is_dir($full_path)) {
                             mkdir($full_path, 0755, true);
                         }
-                        $raw_datafile = $full_path . '/' . $report->name . '_' . $begin . '_' . $end . '.json';
+                        $raw_datafile = $full_path . $report->name . '_' . $begin . '_' . $end . '.json';
                     }
 
                    // Construct URI for the request
@@ -203,7 +202,8 @@ class SushiIngestCommand extends Command
                                                'yearmon' => $yearmon, 'status' => 'Failed', 'created_at' => $ts]);
                             FailedIngest::insert(['sushisettings_id' => $setting->id, 'report_id' => $report->id,
                                                   'yearmon' => $yearmon, 'process_step' => $sushi->step,
-                                                  'error_id' => 10, 'detail' => $sushi->detail, 'created_at' => $ts]);
+                                                  'error_id' => $sushi->error_id, 'detail' => $sushi->detail,
+                                                  'created_at' => $ts]);
                             $this->line($sushi->message . $sushi->detail);
                             continue 2;
                         }

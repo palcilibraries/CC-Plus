@@ -15,6 +15,8 @@ use App\CcplusError;
 use App\Counter5Processor;
 use \ubfr\c5tools\Report as RawReport;
 use \ubfr\c5tools\JsonR5Report;
+use \ubfr\c5tools\CheckResult;
+use \ubfr\c5tools\ParseException;
 
 class C5TestCommand extends Command
 {
@@ -23,7 +25,7 @@ class C5TestCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'sushi:C5test {consortium : Consortium ID}
+    protected $signature = 'ccplus:C5test {consortium : Consortium ID}
                              {provider : Provider ID}
                              {institution : Institution ID}
                              {report : Report Name to request}
@@ -113,11 +115,24 @@ class C5TestCommand extends Command
                         exit;
                     }
 
+                   // Issue a warning if it looks like we'll run out of memory
+                    $mem_avail = intval(ini_get('memory_limit'));
+                    $body_len = strlen($json_text());
+                    $mem_needed = ($body_len*8) + memory_get_usage(true);
+                    if ($mem_needed > ($mem_avail * 1024 * 1024)) {
+                        $mb_need = intval( $mem_needed / (1024*1024) );
+                        echo "Warning! Projected memory required: " . $mb_need . "Mb but only " .
+                                                                    $mem_avail . "Mb available\n";
+                        echo "-------> Decoding this report may exhaust system memory (JSON len = $body_len)\n";
+                    }
+
+                   // Decode JSON response
                     $json = json_decode($json_text);
                     if (json_last_error() !== JSON_ERROR_NONE) {
                         $this->line("Error decoding JSON - " . json_last_error_msg());
                         exit;
                     }
+
                    // Make sure $json is a proper object
                     if (! is_object($json)) {
                         $this->line('JSON must be an object, found ' . (is_array($json) ? 'an array' : 'a scalar'));
@@ -126,17 +141,21 @@ class C5TestCommand extends Command
 
                    // Validate report
                     try {
-                        $validJson = self::validateJson($json);
+                        $valid_report = self::validateJson($json);
                     } catch (\Exception $e) {
                         $this->line("COUNTER Validation Failed: " . $e->getMessage());
-                        exit;
                     }
 
-                   // Parse and store the report if it's valid
-                    $result = $C5processor->{$report->name}($validJson);
+                   // Store the report if it's valid
+                    if ( $valid_report) {
+                        $this->line("Data valid, but skipping processing...");
+                        // $result = $C5processor->{$report->name}($json);
+                    }
                 }  // foreach reports
             }  // foreach sushisettings
         }  // foreach providers
+        $this->line("Memory Usage : " . memory_get_usage() . " / " . memory_get_usage(true));
+        $this->line("Peak Usage: " . memory_get_peak_usage() . " / " . memory_get_peak_usage(true));
         $this->line("Test completed: " . date("Y-m-d H:i:s"));
     }
 
@@ -171,8 +190,19 @@ class C5TestCommand extends Command
         }
 
         // Make sure there are Report_Items to process
-         $report = new JsonR5Report($json);
-         unset($json);
-         return $report->json;
+        try {
+            $report = new JsonR5Report($json);
+            $checkResult = $report->getCheckResult();
+        } catch (\Exception $e) {
+            $checkResult = new CheckResult();
+            try {
+                $checkResult->fatalError($e->getMessage());
+            } catch (ParseException $e) {
+                // ignore
+            }
+            $message = $checkResult->asText();
+            throw new \Exception($message());
+        }
+        return true;
     }
 }

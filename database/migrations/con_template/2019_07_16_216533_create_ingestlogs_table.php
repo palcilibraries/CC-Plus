@@ -17,12 +17,14 @@ class CreateIngestLogsTable extends Migration
             $global_db = DB::connection('globaldb')->getDatabaseName();
 
             $table->Increments('id');
+            $table->string('status', 8);    // 'New', 'Success', 'Fail', 'Queued', 'Active', 'Stopped', or 'Retrying'
             $table->unsignedInteger('sushisettings_id');
             $table->unsignedInteger('report_id');
             $table->string('yearmon', 7);
-            $table->string('status', 7);
+            $table->unsignedInteger('attempts')->default(0);
             $table->timestamps();
 
+            $table->unique(['sushisettings_id', 'report_id', 'yearmon']);
             $table->foreign('sushisettings_id')->references('id')->on('sushisettings');
             $table->foreign('report_id')->references('id')->on($global_db . '.reports');
         });

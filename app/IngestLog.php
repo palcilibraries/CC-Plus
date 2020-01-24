@@ -18,8 +18,13 @@ class IngestLog extends Model
    * @var array
    */
     protected $fillable = [
-    'sushisettings_id', 'report_id', 'yearmon', 'status'
+        'status', 'sushisettings_id', 'report_id', 'yearmon', 'attempts'
     ];
+
+    public function failedingests()
+    {
+        return $this->hasMany('App\FailedIngest');
+    }
 
     public function report()
     {

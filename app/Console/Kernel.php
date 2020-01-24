@@ -14,8 +14,11 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
       Commands\ConsortiumCommand::class,
-      Commands\SushiIngestCommand::class,
+      Commands\SushiBatchCommand::class,
       Commands\C5TestCommand::class,
+      Commands\SushiBatchCommand::class,
+      Commands\SushiQNightly::class,
+      Commands\SushiQWorker::class,
     ];
 
     /**
@@ -26,8 +29,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')
-        //          ->hourly();
+        // $schedule->command('ccplus:nightly')->daily();
+        // $schedule->command('ccplus:sushiqw')->hourly()->withoutOverlapping();
     }
 
     /**

@@ -14,7 +14,7 @@ class ConsortiumCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'consortium:create';
+    protected $signature = 'ccplus:addconsortium';
 
     /**
      * The console command description.

@@ -36,6 +36,11 @@ class Report extends Model
         }
     }
 
+    public function ingests()
+    {
+        return $this->hasMany('App\IngestLog');
+    }
+
     public function failedIngests()
     {
         return $this->hasMany('App\FailedIngest');

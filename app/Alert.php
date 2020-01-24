@@ -19,7 +19,7 @@ class Alert extends BaseModel
    * @var array
    */
     protected $fillable = [
-    'yearmon', 'alertsettings_id', 'failed_id', 'modified_by', 'status'
+        'yearmon', 'prov_id', 'alertsettings_id', 'ingest_id', 'modified_by', 'status'
     ];
 
     public function canManage()
@@ -46,9 +46,9 @@ class Alert extends BaseModel
         return $this->belongsTo('App\AlertSetting', 'alertsettings_id');
     }
 
-    public function failedIngest()
+    public function ingest()
     {
-        return $this->belongsTo('App\FailedIngest', 'failed_id');
+        return $this->belongsTo('App\IngestLog', 'ingest_id');
     }
 
     public function user()
@@ -60,28 +60,28 @@ class Alert extends BaseModel
   // caused by alert-settings or failed-ingests
     public function institution()
     {
-        if ($this->failed_id == 0) {
-            return $this->failedIngest->alertSetting->institution;
+        if ($this->ingest_id == 0) {
+            return $this->alertSetting->institution;
         } else {
-            return $this->failedIngest->sushiSetting->institution;
+            return $this->ingest->sushiSetting->institution;
         }
     }
 
-    public function detail()
-    {
-        if ($this->failed_id == 0) {
-            return $this->alertSetting->metric->legend;
-        } else {
-            return $this->failedIngest->detail;
-        }
-    }
+    // public function detail()
+    // {
+    //     if ($this->ingest_id == 0) {
+    //         return $this->alertSetting->metric->legend;
+    //     } else {
+    //         return $this->failedIngest->detail;
+    //     }
+    // }
 
     public function reportName()
     {
-        if ($this->failed_id == 0) {
+        if ($this->ingest_id == 0) {
             return $this->alertSetting->metric->report->name;
         } else {
-            return $this->failedIngest->report->name;
+            return $this->ingest->report->name;
         }
     }
 }

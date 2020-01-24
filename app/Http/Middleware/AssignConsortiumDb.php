@@ -17,18 +17,21 @@ class AssignConsortiumDb
      */
     public function handle($request, Closure $next)
     {
-        // If this is a login request and the session variable is unset,
-        // set the session variable before trying to switch the databse.
-        //
-        if (!session()->has('ccp_con_key') && $request->getPathInfo() === "/login") {
-            if (isset($request['consortium']) || array_key_exists('consortium', $request)) {
+       // Check to ensure that the consortium key session variable is set.
+        if (session('ccp_con_key','') == '') {
+           // Set session based on $request for a login request.
+            if ($request->getPathInfo() == "/login" && isset($request['consortium'])) {
                 session(['ccp_con_key' => $request['consortium']]);
+           // Otherwise, logout and reset things
+            } else {
+                Auth::logout();
+                return $next($request);
             }
         }
 
+       // Use the consortium key set the database.
         config(['database.connections.consodb.database' => 'ccplus_' . session('ccp_con_key')]);
         DB::reconnect();
-
         return $next($request);
-    }
+     }
 }

@@ -14,4 +14,10 @@ class Consortium extends Model
     protected $fillable = [
         'ccp_key', 'name', 'email', 'is_active',
     ];
+
+    public function ingests()
+    {
+        return $this->hasMany('App\IngestLog');
+    }
+
 }

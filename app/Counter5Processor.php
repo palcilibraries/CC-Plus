@@ -162,7 +162,7 @@ class Counter5Processor extends Model
             }
         }     // foreach $ReportItems
 
-        return 'Saved';
+        return 'Success';
     }
 
   /**
@@ -246,7 +246,7 @@ class Counter5Processor extends Model
             }
         }     // foreach $ReportItems
 
-        return 'Saved';
+        return 'Success';
     }
 
   /**
@@ -314,7 +314,7 @@ class Counter5Processor extends Model
             }
         }     // foreach $ReportItems
 
-        return 'Saved';
+        return 'Success';
     }
 
   /**
@@ -492,7 +492,7 @@ class Counter5Processor extends Model
             }
         }
 
-        return 'Saved';
+        return 'Success';
     }
 
     /**

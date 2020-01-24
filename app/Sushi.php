@@ -6,16 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Client;
 use App\CcplusError;
+use \ubfr\c5tools\JsonR5Report;
+use \ubfr\c5tools\CheckResult;
+use \ubfr\c5tools\ParseException;
 
 class Sushi extends Model
 {
     private static $begin;
     private static $end;
-    public $status;     // Success, Fail, or Queued
+    public $json;
     public $message;
     public $detail;
     public $error_id;
     public $step;
+    public $raw_datafile;
 
   /**
    * Class Constructor and setting methods
@@ -30,15 +34,16 @@ class Sushi extends Model
      * Request the report
      *
      * @param string $uri
-     * @return string $json
+     * @return string $status   // Success , Fail,  Queued
      */
     public function request($uri)
     {
-        $this->status = "Success";
+        $this->json = "";
         $this->message = "";
         $this->detail = "";
         $this->step = "";
         $this->error_id = 0;
+        $this->raw_datafile = "";
         $client = new Client();   //GuzzleHttp\Client
 
        // Make the request and convert into JSON
@@ -52,54 +57,65 @@ class Sushi extends Model
             } else {
                 $this->detail = "No response from provider.";
             }
-            $this->status = "Fail";
             $this->step = "HTTP";
             $this->error_id = 10;
             $this->message = "SUSHI HTTP request failed, verify URL : ";
-            return "";
+            return "Fail";
+        }
+
+       // Issue a warning if it looks like we'll run out of memory
+        $mem_avail = intval(ini_get('memory_limit'));
+        $body_len = strlen($result->getBody());
+        $mem_needed = ($body_len*8) + memory_get_usage(true);
+        if ($mem_needed > ($mem_avail * 1024 * 1024)) {
+            $mb_need = intval( $mem_needed / (1024*1024) );
+            echo "Warning! Projected memory required: " . $mb_need . "Mb but only " . $mem_avail . "Mb available\n";
+            echo "-------> Decoding this report may exhaust system memory (JSON len = $body_len)\n";
+        }
+
+       // Save raw data
+        if ($this->raw_datafile != "") {
+            file_put_contents($this->raw_datafile, $result->getBody());
         }
 
        // Decode result body into $json, throw and log error if it fails
-        $json = json_decode($result->getBody());
+        $this->json = json_decode($result->getBody());
         if (json_last_error() !== JSON_ERROR_NONE) {
               $this->detail = json_last_error_msg();
-              $this->status = "Fail";
               $this->step = "JSON";
               $this->error_id = 20;
               $this->message = "Error decoding JSON : ";
-              return "";
+              return "Fail";
         }
 
        // Make sure $json is a proper object
-        if (! is_object($json)) {
-            $this->detail = " request returned " . (is_array($json) ? 'an array' : 'a scalar');
-            $this->status = "Fail";
+        if (! is_object($this->json)) {
+            $this->detail = " request returned " . (is_array($this->json) ? 'an array' : 'a scalar');
             $this->step = "JSON";
             $this->message = "JSON is not an object : ";
             $this->error_id = 30;
-            return "";
+            return "Fail";
         }
 
        // Check JSON for Exceptions. Sometimes they're expressed differently
         $found_exception = false;
-        if (property_exists($json, 'Exception')) {
+        if (property_exists($this->json, 'Exception')) {
             $found_exception = true;
-            $Code = $json->Exception->Code;
-            $Severity = strtoupper($json->Exception->Severity);
-            $Message = $json->Exception->Message;
-        } elseif (property_exists($json, 'Code') && property_exists($json, 'Message')) {
+            $Code = self::$son->Exception->Code;
+            $Severity = strtoupper($this->json->Exception->Severity);
+            $Message = $this->json->Exception->Message;
+        } elseif (property_exists($this->json, 'Code') && property_exists($this->json, 'Message')) {
             $found_exception = true;
-            $Code = $json->Code;
-            $Severity = strtoupper($json->Severity);
-            $Message = $json->Message;
+            $Code = $this->json->Code;
+            $Severity = strtoupper($this->json->Severity);
+            $Message = $this->json->Message;
         }
 
        // Check and/or handle the exception
         if ($found_exception) {
            // Check for "queued" state response
             if ($Code == 1011) {
-                $this->status = "Queued";
-                return "";
+                return "Queued";
             }
 
            // Not queued, signal error
@@ -110,15 +126,15 @@ class Sushi extends Model
                     ['id' => $Code],
                     ['id' => $Code, 'message' => $Message, 'severity' => $Severity]
                 );
-                $this->status = "Fail";
                 $this->step = "SUSHI";
                 $this->message = "SUSHI Exception returned (" . $Code . ") : " . $Message;
-                return "";
+                return "Fail";
             } else {
                 $this->message = "Non-Fatal SUSHI Exception: (" . $Code . ") : " . $Message;
             }
         }
-        return $json;
+        unset($result);
+        return "Success";
     }
 
      /**
@@ -156,5 +172,62 @@ class Sushi extends Model
        // Construct URI for the request
         $request_uri .= $report->name . $uri_args . $uri_atts;
         return $request_uri;
+    }
+
+    public static function retrySleep()
+    {
+        echo 'Queued by provider - sleeping...\n';
+        sleep(config('ccplus.sushi_retry_sleep'));
+    }
+
+    public static function validateJson()
+    {
+       // Confirm Report_Header is present and a valid object, store in $header
+        if (! property_exists($this->json, 'Report_Header')) {
+            throw new \Exception('Report_Header is missing');
+        }
+        $header = $this->json->Report_Header;
+        if (! is_object($header)) {
+            throw new \Exception('Report_Header must be an object, found ' .
+                                 (is_array($header) ? 'an array' : 'a scalar'));
+        }
+
+       // Get release value; we're only handling Release 5
+        if (! property_exists($header, 'Release')) {
+            throw new \Exception("Could not determine COUNTER Release");
+        }
+        if (! is_scalar($header->Release)) {
+            throw new \Exception('Report_Header.Release must be a scalar, found an ' .
+                                 (is_array($header->Release) ? 'array' : 'object'));
+        }
+        $release = trim($header->Release);
+        if ($release !== '5') {
+            throw new \Exception("COUNTER Release '{$release}' invalid/unsupported");
+        }
+
+       // Make sure there are Report_Items to process
+        if (!isset($this->json->Report_Items)) {
+            throw new \Exception("SUSHI error: no Report_Items included in JSON response.");
+        }
+
+       // Make sure there are Report_Items to process
+        try {
+            $report = new JsonR5Report($this->json);
+            $checkResult = $report->getCheckResult();
+        } catch (\Exception $e) {
+            $checkResult = new CheckResult();
+            try {
+                $checkResult->fatalError($e->getMessage());
+            } catch (ParseException $e) {
+                // ignore
+            }
+            $message = $checkResult->asText();
+            throw new \Exception($message());
+        }
+       // If we modify Counter5Processor functions to handle the validated JSON
+       // (to make it more OO), we'll need to return $report instead of a boolean.
+       // return $report;
+        unset($report);
+        return true;
     }
 }

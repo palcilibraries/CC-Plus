@@ -17,6 +17,8 @@ class CreateJobsTable extends Migration
             $table->bigIncrements('id');
             $table->unsignedInteger('ingest_id');
             $table->unsignedInteger('consortium_id');
+            $table->unsignedInteger('priority')->default(0);
+            $table->boolean('replace_data')->default(0);
             $table->timestamps();
 
             $table->unique(['ingest_id', 'consortium_id']);

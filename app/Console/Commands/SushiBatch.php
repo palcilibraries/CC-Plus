@@ -34,8 +34,7 @@ class SushiBatchCommand extends Command
                              {--P|provider= : Provider ID to process [ALL]}
                              {--I|institution= : Institution ID to process[ALL]}
                              {--R|report= : Master report NAME to ingest [ALL]}
-                             {--retry= : ID of a failedingest to rerun}';
-                // Note: may want a "clear/replace existing data" option
+                             {--O|overwrite : replace existing data}';
 
     /**
      * The console command description.
@@ -85,7 +84,7 @@ class SushiBatchCommand extends Command
         $prov_id = is_null($this->option('provider')) ? 0 : $this->option('provider');
         $inst_id = is_null($this->option('institution')) ? 0 : $this->option('institution');
         $rept = is_null($this->option('report')) ? 'ALL' : $this->option('report');
-        $retry_id = is_null($this->option('retry')) ? 0 : $this->option('retry');
+        $replace = $this->option('overwrite');
 
        // Setup month string for pulling the report and begin/end for parsing
        //
@@ -152,7 +151,7 @@ class SushiBatchCommand extends Command
                 }
 
                // Create a new processor object
-                $C5processor = new Counter5Processor($provider->id, $setting->inst_id, $begin, $end, "");
+                $C5processor = new Counter5Processor($provider->id, $setting->inst_id, $begin, $end, $replace);
 
                // Loop through all reports defined as available for this provider
                 foreach ($provider->reports as $report) {

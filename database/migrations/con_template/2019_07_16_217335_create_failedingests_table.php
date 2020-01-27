@@ -19,7 +19,6 @@ class CreateFailedIngestsTable extends Migration
             $table->Increments('id');
             $table->unsignedInteger('ingest_id');
             $table->unsignedInteger('error_id');
-            $table->string('yearmon', 7);
             $table->string('process_step')->nullable();
             $table->string('detail')->nullable();
             $table->timestamps();

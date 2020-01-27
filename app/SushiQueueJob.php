@@ -18,7 +18,7 @@ class SushiQueueJob extends Model
      * @var array
      */
     protected $fillable = [
-        'consortium_id', 'ingest_id'
+        'consortium_id', 'ingest_id', 'priority', 'replace_data'
     ];
 
     public function consortium()

@@ -13,11 +13,12 @@ class Counter5Processor extends Model
     private static $end;
     private static $yearmon;
     private static $now;
+    private static $replace;
 
   /**
    * Class Constructor and setting methods
    */
-    public function __construct($_prov, $_inst, $_begin, $_end)
+    public function __construct($_prov, $_inst, $_begin, $_end, $_replace=false)
     {
         self::$prov = $_prov;
         self::$inst = $_inst;
@@ -26,16 +27,7 @@ class Counter5Processor extends Model
         self::$yearmon = substr($_begin, 0, 7);
         $curTime = new \DateTime();
         self::$now = $curTime->format("Y-m-d H:i:s");
-    }
-
-    public function setBegin($_begin)
-    {
-        self::$begin = $_begin;
-    }
-
-    public function setEnd($_end)
-    {
-        self::$end = $_end;
+        self::$replace = $_replace;
     }
 
   /**
@@ -43,10 +35,17 @@ class Counter5Processor extends Model
    * should have already been performed on $json_report..
    *
    * @param  $json_report
-   * @return string ("Saved" or "Failed")
+   * @return string ("Success" or "Failed")
    */
     public static function TR($json_report)
     {
+        // If $replace flag is ON, clear out existing records first
+         if (self::$replace) {
+             TitleReport::where([['prov_id','=',self::$prov],
+                                 ['inst_id','=',self::$inst],
+                                 ['yearmon','=',self::$yearmon]])->delete();
+         }
+
        // Setup array to hold per-item counts
         $ICounts = ['Total_Item_Investigations' => 0, 'Total_Item_Requests' => 0,
                     'Unique_Item_Investigations' => 0, 'Unique_Item_Requests' => 0,
@@ -170,10 +169,17 @@ class Counter5Processor extends Model
    * should have already been performed on $json_report..
    *
    * @param  $json_report
-   * @return string ("Saved" or "Failed")
+   * @return string ("Success" or "Failed")
    */
     public static function DR($json_report)
     {
+        // If $replace flag is ON, clear out existing records first
+         if (self::$replace) {
+             DatabaseReport::where([['prov_id','=',self::$prov],
+                                    ['inst_id','=',self::$inst],
+                                    ['yearmon','=',self::$yearmon]])->delete();
+         }
+
        // Setup array to hold per-item counts
         $ICounts = ['Searches_Automated' => 0, 'Searches_Federated' => 0, 'Searches_Regular' => 0,
                     'Total_Item_Investigations' => 0, 'Total_Item_Requests' => 0,
@@ -254,10 +260,17 @@ class Counter5Processor extends Model
    * should have already been performed on $json_report..
    *
    * @param  $json_report
-   * @return string ("Saved" or "Failed")
+   * @return string ("Success" or "Failed")
    */
     public static function PR($json_report)
     {
+        // If $replace flag is ON, clear out existing records first
+         if (self::$replace) {
+             PlaftormReport::where([['prov_id','=',self::$prov],
+                                    ['inst_id','=',self::$inst],
+                                    ['yearmon','=',self::$yearmon]])->delete();
+         }
+
        // Setup array to hold per-item counts
         $ICounts = ['Searches_Platform' => 0, 'Total_Item_Investigations' => 0, 'Total_Item_Requests' => 0,
                     'Unique_Item_Investigations' => 0, 'Unique_Item_Requests' => 0,
@@ -322,10 +335,17 @@ class Counter5Processor extends Model
    * should have already been performed on $json_report..
    *
    * @param  $json_report
-   * @return string ("Saved" or "Failed")
+   * @return string ("Success" or "Failed")
    */
     public static function IR($json_report)
     {
+        // If $replace flag is ON, clear out existing records first
+         if (self::$replace) {
+             ItemReport::where([['prov_id','=',self::$prov],
+                                ['inst_id','=',self::$inst],
+                                ['yearmon','=',self::$yearmon]])->delete();
+         }
+
        // Setup array to hold per-item counts
         $ICounts = ['Total_Item_Requests' => 0, 'Total_Item_Investigations' => 0,
                     'Unique_Item_Requests' => 0, 'Unique_Item_Investigations' => 0,

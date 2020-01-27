@@ -87,6 +87,7 @@ class Sushi extends Model
               $this->message = "Error decoding JSON : ";
               return "Fail";
         }
+        unset($result);
 
        // Make sure $json is a proper object
         if (! is_object($this->json)) {
@@ -101,7 +102,7 @@ class Sushi extends Model
         $found_exception = false;
         if (property_exists($this->json, 'Exception')) {
             $found_exception = true;
-            $Code = self::$son->Exception->Code;
+            $Code = $this->json->Exception->Code;
             $Severity = strtoupper($this->json->Exception->Severity);
             $Message = $this->json->Exception->Message;
         } elseif (property_exists($this->json, 'Code') && property_exists($this->json, 'Message')) {
@@ -133,7 +134,6 @@ class Sushi extends Model
                 $this->message = "Non-Fatal SUSHI Exception: (" . $Code . ") : " . $Message;
             }
         }
-        unset($result);
         return "Success";
     }
 
@@ -144,7 +144,8 @@ class Sushi extends Model
       * @param Report $_report
       * @return string $request_uri
       */
-    public static function buildUri($setting, $report)
+    // public static function buildUri($setting, $report)
+    public function buildUri($setting, $report)
     {
        // Begin setting up the URI for the request
         $request_uri = rtrim($setting->provider->server_url_r5, '/') . "/";
@@ -174,13 +175,8 @@ class Sushi extends Model
         return $request_uri;
     }
 
-    public static function retrySleep()
-    {
-        echo 'Queued by provider - sleeping...\n';
-        sleep(config('ccplus.sushi_retry_sleep'));
-    }
-
-    public static function validateJson()
+    public function validateJson()
+    // public static function validateJson()
     {
        // Confirm Report_Header is present and a valid object, store in $header
         if (! property_exists($this->json, 'Report_Header')) {
@@ -230,4 +226,11 @@ class Sushi extends Model
         unset($report);
         return true;
     }
+
+    public static function retrySleep()
+    {
+        echo 'Queued by provider - sleeping...\n';
+        sleep(config('ccplus.sushi_retry_sleep'));
+    }
+
 }

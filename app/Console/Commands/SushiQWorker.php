@@ -111,7 +111,7 @@ class SushiQWorker extends Command
 
        // Get all queue entries for this consortium; exit if none found
        //
-        $jobs = SushiQueueJob::where('consortium_id', '=', $consortium->id)->get();
+        $jobs = SushiQueueJob::where('consortium_id','=',$consortium->id)->orderBy('priority','DESC')->get();
         if (empty($jobs)) exit;
 
        // Loop through all queue entrie
@@ -119,17 +119,12 @@ class SushiQWorker extends Command
 
            // Check the entry against the active urls and skip if there's a match
             $_url = $job->ingest->sushiSetting->provider->server_url_r5;
-// if (in_array($_url, $active_urls)) {
-//     $this->line('URL match, Skipping : ' . $job->ingest->id);
-//     continue;
-// }
             if (in_array($_url, $active_urls)) continue;
             $active_urls[] = $_url;
 
            // Update entry's current state aand the active urls
-// $this->line('Updating Job : ' . $job->id . ' to Active status.');
-            $job->ingest->status = 'Active';
-            $job->ingest->save();
+            // $job->ingest->status = 'Active';
+            // $job->ingest->save();
 
            // Setup begin and end dates for sushi request
             $yearmon = $job->ingest->yearmon;
@@ -154,8 +149,9 @@ class SushiQWorker extends Command
             }
             $setting = $job->ingest->sushiSetting;
 
-           // Create a new processor object
-            $C5processor = new Counter5Processor($setting->prov_id, $setting->inst_id, $begin, $end, "");
+           // Create a new processor object; Job entry decides if data is getting replaced.
+            $C5processor = new Counter5Processor($setting->prov_id, $setting->inst_id, $begin, $end,
+                                                 $job->replace_data);
 
            // Create a new Sushi object
             $sushi = new Sushi($begin, $end);
@@ -191,13 +187,13 @@ class SushiQWorker extends Command
                     continue;
                 }
 
-               // Print out non-fatal message from sushi request
-                if ($sushi->message != "") {
-                    $this->line($sushi->message . $sushi->detail);
-                }
-
                // Request succeeded, validate the response
                 if ($req_state == "Success") {
+                   // Print out non-fatal message from sushi request
+                    if ($sushi->message != "") {
+                        $this->line($sushi->message . $sushi->detail);
+                    }
+
                     try {
                         $valid_report = $sushi->validateJson();
                     } catch (\Exception $e) {
@@ -220,7 +216,8 @@ class SushiQWorker extends Command
                 $_status = $C5processor->{$report->name}($sushi->json);
 // -->> Is there ever a time this returns something other than success?
                 if ($_status = 'Success') {
-                    $this->line($report->name . " report data successfully saved.");
+                    $this->line($setting->provider->name . " : " . $report->name . " saved for " .
+                                $setting->institution->name);
                 }
                 $job->ingest->status = $_status;
                 $job->ingest->update();
@@ -228,10 +225,10 @@ class SushiQWorker extends Command
                // Increment attempt counter
                 $job->ingest->attempts++;
                // If we're out of retries, set ingest status and an Alert
-                if ($this->ingest->attempts >= config('ccplus.max_ingest_retries')) {
+                if ($job->ingest->attempts >= config('ccplus.max_ingest_retries')) {
                     $job->ingest->status = 'Fail';
                     Alert::insert(['yearmon' => $yearmon, 'prov_id' => $setting->prov_id,
-                                   'ingest_id' => $job->ingest->id, 'status' => 'Active', 'created_at' => $this->ts]);
+                                   'ingest_id' => $job->ingest->id, 'status' => 'Active', 'created_at' => $ts]);
                 } else {
                     $job->ingest->status = 'Retrying';
                 }

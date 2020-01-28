@@ -19,5 +19,4 @@ class Consortium extends Model
     {
         return $this->hasMany('App\IngestLog');
     }
-
 }

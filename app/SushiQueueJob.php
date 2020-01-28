@@ -9,8 +9,8 @@ class SushiQueueJob extends Model
     /**
      * The database table used by the model.
      */
-      protected $connection = 'globaldb';
-      protected $table = 'jobs';
+    protected $connection = 'globaldb';
+    protected $table = 'jobs';
 
     /**
      * The attributes that are mass assignable.
@@ -30,5 +30,4 @@ class SushiQueueJob extends Model
     {
         return $this->belongsTo('App\IngestLog', 'ingest_id');
     }
-
 }

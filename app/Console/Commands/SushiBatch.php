@@ -124,6 +124,7 @@ class SushiBatchCommand extends Command
         }
 
        // Loop through providers
+        $master_reports = array("TR","PR","IR","DR");
         $this->line("Ingest begins for " . $consortium->ccp_key . " at " . date("Y-m-d H:i:s"));
         foreach ($providers as $provider) {
            // If running as "Auto" and today is not the day to run, skip silently to next provider
@@ -155,11 +156,11 @@ class SushiBatchCommand extends Command
 
                // Loop through all reports defined as available for this provider
                 foreach ($provider->reports as $report) {
-                    // Only accept the 4 COUNTER-5 master reports
-                    if ($report->name!="TR" && $report->name!="PR" && $report->name!="DR" && $report->name!="IR") {
-                         $this->error("Unsupported report? : " . self::$report->name . " defined for: " .
-                                      self::$setting->provider->name);
-                         continue;
+                   // Only accept the 4 COUNTER-5 master reports
+                    if (!in_array($report->name, $master_reports)) {
+                        $this->error("Unsupported report? : " . self::$report->name . " defined for: " .
+                                     self::$setting->provider->name);
+                        continue;
                     }
 
                    // if this report hasn't been requested (cmd-line argument above), then skip it
@@ -186,9 +187,9 @@ class SushiBatchCommand extends Command
                         $ingest = IngestLog::create(['status' => 'Active', 'sushisettings_id' => $setting->id,
                                            'report_id' => $report->id, 'yearmon' => $yearmon,
                                            'attempts' => 0]);
-                    } catch (QueryException $e){
+                    } catch (QueryException $e) {
                         $errorCode = $e->errorInfo[1];
-                        if ($errorCode == '1062'){
+                        if ($errorCode == '1062') {
                             $ingest = IngestLog::where([['sushisettings_id', '=', $setting->id],
                                                         ['report_id', '=', $report->id],
                                                         ['yearmon', '=', $yearmon]
@@ -206,19 +207,23 @@ class SushiBatchCommand extends Command
 
                    // Loop up to retry-limit asking for the report
                     $retries = 0;
-                    $req_state = "Queued";
+                    $req_state = "Pending";
                     $ts = date("Y-m-d H:i:s");
 
-                   // Sleeps for sushi_retry_sleep seconds, and retries sushi_retry_limit times if request is queued.
-                    while ($retries <= config('ccplus.sushi_retry_limit')  && $req_state == "Queued") {
+                    $sleep_time = 30;   // 30 seconds between retries
+                    $retry_limit = 20;  // max 20 retries
+                    // $sleep_time = config('ccplus.sushi_retry_sleep');
+                    // $retry_limit = config('ccplus.sushi_retry_limit');
+                   // Sleeps and retries if request is queued.
+                    while ($retries <= $retry_limit  && $req_state == "Pending") {
                        // Make the request
                         $req_state = $sushi->request($request_uri);
 
                        // Check status of request
-                        if ($req_state == "Queued") {
+                        if ($req_state == "Pending") {
                             $retries++;
-                            $this->line('Report queued for processing, sleeping (' . $retries . ')');
-                            $sushi->retrySleep();
+                            $this->line('Report pending .... sleeping (' . $retries . ')');
+                            sleep($sleep_time);
                             continue;
                         }
 
@@ -237,7 +242,7 @@ class SushiBatchCommand extends Command
                         if ($sushi->message != "") {
                             $this->line($sushi->message . $sushi->detail);
                         }
-                    } // while Queued with retries remaining
+                    } // while Pending with retries remaining
 
                    // Validate report
                     try {
@@ -256,7 +261,7 @@ class SushiBatchCommand extends Command
                    // Process the report and save in the database
                     if ($valid_report) {
                         $_status = $C5processor->{$report->name}($sushi->json);
-                        if ( $_status = 'Saved') {
+                        if ($_status = 'Saved') {
                             $this->line($report->name . " report data successfully saved.");
                             $ingest->status = 'Success';
                             $ingest->update();
@@ -268,7 +273,6 @@ class SushiBatchCommand extends Command
 
                 unset($C5processor);
             }  // foreach sushisettings
-
         }  // foreach providers
 
         $this->line("Ingest ends at : " . date("Y-m-d H:i:s"));

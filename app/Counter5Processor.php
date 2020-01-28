@@ -18,7 +18,7 @@ class Counter5Processor extends Model
   /**
    * Class Constructor and setting methods
    */
-    public function __construct($_prov, $_inst, $_begin, $_end, $_replace=false)
+    public function __construct($_prov, $_inst, $_begin, $_end, $_replace = false)
     {
         self::$prov = $_prov;
         self::$inst = $_inst;
@@ -40,11 +40,11 @@ class Counter5Processor extends Model
     public static function TR($json_report)
     {
         // If $replace flag is ON, clear out existing records first
-         if (self::$replace) {
-             TitleReport::where([['prov_id','=',self::$prov],
-                                 ['inst_id','=',self::$inst],
-                                 ['yearmon','=',self::$yearmon]])->delete();
-         }
+        if (self::$replace) {
+            TitleReport::where([['prov_id','=',self::$prov],
+                                ['inst_id','=',self::$inst],
+                                ['yearmon','=',self::$yearmon]])->delete();
+        }
 
        // Setup array to hold per-item counts
         $ICounts = ['Total_Item_Investigations' => 0, 'Total_Item_Requests' => 0,
@@ -81,7 +81,7 @@ class Counter5Processor extends Model
             $accesstype_id = (isset($reportitem->Access_Type)) ? self::getAccessType($reportitem->Access_Type)
                                                                  : null;
             $accessmethod_id = (isset($reportitem->Access_Method)) ? self::getAccessMethod($reportitem->Access_Method)
-                                                                   : null;
+                                                                   : 1;
             $sectiontype_id = (isset($reportitem->Section_Type)) ? self::getSectionType($reportitem->Section_Type)
                                                                  : null;
             $datatype = (isset($reportitem->Data_Type)) ? self::getDataType($reportitem->Data_Type)
@@ -174,11 +174,11 @@ class Counter5Processor extends Model
     public static function DR($json_report)
     {
         // If $replace flag is ON, clear out existing records first
-         if (self::$replace) {
-             DatabaseReport::where([['prov_id','=',self::$prov],
-                                    ['inst_id','=',self::$inst],
-                                    ['yearmon','=',self::$yearmon]])->delete();
-         }
+        if (self::$replace) {
+            DatabaseReport::where([['prov_id','=',self::$prov],
+                                   ['inst_id','=',self::$inst],
+                                   ['yearmon','=',self::$yearmon]])->delete();
+        }
 
        // Setup array to hold per-item counts
         $ICounts = ['Searches_Automated' => 0, 'Searches_Federated' => 0, 'Searches_Regular' => 0,
@@ -218,7 +218,7 @@ class Counter5Processor extends Model
 
            // Pick up the optional attributes
             $accessmethod_id = (isset($reportitem->Access_Method)) ? self::getAccessMethod($reportitem->Access_Method)
-                                                                   : null;
+                                                                   : 1;
             $datatype = (isset($reportitem->Data_Type)) ? self::getDataType($reportitem->Data_Type)
                                                         : self::getDataType("Unknown");
 
@@ -265,11 +265,11 @@ class Counter5Processor extends Model
     public static function PR($json_report)
     {
         // If $replace flag is ON, clear out existing records first
-         if (self::$replace) {
-             PlaftormReport::where([['prov_id','=',self::$prov],
-                                    ['inst_id','=',self::$inst],
-                                    ['yearmon','=',self::$yearmon]])->delete();
-         }
+        if (self::$replace) {
+            PlatformReport::where([['prov_id','=',self::$prov],
+                                   ['inst_id','=',self::$inst],
+                                   ['yearmon','=',self::$yearmon]])->delete();
+        }
 
        // Setup array to hold per-item counts
         $ICounts = ['Searches_Platform' => 0, 'Total_Item_Investigations' => 0, 'Total_Item_Requests' => 0,
@@ -293,7 +293,7 @@ class Counter5Processor extends Model
 
            // Pick up the optional attributes
             $accessmethod_id = (isset($reportitem->Access_Method)) ? self::getAccessMethod($reportitem->Access_Method)
-                                                                   : null;
+                                                                   : 1;
             $datatype = (isset($reportitem->Data_Type)) ? self::getDataType($reportitem->Data_Type)
                                                         : self::getDataType("Unknown");
 
@@ -340,11 +340,11 @@ class Counter5Processor extends Model
     public static function IR($json_report)
     {
         // If $replace flag is ON, clear out existing records first
-         if (self::$replace) {
-             ItemReport::where([['prov_id','=',self::$prov],
-                                ['inst_id','=',self::$inst],
-                                ['yearmon','=',self::$yearmon]])->delete();
-         }
+        if (self::$replace) {
+            ItemReport::where([['prov_id','=',self::$prov],
+                               ['inst_id','=',self::$inst],
+                               ['yearmon','=',self::$yearmon]])->delete();
+        }
 
        // Setup array to hold per-item counts
         $ICounts = ['Total_Item_Requests' => 0, 'Total_Item_Investigations' => 0,
@@ -385,7 +385,7 @@ class Counter5Processor extends Model
             $accesstype_id = (isset($reportitem->Access_Type)) ? self::getAccessType($reportitem->Access_Type)
                                                                : null;
             $accessmethod_id = (isset($reportitem->Access_Method)) ? self::getAccessMethod($reportitem->Access_Method)
-                                                                   : null;
+                                                                   : 1;
             $datatype = (isset($reportitem->Data_Type)) ? self::getDataType($reportitem->Data_Type)
                                                         : self::getDataType("Unknown");
 
@@ -579,7 +579,7 @@ class Counter5Processor extends Model
      */
     private static function getAccessMethod($input_method)
     {
-        $accessmethod_id = null;
+        $accessmethod_id = 1;   // Regular
         if ($input_method != "") {
             $accessmethod = AccessMethod::firstOrCreate(['name' => $input_method]);
             $accessmethod_id = $accessmethod->id;

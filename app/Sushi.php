@@ -66,9 +66,9 @@ class Sushi extends Model
        // Issue a warning if it looks like we'll run out of memory
         $mem_avail = intval(ini_get('memory_limit'));
         $body_len = strlen($result->getBody());
-        $mem_needed = ($body_len*8) + memory_get_usage(true);
+        $mem_needed = ($body_len * 8) + memory_get_usage(true);
         if ($mem_needed > ($mem_avail * 1024 * 1024)) {
-            $mb_need = intval( $mem_needed / (1024*1024) );
+            $mb_need = intval($mem_needed / (1024 * 1024));
             echo "Warning! Projected memory required: " . $mb_need . "Mb but only " . $mem_avail . "Mb available\n";
             echo "-------> Decoding this report may exhaust system memory (JSON len = $body_len)\n";
         }
@@ -116,7 +116,7 @@ class Sushi extends Model
         if ($found_exception) {
            // Check for "queued" state response
             if ($Code == 1011) {
-                return "Queued";
+                return "Pending";
             }
 
            // Not queued, signal error
@@ -176,7 +176,6 @@ class Sushi extends Model
     }
 
     public function validateJson()
-    // public static function validateJson()
     {
        // Confirm Report_Header is present and a valid object, store in $header
         if (! property_exists($this->json, 'Report_Header')) {
@@ -226,11 +225,4 @@ class Sushi extends Model
         unset($report);
         return true;
     }
-
-    public static function retrySleep()
-    {
-        echo 'Queued by provider - sleeping...\n';
-        sleep(config('ccplus.sushi_retry_sleep'));
-    }
-
 }

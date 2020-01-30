@@ -41,6 +41,7 @@ class SushiQWorker extends Command
      * @var string
      */
     protected $description = 'Process the CC-Plus Sushi Queue for a Consortium';
+    private $all_consortia;
 
     /**
      * Create a new command instance.
@@ -70,13 +71,6 @@ class SushiQWorker extends Command
             exit;
         }
 
-       // Get all queue entries for this consortium; exit if none found
-        $jobs = SushiQueueJob::where('consortium_id', '=', $consortium->id)
-                             ->orderBy('priority', 'DESC')->orderBy('updated_at', 'ASC')->get();
-        if (empty($jobs)) {
-            exit;
-        }
-
        // Aim the consodb connection at specified consortium's database and initialize the
        // path for keeping raw report responses
         config(['database.connections.consodb.database' => 'ccplus_' . $consortium->ccp_key]);
@@ -85,38 +79,77 @@ class SushiQWorker extends Command
             $report_path = config('ccplus.reports_path') . $consortium->ccp_key;
         }
 
-       // Build an array of server_urls referenced by active ingests defined in the IngestLogs of
-       // ALL active consortia in the system.
-        $active_urls = array();
-        $all_consortia = Consortium::where('is_active', true)->get();
-        foreach ($all_consortia as $_con) {
-            $_db = 'ccplus_' . $_con->ccp_key;
-            $_urls = DB::table($_db . '.ingestlogs as ing')
-                         ->distinct()
-                         ->join($_db . '.sushisettings as sus', 'sus.id', '=', 'ing.sushisettings_id')
-                         ->join($_db . '.providers as prv', 'prv.id', '=', 'sus.prov_id')
-                         ->where($_db . '.ing.status', 'Active')
-                         ->select($_db . '.prv.server_url_r5')
-                         ->get();
-            foreach ($_urls as $_url) {
-                if (!in_array($_url, $active_urls)) {
-                    $active_urls[] = $_url->server_url_r5;
-                }
-            }
+       // Setup strings for job queries
+        $jobs_table = config('database.connections.globaldb.database') . ".jobs";
+        $ingestlogs_table = config('database.connections.consodb.database') . ".ingestlogs";
+        $runable_status = array('Queued','Pending','Retrying');
+
+       // Get all queue entries for this consortium; exit if none found
+        // $job_count = SushiQueueJob::join($ingestlogs_table . ' as ing', 'ing.id', '=', $jobs_table . '.ingest_id')
+        $job_count = DB::table($jobs_table . ' as job')
+                       ->join($ingestlogs_table . ' as ing', 'ing.id', '=', 'job.ingest_id')
+                       ->where('consortium_id', '=', $consortium->id)
+                       ->whereIn('ing.status', $runable_status)
+                       ->count();
+        if ($job_count == 0) {
+            exit;
         }
 
-       // Loop through all queue entrie
-        foreach ($jobs as $job) {
-           // Check the entry against the active urls and skip if there's a match
-            $_url = $job->ingest->sushiSetting->provider->server_url_r5;
-            if (in_array($_url, $active_urls)) {
-                continue;
-            }
-            $active_urls[] = $_url;
+       // Save all consortia records for detecting active jobs, strings for job queries
+        $this->all_consortia = Consortium::where('is_active', true)->get();
 
-           // Update ingest current state to keep parallel processes from hitting this provider
-            $job->ingest->status = 'Active';
-            $job->ingest->save();
+       // While there are jobs in the queue (count is updated @ bottom of loop)
+        while ($job_count > 0) {
+            $jobs = SushiQueueJob::join($ingestlogs_table . ' as ing', 'ing.id', '=', $jobs_table . '.ingest_id')
+                                 ->where('consortium_id', '=', $consortium->id)
+                                 ->whereIn('ing.status', $runable_status)
+                                 ->orderBy('priority', 'DESC')
+                                 ->orderBy($jobs_table . '.updated_at', 'ASC')
+                                 ->orderBy($jobs_table . '.id', 'ASC')
+                                 ->get();
+            if (empty($jobs)) {
+                exit;
+            }
+
+           // Find the next available job
+            $job = null;
+            $ten_ago = strtotime("-10 minutes");
+            foreach ($jobs as $_job) {
+               // Skip any "Retrying" ingest that's been updated today
+                if (
+                    $job->ingest->status == 'Retrying' &&
+                    (substr($_job->ingest->updated_at, 0, 10) == date("Y-m-d"))
+                ) {
+                    continue;
+                }
+
+               // Skip any "Pending" ingest that's been updated within the last 10 minutes
+                if (
+                    $job->ingest->status == 'Pending' &&
+                    (strtotime($_job->ingest->updated_at) > $ten_ago ||
+                     strtotime($_job->updated_at) > $ten_ago)
+                ) {
+                    continue;
+                }
+
+               // Check the job url against all active urls and skip if there's a match
+                if ($this->hasActiveIngest($_job->ingest->sushiSetting->provider->server_url_r5)) {
+                    continue;
+                }
+
+               // Got one... move on
+                $job = $_job;
+                break;
+            }
+
+           // If we found a job, mark it active to keep any parallel processes from hitting this same
+           // provider; otherwise, we exit quietly.
+            if (!is_null($job)) {
+                $job->ingest->status = 'Active';
+                $job->ingest->save();
+            } else {
+                exit;
+            }
 
            // Setup begin and end dates for sushi request
             $yearmon = $job->ingest->yearmon;
@@ -126,8 +159,7 @@ class SushiQWorker extends Command
            // Get report
             $report = Report::find($job->ingest->report_id);
             if (is_null($report)) {     // report gone? toss entry
-                $this->line('Unknown Report ID: ' . $job->ingest->report_id .
-                            ' , queue entry skipped and deleted.');
+                $this->line('Unknown Report ID: ' . $job->ingest->report_id . ' , queue entry skipped and deleted.');
                 $job->delete();
                 continue;
             }
@@ -141,7 +173,8 @@ class SushiQWorker extends Command
             }
             $setting = $job->ingest->sushiSetting;
 
-           // Create a new processor object; Job entry decides if data is getting replaced.
+           // Create a new processor object; job record decides if data is getting replaced. If data is
+           // being replaced, nothing is deleted until after the new report is received and validated.
             $C5processor = new Counter5Processor(
                 $setting->prov_id,
                 $setting->inst_id,
@@ -185,12 +218,10 @@ class SushiQWorker extends Command
                                           'created_at' => $ts]);
                     $this->line("COUNTER report failed validation : " . $e->getMessage());
                 }
-
            // If request is pending (in a provider queue, not a CC+ queue), update status
            // and touch the job record so it is pushed down the order of a future run
             } elseif ($request_status == "Pending") {
                 $job->ingest->status = "Pending";
-$this->line("Ingest : " . $job->ingest->id . " is pending, touching job record.");
                 $job->touch();
 
            // If request failed, update the IngestLog and add a FailedIngest record
@@ -210,7 +241,6 @@ $this->line("Ingest : " . $job->ingest->id . " is pending, touching job record."
                                 $setting->institution->name);
                 }
                 $job->ingest->status = $_status;
-
            // No valid report data saved. If we failed, update ingest record
            // ("Pending" is not considered failure.)
             } else {
@@ -237,14 +267,38 @@ $this->line("Ingest : " . $job->ingest->id . " is pending, touching job record."
             if ($request_status != "Pending") {
                 $job->delete();
             }
+            $job_count = DB::table($jobs_table . ' as job')
+                           ->join($ingestlogs_table . ' as ing', 'ing.id', '=', 'job.ingest_id')
+                           ->where('consortium_id', '=', $consortium->id)
+                           ->whereIn('ing.status', $runable_status)
+                           ->count();
+        }   // While there are jobs in the queue
+    }
 
-           // Remove the target URL from the internal "active" list
-            foreach ($active_urls as $key => $value) {
-                if ($value == $_url) {
-                    unset($active_urls[$key]);
-                    break;
+    /**
+     * Pull the URLs of "Active" ingests across all active consortia in the system.
+     * Return T/F if the job's URL matches any of them.
+     *
+     * @param  string  $job_url
+     * @return boolean result
+     */
+    private function hasActiveIngest($job_url)
+    {
+        foreach ($this->all_consortia as $_con) {
+            $_db = 'ccplus_' . $_con->ccp_key;
+            $_urls = DB::table($_db . '.ingestlogs as ing')
+                         ->distinct()
+                         ->join($_db . '.sushisettings as sus', 'sus.id', '=', 'ing.sushisettings_id')
+                         ->join($_db . '.providers as prv', 'prv.id', '=', 'sus.prov_id')
+                         ->where($_db . '.ing.status', 'Active')
+                         ->select($_db . '.prv.server_url_r5')
+                         ->get();
+            foreach ($_urls as $_url) {
+                if ($_url->server_url_r5 == $job_url) {
+                    return true;
                 }
             }
-        }   // For each queue $job
+        }
+        return false;
     }
 }

@@ -21,21 +21,21 @@ class Sushi extends Model
     public $step;
     public $raw_datafile;
 
-  /**
-   * Class Constructor and setting methods
-   */
+   /**
+    * Class Constructor and setting methods
+    */
     public function __construct($_begin, $_end)
     {
         self::$begin = $_begin;
         self::$end = $_end;
     }
 
-    /**
-     * Request the report
-     *
-     * @param string $uri
-     * @return string $status   // Success , Fail,  Queued
-     */
+   /**
+    * Request the report
+    *
+    * @param string $uri
+    * @return string $status   // Success , Fail,  Queued
+    */
     public function request($uri)
     {
         $this->json = "";
@@ -137,14 +137,13 @@ class Sushi extends Model
         return "Success";
     }
 
-     /**
-      * Build and return a SUSHI request URI based on a setting and report
-      *
-      * @param SushiSetting $setting
-      * @param Report $_report
-      * @return string $request_uri
-      */
-    // public static function buildUri($setting, $report)
+   /**
+    * Build and return a SUSHI request URI based on a setting and report
+    *
+    * @param SushiSetting $setting
+    * @param Report $_report
+    * @return string $request_uri
+    */
     public function buildUri($setting, $report)
     {
        // Begin setting up the URI for the request
@@ -175,6 +174,13 @@ class Sushi extends Model
         return $request_uri;
     }
 
+   /**
+    * Validate the JSON from a SUSHI against the COUNTER standard for Release-5
+    *
+    * @param SushiSetting $setting
+    * @param Report $_report
+    * @return string $request_uri
+    */
     public function validateJson()
     {
        // Confirm Report_Header is present and a valid object, store in $header
@@ -220,7 +226,8 @@ class Sushi extends Model
             throw new \Exception($message());
         }
        // If we modify Counter5Processor functions to handle the validated JSON
-       // (to make it more OO), we'll need to return $report instead of a boolean.
+       // (to make it more O-O), we'll need to return $report instead of a boolean.
+       // For now, we're just scanning for errors and not modifying the original data.
        // return $report;
         unset($report);
         return true;

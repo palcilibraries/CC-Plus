@@ -28,6 +28,7 @@ class Sushi extends Model
     {
         self::$begin = $_begin;
         self::$end = $_end;
+        $this->raw_datafile = "";
     }
 
    /**
@@ -43,7 +44,6 @@ class Sushi extends Model
         $this->detail = "";
         $this->step = "";
         $this->error_id = 0;
-        $this->raw_datafile = "";
         $client = new Client();   //GuzzleHttp\Client
 
        // Make the request and convert into JSON
@@ -123,9 +123,10 @@ class Sushi extends Model
             $this->error_id = $Code;
             if ($Severity == 'ERROR' || $Severity == 'FATAL') {
                // Get/Create entry from the sushi_errors table
+                $trunc_msg = substr($Message,0,60);
                 $error = CcplusError::firstOrCreate(
                     ['id' => $Code],
-                    ['id' => $Code, 'message' => $Message, 'severity' => $Severity]
+                    ['id' => $Code, 'message' => $trunc_msg, 'severity' => $Severity]
                 );
                 $this->step = "SUSHI";
                 $this->message = "SUSHI Exception returned (" . $Code . ") : " . $Message;

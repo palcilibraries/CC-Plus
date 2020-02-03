@@ -33,7 +33,8 @@ class SushiQWorker extends Command
      * The name and signature for the single-report Sushi processing console command.
      * @var string
      */
-    protected $signature = 'ccplus:sushiqw {consortium : Consortium ID or key-string}';
+    protected $signature = 'ccplus:sushiqw {consortium : Consortium ID or key-string}
+                                           {ident=null : Optional runtime name for logging output []}';
 
     /**
      * The console command description.
@@ -60,14 +61,23 @@ class SushiQWorker extends Command
      */
     public function handle()
     {
+       // Input sets an optional prefix for logged/printed output
+        $_ident = $this->argument('ident');
+        $ident = ($_ident == "null") ? "" : $_ident . " : ";
+
        // Allow input consortium to be an ID or Key
+        $ts = date("Y-m-d H:i:s") . " ";
         $conarg = $this->argument('consortium');
         $consortium = Consortium::find($conarg);
         if (is_null($consortium)) {
             $consortium = Consortium::where('ccp_key', '=', $conarg)->first();
         }
         if (is_null($consortium)) {
-            $this->line('Cannot locate Consortium: ' . $conarg);
+            $this->line($ts . $ident . 'Cannot locate Consortium: ' . $conarg);
+            exit;
+        }
+        if (!$consortium->is_active) {
+            $this->line($ts . $ident . 'Consortium: ' . $conarg . " is NOT ACTIVE ... quitting.");
             exit;
         }
 
@@ -84,67 +94,61 @@ class SushiQWorker extends Command
         $ingestlogs_table = config('database.connections.consodb.database') . ".ingestlogs";
         $runable_status = array('Queued','Pending','Retrying');
 
-       // Get all queue entries for this consortium; exit if none found
-        // $job_count = SushiQueueJob::join($ingestlogs_table . ' as ing', 'ing.id', '=', $jobs_table . '.ingest_id')
-        $job_count = DB::table($jobs_table . ' as job')
-                       ->join($ingestlogs_table . ' as ing', 'ing.id', '=', 'job.ingest_id')
-                       ->where('consortium_id', '=', $consortium->id)
-                       ->whereIn('ing.status', $runable_status)
-                       ->count();
-        if ($job_count == 0) {
+       // Get Job ID's for all "runable" queue entries for this consortium; exit if none found
+        $job_ids = DB::table($jobs_table . ' as job')
+                      ->join($ingestlogs_table . ' as ing', 'ing.id', '=', 'job.ingest_id')
+                      ->where('consortium_id', '=', $consortium->id)
+                      ->whereIn('ing.status', $runable_status)
+                      ->pluck('job.id');
+        if (sizeof($job_ids) == 0) {
             exit;
         }
 
        // Save all consortia records for detecting active jobs, strings for job queries
         $this->all_consortia = Consortium::where('is_active', true)->get();
 
-       // While there are jobs in the queue (count is updated @ bottom of loop)
-        while ($job_count > 0) {
-            $jobs = SushiQueueJob::join($ingestlogs_table . ' as ing', 'ing.id', '=', $jobs_table . '.ingest_id')
-                                 ->where('consortium_id', '=', $consortium->id)
-                                 ->whereIn('ing.status', $runable_status)
+       // Keep looping as long as there are jobs we can do
+       // ($job_ids is updated @ bottom of loop)
+        while (sizeof($job_ids) > 0) {
+           // Get the current jobs
+            $jobs = SushiQueueJob::whereIn('id', $job_ids)
                                  ->orderBy('priority', 'DESC')
-                                 ->orderBy($jobs_table . '.updated_at', 'ASC')
-                                 ->orderBy($jobs_table . '.id', 'ASC')
+                                 ->orderBy('id', 'ASC')
                                  ->get();
             if (empty($jobs)) {
                 exit;
             }
 
            // Find the next available job
-            $job = null;
             $ten_ago = strtotime("-10 minutes");
-            foreach ($jobs as $_job) {
+            $job_found = false;
+            foreach ($jobs as $job) {
                // Skip any "Retrying" ingest that's been updated today
                 if (
                     $job->ingest->status == 'Retrying' &&
-                    (substr($_job->ingest->updated_at, 0, 10) == date("Y-m-d"))
+                    (substr($job->ingest->updated_at, 0, 10) == date("Y-m-d"))
                 ) {
                     continue;
                 }
 
                // Skip any "Pending" ingest that's been updated within the last 10 minutes
-                if (
-                    $job->ingest->status == 'Pending' &&
-                    (strtotime($_job->ingest->updated_at) > $ten_ago ||
-                     strtotime($_job->updated_at) > $ten_ago)
-                ) {
+                if ($job->ingest->status == 'Pending' && (strtotime($job->ingest->updated_at) > $ten_ago)) {
                     continue;
                 }
 
                // Check the job url against all active urls and skip if there's a match
-                if ($this->hasActiveIngest($_job->ingest->sushiSetting->provider->server_url_r5)) {
+                if ($this->hasActiveIngest($job->ingest->sushiSetting->provider->server_url_r5)) {
                     continue;
                 }
 
                // Got one... move on
-                $job = $_job;
+                $job_found = true;
                 break;
             }
 
            // If we found a job, mark it active to keep any parallel processes from hitting this same
            // provider; otherwise, we exit quietly.
-            if (!is_null($job)) {
+            if ($job_found) {
                 $job->ingest->status = 'Active';
                 $job->ingest->save();
             } else {
@@ -152,6 +156,7 @@ class SushiQWorker extends Command
             }
 
            // Setup begin and end dates for sushi request
+            $ts = date("Y-m-d H:i:s");
             $yearmon = $job->ingest->yearmon;
             $begin = $yearmon . '-01';
             $end = $yearmon . '-' . date('t', strtotime($begin));
@@ -159,19 +164,34 @@ class SushiQWorker extends Command
            // Get report
             $report = Report::find($job->ingest->report_id);
             if (is_null($report)) {     // report gone? toss entry
-                $this->line('Unknown Report ID: ' . $job->ingest->report_id . ' , queue entry skipped and deleted.');
+                $this->line($ts . " " . $ident . 'Unknown Report ID: ' . $job->ingest->report_id .
+                            ' , queue entry skipped and deleted.');
                 $job->delete();
                 continue;
             }
 
            // Get sushi settings
-            if (is_null($job->ingest->sushiSetting)) {     // settings gone? toss entry
-                $this->line('Unknown Sushi Settings ID: ' . $job->ingest->sushisettings_id .
+            if (is_null($job->ingest->sushiSetting)) {     // settings gone? toss the job
+                $this->line($ts . " " . $ident . 'Unknown Sushi Settings ID: ' . $job->ingest->sushisettings_id .
                             ' , queue entry skipped and deleted.');
                 $job->delete();
                 continue;
             }
             $setting = $job->ingest->sushiSetting;
+
+           // If provider or institution is inactive, toss the job and move on
+            if (!$setting->provider->is_active) {
+                $this->line($ts . " " . $ident . 'Provider: ' . $setting->provider->name .
+                            ' is INACTIVE , queue entry skipped and deleted.');
+                $job->delete();
+                continue;
+            }
+            if (!$setting->institution->is_active) {
+                $this->line($ts . " " . $ident . 'Institution: ' . $setting->institution->name .
+                            ' is INACTIVE , queue entry skipped and deleted.');
+                $job->delete();
+                continue;
+            }
 
            // Create a new processor object; job record decides if data is getting replaced. If data is
            // being replaced, nothing is deleted until after the new report is received and validated.
@@ -199,7 +219,6 @@ class SushiQWorker extends Command
             $request_uri = $sushi->buildUri($setting, $report);
 
            // Make the request
-            $ts = date("Y-m-d H:i:s");
             $request_status = $sushi->request($request_uri);
 
            // Examine the response
@@ -207,7 +226,7 @@ class SushiQWorker extends Command
             if ($request_status == "Success") {
                // Print out any non-fatal message from sushi request
                 if ($sushi->message != "") {
-                    $this->line($sushi->message . $sushi->detail);
+                    $this->line($ts . " " . $ident . $sushi->message . $sushi->detail);
                 }
 
                 try {
@@ -216,20 +235,20 @@ class SushiQWorker extends Command
                     FailedIngest::insert(['ingest_id' => $job->ingest->id, 'process_step' => 'COUNTER',
                                           'error_id' => 100, 'detail' => 'Validation error: ' . $e->getMessage(),
                                           'created_at' => $ts]);
-                    $this->line("COUNTER report failed validation : " . $e->getMessage());
+                    $this->line($ts . " " . $ident . "COUNTER report failed validation : " . $e->getMessage());
                 }
-           // If request is pending (in a provider queue, not a CC+ queue), update status
-           // and touch the job record so it is pushed down the order of a future run
+
+           // If request is pending (in a provider queue, not a CC+ queue), just set ingest status
+           // the record updates when we fall out of the remaining if-else blocks
             } elseif ($request_status == "Pending") {
                 $job->ingest->status = "Pending";
-                $job->touch();
 
            // If request failed, update the IngestLog and add a FailedIngest record
             } else {    // Fail
                 FailedIngest::insert(['ingest_id' => $job->ingest->id, 'process_step' => $sushi->step,
                                       'error_id' => $sushi->error_id, 'detail' => $sushi->detail,
                                       'created_at' => $ts]);
-                $this->line($sushi->message . $sushi->detail);
+                $this->line($ts . " " . $ident . $sushi->message . $sushi->detail);
             }
 
            // If we have a validated report, processs and save it
@@ -237,10 +256,11 @@ class SushiQWorker extends Command
                 $_status = $C5processor->{$report->name}($sushi->json);
 // -->> Is there ever a time this returns something other than success?
                 if ($_status == 'Success') {
-                    $this->line($setting->provider->name . " : " . $yearmon . " : " . $report->name . " saved for " .
-                                $setting->institution->name);
+                    $this->line($ts . " " . $ident . $setting->provider->name . " : " . $yearmon . " : " .
+                                $report->name . " saved for " . $setting->institution->name);
                 }
                 $job->ingest->status = $_status;
+
            // No valid report data saved. If we failed, update ingest record
            // ("Pending" is not considered failure.)
             } else {
@@ -267,11 +287,13 @@ class SushiQWorker extends Command
             if ($request_status != "Pending") {
                 $job->delete();
             }
-            $job_count = DB::table($jobs_table . ' as job')
-                           ->join($ingestlogs_table . ' as ing', 'ing.id', '=', 'job.ingest_id')
-                           ->where('consortium_id', '=', $consortium->id)
-                           ->whereIn('ing.status', $runable_status)
-                           ->count();
+
+           // Update ID's of "runable" queue entries
+            $job_ids = DB::table($jobs_table . ' as job')
+                         ->join($ingestlogs_table . ' as ing', 'ing.id', '=', 'job.ingest_id')
+                         ->where('consortium_id', '=', $consortium->id)
+                         ->whereIn('ing.status', $runable_status)
+                         ->pluck('job.id');
         }   // While there are jobs in the queue
     }
 

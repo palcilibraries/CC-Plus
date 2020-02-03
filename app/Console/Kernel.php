@@ -29,8 +29,18 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+    /*
+     * Example scheduler setup: A nightly process and 2 queue workers for each of 2 consortia
+     */
         // $schedule->command('ccplus:nightly')->daily();
-        // $schedule->command('ccplus:sushiqw')->hourly()->withoutOverlapping();
+        // $schedule->command('ccplus:sushiqw 1 Conso1_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+        //                                       ->appendOutputTo('/var/log/ccplus/ingests.log');
+        // $schedule->command('ccplus:sushiqw 1 Conso1_QW2')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+        //                                       ->appendOutputTo('/var/log/ccplus/ingests.log');
+        // $schedule->command('ccplus:sushiqw 2 Conso2_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+        //                                       ->appendOutputTo('/var/log/ccplus/ingests.log');
+        // $schedule->command('ccplus:sushiqw 2 Conso2_QW2')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+        //                                       ->appendOutputTo('/var/log/ccplus/ingests.log');
     }
 
     /**

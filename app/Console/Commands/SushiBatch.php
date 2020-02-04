@@ -230,7 +230,7 @@ class SushiBatchCommand extends Command
                        // If request failed, insert an IngestLog and a FailedIngest record
                         if ($req_state == "Fail") {
                             FailedIngest::insert(['ingest_id' => $ingest->id, 'process_step' => $sushi->step,
-                                                  'error_id' => $sushi->error_id, 'detail' => $sushi->detail,
+                                                  'error_id' => $sushi->error_code, 'detail' => $sushi->detail,
                                                   'created_at' => $ts]);
                             $this->line($sushi->message . $sushi->detail);
                             $ingest->status = 'Fail';

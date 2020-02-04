@@ -13,6 +13,7 @@ use App\SushiQueueJob;
 use App\Counter5Processor;
 use App\FailedIngest;
 use App\IngestLog;
+use App\CcplusError;
 use \ubfr\c5tools\JsonR5Report;
 use \ubfr\c5tools\CheckResult;
 use \ubfr\c5tools\ParseException;
@@ -34,7 +35,8 @@ class SushiQWorker extends Command
      * @var string
      */
     protected $signature = 'ccplus:sushiqw {consortium : Consortium ID or key-string}
-                                           {ident=null : Optional runtime name for logging output []}';
+                                           {ident=null : Optional runtime name for logging output []}
+                                           {startup-delay=0 : Optional delay for staggering multiple startups}';
 
     /**
      * The console command description.
@@ -61,9 +63,11 @@ class SushiQWorker extends Command
      */
     public function handle()
     {
-       // Input sets an optional prefix for logged/printed output
+       // Get optional inputs
         $_ident = $this->argument('ident');
         $ident = ($_ident == "null") ? "" : $_ident . " : ";
+        $delay = $this->argument('startup-delay');
+        sleep($delay);
 
        // Allow input consortium to be an ID or Key
         $ts = date("Y-m-d H:i:s") . " ";
@@ -217,6 +221,10 @@ class SushiQWorker extends Command
 
            // Construct URI for the request
             $request_uri = $sushi->buildUri($setting, $report);
+// $this->line("Job: " . $job->id . " (ingest_id: " . $job->ingest->id . ")");
+// $this->line("Provider: " . $setting->provider->name . " , Inst: " . $setting->institution->name);
+// $this->line("Request : " . $request_uri);
+// exit;
 
            // Make the request
             $request_status = $sushi->request($request_uri);
@@ -226,7 +234,8 @@ class SushiQWorker extends Command
             if ($request_status == "Success") {
                // Print out any non-fatal message from sushi request
                 if ($sushi->message != "") {
-                    $this->line($ts . " " . $ident . $sushi->message . $sushi->detail);
+                    $this->line($ts . " " . $ident . "Non-Fatal SUSHI Exception: (" . $sushi->error_code . ") : " .
+                                $sushi->message . $sushi->detail);
                 }
 
                 try {
@@ -235,7 +244,7 @@ class SushiQWorker extends Command
                     FailedIngest::insert(['ingest_id' => $job->ingest->id, 'process_step' => 'COUNTER',
                                           'error_id' => 100, 'detail' => 'Validation error: ' . $e->getMessage(),
                                           'created_at' => $ts]);
-                    $this->line($ts . " " . $ident . "COUNTER report failed validation : " . $e->getMessage());
+                    $this->line($ts . " " . $ident . "Report failed COUNTER validation : " . $e->getMessage());
                 }
 
            // If request is pending (in a provider queue, not a CC+ queue), just set ingest status
@@ -243,12 +252,19 @@ class SushiQWorker extends Command
             } elseif ($request_status == "Pending") {
                 $job->ingest->status = "Pending";
 
-           // If request failed, update the IngestLog and add a FailedIngest record
+           // If request failed, update the Logs
             } else {    // Fail
+               // Clean up the message in case we're adding the code to the errors table
+                $error_msg = substr(preg_replace('/(.*)(https?:\/\/.*)$/', '$1', $sushi->message),0,60);
+               // Get/Create entry from the sushi_errors table
+                $error = CcplusError::firstOrCreate(
+                         ['id' => $sushi->error_code],
+                         ['id' => $sushi->error_code, 'message' => $error_msg, 'severity' => $sushi->severity]
+                );
                 FailedIngest::insert(['ingest_id' => $job->ingest->id, 'process_step' => $sushi->step,
-                                      'error_id' => $sushi->error_id, 'detail' => $sushi->detail,
-                                      'created_at' => $ts]);
-                $this->line($ts . " " . $ident . $sushi->message . $sushi->detail);
+                                      'error_id' => $error->id, 'detail' => $sushi->detail, 'created_at' => $ts]);
+                $this->line($ts . " " . $ident . "SUSHI Exception (" . $sushi->error_code . ") : " .
+                            $sushi->message . $sushi->detail);
             }
 
            // If we have a validated report, processs and save it

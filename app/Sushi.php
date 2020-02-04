@@ -5,7 +5,6 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Client;
-use App\CcplusError;
 use \ubfr\c5tools\JsonR5Report;
 use \ubfr\c5tools\CheckResult;
 use \ubfr\c5tools\ParseException;
@@ -17,7 +16,8 @@ class Sushi extends Model
     public $json;
     public $message;
     public $detail;
-    public $error_id;
+    public $error_code;
+    public $severity;
     public $step;
     public $raw_datafile;
 
@@ -43,7 +43,8 @@ class Sushi extends Model
         $this->message = "";
         $this->detail = "";
         $this->step = "";
-        $this->error_id = 0;
+        $this->error_code = 0;
+        $this->severity = "";
         $client = new Client();   //GuzzleHttp\Client
 
        // Make the request and convert into JSON
@@ -58,7 +59,7 @@ class Sushi extends Model
                 $this->detail = "No response from provider.";
             }
             $this->step = "HTTP";
-            $this->error_id = 10;
+            $this->error_code = 10;
             $this->message = "SUSHI HTTP request failed, verify URL : ";
             return "Fail";
         }
@@ -83,7 +84,7 @@ class Sushi extends Model
         if (json_last_error() !== JSON_ERROR_NONE) {
               $this->detail = json_last_error_msg();
               $this->step = "JSON";
-              $this->error_id = 20;
+              $this->error_code = 20;
               $this->message = "Error decoding JSON : ";
               return "Fail";
         }
@@ -94,7 +95,7 @@ class Sushi extends Model
             $this->detail = " request returned " . (is_array($this->json) ? 'an array' : 'a scalar');
             $this->step = "JSON";
             $this->message = "JSON is not an object : ";
-            $this->error_id = 30;
+            $this->error_code = 30;
             return "Fail";
         }
 
@@ -102,37 +103,28 @@ class Sushi extends Model
         $found_exception = false;
         if (property_exists($this->json, 'Exception')) {
             $found_exception = true;
-            $Code = $this->json->Exception->Code;
-            $Severity = strtoupper($this->json->Exception->Severity);
-            $Message = $this->json->Exception->Message;
+            $this->error_code = $this->json->Exception->Code;
+            $this->severity = strtoupper($this->json->Exception->Severity);
+            $this->message = $this->json->Exception->Message;
         } elseif (property_exists($this->json, 'Code') && property_exists($this->json, 'Message')) {
             $found_exception = true;
-            $Code = $this->json->Code;
-            $Severity = strtoupper($this->json->Severity);
-            $Message = $this->json->Message;
+            $this->error_code = $this->json->Code;
+            $this->severity = strtoupper($this->json->Severity);
+            $this->message = $this->json->Message;
         }
 
        // Check and/or handle the exception
         if ($found_exception) {
            // Check for "queued" state response
-            if ($Code == 1011) {
+            if ($this->error_code == 1011) {
                 return "Pending";
             }
 
-           // Not queued, signal error
-            $this->error_id = $Code;
-            if ($Severity == 'ERROR' || $Severity == 'FATAL') {
-               // Get/Create entry from the sushi_errors table
-                $trunc_msg = substr($Message,0,60);
-                $error = CcplusError::firstOrCreate(
-                    ['id' => $Code],
-                    ['id' => $Code, 'message' => $trunc_msg, 'severity' => $Severity]
-                );
-                $this->step = "SUSHI";
-                $this->message = "SUSHI Exception returned (" . $Code . ") : " . $Message;
+           // Not queued, signal error. If severity is non-Fatal, the message and code are
+           // set already and we'll return Success to allow the caller to report it (or not).
+            $this->step = "SUSHI";
+            if ($this->severity == 'ERROR' || $this->severity == 'FATAL') {
                 return "Fail";
-            } else {
-                $this->message = "Non-Fatal SUSHI Exception: (" . $Code . ") : " . $Message;
             }
         }
         return "Success";

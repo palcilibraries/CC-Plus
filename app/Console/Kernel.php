@@ -29,22 +29,30 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-    /*
-     * Example scheduler setup for nightly process to scan for new jobs to be queued
+    /*----------------------------------------------------------------------------------
+     * Example scheduler setup for a 2-consortia system. Each consortium uses a daily
+     * queue-loading process (:sushiqn) and 2 queue worker processes that execute
+     * every ten minutes (and then exit if there's nothing to do.)
+     *
+     * Note that the *_QW2 workers have a 5-second startup delay to prevent the _QW1 and
+     * _QW2 processes from trying to grab the same job when they start.
+     * Syntax:
+     *   ccplus:sushiqw  consortium-ID-or-Key [Process-Identifier] [startup-delay]
+     *----------------------------------------------------------------------------------
      */
-        $schedule->command('ccplus:nightly')->daily();
-
-      /* Example Sushi Queue workers:
-       * The *_QW2 workers have a 5-second startup delay to prevent the _QW1 and _QW2 processes
-       * from trying to grab the same job when they start.
-       * Syntax:
-       *   ccplus:sushiqw  consortium-ID-or-Key [Process-Identifier] [startup-delay]
+      /*
+       * Consortium #1
        */
+        $schedule->command('ccplus:sushiqn 1')->daily();
         $schedule->command('ccplus:sushiqw 1 Conso1_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
                                               ->appendOutputTo('/var/log/ccplus/ingests.log');
-        $schedule->command('ccplus:sushiqw 2 Conso2_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
-                                              ->appendOutputTo('/var/log/ccplus/ingests.log');
         $schedule->command('ccplus:sushiqw 1 Conso1_QW2 5')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+                                              ->appendOutputTo('/var/log/ccplus/ingests.log');
+      /*
+       * Consortium #2
+       */
+        $schedule->command('ccplus:sushiqn 2')->daily();
+        $schedule->command('ccplus:sushiqw 2 Conso2_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
                                               ->appendOutputTo('/var/log/ccplus/ingests.log');
         $schedule->command('ccplus:sushiqw 2 Conso2_QW2 5')->runInBackground()->everyTenMinutes()->withoutOverlapping()
                                               ->appendOutputTo('/var/log/ccplus/ingests.log');

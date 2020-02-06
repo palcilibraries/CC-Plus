@@ -85,6 +85,7 @@
                                  array('class' => 'form-control','multiple')) !!}
             </div>
         </div>
+<!--
         <div class="col-xs-12 col-sm-12 col-md-12">
             <div class="form-group">
                 <strong>Security:</strong>
@@ -104,6 +105,7 @@
                 {!! Form::text('auth_password', null, array('class' => 'form-control')) !!}
             </div>
         </div>
+-->
         <div class="col-xs-12 col-sm-12 col-md-12">
             <div class="form-group">
                 <strong>Harvest Monthly on Day:</strong>

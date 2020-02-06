@@ -255,11 +255,11 @@ class SushiQWorker extends Command
            // If request failed, update the Logs
             } else {    // Fail
                // Clean up the message in case we're adding the code to the errors table
-                $error_msg = substr(preg_replace('/(.*)(https?:\/\/.*)$/', '$1', $sushi->message),0,60);
+                $error_msg = substr(preg_replace('/(.*)(https?:\/\/.*)$/', '$1', $sushi->message), 0, 60);
                // Get/Create entry from the sushi_errors table
                 $error = CcplusError::firstOrCreate(
-                         ['id' => $sushi->error_code],
-                         ['id' => $sushi->error_code, 'message' => $error_msg, 'severity' => $sushi->severity]
+                    ['id' => $sushi->error_code],
+                    ['id' => $sushi->error_code, 'message' => $error_msg, 'severity' => $sushi->severity]
                 );
                 FailedIngest::insert(['ingest_id' => $job->ingest->id, 'process_step' => $sushi->step,
                                       'error_id' => $error->id, 'detail' => $sushi->detail, 'created_at' => $ts]);

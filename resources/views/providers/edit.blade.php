@@ -107,8 +107,13 @@
         <div class="col-xs-12 col-sm-12 col-md-12">
             <div class="form-group">
                 <strong>Harvest Monthly on Day:</strong>
-                {!! Form::number('day_of_month', 15, array('min' => 1, 'max' => 28,
-                                 'class' => 'form-control')) !!}
+                @if(isset($provider->day_of_month))
+                    {!! Form::number('day_of_month', null, array('min' => 1, 'max' => 28,
+                                    'class' => 'form-control')) !!}
+                @else
+                    {!! Form::number('day_of_month', 15, array('min' => 1, 'max' => 28,
+                                    'class' => 'form-control')) !!}
+                @endif
             </div>
         </div>
         <div class="col-xs-12 col-sm-12 col-md-12 text-center">

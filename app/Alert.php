@@ -56,8 +56,8 @@ class Alert extends BaseModel
         return $this->belongsTo('App\User', 'modified_by');
     }
 
-  // Shortcuts into the alert data since they can be
-  // caused by alert-settings or failed-ingests
+   // Shortcuts into the alert data since they are related
+   // to either an alert-setting or to a failed ingest
     public function institution()
     {
         if ($this->ingest_id == 0) {
@@ -66,15 +66,6 @@ class Alert extends BaseModel
             return $this->ingest->sushiSetting->institution;
         }
     }
-
-    // public function detail()
-    // {
-    //     if ($this->ingest_id == 0) {
-    //         return $this->alertSetting->metric->legend;
-    //     } else {
-    //         return $this->failedIngest->detail;
-    //     }
-    // }
 
     public function reportName()
     {

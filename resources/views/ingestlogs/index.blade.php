@@ -22,15 +22,18 @@
      <th>Institution</th>
      <th>Report</th>
      <th>Usage Date</th>
+     <th>Attempts</th>
      <th>Status</th>
      <th>RunDate</th>
   </tr>
   @foreach ($data as $key => $record)
   <tr>
+
       <td>{{ $record->sushiSetting->provider->name }}</td>
       <td>{{ $record->sushiSetting->institution->name }}</td>
       <td>{{ $record->report->name }}</td>
       <td>{{ $record->yearmon }}</td>
+      <td>{{ $record->attempts }}</td>
       <td><a href="{{ route('ingestlogs.show',$record->id) }}">{{ $record->status }}</a></td>
       <td>{{ $record->created_at }}</td>
   </tr>

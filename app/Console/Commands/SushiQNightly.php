@@ -46,9 +46,9 @@ class SushiQNightly extends Command
      */
     public function handle()
     {
-        // Try to get the consortium as ID or Key
-         $conarg = $this->argument('consortium');
-         $consortium = Consortium::find($conarg);
+       // Try to get the consortium as ID or Key
+        $conarg = $this->argument('consortium');
+        $consortium = Consortium::find($conarg);
         if (is_null($consortium)) {
             $consortium = Consortium::where('ccp_key', '=', $conarg)->first();
         }
@@ -57,31 +57,31 @@ class SushiQNightly extends Command
             exit;
         }
 
-        // Aim the consodb connection at specified consortium's database and initialize the
-        // path for keeping raw report responses
-         config(['database.connections.consodb.database' => 'ccplus_' . $consortium->ccp_key]);
-         DB::reconnect();
+       // Aim the consodb connection at specified consortium's database and initialize the
+       // path for keeping raw report responses
+        config(['database.connections.consodb.database' => 'ccplus_' . $consortium->ccp_key]);
+        DB::reconnect();
 
-        // Part I : Load any new ingests (based on today's date) into the IngestLog table
-        // ------------------------------------------------------------------------------
-        // Get and loop through all active providers
-         $providers = Provider::where('is_active', '=', true)->get();
+       // Part I : Load any new ingests (based on today's date) into the IngestLog table
+       // ------------------------------------------------------------------------------
+       // Get and loop through all active providers
+        $providers = Provider::where('is_active', '=', true)->get();
 
-        // Timestamp is now, yearmon for report being queued is last month
-         $ts = date("Y-m-d H:i:s");
-         $yearmon = date("Y-m", mktime(0, 0, 0, date("m") - 1, date("d"), date("Y")));
+       // Timestamp is now, yearmon for report being queued is last month
+        $ts = date("Y-m-d H:i:s");
+        $yearmon = date("Y-m", mktime(0, 0, 0, date("m") - 1, date("d"), date("Y")));
         foreach ($providers as $provider) {
-            // If today is not the day, skip to next provider
+           // If today is not the day, skip to next provider
             if ($provider->day_of_month != date('j')) {
                 continue;
             }
 
-            // foreach ($provider->sushiSettings() as $setting) {
-            // Loop through all sushisettings for this provider
+           // foreach ($provider->sushiSettings() as $setting) {
+           // Loop through all sushisettings for this provider
             foreach ($provider->sushiSettings as $setting) {
-                // Loop through all reports defined as available for this provider
+               // Loop through all reports defined as available for this provider
                 foreach ($provider->reports as $report) {
-                    // Process only master reports
+                   // Process only master reports
                     if (
                         $report->name != "TR"
                         && $report->name != "PR"
@@ -90,7 +90,7 @@ class SushiQNightly extends Command
                     ) {
                         continue;
                     }
-                    // Insert new IngestLog record; catch and prevent duplicates
+                   // Insert new IngestLog record; catch and prevent duplicates
                     try {
                         IngestLog::insert(['status' => 'New', 'sushisettings_id' => $setting->id,
                                            'report_id' => $report->id, 'yearmon' => $yearmon,
@@ -115,9 +115,9 @@ class SushiQNightly extends Command
             } // for each sushisetting
         } // for each provider
 
-        // Part II : Create queue jobs based on IngestLogs
-        // -----------------------------------------------
-         $ingests = IngestLog::where('status', '=', 'New')->orWhere('status', '=', 'Retrying')->get();
+       // Part II : Create queue jobs based on IngestLogs
+       // -----------------------------------------------
+        $ingests = IngestLog::where('status', '=', 'New')->orWhere('status', '=', 'Retrying')->get();
         foreach ($ingests as $ingest) {
             try {
                 $newjob = SushiQueueJob::create(['consortium_id' => $consortium->id, 'ingest_id' => $ingest->id]);

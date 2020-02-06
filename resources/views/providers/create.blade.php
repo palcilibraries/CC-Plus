@@ -34,7 +34,7 @@
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
             <strong>Status:</strong>
-            {!! Form::select('active', ['1'=>'Active', '0'=>'Inactive'], array('class' => 'form-control')) !!}
+            {!! Form::select('is_active', ['1'=>'Active', '0'=>'Inactive'], array('class' => 'form-control')) !!}
         </div>
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12">

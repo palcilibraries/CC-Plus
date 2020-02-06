@@ -32,7 +32,7 @@
   <?php $inst_name = ($provider->institution->id == 1) ? "Entire Consortium" : $provider->institution->name; ?>
   <tr>
     <td>{{ $provider->name }}</td>
-    <td>{{ $provider->active ? 'Active' : 'Inactive' }}</td>
+    <td>{{ $provider->is_active ? 'Active' : 'Inactive' }}</td>
     <td>{{ $inst_name }}</td>
     <td>{{ $provider->day_of_month }}</td>
     <td>

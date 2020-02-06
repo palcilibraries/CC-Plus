@@ -13,11 +13,11 @@ class IngestLogController extends Controller
         $this->middleware('auth');
     }
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+   /**
+    * Display a listing of the resource.
+    *
+    * @return \Illuminate\Http\Response
+    */
     public function index(Request $request)
     {
         $data = IngestLog::orderBy('id', 'DESC')->paginate(10);
@@ -25,28 +25,24 @@ class IngestLogController extends Controller
              ->with('i', ($request->input('page', 1) - 1) * 10);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+   /**
+    * Display the specified resource.
+    *
+    * @param  int  $id
+    * @return \Illuminate\Http\Response
+    */
     public function show($id)
     {
         $record = IngestLog::findOrFail($id);
-        $_limiters = ['sushisettings_id' => $record->sushisettings_id,
-                    'yearmon' => $record->yearmon,
-                    'report_id' => $record->report_id];
-        $failed = FailedIngest::where($_limiters)->first();
-        return view('ingestlogs.show', compact('record', 'failed'));
+        return view('ingestlogs.show', compact('record'));
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+   /**
+    * Remove the specified resource from storage.
+    *
+    * @param  int  $id
+    * @return \Illuminate\Http\Response
+    */
     public function destroy($id)
     {
         $this->middleware(['role:Admin']);

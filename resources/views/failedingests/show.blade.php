@@ -26,46 +26,39 @@
 <div class="row">
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
-            <strong>Institution: </strong>
-            {{ $record->sushiSetting->institution->name }}
+            <strong>Provider: </strong>
+            {{ $record->ingest->sushiSetting->provider->name }}
         </div>
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
-            <strong>Provider: </strong>
-            {{ $record->sushiSetting->provider->name }}
+            <strong>Institution: </strong>
+            {{ $record->ingest->sushiSetting->institution->name }}
         </div>
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
             <strong>Report: </strong>
-            {{ $record->report->name }}
+            {{ $record->ingest->report->name }}
         </div>
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
             <strong>Data for Month: </strong>
-            {{ $record->yearmon }}
+            {{ $record->ingest->yearmon }}
         </div>
     </div>
-
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
             <strong>Processing Step: </strong>
             {{ $record->process_step }}
         </div>
     </div>
-
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
-            <strong>Retry Count: </strong>
-            {{ $record->retry_count }}
-        </div>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <strong>Detail: </strong>
-                ({{ $record->ccplusError->id }}) : {{ $record->ccplusError->message }}
+            <strong>Detail: </strong><br />
+            (Error: {{ $record->ccplusError->id }}) : {{ $record->ccplusError->message }} <br />
+            {{ $record->detail }}
         </div>
     </div>
 </div>

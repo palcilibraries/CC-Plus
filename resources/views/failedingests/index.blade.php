@@ -23,18 +23,18 @@
      <th>Report</th>
      <th>Usage Date</th>
      <th>Process Step</th>
-     <th>Retry Count</th>
+     <th>Severity</th>
      <th>RunDate</th>
   </tr>
   @foreach ($data as $key => $record)
   <tr>
-      <td>{{ $record->sushiSetting->provider->name }}</td>
-      <td>{{ $record->sushiSetting->institution->name }}</td>
-      <td>{{ $record->report->name }}</td>
-      <td>{{ $record->yearmon }}</td>
+      <td>{{ $record->ingest->sushiSetting->provider->name }}</td>
+      <td>{{ $record->ingest->sushiSetting->institution->name }}</td>
+      <td>{{ $record->ingest->report->name }}</td>
+      <td>{{ $record->ingest->yearmon }}</td>
       <td>{{ $record->process_step }}</td>
-      <td>{{ $record->retry_count }}</td>
-      <td><a href="{{ route('failedingests.show',$record->id) }}">{{ $record->updated_at }}</a></td>
+      <td>{{ $record->ccplusError->severity }}</td>
+      <td><a href="{{ route('failedingests.show',$record->id) }}">{{ $record->created_at }}</a></td>
   </tr>
   @endforeach
 </table>

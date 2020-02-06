@@ -23,7 +23,7 @@ class IngestLog extends Model
 
     public function failedingests()
     {
-        return $this->hasMany('App\FailedIngest');
+        return $this->hasMany('App\FailedIngest', 'ingest_id');
     }
 
     public function report()

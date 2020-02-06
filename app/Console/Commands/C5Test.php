@@ -25,7 +25,7 @@ class C5TestCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'ccplus:C5test {consortium : Consortium ID}
+    protected $signature = 'ccplus:C5test {consortium : The Consortium ID or key-string}
                              {provider : Provider ID}
                              {institution : Institution ID}
                              {report : Report Name to request}
@@ -56,9 +56,18 @@ class C5TestCommand extends Command
      */
     public function handle()
     {
-       // Required arguments
-        $con_id = $this->argument('consortium');
-        $consortium = Consortium::findOrFail($con_id);
+       // Get the consortium as ID or Key
+        $conarg = $this->argument('consortium');
+        $consortium = Consortium::find($conarg);
+        if (is_null($consortium)) {
+            $consortium = Consortium::where('ccp_key', '=', $conarg)->first();
+        }
+        if (is_null($consortium)) {
+            $this->line('Cannot Load Consortium: ' . $conarg);
+            exit;
+        }
+
+       // The other required arguments
         $prov_id = $this->argument('provider');
         $inst_id = $this->argument('institution');
         $rept = $this->argument('report');

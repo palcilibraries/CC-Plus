@@ -44,14 +44,29 @@
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
-            <strong>Issue: </strong>
-            @if ( isset($failed['detail']))
-               {{ $failed['detail'] }}
-            @else
-               No error message retained
+            @if ($record->failedingests()->count() > 0)
+            <strong>Failed attempts: </strong>
+            <table class="table table-bordered">
+              <tr>
+                 <th>Attempted</th>
+                 <th>Process Step</th>
+                 <th>Error Code</th>
+                 <th>Severity</th>
+                 <th>Message</th>
+                 <th>Details</th>
+              </tr>
+              @foreach ($record->failedingests as $fail)
+              <tr>
+                  <td>{{ $fail->created_at }}</td>
+                  <td>{{ $fail->process_step }}</td>
+                  <td>{{ $fail->error_id }}</td>
+                  <td>{{ $fail->ccplusError->severity }}</td>
+                  <td>{{ $fail->ccplusError->message }}</td>
+                  <td>{{ $fail->detail }}</td>
+              </tr>
+              @endforeach
+            </table>
             @endif
-            <br />
-            <a href="{{ route('failedingests.show',$failed['id']) }}">(Failed Ingest Detail)</a>
         </div>
     </div>
 </div>

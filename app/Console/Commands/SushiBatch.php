@@ -60,7 +60,7 @@ class SushiBatchCommand extends Command
      */
     public function handle()
     {
-       // Try to get the consortium as ID or Key
+       // Get the consortium as ID or Key
         $conarg = $this->argument('consortium');
         $consortium = Consortium::find($conarg);
         if (is_null($consortium)) {

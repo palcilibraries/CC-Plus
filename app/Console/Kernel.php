@@ -30,24 +30,24 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
     /*
-     * Example scheduler setup: A nightly process and 2 queue workers for each of 2 consortia
+     * Example scheduler setup for nightly process to scan for new jobs to be queued
      */
         // $schedule->command('ccplus:nightly')->daily();
 
-      /* Sushi Queue workers:
+      /* Example Sushi Queue workers:
        * The *_QW2 workers have a 5-second startup delay to prevent the _QW1 and _QW2 processes
        * from trying to grab the same job when they start.
        * Syntax:
        *   ccplus:sushiqw  consortium-ID-or-Key [Process-Identifier] [startup-delay]
        */
-        $schedule->command('ccplus:sushiqw 1 Conso1_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
-                                              ->appendOutputTo('/var/log/ccplus/ingests.log');
-        $schedule->command('ccplus:sushiqw 2 Conso2_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
-                                              ->appendOutputTo('/var/log/ccplus/ingests.log');
-        $schedule->command('ccplus:sushiqw 1 Conso1_QW2 5')->runInBackground()->everyTenMinutes()->withoutOverlapping()
-                                              ->appendOutputTo('/var/log/ccplus/ingests.log');
-        $schedule->command('ccplus:sushiqw 2 Conso2_QW2 5')->runInBackground()->everyTenMinutes()->withoutOverlapping()
-                                              ->appendOutputTo('/var/log/ccplus/ingests.log');
+        // $schedule->command('ccplus:sushiqw 1 Conso1_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+        //                                       ->appendOutputTo('/var/log/ccplus/ingests.log');
+        // $schedule->command('ccplus:sushiqw 2 Conso2_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+        //                                       ->appendOutputTo('/var/log/ccplus/ingests.log');
+        // $schedule->command('ccplus:sushiqw 1 Conso1_QW2 5')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+        //                                       ->appendOutputTo('/var/log/ccplus/ingests.log');
+        // $schedule->command('ccplus:sushiqw 2 Conso2_QW2 5')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+        //                                       ->appendOutputTo('/var/log/ccplus/ingests.log');
     }
 
     /**

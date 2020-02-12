@@ -19,7 +19,7 @@
           <div class="form-group">
             <label for="customer_id">Customer ID:</label>
             <input v-model="form.customer_id" type="text" id="customer_id">
-           </div>
+          </div>
         </div>
       </div>
       <div class="row">
@@ -38,23 +38,30 @@
           </div>
         </div>
       </div>
-      <button class="btn btn-primary" type="submit" :disabled="form.errors.any()">Update Sushi Settings</button>
+      <button class="btn btn-primary" type="submit" :disabled="form.errors.any()">Save Sushi Settings</button>
+      <button class="btn btn-primary" type="button" @click="testSettings" v-if="allowTest">Test Settings</button>
     </form>
-
+    <div v-if="showTest">{{ testStatus }}</div>
+    <div v-for="row in testData" v-if="showTest">
+        {{ row }}
+    </div>
   </div>
-
 </template>
 
 <script>
     export default {
         props: {
                 inst_id: { type:Number, default:0 },
-                providers: { type:Object, default: () => ({}) },
+                providers: { type:Array, default: () => [] },
                },
 
         data() {
             return {
                 message: '',
+                testData: '',
+                testStatus: '',
+                allowTest: false,
+                showTest: false,
                 form: new window.Form({
                     inst_id: '0',
                     prov_id: '0',
@@ -79,20 +86,40 @@
             },
             onProvChange (event) {
                 var self = this;
+                self.showTest = false;
                 axios.get('/sushisettings-refresh'+'?prov_id='+event.target.value+'&'+'inst_id='+this.inst_id)
                      .then( function(response) {
-                        if ( response.data.settings.count === 0) {
-                            self.message = 'No settings found for this provider - creating new entry.';
-                            self.form.customer_id = '';
-                            self.form.requestor_id = '';
-                            self.form.API_key = '';
+                         if ( response.data.settings.count === 0) {
+                             self.message = 'No settings found for this provider - creating new entry.';
+                             self.form.customer_id = '';
+                             self.form.requestor_id = '';
+                             self.form.API_key = '';
+                             self.allowTest = false;
+                         } else {
+                             self.form.customer_id = response.data.settings.customer_id;
+                             self.form.requestor_id = response.data.settings.requestor_id;
+                             self.form.API_key = response.data.settings.API_key;
+                             self.message = '';
+                             self.allowTest = true;
+                         }
+                         console.log(response.data.settings);
+                     })
+                     .catch(error => {});
+            },
+            testSettings (event) {
+                var self = this;
+                self.showTest = true;
+                self.testData = '';
+                self.testStatus = "... Working ...";
+                axios.get('/sushisettings-test'+'?prov_id='+self.form.prov_id+'&'+'inst_id='+this.inst_id)
+                     .then( function(response) {
+                        if ( response.data.result == '') {
+                            self.testStatus = "No results!";
                         } else {
-                            self.form.customer_id = response.data.settings.customer_id;
-                            self.form.requestor_id = response.data.settings.requestor_id;
-                            self.form.API_key = response.data.settings.API_key;
-                            self.message = '';
+                            self.testStatus = response.data.result;
+                            self.testData = response.data.rows;
                         }
-                        console.log(response.data.settings);
+                        console.log(response.data.result);
                     })
                    .catch(error => {});
             }

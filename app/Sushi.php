@@ -99,22 +99,8 @@ class Sushi extends Model
             return "Fail";
         }
 
-       // Check JSON for Exceptions. Sometimes they're expressed differently
-        $found_exception = false;
-        if (property_exists($this->json, 'Exception')) {
-            $found_exception = true;
-            $this->error_code = $this->json->Exception->Code;
-            $this->severity = strtoupper($this->json->Exception->Severity);
-            $this->message = $this->json->Exception->Message;
-        } elseif (property_exists($this->json, 'Code') && property_exists($this->json, 'Message')) {
-            $found_exception = true;
-            $this->error_code = $this->json->Code;
-            $this->severity = strtoupper($this->json->Severity);
-            $this->message = $this->json->Message;
-        }
-
        // Check and/or handle the exception
-        if ($found_exception) {
+        if ($this->jsonHasExceptions()) {
            // Check for "queued" state response
             if ($this->error_code == 1011) {
                 return "Pending";
@@ -137,20 +123,30 @@ class Sushi extends Model
     * @param Report $_report
     * @return string $request_uri
     */
-    public function buildUri($setting, $report)
+    public function buildUri($setting, $method="reports", $report="")
     {
-       // Begin setting up the URI for the request
-        $request_uri = rtrim($setting->provider->server_url_r5, '/') . "/";
-        $uri_args = "/?begin_date=" . self::$begin . "&end_date=" . self::$end;
+       // Begin setting up the URI by cleaning/standardizing the server_url_r5 string in the setting
+        $_url = rtrim($setting->provider->server_url_r5);    // remove trailing whitespace
+        $_url = preg_replace('/\/?reports\/?/i', '', $_url); // take off any methods with any bounding slashes
+        $_url = preg_replace('/\/?status\/?/i', '', $_url);  //   "   "   "     "      "   "     "        "
+        $_url = preg_replace('/\/?members\/?/i', '', $_url); //   "   "   "     "      "   "     "        "
+        $_uri = rtrim($_url, '/');                           // remove any remaining trailing slashes
+        $request_uri = $_url . '/' . $method . '/';
 
        // Construct and execute the Request
-        $uri_args .= "&customer_id=" . $setting->customer_id;
-        $uri_args .= "&requestor_id=" . $setting->requestor_id;
+        $uri_auth = "?customer_id=" . $setting->customer_id;
+        $uri_auth .= "&requestor_id=" . $setting->requestor_id;
+// CHECK THIS... the Counter-Sushi docs say the argument is named "api_key", but
+// haven't (yet) found a vendor that recognizes the value (or the argument-name?)
         if (!is_null($setting->API_key)) {
-            $uri_args .= "&api_key=" . $setting->API_key;
+            $uri_auth .= "&api_key=" . $setting->API_key;
+        }
+        if ($report=="") {
+            return $request_uri . $uri_auth;
         }
 
-       // Setup attributes for the request
+       // Setup date range and attributes for the request
+        $uri_dates = "&begin_date=" . self::$begin . "&end_date=" . self::$end;
         if ($report->name == "TR") {
             $uri_atts  = "&attributes_to_show=Data_Type%7CAccess_Method%7CAccess_Type%7C";
             $uri_atts .= "Section_Type%7CYOP";
@@ -163,16 +159,14 @@ class Sushi extends Model
         }
 
        // Construct URI for the request
-        $request_uri .= $report->name . $uri_args . $uri_atts;
+        $request_uri .= $report->name . $uri_auth . $uri_dates . $uri_atts;
         return $request_uri;
     }
 
    /**
     * Validate the JSON from a SUSHI against the COUNTER standard for Release-5
     *
-    * @param SushiSetting $setting
-    * @param Report $_report
-    * @return string $request_uri
+    * @return boolean $result
     */
     public function validateJson()
     {
@@ -224,5 +218,48 @@ class Sushi extends Model
        // return $report;
         unset($report);
         return true;
+    }
+
+    /**
+     * Scan the JSON from a SUSHI for exceptions and set returned details in
+     * public class variables
+     *
+     * @return boolean $has_exception
+     */
+    public function jsonHasExceptions()
+    {
+        // Check JSON for Exceptions. Sometimes they're expressed differently
+         $has_exception = false;
+         if (property_exists($this->json, 'Exception')) {
+             $has_exception = true;
+             $this->error_code = $this->json->Exception->Code;
+             $this->severity = strtoupper($this->json->Exception->Severity);
+             $this->message = $this->json->Exception->Message;
+         } elseif (property_exists($this->json, 'Code') && property_exists($this->json, 'Message')) {
+             $has_exception = true;
+             $this->error_code = $this->json->Code;
+             $this->severity = strtoupper($this->json->Severity);
+             $this->message = $this->json->Message;
+         } else {
+             if (property_exists($this->json, 'Report_Header')) {
+                 $header = $this->json->Report_Header;
+                 if (is_object($header)) {
+                    // Scan the JSON header for exception(s)
+                     if (property_exists($header, 'Exception')) {
+                         $has_exception = true;
+                         $this->error_code = $header->Exception->Code;
+                         $this->severity = strtoupper($header->Exception->Severity);
+                         $this->message = $header->Exception->Message;
+                     }
+                     if (property_exists($header, 'Exceptions')) {
+                         $has_exception = true;
+                         $this->error_code = $header->Exceptions[0]->Code;
+                         $this->severity = strtoupper($header->Exceptions[0]->Severity);
+                         $this->message = $header->Exceptions[0]->Message;
+                     }
+                 }
+             }
+         }
+         return $has_exception;
     }
 }

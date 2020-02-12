@@ -169,16 +169,20 @@ class SushiQWorker extends Command
             $report = Report::find($job->ingest->report_id);
             if (is_null($report)) {     // report gone? toss entry
                 $this->line($ts . " " . $ident . 'Unknown Report ID: ' . $job->ingest->report_id .
-                            ' , queue entry skipped and deleted.');
+                            ' , queue entry removed and ingest status set to Stopped.');
                 $job->delete();
+                $job->ingest->status = 'Stopped';
+                $job->ingest->save();
                 continue;
             }
 
            // Get sushi settings
             if (is_null($job->ingest->sushiSetting)) {     // settings gone? toss the job
                 $this->line($ts . " " . $ident . 'Unknown Sushi Settings ID: ' . $job->ingest->sushisettings_id .
-                            ' , queue entry skipped and deleted.');
+                            ' , queue entry removed and ingest status set to Stopped.');
                 $job->delete();
+                $job->ingest->status = 'Stopped';
+                $job->ingest->save();
                 continue;
             }
             $setting = $job->ingest->sushiSetting;
@@ -186,14 +190,18 @@ class SushiQWorker extends Command
            // If provider or institution is inactive, toss the job and move on
             if (!$setting->provider->is_active) {
                 $this->line($ts . " " . $ident . 'Provider: ' . $setting->provider->name .
-                            ' is INACTIVE , queue entry skipped and deleted.');
+                            ' is INACTIVE , queue entry removed and ingest status set to Stopped.');
                 $job->delete();
+                $job->ingest->status = 'Stopped';
+                $job->ingest->save();
                 continue;
             }
             if (!$setting->institution->is_active) {
                 $this->line($ts . " " . $ident . 'Institution: ' . $setting->institution->name .
-                            ' is INACTIVE , queue entry skipped and deleted.');
+                            ' is INACTIVE , queue entry removed and ingest status set to Stopped.');
                 $job->delete();
+                $job->ingest->status = 'Stopped';
+                $job->ingest->save();
                 continue;
             }
 
@@ -220,7 +228,7 @@ class SushiQWorker extends Command
             }
 
            // Construct URI for the request
-            $request_uri = $sushi->buildUri($setting, $report);
+            $request_uri = $sushi->buildUri($setting, 'reports', $report);
 // $this->line("Job: " . $job->id . " (ingest_id: " . $job->ingest->id . ")");
 // $this->line("Provider: " . $setting->provider->name . " , Inst: " . $setting->institution->name);
 // $this->line("Request : " . $request_uri);
@@ -278,9 +286,8 @@ class SushiQWorker extends Command
                 $job->ingest->status = $_status;
 
            // No valid report data saved. If we failed, update ingest record
-           // ("Pending" is not considered failure.)
             } else {
-                if ($request_status == "Fail") {    // Pending is not failure
+                if ($request_status != "Pending") {    // Pending is not failure
                    // Increment ingest attempts
                     $job->ingest->attempts++;
 
@@ -294,6 +301,10 @@ class SushiQWorker extends Command
                     }
                 }
             }
+
+           // Sleep 2 seconds *before* saving the ingest record (keeping it technically "Active"),
+           // in case the last report ran too fast and the provider won't accept another request yet.
+            sleep(2);
 
            // Clean up and update the database;
            // unless the request is "Pending", remove the job from the queue.

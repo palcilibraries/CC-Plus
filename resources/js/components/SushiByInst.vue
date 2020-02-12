@@ -38,8 +38,13 @@
           </div>
         </div>
       </div>
-      <button class="btn btn-primary" type="submit" :disabled="form.errors.any()">Update Sushi Settings</button>
+      <button class="btn btn-primary" type="submit" :disabled="form.errors.any()">Save Sushi Settings</button>
+      <button class="btn btn-primary" type="button" @click="testSettings" v-if="allowTest">Test Settings</button>
     </form>
+    <div v-if="showTest">{{ testStatus }}</div>
+    <div v-for="row in testData" v-if="showTest">
+        {{ row }}
+    </div>
   </div>
 </template>
 
@@ -47,12 +52,16 @@
     export default {
         props: {
                 prov_id: { type:Number, default:0 },
-                institutions: { type:Object, default: () => ({}) }
+                institutions: { type:Array, default: () => [] },
                },
 
         data() {
             return {
                 message: '',
+                testData: '',
+                testStatus: '',
+                allowTest: false,
+                showTest: false,
                 form: new window.Form({
                     inst_id: '1',
                     prov_id: '0',
@@ -77,6 +86,7 @@
             },
             onInstChange (event) {
                 var self = this;
+                self.showTest = false;
                 axios.get('/sushisettings-refresh'+'?inst_id='+event.target.value+'&'+'prov_id='+this.prov_id)
                      .then( function(response) {
                          if ( response.data.settings.count === 0) {
@@ -84,15 +94,34 @@
                              self.form.customer_id = '';
                              self.form.requestor_id = '';
                              self.form.API_key = '';
+                             self.allowTest = false;
                          } else {
-                            self.form.customer_id = response.data.settings.customer_id;
-                            self.form.requestor_id = response.data.settings.requestor_id;
-                            self.form.API_key = response.data.settings.API_key;
-                            self.message = '';
+                             self.form.customer_id = response.data.settings.customer_id;
+                             self.form.requestor_id = response.data.settings.requestor_id;
+                             self.form.API_key = response.data.settings.API_key;
+                             self.message = '';
+                             self.allowTest = true;
+                         }
+                         console.log(response.data.settings);
+                     })
+                     .catch(error => {});
+            },
+            testSettings (event) {
+                var self = this;
+                self.showTest = true;
+                self.testData = '';
+                self.testStatus = "... Working ...";
+                axios.get('/sushisettings-test'+'?prov_id='+this.prov_id+'&'+'inst_id='+self.form.inst_id)
+                     .then( function(response) {
+                        if ( response.data.result == '') {
+                            self.testStatus = "No results!";
+                        } else {
+                            self.testStatus = response.data.result;
+                            self.testData = response.data.rows;
                         }
-                        console.log(response.data.settings);
+                        console.log(response.data.result);
                     })
-                    .catch(error => {});
+                   .catch(error => {});
             }
         },
 

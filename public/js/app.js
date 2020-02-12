@@ -1909,6 +1909,11 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   props: {
     prov_id: {
@@ -1916,15 +1921,19 @@ __webpack_require__.r(__webpack_exports__);
       "default": 0
     },
     institutions: {
-      type: Object,
+      type: Array,
       "default": function _default() {
-        return {};
+        return [];
       }
     }
   },
   data: function data() {
     return {
       message: '',
+      testData: '',
+      testStatus: '',
+      allowTest: false,
+      showTest: false,
       form: new window.Form({
         inst_id: '1',
         prov_id: '0',
@@ -1947,20 +1956,39 @@ __webpack_require__.r(__webpack_exports__);
     },
     onInstChange: function onInstChange(event) {
       var self = this;
+      self.showTest = false;
       axios.get('/sushisettings-refresh' + '?inst_id=' + event.target.value + '&' + 'prov_id=' + this.prov_id).then(function (response) {
         if (response.data.settings.count === 0) {
           self.message = 'No settings found for this institution - creating new entry.';
           self.form.customer_id = '';
           self.form.requestor_id = '';
           self.form.API_key = '';
+          self.allowTest = false;
         } else {
           self.form.customer_id = response.data.settings.customer_id;
           self.form.requestor_id = response.data.settings.requestor_id;
           self.form.API_key = response.data.settings.API_key;
           self.message = '';
+          self.allowTest = true;
         }
 
         console.log(response.data.settings);
+      })["catch"](function (error) {});
+    },
+    testSettings: function testSettings(event) {
+      var self = this;
+      self.showTest = true;
+      self.testData = '';
+      self.testStatus = "... Working ...";
+      axios.get('/sushisettings-test' + '?prov_id=' + this.prov_id + '&' + 'inst_id=' + self.form.inst_id).then(function (response) {
+        if (response.data.result == '') {
+          self.testStatus = "No results!";
+        } else {
+          self.testStatus = response.data.result;
+          self.testData = response.data.rows;
+        }
+
+        console.log(response.data.result);
       })["catch"](function (error) {});
     }
   },
@@ -2028,6 +2056,9 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   props: {
     inst_id: {
@@ -2035,15 +2066,19 @@ __webpack_require__.r(__webpack_exports__);
       "default": 0
     },
     providers: {
-      type: Object,
+      type: Array,
       "default": function _default() {
-        return {};
+        return [];
       }
     }
   },
   data: function data() {
     return {
       message: '',
+      testData: '',
+      testStatus: '',
+      allowTest: false,
+      showTest: false,
       form: new window.Form({
         inst_id: '0',
         prov_id: '0',
@@ -2066,20 +2101,39 @@ __webpack_require__.r(__webpack_exports__);
     },
     onProvChange: function onProvChange(event) {
       var self = this;
+      self.showTest = false;
       axios.get('/sushisettings-refresh' + '?prov_id=' + event.target.value + '&' + 'inst_id=' + this.inst_id).then(function (response) {
         if (response.data.settings.count === 0) {
           self.message = 'No settings found for this provider - creating new entry.';
           self.form.customer_id = '';
           self.form.requestor_id = '';
           self.form.API_key = '';
+          self.allowTest = false;
         } else {
           self.form.customer_id = response.data.settings.customer_id;
           self.form.requestor_id = response.data.settings.requestor_id;
           self.form.API_key = response.data.settings.API_key;
           self.message = '';
+          self.allowTest = true;
         }
 
         console.log(response.data.settings);
+      })["catch"](function (error) {});
+    },
+    testSettings: function testSettings(event) {
+      var self = this;
+      self.showTest = true;
+      self.testData = '';
+      self.testStatus = "... Working ...";
+      axios.get('/sushisettings-test' + '?prov_id=' + self.form.prov_id + '&' + 'inst_id=' + this.inst_id).then(function (response) {
+        if (response.data.result == '') {
+          self.testStatus = "No results!";
+        } else {
+          self.testStatus = response.data.result;
+          self.testData = response.data.rows;
+        }
+
+        console.log(response.data.result);
       })["catch"](function (error) {});
     }
   },
@@ -38119,204 +38173,230 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", [
-    _c("span", {
-      staticClass: "form-info",
-      attrs: { role: "alert" },
-      domProps: { textContent: _vm._s(_vm.message) }
-    }),
-    _vm._v(" "),
-    _c(
-      "form",
-      {
-        attrs: { method: "POST", action: "/sushisettings-update" },
-        on: {
-          submit: function($event) {
-            $event.preventDefault()
-            return _vm.formSubmit($event)
-          },
-          keydown: function($event) {
-            return _vm.form.errors.clear($event.target.name)
-          }
-        }
-      },
-      [
-        _c("input", {
-          directives: [
-            {
-              name: "model",
-              rawName: "v-model",
-              value: _vm.prov_id,
-              expression: "prov_id"
-            }
-          ],
-          attrs: { type: "hidden" },
-          domProps: { value: _vm.prov_id },
+  return _c(
+    "div",
+    [
+      _c("span", {
+        staticClass: "form-info",
+        attrs: { role: "alert" },
+        domProps: { textContent: _vm._s(_vm.message) }
+      }),
+      _vm._v(" "),
+      _c(
+        "form",
+        {
+          attrs: { method: "POST", action: "/sushisettings-update" },
           on: {
-            input: function($event) {
-              if ($event.target.composing) {
-                return
-              }
-              _vm.prov_id = $event.target.value
+            submit: function($event) {
+              $event.preventDefault()
+              return _vm.formSubmit($event)
+            },
+            keydown: function($event) {
+              return _vm.form.errors.clear($event.target.name)
             }
           }
-        }),
-        _vm._v(" "),
-        _c("div", { staticClass: "row" }, [
-          _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", { attrs: { for: "prov_id" } }, [
-                _vm._v("Institution:")
-              ]),
-              _vm._v(" "),
-              _c(
-                "select",
-                {
+        },
+        [
+          _c("input", {
+            directives: [
+              {
+                name: "model",
+                rawName: "v-model",
+                value: _vm.prov_id,
+                expression: "prov_id"
+              }
+            ],
+            attrs: { type: "hidden" },
+            domProps: { value: _vm.prov_id },
+            on: {
+              input: function($event) {
+                if ($event.target.composing) {
+                  return
+                }
+                _vm.prov_id = $event.target.value
+              }
+            }
+          }),
+          _vm._v(" "),
+          _c("div", { staticClass: "row" }, [
+            _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
+              _c("div", { staticClass: "form-group" }, [
+                _c("label", { attrs: { for: "prov_id" } }, [
+                  _vm._v("Institution:")
+                ]),
+                _vm._v(" "),
+                _c(
+                  "select",
+                  {
+                    directives: [
+                      {
+                        name: "model",
+                        rawName: "v-model",
+                        value: _vm.form.inst_id,
+                        expression: "form.inst_id"
+                      }
+                    ],
+                    attrs: { name: "inst_id" },
+                    on: {
+                      change: [
+                        function($event) {
+                          var $$selectedVal = Array.prototype.filter
+                            .call($event.target.options, function(o) {
+                              return o.selected
+                            })
+                            .map(function(o) {
+                              var val = "_value" in o ? o._value : o.value
+                              return val
+                            })
+                          _vm.$set(
+                            _vm.form,
+                            "inst_id",
+                            $event.target.multiple
+                              ? $$selectedVal
+                              : $$selectedVal[0]
+                          )
+                        },
+                        _vm.onInstChange
+                      ]
+                    }
+                  },
+                  _vm._l(_vm.institutions, function(inst, index) {
+                    return _c("option", { domProps: { value: index } }, [
+                      _vm._v(_vm._s(inst))
+                    ])
+                  }),
+                  0
+                )
+              ])
+            ])
+          ]),
+          _vm._v(" "),
+          _c("div", { staticClass: "row" }, [
+            _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
+              _c("div", { staticClass: "form-group" }, [
+                _c("label", { attrs: { for: "customer_id" } }, [
+                  _vm._v("Customer ID:")
+                ]),
+                _vm._v(" "),
+                _c("input", {
                   directives: [
                     {
                       name: "model",
                       rawName: "v-model",
-                      value: _vm.form.inst_id,
-                      expression: "form.inst_id"
+                      value: _vm.form.customer_id,
+                      expression: "form.customer_id"
                     }
                   ],
-                  attrs: { name: "inst_id" },
+                  attrs: { type: "text", id: "customer_id" },
+                  domProps: { value: _vm.form.customer_id },
                   on: {
-                    change: [
-                      function($event) {
-                        var $$selectedVal = Array.prototype.filter
-                          .call($event.target.options, function(o) {
-                            return o.selected
-                          })
-                          .map(function(o) {
-                            var val = "_value" in o ? o._value : o.value
-                            return val
-                          })
-                        _vm.$set(
-                          _vm.form,
-                          "inst_id",
-                          $event.target.multiple
-                            ? $$selectedVal
-                            : $$selectedVal[0]
-                        )
-                      },
-                      _vm.onInstChange
-                    ]
+                    input: function($event) {
+                      if ($event.target.composing) {
+                        return
+                      }
+                      _vm.$set(_vm.form, "customer_id", $event.target.value)
+                    }
                   }
+                })
+              ])
+            ])
+          ]),
+          _vm._v(" "),
+          _c("div", { staticClass: "row" }, [
+            _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
+              _c("div", { staticClass: "form-group" }, [
+                _c("label", { attrs: { for: "requestor_id" } }, [
+                  _vm._v("Requestor ID:")
+                ]),
+                _vm._v(" "),
+                _c("input", {
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.form.requestor_id,
+                      expression: "form.requestor_id"
+                    }
+                  ],
+                  attrs: { type: "text", id: "requestor_id" },
+                  domProps: { value: _vm.form.requestor_id },
+                  on: {
+                    input: function($event) {
+                      if ($event.target.composing) {
+                        return
+                      }
+                      _vm.$set(_vm.form, "requestor_id", $event.target.value)
+                    }
+                  }
+                })
+              ])
+            ])
+          ]),
+          _vm._v(" "),
+          _c("div", { staticClass: "row" }, [
+            _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
+              _c("div", { staticClass: "form-group" }, [
+                _c("label", { attrs: { for: "API_key" } }, [
+                  _vm._v("API Key:")
+                ]),
+                _vm._v(" "),
+                _c("input", {
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.form.API_key,
+                      expression: "form.API_key"
+                    }
+                  ],
+                  attrs: { type: "text", id: "API_key" },
+                  domProps: { value: _vm.form.API_key },
+                  on: {
+                    input: function($event) {
+                      if ($event.target.composing) {
+                        return
+                      }
+                      _vm.$set(_vm.form, "API_key", $event.target.value)
+                    }
+                  }
+                })
+              ])
+            ])
+          ]),
+          _vm._v(" "),
+          _c(
+            "button",
+            {
+              staticClass: "btn btn-primary",
+              attrs: { type: "submit", disabled: _vm.form.errors.any() }
+            },
+            [_vm._v("Save Sushi Settings")]
+          ),
+          _vm._v(" "),
+          _vm.allowTest
+            ? _c(
+                "button",
+                {
+                  staticClass: "btn btn-primary",
+                  attrs: { type: "button" },
+                  on: { click: _vm.testSettings }
                 },
-                _vm._l(_vm.institutions, function(inst, index) {
-                  return _c("option", { domProps: { value: index } }, [
-                    _vm._v(_vm._s(inst))
-                  ])
-                }),
-                0
+                [_vm._v("Test Settings")]
               )
-            ])
-          ])
-        ]),
-        _vm._v(" "),
-        _c("div", { staticClass: "row" }, [
-          _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", { attrs: { for: "customer_id" } }, [
-                _vm._v("Customer ID:")
-              ]),
-              _vm._v(" "),
-              _c("input", {
-                directives: [
-                  {
-                    name: "model",
-                    rawName: "v-model",
-                    value: _vm.form.customer_id,
-                    expression: "form.customer_id"
-                  }
-                ],
-                attrs: { type: "text", id: "customer_id" },
-                domProps: { value: _vm.form.customer_id },
-                on: {
-                  input: function($event) {
-                    if ($event.target.composing) {
-                      return
-                    }
-                    _vm.$set(_vm.form, "customer_id", $event.target.value)
-                  }
-                }
-              })
-            ])
-          ])
-        ]),
-        _vm._v(" "),
-        _c("div", { staticClass: "row" }, [
-          _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", { attrs: { for: "requestor_id" } }, [
-                _vm._v("Requestor ID:")
-              ]),
-              _vm._v(" "),
-              _c("input", {
-                directives: [
-                  {
-                    name: "model",
-                    rawName: "v-model",
-                    value: _vm.form.requestor_id,
-                    expression: "form.requestor_id"
-                  }
-                ],
-                attrs: { type: "text", id: "requestor_id" },
-                domProps: { value: _vm.form.requestor_id },
-                on: {
-                  input: function($event) {
-                    if ($event.target.composing) {
-                      return
-                    }
-                    _vm.$set(_vm.form, "requestor_id", $event.target.value)
-                  }
-                }
-              })
-            ])
-          ])
-        ]),
-        _vm._v(" "),
-        _c("div", { staticClass: "row" }, [
-          _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", { attrs: { for: "API_key" } }, [_vm._v("API Key:")]),
-              _vm._v(" "),
-              _c("input", {
-                directives: [
-                  {
-                    name: "model",
-                    rawName: "v-model",
-                    value: _vm.form.API_key,
-                    expression: "form.API_key"
-                  }
-                ],
-                attrs: { type: "text", id: "API_key" },
-                domProps: { value: _vm.form.API_key },
-                on: {
-                  input: function($event) {
-                    if ($event.target.composing) {
-                      return
-                    }
-                    _vm.$set(_vm.form, "API_key", $event.target.value)
-                  }
-                }
-              })
-            ])
-          ])
-        ]),
-        _vm._v(" "),
-        _c(
-          "button",
-          {
-            staticClass: "btn btn-primary",
-            attrs: { type: "submit", disabled: _vm.form.errors.any() }
-          },
-          [_vm._v("Update Sushi Settings")]
-        )
-      ]
-    )
-  ])
+            : _vm._e()
+        ]
+      ),
+      _vm._v(" "),
+      _vm.showTest ? _c("div", [_vm._v(_vm._s(_vm.testStatus))]) : _vm._e(),
+      _vm._v(" "),
+      _vm._l(_vm.testData, function(row) {
+        return _vm.showTest
+          ? _c("div", [_vm._v("\n      " + _vm._s(row) + "\n  ")])
+          : _vm._e()
+      })
+    ],
+    2
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -38340,202 +38420,230 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", [
-    _c("span", {
-      staticClass: "form-info",
-      attrs: { role: "alert" },
-      domProps: { textContent: _vm._s(_vm.message) }
-    }),
-    _vm._v(" "),
-    _c(
-      "form",
-      {
-        attrs: { method: "POST", action: "/sushisettings-update" },
-        on: {
-          submit: function($event) {
-            $event.preventDefault()
-            return _vm.formSubmit($event)
-          },
-          keydown: function($event) {
-            return _vm.form.errors.clear($event.target.name)
-          }
-        }
-      },
-      [
-        _c("input", {
-          directives: [
-            {
-              name: "model",
-              rawName: "v-model",
-              value: _vm.inst_id,
-              expression: "inst_id"
-            }
-          ],
-          attrs: { type: "hidden" },
-          domProps: { value: _vm.inst_id },
+  return _c(
+    "div",
+    [
+      _c("span", {
+        staticClass: "form-info",
+        attrs: { role: "alert" },
+        domProps: { textContent: _vm._s(_vm.message) }
+      }),
+      _vm._v(" "),
+      _c(
+        "form",
+        {
+          attrs: { method: "POST", action: "/sushisettings-update" },
           on: {
-            input: function($event) {
-              if ($event.target.composing) {
-                return
-              }
-              _vm.inst_id = $event.target.value
+            submit: function($event) {
+              $event.preventDefault()
+              return _vm.formSubmit($event)
+            },
+            keydown: function($event) {
+              return _vm.form.errors.clear($event.target.name)
             }
           }
-        }),
-        _vm._v(" "),
-        _c("div", { staticClass: "row" }, [
-          _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", { attrs: { for: "prov_id" } }, [_vm._v("Provider:")]),
-              _vm._v(" "),
-              _c(
-                "select",
-                {
+        },
+        [
+          _c("input", {
+            directives: [
+              {
+                name: "model",
+                rawName: "v-model",
+                value: _vm.inst_id,
+                expression: "inst_id"
+              }
+            ],
+            attrs: { type: "hidden" },
+            domProps: { value: _vm.inst_id },
+            on: {
+              input: function($event) {
+                if ($event.target.composing) {
+                  return
+                }
+                _vm.inst_id = $event.target.value
+              }
+            }
+          }),
+          _vm._v(" "),
+          _c("div", { staticClass: "row" }, [
+            _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
+              _c("div", { staticClass: "form-group" }, [
+                _c("label", { attrs: { for: "prov_id" } }, [
+                  _vm._v("Provider:")
+                ]),
+                _vm._v(" "),
+                _c(
+                  "select",
+                  {
+                    directives: [
+                      {
+                        name: "model",
+                        rawName: "v-model",
+                        value: _vm.form.prov_id,
+                        expression: "form.prov_id"
+                      }
+                    ],
+                    attrs: { name: "prov_id" },
+                    on: {
+                      change: [
+                        function($event) {
+                          var $$selectedVal = Array.prototype.filter
+                            .call($event.target.options, function(o) {
+                              return o.selected
+                            })
+                            .map(function(o) {
+                              var val = "_value" in o ? o._value : o.value
+                              return val
+                            })
+                          _vm.$set(
+                            _vm.form,
+                            "prov_id",
+                            $event.target.multiple
+                              ? $$selectedVal
+                              : $$selectedVal[0]
+                          )
+                        },
+                        _vm.onProvChange
+                      ]
+                    }
+                  },
+                  _vm._l(_vm.providers, function(prov, index) {
+                    return _c("option", { domProps: { value: index } }, [
+                      _vm._v(_vm._s(prov))
+                    ])
+                  }),
+                  0
+                )
+              ])
+            ])
+          ]),
+          _vm._v(" "),
+          _c("div", { staticClass: "row" }, [
+            _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
+              _c("div", { staticClass: "form-group" }, [
+                _c("label", { attrs: { for: "customer_id" } }, [
+                  _vm._v("Customer ID:")
+                ]),
+                _vm._v(" "),
+                _c("input", {
                   directives: [
                     {
                       name: "model",
                       rawName: "v-model",
-                      value: _vm.form.prov_id,
-                      expression: "form.prov_id"
+                      value: _vm.form.customer_id,
+                      expression: "form.customer_id"
                     }
                   ],
-                  attrs: { name: "prov_id" },
+                  attrs: { type: "text", id: "customer_id" },
+                  domProps: { value: _vm.form.customer_id },
                   on: {
-                    change: [
-                      function($event) {
-                        var $$selectedVal = Array.prototype.filter
-                          .call($event.target.options, function(o) {
-                            return o.selected
-                          })
-                          .map(function(o) {
-                            var val = "_value" in o ? o._value : o.value
-                            return val
-                          })
-                        _vm.$set(
-                          _vm.form,
-                          "prov_id",
-                          $event.target.multiple
-                            ? $$selectedVal
-                            : $$selectedVal[0]
-                        )
-                      },
-                      _vm.onProvChange
-                    ]
+                    input: function($event) {
+                      if ($event.target.composing) {
+                        return
+                      }
+                      _vm.$set(_vm.form, "customer_id", $event.target.value)
+                    }
                   }
+                })
+              ])
+            ])
+          ]),
+          _vm._v(" "),
+          _c("div", { staticClass: "row" }, [
+            _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
+              _c("div", { staticClass: "form-group" }, [
+                _c("label", { attrs: { for: "requestor_id" } }, [
+                  _vm._v("Requestor ID:")
+                ]),
+                _vm._v(" "),
+                _c("input", {
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.form.requestor_id,
+                      expression: "form.requestor_id"
+                    }
+                  ],
+                  attrs: { type: "text", id: "requestor_id" },
+                  domProps: { value: _vm.form.requestor_id },
+                  on: {
+                    input: function($event) {
+                      if ($event.target.composing) {
+                        return
+                      }
+                      _vm.$set(_vm.form, "requestor_id", $event.target.value)
+                    }
+                  }
+                })
+              ])
+            ])
+          ]),
+          _vm._v(" "),
+          _c("div", { staticClass: "row" }, [
+            _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
+              _c("div", { staticClass: "form-group" }, [
+                _c("label", { attrs: { for: "API_key" } }, [
+                  _vm._v("API Key:")
+                ]),
+                _vm._v(" "),
+                _c("input", {
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.form.API_key,
+                      expression: "form.API_key"
+                    }
+                  ],
+                  attrs: { type: "text", id: "API_key" },
+                  domProps: { value: _vm.form.API_key },
+                  on: {
+                    input: function($event) {
+                      if ($event.target.composing) {
+                        return
+                      }
+                      _vm.$set(_vm.form, "API_key", $event.target.value)
+                    }
+                  }
+                })
+              ])
+            ])
+          ]),
+          _vm._v(" "),
+          _c(
+            "button",
+            {
+              staticClass: "btn btn-primary",
+              attrs: { type: "submit", disabled: _vm.form.errors.any() }
+            },
+            [_vm._v("Save Sushi Settings")]
+          ),
+          _vm._v(" "),
+          _vm.allowTest
+            ? _c(
+                "button",
+                {
+                  staticClass: "btn btn-primary",
+                  attrs: { type: "button" },
+                  on: { click: _vm.testSettings }
                 },
-                _vm._l(_vm.providers, function(prov, index) {
-                  return _c("option", { domProps: { value: index } }, [
-                    _vm._v(_vm._s(prov))
-                  ])
-                }),
-                0
+                [_vm._v("Test Settings")]
               )
-            ])
-          ])
-        ]),
-        _vm._v(" "),
-        _c("div", { staticClass: "row" }, [
-          _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", { attrs: { for: "customer_id" } }, [
-                _vm._v("Customer ID:")
-              ]),
-              _vm._v(" "),
-              _c("input", {
-                directives: [
-                  {
-                    name: "model",
-                    rawName: "v-model",
-                    value: _vm.form.customer_id,
-                    expression: "form.customer_id"
-                  }
-                ],
-                attrs: { type: "text", id: "customer_id" },
-                domProps: { value: _vm.form.customer_id },
-                on: {
-                  input: function($event) {
-                    if ($event.target.composing) {
-                      return
-                    }
-                    _vm.$set(_vm.form, "customer_id", $event.target.value)
-                  }
-                }
-              })
-            ])
-          ])
-        ]),
-        _vm._v(" "),
-        _c("div", { staticClass: "row" }, [
-          _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", { attrs: { for: "requestor_id" } }, [
-                _vm._v("Requestor ID:")
-              ]),
-              _vm._v(" "),
-              _c("input", {
-                directives: [
-                  {
-                    name: "model",
-                    rawName: "v-model",
-                    value: _vm.form.requestor_id,
-                    expression: "form.requestor_id"
-                  }
-                ],
-                attrs: { type: "text", id: "requestor_id" },
-                domProps: { value: _vm.form.requestor_id },
-                on: {
-                  input: function($event) {
-                    if ($event.target.composing) {
-                      return
-                    }
-                    _vm.$set(_vm.form, "requestor_id", $event.target.value)
-                  }
-                }
-              })
-            ])
-          ])
-        ]),
-        _vm._v(" "),
-        _c("div", { staticClass: "row" }, [
-          _c("div", { staticClass: "col-xs-12 col-sm-12 col-md-12" }, [
-            _c("div", { staticClass: "form-group" }, [
-              _c("label", { attrs: { for: "API_key" } }, [_vm._v("API Key:")]),
-              _vm._v(" "),
-              _c("input", {
-                directives: [
-                  {
-                    name: "model",
-                    rawName: "v-model",
-                    value: _vm.form.API_key,
-                    expression: "form.API_key"
-                  }
-                ],
-                attrs: { type: "text", id: "API_key" },
-                domProps: { value: _vm.form.API_key },
-                on: {
-                  input: function($event) {
-                    if ($event.target.composing) {
-                      return
-                    }
-                    _vm.$set(_vm.form, "API_key", $event.target.value)
-                  }
-                }
-              })
-            ])
-          ])
-        ]),
-        _vm._v(" "),
-        _c(
-          "button",
-          {
-            staticClass: "btn btn-primary",
-            attrs: { type: "submit", disabled: _vm.form.errors.any() }
-          },
-          [_vm._v("Update Sushi Settings")]
-        )
-      ]
-    )
-  ])
+            : _vm._e()
+        ]
+      ),
+      _vm._v(" "),
+      _vm.showTest ? _c("div", [_vm._v(_vm._s(_vm.testStatus))]) : _vm._e(),
+      _vm._v(" "),
+      _vm._l(_vm.testData, function(row) {
+        return _vm.showTest
+          ? _c("div", [_vm._v("\n      " + _vm._s(row) + "\n  ")])
+          : _vm._e()
+      })
+    ],
+    2
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -50949,14 +51057,15 @@ __webpack_require__.r(__webpack_exports__);
 /*!*************************************************!*\
   !*** ./resources/js/components/SushiByProv.vue ***!
   \*************************************************/
-/*! exports provided: default */
+/*! no static exports found */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _SushiByProv_vue_vue_type_template_id_9ccbd812___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./SushiByProv.vue?vue&type=template&id=9ccbd812& */ "./resources/js/components/SushiByProv.vue?vue&type=template&id=9ccbd812&");
 /* harmony import */ var _SushiByProv_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./SushiByProv.vue?vue&type=script&lang=js& */ "./resources/js/components/SushiByProv.vue?vue&type=script&lang=js&");
-/* empty/unused harmony star reexport *//* harmony import */ var _SushiByProv_vue_vue_type_style_index_0_lang_css___WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./SushiByProv.vue?vue&type=style&index=0&lang=css& */ "./resources/js/components/SushiByProv.vue?vue&type=style&index=0&lang=css&");
+/* harmony reexport (unknown) */ for(var __WEBPACK_IMPORT_KEY__ in _SushiByProv_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__) if(__WEBPACK_IMPORT_KEY__ !== 'default') (function(key) { __webpack_require__.d(__webpack_exports__, key, function() { return _SushiByProv_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[key]; }) }(__WEBPACK_IMPORT_KEY__));
+/* harmony import */ var _SushiByProv_vue_vue_type_style_index_0_lang_css___WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./SushiByProv.vue?vue&type=style&index=0&lang=css& */ "./resources/js/components/SushiByProv.vue?vue&type=style&index=0&lang=css&");
 /* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ "./node_modules/vue-loader/lib/runtime/componentNormalizer.js");
 
 
@@ -50988,7 +51097,7 @@ component.options.__file = "resources/js/components/SushiByProv.vue"
 /*!**************************************************************************!*\
   !*** ./resources/js/components/SushiByProv.vue?vue&type=script&lang=js& ***!
   \**************************************************************************/
-/*! exports provided: default */
+/*! no static exports found */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

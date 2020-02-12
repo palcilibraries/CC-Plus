@@ -30,11 +30,11 @@ class SushiBatchCommand extends Command
      */
     protected $signature = 'ccplus:sushibatch {consortium : The Consortium ID or key-string}
                              {--A|auto : Limit ingest to provider day_of_month [FALSE]}
-                             {--M|month= : YYYY-MM to process  [lastmonth]}
+                             {--M|month= : YYYY-MM to process [lastmonth]}
                              {--P|provider= : Provider ID to process [ALL]}
-                             {--I|institution= : Institution ID to process[ALL]}
+                             {--I|institution= : Institution ID to process [ALL]}
                              {--R|report= : Master report NAME to ingest [ALL]}
-                             {--O|overwrite : replace existing data}';
+                             {--K|keep : Preserve, and ADD TO, existing data [FALSE]}';
 
     /**
      * The console command description.
@@ -55,6 +55,11 @@ class SushiBatchCommand extends Command
 
     /**
      * Execute the console command.
+     * ----------------------------
+     *   ccplus:sushibatch is intended to be as an artisan command for bulk-loading report data without
+     *   involving the CCPlus queuing system. Providers or institutions with is_active=false are ignored.
+     *   Report data is stored in the XX_report_data tables, and can replace any existing data.
+     *   IngestLog and, if necessary, FailedIngest records are created to record processing results.
      *
      * @return mixed
      */
@@ -84,7 +89,7 @@ class SushiBatchCommand extends Command
         $prov_id = is_null($this->option('provider')) ? 0 : $this->option('provider');
         $inst_id = is_null($this->option('institution')) ? 0 : $this->option('institution');
         $rept = is_null($this->option('report')) ? 'ALL' : $this->option('report');
-        $replace = $this->option('overwrite');
+        $replace = ($this->option('keep')) ? false : true;
 
        // Setup month string for pulling the report and begin/end for parsing
        //
@@ -97,14 +102,16 @@ class SushiBatchCommand extends Command
         $begin .= '-01';
         $end = $yearmon . '-' . date('t', strtotime($begin));
 
-       // Get detail on reports requested
+       // Get detail on (master) reports requested
         if (strtoupper($rept) == 'ALL') {
-            $requested_reports = Report::all()->pluck('name')->toArray();
+            $requested_reports = Report::where('parent_id', '=', 0)->pluck('name')->toArray();
         } else {
-            $requested_reports = Report::where('name', '=', $rept)->pluck('name')->toArray();
+            $requested_reports = Report::where('name', '=', $rept)
+                                       ->where('parent_id', '=', 0)
+                                       ->pluck('name')->toArray();
         }
         if (count($requested_reports) == 0) {
-            $this->error("No matching reports found");
+            $this->error("No matching reports found; only master reports allowed.");
             exit;
         }
 
@@ -115,16 +122,7 @@ class SushiBatchCommand extends Command
             $providers = Provider::where('is_active', '=', true)->where('id', '=', $prov_id)->get();
         }
 
-       // Get Institution data
-        if ($inst_id == 0) {
-            $institutions = Institution::where('is_active', '=', true)->pluck('name', 'id');
-        } else {
-            $institutions = Institution::where('is_active', '=', true)->where('id', '=', $inst_id)
-                                       ->pluck('name', 'id');
-        }
-
        // Loop through providers
-        $master_reports = array("TR","PR","IR","DR");
         $this->line("Ingest begins for " . $consortium->ccp_key . " at " . date("Y-m-d H:i:s"));
         foreach ($providers as $provider) {
            // If running as "Auto" and today is not the day to run, skip silently to next provider
@@ -139,15 +137,19 @@ class SushiBatchCommand extends Command
             }
 
            // Skip this provider if there are no sushi settings for it
-            if (count($provider->sushisettings) == 0) {
+            if (count($provider->sushiSettings) == 0) {
                 $this->line($provider->name . " has no sushi settings defined; skipping...");
                 continue;
             }
 
-           // Loop through all sushisettings for this provider
-            foreach ($provider->sushisettings as $setting) {
+           // Loop through all sushiSettings for this provider
+            foreach ($provider->sushiSettings as $setting) {
                // Skip this setting if we're just processing a single inst and the IDs don't match
-                if (($inst_id != 0) && ($setting->inst_id != $inst_id)) {
+                if (
+                    (!$setting->institution->is_active) ||
+                     ($inst_id != 0 &&
+                     $setting->inst_id != $inst_id)
+                ) {
                     continue;
                 }
 
@@ -156,23 +158,17 @@ class SushiBatchCommand extends Command
 
                // Loop through all reports defined as available for this provider
                 foreach ($provider->reports as $report) {
-                   // Only accept the 4 COUNTER-5 master reports
-                    if (!in_array($report->name, $master_reports)) {
-                        $this->error("Unsupported report? : " . self::$report->name . " defined for: " .
-                                     self::$setting->provider->name);
-                        continue;
-                    }
-
                    // if this report hasn't been requested (cmd-line argument above), then skip it
                     if (!in_array($report->name, $requested_reports)) {
                         continue;
                     }
-                    $this->line("Requesting " . $report->name . " from " . $provider->name .
-                                " for " . $setting->institution->name);
 
                    // Create a new Sushi object
                     $sushi = new Sushi($begin, $end);
 
+                    $request_uri = $sushi->buildUri($setting, 'reports', $report);
+                    $this->line($setting->provider->name . "(" . $setting->inst_id . ") : " . $request_uri);
+                    continue;
                    // Set output filename for raw data. Create the folder path, if necessary
                     if (!is_null(config('ccplus.reports_path'))) {
                         $full_path = $report_path . '/' . $setting->institution->name . '/' . $provider->name . '/';
@@ -203,7 +199,7 @@ class SushiBatchCommand extends Command
                     }
 
                    // Construct URI for the request
-                    $request_uri = $sushi->buildUri($setting, $report);
+                    $request_uri = $sushi->buildUri($setting, 'reports', $report);
 
                    // Loop up to retry-limit asking for the report
                     $retries = 0;
@@ -227,7 +223,7 @@ class SushiBatchCommand extends Command
                             continue;
                         }
 
-                       // If request failed, insert an IngestLog and a FailedIngest record
+                       // If request failed, insert a FailedIngest record
                         if ($req_state == "Fail") {
                             FailedIngest::insert(['ingest_id' => $ingest->id, 'process_step' => $sushi->step,
                                                   'error_id' => $sushi->error_code, 'detail' => $sushi->detail,

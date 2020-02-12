@@ -17,7 +17,7 @@ class Kernel extends ConsoleKernel
       Commands\SushiBatchCommand::class,
       Commands\C5TestCommand::class,
       Commands\SushiBatchCommand::class,
-      Commands\SushiQNightly::class,
+      Commands\SushiQLoader::class,
       Commands\SushiQWorker::class,
     ];
 
@@ -31,7 +31,7 @@ class Kernel extends ConsoleKernel
     {
     /*----------------------------------------------------------------------------------
      * Example scheduler setup for a 2-consortia system. Each consortium uses a daily
-     * queue-loading process (:sushiqn) and 2 queue worker processes that execute
+     * queue-loading process (:sushiloader) and 2 queue worker processes that execute
      * every ten minutes (and then exit if there's nothing to do.)
      *
      * Note that the *_QW2 workers have a 5-second startup delay to prevent the _QW1 and
@@ -43,7 +43,7 @@ class Kernel extends ConsoleKernel
       /*
        * Consortium #1
        */
-        $schedule->command('ccplus:sushiqn 1')->daily();
+        $schedule->command('ccplus:sushiloader 1')->daily();
         $schedule->command('ccplus:sushiqw 1 Conso1_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
                                               ->appendOutputTo('/var/log/ccplus/ingests.log');
         $schedule->command('ccplus:sushiqw 1 Conso1_QW2 5')->runInBackground()->everyTenMinutes()->withoutOverlapping()
@@ -51,7 +51,7 @@ class Kernel extends ConsoleKernel
       /*
        * Consortium #2
        */
-        $schedule->command('ccplus:sushiqn 2')->daily();
+        $schedule->command('ccplus:sushiloader 2')->daily();
         $schedule->command('ccplus:sushiqw 2 Conso2_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
                                               ->appendOutputTo('/var/log/ccplus/ingests.log');
         $schedule->command('ccplus:sushiqw 2 Conso2_QW2 5')->runInBackground()->everyTenMinutes()->withoutOverlapping()

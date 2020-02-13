@@ -5,10 +5,12 @@ namespace App;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+// use AustinHeap\Database\Encryption\Traits\HasEncryptedAttributes;
 
 class User extends Authenticatable
 {
     use Notifiable;
+    // use HasEncryptedAttributes;
 
     /**
      * The database table used by the model.
@@ -23,7 +25,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name', 'email', 'email_verified_at', 'password', 'inst_id', 'phone',
-        'optin_alerts', 'is_active', 'password_change_required',
+        'optin_alerts', 'is_active', 'password_change_required'
     ];
 
     /**
@@ -43,6 +45,12 @@ class User extends Authenticatable
     // protected $casts = [
     //     'email_verified_at' => 'datetime',
     // ];
+
+    /**
+     * The attributes that should be encrypted on save (password is already hashed)
+     * @var array
+     */
+    protected $encrypted = [ 'name', 'phone' ];
 
     public function setPasswordAttribute($password)
     {

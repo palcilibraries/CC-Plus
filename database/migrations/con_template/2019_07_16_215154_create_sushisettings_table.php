@@ -17,9 +17,9 @@ class CreateSushiSettingsTable extends Migration
             $table->Increments('id');
             $table->unsignedInteger('inst_id');
             $table->unsignedInteger('prov_id');
-            $table->string('customer_id')->nullable();
-            $table->string('requestor_id')->nullable();
-            $table->string('API_key')->nullable();
+            $table->text('customer_id')->nullable();
+            $table->text('requestor_id')->nullable();
+            $table->text('API_key')->nullable();
             $table->timestamps();
 
             $table->foreign('inst_id')->references('id')->on('institutions');

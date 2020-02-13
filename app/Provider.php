@@ -3,9 +3,12 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+// use AustinHeap\Database\Encryption\Traits\HasEncryptedAttributes;
 
 class Provider extends Model
 {
+   // use HasEncryptedAttributes;
+
   /**
    * The database table used by the model.
    *
@@ -23,6 +26,13 @@ class Provider extends Model
       'name', 'is_active', 'inst_id', 'server_url_r5', 'security',
       'auth_username', 'auth_password', 'day_of_month'
     ];
+
+  /**
+   * The attributes that should be encrypted on save (password is already hashed)
+   *
+   * @var array
+   */
+    protected $encrypted = [ 'auth_username', 'auth_password' ];
 
     public function canManage()
     {

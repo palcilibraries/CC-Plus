@@ -80,7 +80,7 @@
         </div>
         <div class="col-xs-12 col-sm-12 col-md-12">
             <div class="form-group">
-                <strong>Ingest COUNTER-5 Reports:</strong>
+                <strong>Harvest COUNTER-5 Reports:</strong>
                 {!! Form::select('master_reports[]', $master_reports, $provider_reports,
                                  array('class' => 'form-control','multiple')) !!}
             </div>

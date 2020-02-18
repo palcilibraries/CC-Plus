@@ -14,7 +14,7 @@
 </div>
 <div class="row">
   <p align="center"><strong>
-    Alerts are automatically set if/when a scheduled ingest fails or returns an error during processing.
+    Alerts are automatically set if/when a scheduled harvest fails or returns an error during processing.
     The settings below provide additional tests for create alerts based on boudaries or conditions related
     to specific data values and fields.  If a defined alert is enabled (checked), emails will be sent to
     affiliated users who have opted in to receive them. Reports including "alerted" datasets will be

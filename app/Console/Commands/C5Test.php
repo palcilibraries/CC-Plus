@@ -125,15 +125,15 @@ class C5TestCommand extends Command
                     }
 
                    // Issue a warning if it looks like we'll run out of memory
-                    $mem_avail = intval(ini_get('memory_limit'));
-                    $body_len = strlen($json_text());
-                    $mem_needed = ($body_len * 8) + memory_get_usage(true);
-                    if ($mem_needed > ($mem_avail * 1024 * 1024)) {
-                        $mb_need = intval($mem_needed / (1024 * 1024));
-                        echo "Warning! Projected memory required: " . $mb_need . "Mb but only " .
-                                                                    $mem_avail . "Mb available\n";
-                        echo "-------> Decoding this report may exhaust system memory (JSON len = $body_len)\n";
-                    }
+                    // $mem_avail = intval(ini_get('memory_limit'));
+                    // $body_len = strlen($json_text());
+                    // $mem_needed = ($body_len * 8) + memory_get_usage(true);
+                    // if ($mem_needed > ($mem_avail * 1024 * 1024)) {
+                    //     $mb_need = intval($mem_needed / (1024 * 1024));
+                    //     echo "Warning! Projected memory required: " . $mb_need . "Mb but only " .
+                    //                                                 $mem_avail . "Mb available\n";
+                    //     echo "-------> Decoding this report may exhaust system memory (JSON len = $body_len)\n";
+                    // }
 
                    // Decode JSON response
                     $json = json_decode($json_text);
@@ -157,8 +157,8 @@ class C5TestCommand extends Command
 
                    // Store the report if it's valid
                     if ($valid_report) {
-                        $this->line("Data valid, but skipping processing...");
-                        // $result = $C5processor->{$report->name}($json);
+                        // $this->line("Data valid, but skipping processing...");
+                        $result = $C5processor->{$report->name}($json);
                     }
                 }  // foreach reports
             }  // foreach sushisettings

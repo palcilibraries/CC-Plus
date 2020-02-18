@@ -19,7 +19,7 @@ class Alert extends BaseModel
    * @var array
    */
     protected $fillable = [
-        'yearmon', 'prov_id', 'alertsettings_id', 'ingest_id', 'modified_by', 'status'
+        'yearmon', 'prov_id', 'alertsettings_id', 'harvest_id', 'modified_by', 'status'
     ];
 
     public function canManage()
@@ -46,9 +46,9 @@ class Alert extends BaseModel
         return $this->belongsTo('App\AlertSetting', 'alertsettings_id');
     }
 
-    public function ingest()
+    public function harvest()
     {
-        return $this->belongsTo('App\IngestLog', 'ingest_id');
+        return $this->belongsTo('App\HarvestLog', 'harvest_id');
     }
 
     public function user()
@@ -57,22 +57,22 @@ class Alert extends BaseModel
     }
 
    // Shortcuts into the alert data since they are related
-   // to either an alert-setting or to a failed ingest
+   // to either an alert-setting or to a failed harvest
     public function institution()
     {
-        if ($this->ingest_id == 0) {
+        if ($this->harvest_id == 0) {
             return $this->alertSetting->institution;
         } else {
-            return $this->ingest->sushiSetting->institution;
+            return $this->harvest->sushiSetting->institution;
         }
     }
 
     public function reportName()
     {
-        if ($this->ingest_id == 0) {
+        if ($this->harvest_id == 0) {
             return $this->alertSetting->metric->report->name;
         } else {
-            return $this->ingest->report->name;
+            return $this->harvest->report->name;
         }
     }
 }

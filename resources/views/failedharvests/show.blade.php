@@ -4,10 +4,10 @@
 <div class="row">
     <div class="col-lg-12 margin-tb">
         <div class="pull-left">
-            <h2>Failed Ingest Details</h2>
+            <h2>Failed Harvest Details</h2>
         </div>
         <div class="pull-right">
-            <a class="btn btn-primary" href="{{ route('failedingests.index') }}"> Back</a>
+            <a class="btn btn-primary" href="{{ route('failedharvests.index') }}"> Back</a>
         </div>
     </div>
 </div>
@@ -27,25 +27,25 @@
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
             <strong>Provider: </strong>
-            {{ $record->ingest->sushiSetting->provider->name }}
+            {{ $record->harvest->sushiSetting->provider->name }}
         </div>
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
             <strong>Institution: </strong>
-            {{ $record->ingest->sushiSetting->institution->name }}
+            {{ $record->harvest->sushiSetting->institution->name }}
         </div>
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
             <strong>Report: </strong>
-            {{ $record->ingest->report->name }}
+            {{ $record->harvest->report->name }}
         </div>
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
             <strong>Data for Month: </strong>
-            {{ $record->ingest->yearmon }}
+            {{ $record->harvest->yearmon }}
         </div>
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12">

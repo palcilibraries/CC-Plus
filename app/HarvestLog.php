@@ -4,13 +4,13 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class IngestLog extends Model
+class HarvestLog extends Model
 {
   /**
    * The database table used by the model.
    */
     protected $connection = 'consodb';
-    protected $table = 'ingestlogs';
+    protected $table = 'harvestlogs';
 
   /**
    * The attributes that are mass assignable.
@@ -21,9 +21,9 @@ class IngestLog extends Model
         'status', 'sushisettings_id', 'report_id', 'yearmon', 'attempts'
     ];
 
-    public function failedingests()
+    public function failedharvests()
     {
-        return $this->hasMany('App\FailedIngest', 'ingest_id');
+        return $this->hasMany('App\FailedHarvest', 'harvest_id');
     }
 
     public function report()

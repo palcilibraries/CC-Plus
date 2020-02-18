@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateFailedIngestsTable extends Migration
+class CreateFailedHarvestsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,17 +13,17 @@ class CreateFailedIngestsTable extends Migration
      */
     public function up()
     {
-        Schema::create('failedingests', function (Blueprint $table) {
+        Schema::create('failedharvests', function (Blueprint $table) {
             $global_db = DB::connection('globaldb')->getDatabaseName();
 
             $table->Increments('id');
-            $table->unsignedInteger('ingest_id');
+            $table->unsignedInteger('harvest_id');
             $table->unsignedInteger('error_id');
             $table->string('process_step')->nullable();
             $table->string('detail')->nullable();
             $table->timestamps();
 
-            $table->foreign('ingest_id')->references('id')->on('ingestlogs');
+            $table->foreign('harvest_id')->references('id')->on('harvestlogs');
             $table->foreign('error_id')->references('id')->on($global_db . '.ccplus_errors');
         });
     }
@@ -35,6 +35,6 @@ class CreateFailedIngestsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('failedingests');
+        Schema::dropIfExists('failedharvests');
     }
 }

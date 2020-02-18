@@ -7,7 +7,7 @@
 <div class="row">
     <div class="col-lg-12 margin-tb">
         <div class="pull-left">
-            <h2>Ingest Log Summary</h2>
+            <h2>Failed Harvests Summary</h2>
         </div>
     </div>
 </div>
@@ -22,20 +22,19 @@
      <th>Institution</th>
      <th>Report</th>
      <th>Usage Date</th>
-     <th>Attempts</th>
-     <th>Status</th>
+     <th>Process Step</th>
+     <th>Severity</th>
      <th>RunDate</th>
   </tr>
   @foreach ($data as $key => $record)
   <tr>
-
-      <td>{{ $record->sushiSetting->provider->name }}</td>
-      <td>{{ $record->sushiSetting->institution->name }}</td>
-      <td>{{ $record->report->name }}</td>
-      <td>{{ $record->yearmon }}</td>
-      <td>{{ $record->attempts }}</td>
-      <td><a href="{{ route('ingestlogs.show',$record->id) }}">{{ $record->status }}</a></td>
-      <td>{{ $record->created_at }}</td>
+      <td>{{ $record->harvest->sushiSetting->provider->name }}</td>
+      <td>{{ $record->harvest->sushiSetting->institution->name }}</td>
+      <td>{{ $record->harvest->report->name }}</td>
+      <td>{{ $record->harvest->yearmon }}</td>
+      <td>{{ $record->process_step }}</td>
+      <td>{{ $record->ccplusError->severity }}</td>
+      <td><a href="{{ route('failedharvests.show',$record->id) }}">{{ $record->created_at }}</a></td>
   </tr>
   @endforeach
 </table>

@@ -128,6 +128,9 @@ class Counter5Processor extends Model
                     $Item_ID['DOI'],
                     $Item_ID['URI']
                 );
+                if (is_null($item)) {
+                    continue;
+                }
                 $item_id = $item->id;
             }
 
@@ -455,7 +458,7 @@ class Counter5Processor extends Model
                             continue;
                         }
                         $parent_id = $_book->id;
-                    } else {   // Parent is Not a Journal or Book, findorcreate  as an Item
+                    } else {   // Parent is Not a Journal or Book, findorcreate as an Item
                         $_item = self::itemFindOrCreate(
                             $parent_name,
                             $_pitem_ID['PropID'],
@@ -465,6 +468,9 @@ class Counter5Processor extends Model
                             $_pitem_ID['DOI'],
                             $_pitem_ID['URI']
                         );
+                        if (is_null($_item)) {
+                            continue;
+                        }
                         $parent_id = $_item->id;
                     }
                     $parent_datatype_id = $parent_datatype->id;
@@ -485,6 +491,9 @@ class Counter5Processor extends Model
                 $parent_id,
                 $parent_datatype_id
             );
+            if (is_null($_item)) {
+                continue;
+            }
 
            // Loop $reportitem->Performance elements and store counts when time-periods match
             foreach ($reportitem->Performance as $perf) {
@@ -666,12 +675,16 @@ class Counter5Processor extends Model
      *
      * $journal = self::journalFindOrCreate($title, $propID, $issn, $eissn, $doi, $uri);
      */
-    private static function journalFindOrCreate($title, $propID, $issn, $eissn, $doi, $uri)
+    private static function journalFindOrCreate($_title, $propID, $issn, $eissn, $doi, $uri)
     {
 
-        if ($title == "" && $propID = "" && $issn == "" && $eissn == "" && $doi == "" && $uri == "") {
+        if ($_title == "" && $propID = "" && $issn == "" && $eissn == "" && $doi == "" && $uri == "") {
             return null;
         }
+
+       // UFT8 Encode any special chars in the title
+        $title = utf8_encode($_title);    // in case title has funky chars
+
        // Get any potential matches
         $matches = Journal::where([['Title', '<>',''],['Title', '=',$title]])->
                           orWhere([['PropID','<>',''],['PropID','=',$propID]])->
@@ -768,10 +781,18 @@ class Counter5Processor extends Model
         }
 
        // If we get here, create a new record
-        $journal = new Journal(['Title' => $title, 'ISSN' => $issn, 'eISSN' => $eissn, 'DOI' => $doi,
-                                'PropID' => $propID, 'URI' => $uri]);
-        $journal->save();
-        return $journal;
+        try {
+            $journal = new Journal(['Title' => $title, 'ISSN' => $issn, 'eISSN' => $eissn, 'DOI' => $doi,
+                                    'PropID' => $propID, 'URI' => $uri]);
+            $journal->save();
+            return $journal;
+        } catch (\PDOException $e) {
+            echo $e->getMessage();
+            return null;
+        } catch(Exception $e) {
+            echo $e->getMessage();
+            return null;
+        }
     }
 
     /**
@@ -782,11 +803,14 @@ class Counter5Processor extends Model
      *
      *    $book = self::bookFindOrCreate($title, $propID, $isbn, $doi, $uri);
      */
-    private static function bookFindOrCreate($title, $propID, $isbn, $doi, $uri)
+    private static function bookFindOrCreate($_title, $propID, $isbn, $doi, $uri)
     {
-        if ($title == "" && $propID = "" && $isbn == "" && $doi == "" && $uri == "") {
+        if ($_title == "" && $propID = "" && $isbn == "" && $doi == "" && $uri == "") {
             return null;
         }
+
+       // UFT8 Encode any special chars in the title
+        $title = utf8_encode($_title);    // in case title has funky chars
 
        // Get any potential matches
         $matches = Book::where([['Title', '<>',''],['Title', '=',$title]])->
@@ -873,9 +897,17 @@ class Counter5Processor extends Model
         }
 
        // If no match, create it
-        $book = new Book(['Title' => $title, 'ISBN' => $isbn, 'DOI' => $doi, 'PropID' => $propID, 'URI' => $uri]);
-        $book->save();
-        return $book;
+        try {
+            $book = new Book(['Title' => $title, 'ISBN' => $isbn, 'DOI' => $doi, 'PropID' => $propID, 'URI' => $uri]);
+            $book->save();
+            return $book;
+        } catch (\PDOException $e) {
+            echo $e->getMessage();
+            return null;
+        } catch(Exception $e) {
+            echo $e->getMessage();
+            return null;
+        }
     }
 
     /**
@@ -888,7 +920,7 @@ class Counter5Processor extends Model
      *                                   [, $pub][, $ver][, $parent_id][, $parent_datatype_id]);
      */
     private static function itemFindOrCreate(
-        $name,
+        $_name,
         $propID,
         $issn,
         $eissn,
@@ -900,9 +932,12 @@ class Counter5Processor extends Model
         $parent_id = null,
         $parent_datatype_id = null
     ) {
-        if ($name == "" && $propID = "" && $issn == "" && $eissn == "" && $isbn == "" && $doi == "" && $uri == "") {
+        if ($_name == "" && $propID = "" && $issn == "" && $eissn == "" && $isbn == "" && $doi == "" && $uri == "") {
             return null;
         }
+
+       // UFT8 Encode any special chars in the title
+        $name = utf8_encode($_name);    // in case title has funky chars
 
        // Get any potential matches
         $matches = Item::where([['Name',  '<>',''],['Name',  '=',$name]])->
@@ -1034,10 +1069,18 @@ class Counter5Processor extends Model
         }
 
        // If no match, create it
-        $item = new Item(['Name' => $name, 'ISSN' => $issn, 'eISSN' => $eissn, 'ISBN' => $isbn, 'DOI' => $doi,
-                          'PropID' => $propID, 'URI' => $uri, 'pub_date' => $pub, 'article_version' => $ver,
-                          'parent_id' => $parent_id, 'parent_datatype_id' => $parent_datatype_id]);
-        $item->save();
-        return $item;
+        try {
+            $item = new Item(['Name' => $name, 'ISSN' => $issn, 'eISSN' => $eissn, 'ISBN' => $isbn, 'DOI' => $doi,
+                              'PropID' => $propID, 'URI' => $uri, 'pub_date' => $pub, 'article_version' => $ver,
+                              'parent_id' => $parent_id, 'parent_datatype_id' => $parent_datatype_id]);
+            $item->save();
+            return $item;
+        } catch (\PDOException $e) {
+            echo $e->getMessage();
+            return null;
+        } catch(Exception $e) {
+            echo $e->getMessage();
+            return null;
+        }
     }
 }

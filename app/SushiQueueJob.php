@@ -18,7 +18,7 @@ class SushiQueueJob extends Model
      * @var array
      */
     protected $fillable = [
-        'consortium_id', 'ingest_id', 'priority', 'replace_data'
+        'consortium_id', 'harvest_id', 'priority', 'replace_data'
     ];
 
     public function consortium()
@@ -26,8 +26,8 @@ class SushiQueueJob extends Model
         return $this->belongsTo('App\Consortia', 'consortium_id');
     }
 
-    public function ingest()
+    public function harvest()
     {
-        return $this->belongsTo('App\IngestLog', 'ingest_id');
+        return $this->belongsTo('App\HarvestLog', 'harvest_id');
     }
 }

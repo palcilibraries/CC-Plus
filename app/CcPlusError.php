@@ -21,8 +21,8 @@ class CcplusError extends Model
       */
     protected $fillable = [ 'id', 'message', 'severity'];
 
-    public function failedIngests()
+    public function failedHarvests()
     {
-        return $this->hasMany('App\FailedIngest');
+        return $this->hasMany('App\FailedHarvest');
     }
 }

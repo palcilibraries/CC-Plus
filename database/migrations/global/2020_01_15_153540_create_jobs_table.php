@@ -15,13 +15,13 @@ class CreateJobsTable extends Migration
     {
         Schema::create('jobs', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedInteger('ingest_id');
+            $table->unsignedInteger('harvest_id');
             $table->unsignedInteger('consortium_id');
             $table->unsignedInteger('priority')->default(0);
             $table->boolean('replace_data')->default(0);
             $table->timestamps();
 
-            $table->unique(['ingest_id', 'consortium_id']);
+            $table->unique(['harvest_id', 'consortium_id']);
             $table->foreign('consortium_id')->references('id')->on('consortia');
         });
 

@@ -4,10 +4,10 @@
 <div class="row">
     <div class="col-lg-12 margin-tb">
         <div class="pull-left">
-            <h2>Ingest Record Details</h2>
+            <h2>Harvest Record Details</h2>
         </div>
         <div class="pull-right">
-            <a class="btn btn-primary" href="{{ route('ingestlogs.index') }}"> Back</a>
+            <a class="btn btn-primary" href="{{ route('harvestlogs.index') }}"> Back</a>
         </div>
     </div>
 </div>
@@ -44,7 +44,7 @@
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
-            @if ($record->failedingests()->count() > 0)
+            @if ($record->failedharvests()->count() > 0)
             <strong>Failed attempts: </strong>
             <table class="table table-bordered">
               <tr>
@@ -55,7 +55,7 @@
                  <th>Message</th>
                  <th>Details</th>
               </tr>
-              @foreach ($record->failedingests as $fail)
+              @foreach ($record->failedharvests as $fail)
               <tr>
                   <td>{{ $fail->created_at }}</td>
                   <td>{{ $fail->process_step }}</td>

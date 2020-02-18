@@ -4,13 +4,13 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class FailedIngest extends Model
+class FailedHarvest extends Model
 {
   /**
    * The database table used by the model.
    */
     protected $connection = 'consodb';
-    protected $table = 'failedingests';
+    protected $table = 'failedharvests';
 
   /**
    * The attributes that are mass assignable.
@@ -18,12 +18,12 @@ class FailedIngest extends Model
    * @var array
    */
     protected $fillable = [
-      'ingest_id', 'process_step', 'error_id', 'detail'
+      'harvest_id', 'process_step', 'error_id', 'detail'
     ];
 
-    public function ingest()
+    public function harvest()
     {
-        return $this->belongsTo('App\IngestLog', 'ingest_id');
+        return $this->belongsTo('App\HarvestLog', 'harvest_id');
     }
 
     public function ccplusError()

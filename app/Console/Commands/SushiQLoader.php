@@ -10,7 +10,7 @@ use GuzzleHttp\Client;
 use DB;
 use App\Consortium;
 use App\Provider;
-use App\IngestLog;
+use App\HarvestLog;
 use App\Report;
 use App\SushiQueueJob;
 
@@ -25,7 +25,7 @@ class SushiQLoader extends Command
                                                {--M|month= : YYYY-MM to override day_of_month [lastmonth]}
                                                {--P|provider= : Provider ID to process [ALL]}
                                                {--I|institution= : Institution ID to process [ALL]}
-                                               {--R|report= : Master report NAME to ingest [ALL]}
+                                               {--R|report= : Master report NAME to harvest [ALL]}
                                                {--K|keep : Preserve, and ADD TO, existing data [FALSE]}';
 
     /**
@@ -50,13 +50,13 @@ class SushiQLoader extends Command
      * ----------------------------
      *   ccplus:sushiqn is intended to be run primarily as a nightly job.
      *      The optional arguments exist to allow the script to be run from the artisan command-line
-     *      to add ingests and jobs in a more customized way.
+     *      to add harvests and jobs in a more customized way.
      *   Processing phase-1:
      *      The day-of-month harvest setting for all (active) providers of the given consortium are checked,
-     *      and if today is the day, all ingests defined by the sushisettings are added to the IngestLogs table.
+     *      and if today is the day, all harvests defined by the sushisettings are added to the HarvestLogs table.
      *      Settings for providers or institutions with is_active=false are ignored.
      *   Processing phase-2:
-     *      Any ingests just added in phase-1 are added to the globaldb:jobs queue along with any ingests
+     *      Any harvests just added in phase-1 are added to the globaldb:jobs queue along with any harvests
      *      that are in a "Retry" state.
      *
      * @return mixed
@@ -116,7 +116,7 @@ class SushiQLoader extends Command
             $providers = Provider::where('is_active', '=', true)->where('id', '=', $prov_id)->get();
         }
 
-       // Part I : Load any new ingests (based on today's date) into the IngestLog table
+       // Part I : Load any new harvests (based on today's date) into the HarvestLog table
        // ------------------------------------------------------------------------------
        // Loop through the providers
         foreach ($providers as $provider) {
@@ -141,24 +141,24 @@ class SushiQLoader extends Command
                         continue;
                     }
 
-                   // Insert new IngestLog record; catch and prevent duplicates
+                   // Insert new HarvestLog record; catch and prevent duplicates
                     try {
-                        IngestLog::insert(['status' => 'New', 'sushisettings_id' => $setting->id,
+                        HarvestLog::insert(['status' => 'New', 'sushisettings_id' => $setting->id,
                                            'report_id' => $report->id, 'yearmon' => $yearmon,
                                            'attempts' => 0, 'created_at' => $ts]);
                     } catch (QueryException $e) {
                         $errorCode = $e->errorInfo[1];
                         if ($errorCode == '1062') {
-                            $ingest = IngestLog::where([['sushisettings_id', '=', $setting->id],
+                            $harvest = HarvestLog::where([['sushisettings_id', '=', $setting->id],
                                                         ['report_id', '=', $report->id],
                                                         ['yearmon', '=', $yearmon]
                                                        ])->first();
-                            $this->line('Ingest ' . '(ID:' . $ingest->id . ') already defined. Updating to retry (' .
+                            $this->line('Harvest ' . '(ID:' . $harvest->id . ') already defined. Updating to retry (' .
                                         'setting: ' . $setting->id . ', ' . $report->name . ':' . $yearmon . ').');
-                            $ingest->status = 'Retrying';
-                            $ingest->save();
+                            $harvest->status = 'Retrying';
+                            $harvest->save();
                         } else {
-                            $this->line('Failed adding to IngestLog! Error code:' . $errorCode);
+                            $this->line('Failed adding to HarvestLog! Error code:' . $errorCode);
                             exit;
                         }
                     }
@@ -166,28 +166,28 @@ class SushiQLoader extends Command
             } // for each sushisetting
         } // for each provider
 
-       // Part II : Create queue jobs based on IngestLogs
+       // Part II : Create queue jobs based on HarvestLogs
        // -----------------------------------------------
-        $ingests = IngestLog::where('status', '=', 'New')->orWhere('status', '=', 'Retrying')->get();
-        foreach ($ingests as $ingest) {
+        $harvests = HarvestLog::where('status', '=', 'New')->orWhere('status', '=', 'Retrying')->get();
+        foreach ($harvests as $harvest) {
             try {
                 $newjob = SushiQueueJob::create(['consortium_id' => $consortium->id,
-                                                 'ingest_id' => $ingest->id,
+                                                 'harvest_id' => $harvest->id,
                                                  'replace_data' => $replace
                                                ]);
             } catch (QueryException $e) {
                 $errorCode = $e->errorInfo[1];
                 if ($errorCode == '1062') {
-                    $this->line('Ingest ID: ' . $ingest->id . ' for consortium ID: ' . $consortium->id .
+                    $this->line('Harvest ID: ' . $harvest->id . ' for consortium ID: ' . $consortium->id .
                                 ' already exists in the queue; not adding.');
                     continue;
                 } else {
-                    $this->line('Failed adding ingestID: ' . $ingest->id . ' to Queue! Error code:' . $errorCode);
+                    $this->line('Failed adding harvestID: ' . $harvest->id . ' to Queue! Error code:' . $errorCode);
                     continue;
                 }
             }
-            $ingest->status = 'Queued';
-            $ingest->save();
+            $harvest->status = 'Queued';
+            $harvest->save();
         }
     }
 }

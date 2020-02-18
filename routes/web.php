@@ -21,8 +21,8 @@ Route::resource('/institutions', 'InstitutionController');
 Route::resource('/institutiontypes', 'InstitutionTypeController');
 Route::resource('/institutiongroups', 'InstitutionGroupController');
 Route::resource('/providers', 'ProviderController');
-Route::resource('/ingestlogs', 'IngestLogController');
-Route::resource('/failedingests', 'FailedIngestController');
+Route::resource('/harvestlogs', 'HarvestLogController');
+Route::resource('/failedharvests', 'FailedHarvestController');
 Route::resource('/alertsettings', 'AlertSettingController')->middleware(['auth','role:Admin,Manager']);
 
 Auth::routes();

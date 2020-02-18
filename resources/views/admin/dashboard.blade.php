@@ -25,9 +25,9 @@
                         <li><a href="/institutiongroups">Groups</a></li>
                       </ul>
                       <li><a href="/providers">Provider Management</a></li>
-                      <li><a href="/ingestlogs">Ingest Logs</a></li>
+                      <li><a href="/harvestlogs">Harvest Logs</a></li>
                       <ul>
-                        <li><a href="/failedingests">Failed Ingests</a></li>
+                        <li><a href="/failedharvests">Failed Harvests</a></li>
                       </ul>
                       <li><a href="/alerts">Alerts</a></li>
                       <ul>

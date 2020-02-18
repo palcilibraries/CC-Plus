@@ -128,6 +128,9 @@ class Counter5Processor extends Model
                     $Item_ID['DOI'],
                     $Item_ID['URI']
                 );
+                if (is_null($item)) {
+                    continue;
+                }
                 $item_id = $item->id;
             }
 
@@ -455,7 +458,7 @@ class Counter5Processor extends Model
                             continue;
                         }
                         $parent_id = $_book->id;
-                    } else {   // Parent is Not a Journal or Book, findorcreate  as an Item
+                    } else {   // Parent is Not a Journal or Book, findorcreate as an Item
                         $_item = self::itemFindOrCreate(
                             $parent_name,
                             $_pitem_ID['PropID'],
@@ -465,6 +468,9 @@ class Counter5Processor extends Model
                             $_pitem_ID['DOI'],
                             $_pitem_ID['URI']
                         );
+                        if (is_null($_item)) {
+                            continue;
+                        }
                         $parent_id = $_item->id;
                     }
                     $parent_datatype_id = $parent_datatype->id;
@@ -485,6 +491,9 @@ class Counter5Processor extends Model
                 $parent_id,
                 $parent_datatype_id
             );
+            if (is_null($_item)) {
+                continue;
+            }
 
            // Loop $reportitem->Performance elements and store counts when time-periods match
             foreach ($reportitem->Performance as $perf) {
@@ -768,10 +777,19 @@ class Counter5Processor extends Model
         }
 
        // If we get here, create a new record
-        $journal = new Journal(['Title' => $title, 'ISSN' => $issn, 'eISSN' => $eissn, 'DOI' => $doi,
-                                'PropID' => $propID, 'URI' => $uri]);
-        $journal->save();
-        return $journal;
+        $Ctitle = utf8_encode($title);    // in case title has funky chars
+        try {
+            $journal = new Journal(['Title' => $Ctitle, 'ISSN' => $issn, 'eISSN' => $eissn, 'DOI' => $doi,
+                                    'PropID' => $propID, 'URI' => $uri]);
+            $journal->save();
+            return $journal;
+        } catch (\PDOException $e) {
+            echo $e->getMessage();
+            return null;
+        } catch(Exception $e) {
+            echo $e->getMessage();
+            return null;
+        }
     }
 
     /**
@@ -873,9 +891,18 @@ class Counter5Processor extends Model
         }
 
        // If no match, create it
-        $book = new Book(['Title' => $title, 'ISBN' => $isbn, 'DOI' => $doi, 'PropID' => $propID, 'URI' => $uri]);
-        $book->save();
-        return $book;
+        $Ctitle = utf8_encode($title);    // in case title has funky chars
+        try {
+            $book = new Book(['Title' => $Ctitle, 'ISBN' => $isbn, 'DOI' => $doi, 'PropID' => $propID, 'URI' => $uri]);
+            $book->save();
+            return $book;
+        } catch (\PDOException $e) {
+            echo $e->getMessage();
+            return null;
+        } catch(Exception $e) {
+            echo $e->getMessage();
+            return null;
+        }
     }
 
     /**
@@ -1034,10 +1061,19 @@ class Counter5Processor extends Model
         }
 
        // If no match, create it
-        $item = new Item(['Name' => $name, 'ISSN' => $issn, 'eISSN' => $eissn, 'ISBN' => $isbn, 'DOI' => $doi,
-                          'PropID' => $propID, 'URI' => $uri, 'pub_date' => $pub, 'article_version' => $ver,
-                          'parent_id' => $parent_id, 'parent_datatype_id' => $parent_datatype_id]);
-        $item->save();
-        return $item;
+        $Cname = utf8_encode($name);    // in case name has funky chars
+        try {
+            $item = new Item(['Name' => $Cname, 'ISSN' => $issn, 'eISSN' => $eissn, 'ISBN' => $isbn, 'DOI' => $doi,
+                              'PropID' => $propID, 'URI' => $uri, 'pub_date' => $pub, 'article_version' => $ver,
+                              'parent_id' => $parent_id, 'parent_datatype_id' => $parent_datatype_id]);
+            $item->save();
+            return $item;
+        } catch (\PDOException $e) {
+            echo $e->getMessage();
+            return null;
+        } catch(Exception $e) {
+            echo $e->getMessage();
+            return null;
+        }
     }
 }

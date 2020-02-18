@@ -98,7 +98,4 @@ class Institution extends Model
         return $this->hasMany('App\ItemReport');
     }
 
-//    public function ingestLogs() {
-//        return $this->hasMany('App\IngestLog','inst_id');
-//    }
 }

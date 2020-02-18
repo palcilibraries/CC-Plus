@@ -11,8 +11,8 @@ use App\Consortium;
 use App\Provider;
 use App\Institution;
 use App\Counter5Processor;
-use App\FailedIngest;
-use App\IngestLog;
+use App\FailedHarvest;
+use App\HarvestLog;
 
 /*
  * NOTE:
@@ -29,11 +29,11 @@ class SushiBatchCommand extends Command
      * @var string
      */
     protected $signature = 'ccplus:sushibatch {consortium : The Consortium ID or key-string}
-                             {--A|auto : Limit ingest to provider day_of_month [FALSE]}
+                             {--A|auto : Limit harvest to provider day_of_month [FALSE]}
                              {--M|month= : YYYY-MM to process [lastmonth]}
                              {--P|provider= : Provider ID to process [ALL]}
                              {--I|institution= : Institution ID to process [ALL]}
-                             {--R|report= : Master report NAME to ingest [ALL]}
+                             {--R|report= : Master report NAME to harvest [ALL]}
                              {--K|keep : Preserve, and ADD TO, existing data [FALSE]}';
 
     /**
@@ -59,7 +59,7 @@ class SushiBatchCommand extends Command
      *   ccplus:sushibatch is intended to be as an artisan command for bulk-loading report data without
      *   involving the CCPlus queuing system. Providers or institutions with is_active=false are ignored.
      *   Report data is stored in the XX_report_data tables, and can replace any existing data.
-     *   IngestLog and, if necessary, FailedIngest records are created to record processing results.
+     *   HarvestLog and, if necessary, FailedHarvest records are created to record processing results.
      *
      * @return mixed
      */
@@ -123,7 +123,7 @@ class SushiBatchCommand extends Command
         }
 
        // Loop through providers
-        $this->line("Ingest begins for " . $consortium->ccp_key . " at " . date("Y-m-d H:i:s"));
+        $this->line("Harvest begins for " . $consortium->ccp_key . " at " . date("Y-m-d H:i:s"));
         foreach ($providers as $provider) {
            // If running as "Auto" and today is not the day to run, skip silently to next provider
             if ($this->option('auto') && $provider->day_of_month != date('j')) {
@@ -178,22 +178,22 @@ class SushiBatchCommand extends Command
                         $sushi->raw_datafile = $full_path . $report->name . '_' . $begin . '_' . $end . '.json';
                     }
 
-                   // Create new IngestLog record; if one already exists, use it instead
+                   // Create new HarvestLog record; if one already exists, use it instead
                     try {
-                        $ingest = IngestLog::create(['status' => 'Active', 'sushisettings_id' => $setting->id,
+                        $harvest = HarvestLog::create(['status' => 'Active', 'sushisettings_id' => $setting->id,
                                            'report_id' => $report->id, 'yearmon' => $yearmon,
                                            'attempts' => 0]);
                     } catch (QueryException $e) {
                         $errorCode = $e->errorInfo[1];
                         if ($errorCode == '1062') {
-                            $ingest = IngestLog::where([['sushisettings_id', '=', $setting->id],
+                            $harvest = HarvestLog::where([['sushisettings_id', '=', $setting->id],
                                                         ['report_id', '=', $report->id],
                                                         ['yearmon', '=', $yearmon]
                                                        ])->first();
-                            $this->line('Ingest ' . '(ID:' . $ingest->id . ') already defined for setting: ' .
+                            $this->line('Harvest ' . '(ID:' . $harvest->id . ') already defined for setting: ' .
                                         $setting->id . ', ' . $report->name . ':' . $yearmon . ').');
                         } else {
-                            $this->line('Failed adding to IngestLog! Error code:' . $errorCode);
+                            $this->line('Failed adding to HarvestLog! Error code:' . $errorCode);
                             exit;
                         }
                     }
@@ -223,14 +223,14 @@ class SushiBatchCommand extends Command
                             continue;
                         }
 
-                       // If request failed, insert a FailedIngest record
+                       // If request failed, insert a FailedHarvest record
                         if ($req_state == "Fail") {
-                            FailedIngest::insert(['ingest_id' => $ingest->id, 'process_step' => $sushi->step,
+                            FailedHarvest::insert(['harvest_id' => $harvest->id, 'process_step' => $sushi->step,
                                                   'error_id' => $sushi->error_code, 'detail' => $sushi->detail,
                                                   'created_at' => $ts]);
                             $this->line($sushi->message . $sushi->detail);
-                            $ingest->status = 'Fail';
-                            $ingest->update();
+                            $harvest->status = 'Fail';
+                            $harvest->update();
                             continue 2;
                         }
 
@@ -245,12 +245,12 @@ class SushiBatchCommand extends Command
                         $valid_report = $sushi->validateJson();
                     } catch (\Exception $e) {
                        // Update logs
-                        FailedIngest::insert(['ingest_id' => $ingest->id,'process_step' => 'COUNTER','error_id' => 100,
+                        FailedHarvest::insert(['harvest_id' => $harvest->id,'process_step' => 'COUNTER','error_id' => 100,
                                               'detail' => 'Validation error: ' . $e->getMessage(),
                                               'created_at' => $ts]);
                         $this->line("COUNTER report failed validation : " . $e->getMessage());
-                        $ingest->status = 'Fail';
-                        $ingest->update();
+                        $harvest->status = 'Fail';
+                        $harvest->update();
                         continue;
                     }
 
@@ -259,18 +259,18 @@ class SushiBatchCommand extends Command
                         $_status = $C5processor->{$report->name}($sushi->json);
                         if ($_status = 'Saved') {
                             $this->line($report->name . " report data successfully saved.");
-                            $ingest->status = 'Success';
-                            $ingest->update();
+                            $harvest->status = 'Success';
+                            $harvest->update();
                         }
                     }
                     unset($sushi);
-                    unset($ingest);
+                    unset($harvest);
                 }  // foreach reports
 
                 unset($C5processor);
             }  // foreach sushisettings
         }  // foreach providers
 
-        $this->line("Ingest ends at : " . date("Y-m-d H:i:s"));
+        $this->line("Harvest ends at : " . date("Y-m-d H:i:s"));
     }
 }

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateIngestLogsTable extends Migration
+class CreateHarvestLogsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,7 @@ class CreateIngestLogsTable extends Migration
      */
     public function up()
     {
-        Schema::create('ingestlogs', function (Blueprint $table) {
+        Schema::create('harvestlogs', function (Blueprint $table) {
             $global_db = DB::connection('globaldb')->getDatabaseName();
 
             $table->Increments('id');
@@ -38,6 +38,6 @@ class CreateIngestLogsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('ingestlogs');
+        Schema::dropIfExists('harvestlogs');
     }
 }

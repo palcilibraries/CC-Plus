@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\FailedIngest;
 use Illuminate\Http\Request;
+use App\HarvestLog;
+use App\FailedHarvest;
 
-class FailedIngestController extends Controller
+class HarvestLogController extends Controller
 {
     public function __construct()
     {
@@ -19,9 +20,9 @@ class FailedIngestController extends Controller
     */
     public function index(Request $request)
     {
-        $data = FailedIngest::orderBy('id', 'DESC')->paginate(10);
-        return view('failedingests.index', compact('data'))
-          ->with('i', ($request->input('page', 1) - 1) * 10);
+        $data = HarvestLog::orderBy('id', 'DESC')->paginate(10);
+        return view('harvestlogs.index', compact('data'))
+             ->with('i', ($request->input('page', 1) - 1) * 10);
     }
 
    /**
@@ -32,8 +33,8 @@ class FailedIngestController extends Controller
     */
     public function show($id)
     {
-        $record = FailedIngest::findOrFail($id);
-        return view('failedingests.show', compact('record'));
+        $record = HarvestLog::findOrFail($id);
+        return view('harvestlogs.show', compact('record'));
     }
 
    /**
@@ -45,10 +46,10 @@ class FailedIngestController extends Controller
     public function destroy($id)
     {
         $this->middleware(['role:Admin']);
-        $record = FailedIngest::findOrFail($id);
+        $record = HarvestLog::findOrFail($id);
         $record->delete();
 
-        return redirect()->route('failedingests.index')
-                      ->with('success', 'Failed ingest record deleted successfully');
+        return redirect()->route('harvestlogs.index')
+                      ->with('success', 'Log record deleted successfully');
     }
 }

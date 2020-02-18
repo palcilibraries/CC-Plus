@@ -17,6 +17,6 @@ class Consortium extends Model
 
     public function ingests()
     {
-        return $this->hasMany('App\IngestLog');
+        return $this->hasMany('App\HarvestLog');
     }
 }

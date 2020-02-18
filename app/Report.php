@@ -29,21 +29,20 @@ class Report extends Model
     {
        // Get and return collection of ReportFields (not a relationship)
         if ($this->parent_id == 0) {
-            // return $this->hasMany('App\ReportField');
             return ReportField::where('report_id', '=', $this->id)->get();
         } else {
             return $this->inheritedFields();
         }
     }
 
-    public function ingests()
+    public function harvests()
     {
-        return $this->hasMany('App\IngestLog');
+        return $this->hasMany('App\HarvestLog');
     }
 
-    public function failedIngests()
+    public function failedHarvests()
     {
-        return $this->hasMany('App\FailedIngest');
+        return $this->hasMany('App\FailedHarvest');
     }
 
     public function providers()

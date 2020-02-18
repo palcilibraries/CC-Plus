@@ -18,13 +18,13 @@ class CreateAlertsTable extends Migration
             $table->string('yearmon', 7);
             $table->unsignedInteger('prov_id');
             $table->unsignedInteger('alertsettings_id')->default(0);
-            $table->unsignedInteger('ingest_id')->default(0);
+            $table->unsignedInteger('harvest_id')->default(0);
             $table->unsignedInteger('modified_by')->default('1');
             $table->enum('status', array('Active','Silent','Delete'))->nullable();
             $table->timestamps();
             $table->foreign('prov_id')->references('id')->on('providers');
             $table->foreign('alertsettings_id')->references('id')->on('alertsettings');
-            $table->foreign('ingest_id')->references('id')->on('ingestlogs');
+            $table->foreign('harvest_id')->references('id')->on('harvestlogs');
             $table->foreign('modified_by')->references('id')->on('users');
         });
     }

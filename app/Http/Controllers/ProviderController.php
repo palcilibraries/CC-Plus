@@ -91,26 +91,28 @@ class ProviderController extends Controller
     {
         $provider = Provider::findOrFail($id);
         abort_unless($provider->canManage(), 403);
+        $provider_reports = $provider->reports()->pluck('report_id')->all();
+        $_prov = $provider->toArray();
 
-      // Build $institutions based on whether the provider is
-      // Inst-specific and/or whether user is admin or Manager
+       // Build $institutions based on whether the provider is
+       // Inst-specific and/or whether user is admin or Manager
         if (auth()->user()->hasRole("Admin")) {
-            $institutions = Institution::orderBy('id', 'ASC')->pluck('name', 'id')->all();
-            $sushi_insts  = $institutions;
-            $institutions[1] = 'Entire Consortium';
-            $sushi_insts[1] = 'Choose an Institution';
+            $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
+            $sushi_insts = $institutions;
+            $institutions[0]['name'] = 'Entire Consortium';
+            array_shift($sushi_insts);  // toss off "Entire Consortium" as an option for sushi settings
         } else {  // Manager limited their own inst
-            $institutions = Institution::where('id', '=', auth()->user()->inst_id)
-                                        ->pluck('name', 'id');
+            $institutions = Institution::where('id', '=', auth()->user()->inst_id)->get(['id','name'])->toArray();
             $sushi_insts = $institutions;
         }
 
-      // Get all R5 master reports and which are currently enabled
+       // Get all R5 master reports and which are currently enabled
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
-                                 ->pluck('name', 'id');
-        $provider_reports = $provider->reports()->pluck('report_id')->all();
+                                 ->get(['id','name'])->toArray();
+
         return view('providers.edit', compact(
             'provider',
+            '_prov',
             'institutions',
             'master_reports',
             'provider_reports',
@@ -146,8 +148,8 @@ class ProviderController extends Controller
             }
         }
 
-        return redirect()->route('providers.index')
-                       ->with('success', 'Provider updated successfully');
+        // return redirect()->route('providers.index')
+        //                ->with('success', 'Provider updated successfully');
     }
 
     /**

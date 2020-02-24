@@ -7,6 +7,8 @@
 require('./bootstrap');
 
 import Vue from 'vue';
+import VueRouter from 'vue-router';
+import Vuetify from './plugins/vuetify';
 import axios from 'axios';
 import Form from './core/Form';
 
@@ -23,10 +25,12 @@ window.Form = Form;
 
 // const files = require.context('./', true, /\.vue$/i);
 // files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default));
-
+Vue.use(VueRouter);
 Vue.component('flash', require('./components/Flash.vue').default);
 Vue.component('sushi-by-inst', require('./components/SushiByInst.vue').default);
 Vue.component('sushi-by-prov', require('./components/SushiByProv.vue').default);
+Vue.component('provider-form', require('./components/ProviderForm.vue').default);
+Vue.component('institution-form', require('./components/InstitutionForm.vue').default);
 
 /**
  * Next, we will create a fresh Vue application instance and attach it to
@@ -35,5 +39,6 @@ Vue.component('sushi-by-prov', require('./components/SushiByProv.vue').default);
  */
 
 const app = new Vue({
+    vuetify: Vuetify,
     el: '#app',
 });

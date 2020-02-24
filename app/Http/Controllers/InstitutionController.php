@@ -93,14 +93,26 @@ class InstitutionController extends Controller
     {
         $institution = Institution::findOrFail($id);
         abort_unless($institution->canManage(), 403);
-        $types = InstitutionType::pluck('name', 'id')->all();
-        $all_groups = InstitutionGroup::pluck('name', 'id')->all();
-        $providers = Provider::pluck('name', 'id')->all();
-        $providers[0] = 'Choose a Provider';
-        ksort($providers);
+        $_inst = $institution->toArray();
+
+        // $types = InstitutionType::pluck('name', 'id')->all();
+        // $all_groups = InstitutionGroup::pluck('name', 'id')->all();
+        $types = InstitutionType::get(['id','name'])->toArray();
+        $all_groups = InstitutionGroup::get(['id','name'])->toArray();
+        // $providers = Provider::pluck('name', 'id')->all();
+        // $providers[0] = 'Choose a Provider';
+        // ksort($providers);
+        $providers = Provider::orderBy('id', 'ASC')->get(['id','name'])->toArray();
         $inst_groups = $institution->institutionGroups()->pluck('institution_group_id')->all();
 
-        return view('institutions.edit', compact('institution', 'types', 'all_groups', 'inst_groups', 'providers'));
+        return view('institutions.edit', compact(
+            'institution',
+            '_inst',
+            'types',
+            'all_groups',
+            'inst_groups',
+            'providers'
+        ));
     }
 
     /**
@@ -132,8 +144,8 @@ class InstitutionController extends Controller
             }
         }
 
-        return redirect()->route('institutions.index')
-                       ->with('success', 'Institution updated successfully');
+        // return redirect()->route('institutions.index')
+        //                ->with('success', 'Institution updated successfully');
     }
 
     /**

@@ -11,8 +11,8 @@ import Vue from 'vue';
 import Vuetify from '@/js/plugins/vuetify';
 
 /**
- * The following block of code may be used to automatically register your
- * Recursively scan for Vue components and automatically register them
+ * The following block of code may be used to recursively scan for
+ * Vue components and automatically register them.
  *
  * Eg. ./components/ExampleComponent.vue -> <example-component></example-component>
  */

@@ -11,7 +11,7 @@
 |
 */
 Route::get('/', function () {
-    return view('reports');
+    return view('reports.usage');
 })->middleware('auth');
 
 Route::resource('/consortia','ConsortiumController')->middleware('can:update,consortium');
@@ -31,7 +31,8 @@ Route::get('logout', 'Auth\LoginController@logout');
 Route::get('/', 'ReportController@index')->name('reports')->middleware('auth');
 Route::get('/admin', 'AdminController@index')->name('admin')->middleware(['auth','role:Admin,Manager']);
 Route::get('/alerts', 'AlertController@index')->name('alerts')->middleware('auth');
-Route::get('/reports', 'ReportController@index')->name('reports')->middleware('auth');
+Route::get('/reports', 'ReportController@index')->name('reports.usage')->middleware('auth');
+Route::get('/reports/view', 'ReportController@view')->name('reports.view')->middleware('auth');
 Route::get('/reports/{id}', 'ReportController@show')->name('reports.show')->middleware('auth');
 Route::post('/update-alert-status', 'AlertController@updateStatus')->middleware(['auth','role:Admin,Manager']);
 Route::post('/alert-dash-refresh', 'AlertController@dashRefresh')->middleware('auth');

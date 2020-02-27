@@ -4,6 +4,12 @@ const VuetifyLoaderPlugin = require('vuetify-loader/lib/plugin');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 
 var webpackConfig={
+    resolve: {
+        extensions: ['.js', '.vue'],
+        alias: {
+            '@': path.resolve(__dirname, './resources'),
+        },
+    },
     plugins: [
         new VuetifyLoaderPlugin(),
         new CaseSensitivePathsPlugin()

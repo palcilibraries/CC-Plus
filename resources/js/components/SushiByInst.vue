@@ -71,6 +71,11 @@
 </template>
 
 <script>
+    import Form from '@/js/plugins/Form';
+    import axios from 'axios';
+    window.axios = axios;
+    window.Form = Form;
+
     export default {
         props: {
                 prov_id: { type:Number, default:0 },

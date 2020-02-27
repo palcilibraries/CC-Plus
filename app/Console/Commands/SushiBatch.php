@@ -143,6 +143,7 @@ class SushiBatchCommand extends Command
             }
 
            // Loop through all sushiSettings for this provider
+            $this->line("Processing: " . $provider->name);
             foreach ($provider->sushiSettings as $setting) {
                // Skip this setting if we're just processing a single inst and the IDs don't match
                 if (
@@ -165,10 +166,9 @@ class SushiBatchCommand extends Command
 
                    // Create a new Sushi object
                     $sushi = new Sushi($begin, $end);
-
                     $request_uri = $sushi->buildUri($setting, 'reports', $report);
-                    $this->line($setting->provider->name . "(" . $setting->inst_id . ") : " . $request_uri);
-                    continue;
+// $this->line($setting->provider->name . "(" . $setting->inst_id . ") : " . $request_uri);
+// continue;
                    // Set output filename for raw data. Create the folder path, if necessary
                     if (!is_null(config('ccplus.reports_path'))) {
                         $full_path = $report_path . '/' . $setting->institution->name . '/' . $provider->name . '/';
@@ -258,7 +258,7 @@ class SushiBatchCommand extends Command
                     if ($valid_report) {
                         $_status = $C5processor->{$report->name}($sushi->json);
                         if ($_status = 'Saved') {
-                            $this->line($report->name . " report data successfully saved.");
+                            $this->line($report->name . " report data saved for " . $setting->institution->name);
                             $harvest->status = 'Success';
                             $harvest->update();
                         }

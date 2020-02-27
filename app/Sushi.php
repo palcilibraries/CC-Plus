@@ -8,6 +8,8 @@ use GuzzleHttp\Client;
 use \ubfr\c5tools\JsonR5Report;
 use \ubfr\c5tools\CheckResult;
 use \ubfr\c5tools\ParseException;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Crypt;
 
 class Sushi extends Model
 {
@@ -76,7 +78,15 @@ class Sushi extends Model
 
        // Save raw data
         if ($this->raw_datafile != "") {
-            file_put_contents($this->raw_datafile, $result->getBody());
+            if (File::put($this->raw_datafile, Crypt::encrypt(bzcompress($result->getBody(), 9), false)) === false) {
+                echo "Failed to save raw data in: ".$this->raw_datafile;
+                // ... OR ...
+                // throw new \Exception("Failed to save raw data in: ".$this->raw_datafile);
+            }
+            //  --->>> This needs to be added SOMEPLACE to be able to decrypt and decompress the file... <<<---
+            // function get() {
+            //     return bzdecompress(Crypt::decrypt(File::get($this->raw_datafile), false));
+            // }
         }
 
        // Decode result body into $json, throw and log error if it fails

@@ -90,7 +90,7 @@ class User extends Authenticatable
 
     public function savedReports()
     {
-        return $this->hasMany('App\SavedReport', 'modified_by');
+        return $this->hasMany('App\SavedReport', 'user_id');
     }
 
     public function authorizeRoles($roles)

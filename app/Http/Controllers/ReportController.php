@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Report;
+use App\SavedReport;
 //Enables us to output flash messaging
 use Session;
 
@@ -20,18 +21,27 @@ class ReportController extends Controller
     }
 
     /**
-     * List the defined reports
+     * Setup dashboard for generating usage report summaries
      *
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
     {
-        // $_report = Report::orderBy('name', 'asc')->first();
-        // dd($_report->reportfields);
-
         $master_reports = Report::orderBy('name', 'asc')->where('parent_id', '=', 0)->get();
+        return view('reports.usage', compact('master_reports'));
+    }
 
-        return view('reports.index', compact('master_reports'));
+    /**
+     * View defined reports
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function view(Request $request)
+    {
+        $master_reports = Report::orderBy('name', 'asc')->where('parent_id', '=', 0)->get();
+        $user_reports = SavedReport::orderBy('title', 'asc')->where('user_id', '=', auth()->id())->get();
+
+        return view('reports.view', compact('master_reports', 'user_reports'));
     }
 
     /**

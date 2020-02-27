@@ -79,6 +79,9 @@
 </template>
 
 <script>
+    import Form from '@/js/plugins/Form';
+    window.Form = Form;
+
     export default {
         props: {
                 institution: { type:Object, default: () => {} },

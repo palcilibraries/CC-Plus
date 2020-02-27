@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Database\QueryException;
 use DB;
 use App\Sushi;
 use App\Report;
@@ -192,24 +193,26 @@ class SushiBatchCommand extends Command
                                                        ])->first();
                             $this->line('Harvest ' . '(ID:' . $harvest->id . ') already defined for setting: ' .
                                         $setting->id . ', ' . $report->name . ':' . $yearmon . ').');
+                            $harvest->status = 'Retrying';
+                            $harvest->save();
                         } else {
                             $this->line('Failed adding to HarvestLog! Error code:' . $errorCode);
                             exit;
                         }
                     }
 
-                   // Construct URI for the request
-                    $request_uri = $sushi->buildUri($setting, 'reports', $report);
-
-                   // Loop up to retry-limit asking for the report
+                   // Loop up to retry-limit asking for the report. sleep_time and retry_limit
+                   // can go into a config file as in:
+                   //    $sleep_time = config('ccplus.sushi_retry_sleep');
+                   //    $retry_limit = config('ccplus.sushi_retry_limit');
+                   // Just hardcoded here instead...
+                    $sleep_time = 30;   // 30 seconds between retries
+                    $retry_limit = 20;  // max 20 retries
                     $retries = 0;
                     $req_state = "Pending";
                     $ts = date("Y-m-d H:i:s");
 
-                    $sleep_time = 30;   // 30 seconds between retries
-                    $retry_limit = 20;  // max 20 retries
-                    // $sleep_time = config('ccplus.sushi_retry_sleep');
-                    // $retry_limit = config('ccplus.sushi_retry_limit');
+
                    // Sleeps and retries if request is queued.
                     while ($retries <= $retry_limit  && $req_state == "Pending") {
                        // Make the request

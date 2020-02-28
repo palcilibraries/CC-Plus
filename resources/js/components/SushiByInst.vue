@@ -80,6 +80,7 @@
         props: {
                 prov_id: { type:Number, default:0 },
                 institutions: { type:Array, default: () => [] },
+                manager: { type:Number, default:0 },
                },
 
         data() {

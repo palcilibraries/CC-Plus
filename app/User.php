@@ -114,7 +114,9 @@ class User extends Authenticatable
                 return true;
             }
         }
-        return false;
+        // return false;
+        // return zero so Vue navbar gets a value instead of ""
+        return 0;
     }
 
     public function maxRole()
@@ -127,6 +129,7 @@ class User extends Authenticatable
         if ($this->roles()->where("name", $role)->first()) {
             return true;
         }
-        return false;
+        // return false;
+        return 0;
     }
 }

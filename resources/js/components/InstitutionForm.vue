@@ -1,80 +1,78 @@
 <template>
   <div>
     <span class="form-good" role="alert" v-text="confirm"></span>
-    <v-app institutionform>
-        <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
-            <v-container grid-list-xl>
-                <v-row>
-                    <v-col class="d-flex" cols="12" sm="6">
-                        <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-                    </v-col>
-                </v-row>
-                <v-row>
-                    <v-col class="d-flex" cols="12" sm="6">
-                        <v-select
-                            :items="types"
-                            v-model="form.type_id"
-                            value="institution.type_id"
-                            label="Institution Type"
-                            item-text="name"
-                            item-value="id"
-                            outlined
-                        ></v-select>
-                    </v-col>
-                </v-row>
-                <v-row>
-                    <v-col class="d-flex" cols="12" sm="6">
-                        <v-switch v-model="form.is_active" label="Active?"></v-switch>
-                    </v-col>
-                </v-row>
-                <v-row>
-                    <v-col class="d-flex" cols="12" sm="6">
-                        <v-subheader v-text="'FTE'"></v-subheader>
-                        <v-text-field v-model="form.fte"
-                                      label="FTE"
-                                      hide-details
-                                      single-line
-                                      type="number"
-                        ></v-text-field>
-                    </v-col>
-                </v-row>
-                <v-row>
-                    <v-col class="d-flex" cols="12" sm="6">
-                        <v-subheader v-text="'Belongs To'"></v-subheader>
-                        <v-select
-                            :items="all_groups"
-                            v-model="form.institutiongroups"
-                            value="inst_groups"
-                            item-text="name"
-                            item-value="id"
-                            label="Institution Group(s)"
-                            multiple
-                            chips
-                            hint="Assign group membership for this institution"
-                            persistent-hint
-                        ></v-select>
-                    </v-col>
-                </v-row>
-                <v-row>
-                    <v-col class="d-flex" cols="12" sm="6">
-                        <v-textarea
-                          v-model="form.notes"
-                          value="institution.notes"
-                          label="Notes"
-                          auto-grow
-                        ></v-textarea>
-                    </v-col>
-                </v-row>
-                <v-row align="center">
-                    <v-flex md3>
-                        <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
-                            Save Institution Settings
-                        </v-btn>
-                    </v-flex>
-                </v-row>
-            </v-container>
-        </form>
-    </v-app>
+    <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
+      <v-container grid-list-xl>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
+            <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
+            <v-select
+                :items="types"
+                v-model="form.type_id"
+                value="institution.type_id"
+                label="Institution Type"
+                item-text="name"
+                item-value="id"
+                outlined
+            ></v-select>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
+            <v-switch v-model="form.is_active" label="Active?"></v-switch>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
+            <v-subheader v-text="'FTE'"></v-subheader>
+            <v-text-field v-model="form.fte"
+                          label="FTE"
+                          hide-details
+                          single-line
+                          type="number"
+            ></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
+            <v-subheader v-text="'Belongs To'"></v-subheader>
+            <v-select
+                :items="all_groups"
+                v-model="form.institutiongroups"
+                value="inst_groups"
+                item-text="name"
+                item-value="id"
+                label="Institution Group(s)"
+                multiple
+                chips
+                hint="Assign group membership for this institution"
+                persistent-hint
+            ></v-select>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
+            <v-textarea
+                v-model="form.notes"
+                value="institution.notes"
+                label="Notes"
+                auto-grow
+            ></v-textarea>
+          </v-col>
+        </v-row>
+        <v-row align="center">
+          <v-flex md3>
+            <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
+              Save Institution Settings
+            </v-btn>
+          </v-flex>
+        </v-row>
+      </v-container>
+    </form>
   </div>
 </template>
 
@@ -89,12 +87,12 @@
                 types: { type:Array, default: () => [] },
                 inst_groups: { type:Array, default: () => [] },
                 all_groups: { type:Array, default: () => [] },
+                manager: { type:Number, default:0 },
                },
 
         data() {
             return {
                 confirm: '',
-                status: ['Inactive','Active'],
                 form: new window.Form({
                     name: this.institution.name,
                     is_active: this.institution.is_active,

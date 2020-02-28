@@ -1,18 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="row">
-    <div class="col-lg-12 margin-tb">
-        <div class="pull-right">
-          @if ( auth()->user()->hasRole('Admin') )
-            <a class="btn btn-primary" href="{{ route('providers.index') }}"> Back</a>
-          @else
-            <a class="btn btn-primary" href="{{ route('admin') }}"> Back</a>
-          @endif
-        </div>
-    </div>
-</div>
-
 @if (count($errors) > 0)
   <div class="alert alert-danger">
     <strong>Whoops!</strong> There were some problems with your input.<br><br>
@@ -26,23 +14,51 @@
 
 <table width="100%">
   <tr>
-    <th width="50%"><h3>Settings for : {{ $provider->name }} (id: {{ $provider->id }})</h3></th>
-    <td width="50%"><h3>Update Sushi settings by Institution</h3></th>
-  </tr>
-  <tr>
-    <td>&nbsp;</td>
     <td align="center"><div style="display:none; color:red;" id="notice"></div></td>
   </tr>
-  <tr>
-    <td valign="top">
-        <provider-form :provider="{{ json_encode($_prov) }}"
-                       :institutions="{{ json_encode($institutions) }}"
-                       :master_reports="{{ json_encode($master_reports) }}"
-                       :provider_reports="{{ json_encode($provider_reports) }}"
-        ></provider-form>
+</table>
+<v-app institutionform>
+  <table width="100%">
+    <tr>
+      <td width="49%" valign="top">
+        <v-expansion-panels multiple focusable :value="[0]">
+          <v-expansion-panel>
+            <v-expansion-panel-header>
+              <h3>Settings for : {{ $provider->name }} (id: {{ $provider->id }})</h3>
+            </v-expansion-panel-header>
+            <v-expansion-panel-content>
+              @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )
+              <provider-form :provider="{{ json_encode($_prov) }}"
+                             :institutions="{{ json_encode($institutions) }}"
+                             :master_reports="{{ json_encode($master_reports) }}"
+                             :provider_reports="{{ json_encode($provider_reports) }}"
+                             :manager="{{ auth()->user()->hasAnyRole(['Admin','Manager']) }}"
+              ></provider-form>
+              @else
+              <provider-view :provider="{{ json_encode($_prov) }}"
+                             :institution="{{ json_encode($provider->institution->name) }}"
+                             :master_reports="{{ json_encode($master_reports) }}"
+                             :provider_reports="{{ json_encode($provider_reports) }}"
+              ></provider-view>
+              @endif
+          </v-expansion-panel-content>
+        </v-expansion-panel>
     </td>
-    <td valign="top">
-        <sushi-by-inst :prov_id="{{ $provider->id }}" :institutions="{{ json_encode($sushi_insts) }}"></sushi-by-inst>
+    <td width="2%">&nbsp;</td>
+    <td width="49%" valign="top">
+      <v-expansion-panels multiple focusable :value="[0]">
+        <v-expansion-panel>
+          <v-expansion-panel-header>
+            Sushi Settings for : {{ $provider->name }}
+          </v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <sushi-by-inst :prov_id="{{ $provider->id }}"
+                           :institutions="{{ json_encode($sushi_insts) }}"
+                           :manager="{{ auth()->user()->hasAnyRole(['Admin','Manager']) }}"
+            ></sushi-by-inst>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+      </v-expansion-panels>
     </td>
   </tr>
 </table>

@@ -6,20 +6,20 @@
             <!-- Left Side Of Navbar -->
             <ul class="navbar-nav mr-auto">
               <div v-for="item in navList">
-                <li v-if="item.children && (item.visibility=='All' || manager)" class="nav-item dropdown">
+                <li v-if="item.children && (item.role=='All' || manager)" class="nav-item dropdown">
                   <a id="navbarDropdown" class="nav-link dropdown-toggle" :href="item.url" :title="item.name"
                      role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                      {{ item.name }}<span class="caret"></span>
                   </a>
                   <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <div v-if="item.visibility=='All' || manager">
+                    <div v-if="item.role=='All' || manager">
                       <div v-for="{ url, name, index, target } in item.children" :key="index">
                         <a class="dropdown-item":href="url" :title="name" :target="target">{{ name }}</a>
                       </div>
                     </div>
                   </div>
                 </li>
-                <li v-else-if="item.visibility=='All' || manager" class="nav-item" >
+                <li v-else-if="item.role=='All' || manager" class="nav-item" >
                     <a class="nav-link" :href="item.url" :title="item.name">{{ item.name }}</a>
                 </li>
               </div>
@@ -54,7 +54,7 @@
         </div>
       </div>
   </nav>
-</template> -->
+</template>
 
 <script>
 export default {
@@ -66,49 +66,49 @@ export default {
         return {
             profile_url: '',
             navList: [
-              { url: "/", name: "Home", visibility: "All" },
-              { url: "/reports", name: "Reports", visibility: "All" },
+              { url: "/", name: "Home", role: "All" },
+              { url: "/reports", name: "Reports", role: "All" },
               {
                 url: "#",
                 name: "Settings",
-                visibility: "Manager",
+                role: "Manager",
                 children: [
                   {
                     url: "/users",
                     name: "Users",
-                    visibility: "Manager",
+                    role: "Manager",
                   },
                   {
                       url: "/providers",
                       name: "Providers",
-                      visibility: "Manager",
+                      role: "Manager",
                   },
                   {
                       url: "/institutions",
                       name: "Institutions",
-                      visibility: "Manager",
+                      role: "Manager",
                   },
                   {
                       url: "/institutiongroups",
                       name: "Groups",
-                      visibility: "Manager",
+                      role: "Manager",
                   }
                 ]
               },
               {
                 url: "#",
                 name: "Activity",
-                visibility: "All",
+                role: "All",
                 children: [
                   {
                     url: "/harvestlogs",
                     name: "Harvests",
-                    visibility: "All",
+                    role: "All",
                   },
                   {
                     url: "/alerts",
                     name: "Alerts",
-                    visibility: "All",
+                    role: "All",
                   }
                 ]
               },
@@ -117,11 +117,10 @@ export default {
     },
     mounted() {
         this.profile_url = "/users/"+this.user["id"]+"/edit";
-        console.log('Provider Component mounted.');
+        console.log('Navbar Component mounted.');
     }
 }
 </script>
 
 <style>
 </style>
-

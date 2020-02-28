@@ -80,6 +80,7 @@
         props: {
                 inst_id: { type:Number, default:0 },
                 providers: { type:Array, default: () => [] },
+                manager: { type:Number, default:0 },
                },
 
         data() {

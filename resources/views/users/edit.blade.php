@@ -59,7 +59,7 @@
         <div class="form-group">
             <strong>Institution:</strong>
             @if ( auth()->user()->hasRole('Admin') )
-                {!! Form::select('inst_id', $institutions, [], array('class' => 'form-control')) !!}
+                {!! Form::select('inst_id', $institutions, $user->inst_id, array('class' => 'form-control')) !!}
             @else
                 <span style="padding-left: 20px; display:block">
                     <input type='hidden' name='inst_id' value='{{ auth()->user()->institution->id }}' />

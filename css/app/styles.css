@@ -12,6 +12,7 @@ p.teaser {
 .details,
 .users {
 	float: left;
+	background-color: aqua;
 }
 .details {
 	width: 35%;

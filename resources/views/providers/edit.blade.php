@@ -24,43 +24,39 @@
         <v-expansion-panels multiple focusable :value="[0]">
           <v-expansion-panel>
             <v-expansion-panel-header>
-              <h3>Settings for : {{ $provider->name }} (id: {{ $provider->id }})</h3>
+              <h4>Settings for : {{ $provider->name }}</h4>
             </v-expansion-panel-header>
             <v-expansion-panel-content>
-              @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )
               <provider-form :provider="{{ json_encode($_prov) }}"
+                             :prov_inst_name="{{ json_encode($provider->institution->name) }}"
                              :institutions="{{ json_encode($institutions) }}"
                              :master_reports="{{ json_encode($master_reports) }}"
                              :provider_reports="{{ json_encode($provider_reports) }}"
                              :manager="{{ auth()->user()->hasAnyRole(['Admin','Manager']) }}"
               ></provider-form>
-              @else
-              <provider-view :provider="{{ json_encode($_prov) }}"
-                             :institution="{{ json_encode($provider->institution->name) }}"
-                             :master_reports="{{ json_encode($master_reports) }}"
-                             :provider_reports="{{ json_encode($provider_reports) }}"
-              ></provider-view>
-              @endif
-          </v-expansion-panel-content>
-        </v-expansion-panel>
-    </td>
-    <td width="2%">&nbsp;</td>
-    <td width="49%" valign="top">
-      <v-expansion-panels multiple focusable :value="[0]">
-        <v-expansion-panel>
-          <v-expansion-panel-header>
-            Sushi Settings for : {{ $provider->name }}
-          </v-expansion-panel-header>
-          <v-expansion-panel-content>
-            <sushi-by-inst :prov_id="{{ $provider->id }}"
-                           :institutions="{{ json_encode($sushi_insts) }}"
-                           :manager="{{ auth()->user()->hasAnyRole(['Admin','Manager']) }}"
-            ></sushi-by-inst>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
-      </v-expansion-panels>
-    </td>
-  </tr>
-</table>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </td>
+      <td width="2%">&nbsp;</td>
+      <td width="49%" valign="top">
+        <v-expansion-panels multiple focusable :value="[0]">
+          <v-expansion-panel>
+            <v-expansion-panel-header>
+              <h4>Sushi Settings for : {{ $provider->name }}</h4>
+            </v-expansion-panel-header>
+            <v-expansion-panel-content>
+              <sushi-by-inst :prov_id="{{ $provider->id }}"
+                             :institutions="{{ json_encode($sushi_insts) }}"
+                             :admin="{{ auth()->user()->hasRole("Admin") }}"
+                             :user_inst_id="{{ json_encode(auth()->user()->inst_id) }}"
+              ></sushi-by-inst>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </td>
+    </tr>
+  </table>
+</v-app>
 
 @endsection

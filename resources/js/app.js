@@ -23,9 +23,7 @@ Vue.component('flash', require('./components/Flash.vue').default);
 Vue.component('sushi-by-inst', require('./components/SushiByInst.vue').default);
 Vue.component('sushi-by-prov', require('./components/SushiByProv.vue').default);
 Vue.component('provider-form', require('./components/ProviderForm.vue').default);
-Vue.component('provider-view', require('./components/ProviderView.vue').default);
 Vue.component('institution-form', require('./components/InstitutionForm.vue').default);
-Vue.component('institution-view', require('./components/InstitutionView.vue').default);
 
 /**
  * Create a fresh Vue application instance with Vuetify.

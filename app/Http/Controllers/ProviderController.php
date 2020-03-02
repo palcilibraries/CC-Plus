@@ -90,7 +90,7 @@ class ProviderController extends Controller
     public function edit($id)
     {
         $provider = Provider::findOrFail($id);
-        abort_unless($provider->canManage(), 403);
+        // abort_unless($provider->canManage(), 403);
         $provider_reports = $provider->reports()->pluck('report_id')->all();
         $_prov = $provider->toArray();
 

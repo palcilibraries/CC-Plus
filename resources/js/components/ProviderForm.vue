@@ -1,73 +1,110 @@
 <template>
   <div>
     <span class="form-good" role="alert" v-text="confirm"></span>
-    <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
-      <v-container grid-list-xl>
-        <v-row>
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-switch v-model="form.is_active" label="Active?"></v-switch>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-select
-                :items="institutions"
-                v-model="form.inst_id"
-                value="provider.inst_id"
-                label="Serves"
-                item-text="name"
-                item-value="id"
-                outlined
-            ></v-select>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL:" outlined></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-subheader v-text="'Run Harvests Monthly on Day'"></v-subheader>
-            <v-text-field v-model="form.day_of_month"
-                          label="Day-of-Month"
-                          hide-details
-                          single-line
-                          type="number"
-            ></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-subheader v-text="'Reports to Harvest'"></v-subheader>
-            <v-select
-                :items="master_reports"
-                v-model="form.master_reports"
-                value="provider_reports"
-                item-text="name"
-                item-value="id"
-                label="Select"
-                multiple
-                chips
-                hint="Choose which reports to harvest"
-                persistent-hint
-            ></v-select>
-          </v-col>
-        </v-row>
-        <v-row align="center">
-          <v-flex md3>
-            <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
-                Save Provider Settings
-            </v-btn>
-          </v-flex>
-        </v-row>
-      </v-container>
-    </form>
+    <div v-if="manager">
+      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
+        <v-container grid-list-xl>
+          <v-row>
+            <v-col class="d-flex" cols="12" sm="6">
+              <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col class="d-flex" cols="12" sm="6">
+              <v-switch v-model="form.is_active" label="Active?"></v-switch>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col class="d-flex" cols="12" sm="6">
+              <v-select
+                  :items="institutions"
+                  v-model="form.inst_id"
+                  value="provider.inst_id"
+                  label="Serves"
+                  item-text="name"
+                  item-value="id"
+                  outlined
+              ></v-select>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col class="d-flex" cols="12" sm="6">
+              <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL:" outlined></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col class="d-flex" cols="12" sm="6">
+              <v-subheader v-text="'Run Harvests Monthly on Day'"></v-subheader>
+              <v-text-field v-model="form.day_of_month"
+                            label="Day-of-Month"
+                            hide-details
+                            single-line
+                            type="number"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col class="d-flex" cols="12" sm="6">
+              <v-subheader v-text="'Reports to Harvest'"></v-subheader>
+              <v-select
+                  :items="master_reports"
+                  v-model="form.master_reports"
+                  value="provider_reports"
+                  item-text="name"
+                  item-value="id"
+                  label="Select"
+                  multiple
+                  chips
+                  hint="Choose which reports to harvest"
+                  persistent-hint
+              ></v-select>
+            </v-col>
+          </v-row>
+          <v-row align="center">
+            <v-flex md3>
+              <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
+                  Save Provider Settings
+              </v-btn>
+            </v-flex>
+          </v-row>
+        </v-container>
+      </form>
+    </div>
+    <!-- not manager -->
+    <div v-else>
+      <v-simple-table>
+        <tr>
+          <td>Name </td>
+          <td>{{ provider.name }}</td>
+        </tr>
+        <tr>
+          <td>Serves </td>
+          <td>{{ inst_name }}</td>
+        </tr>
+        <tr>
+          <td>Status </td>
+          <td>{{ status }}</td>
+        </tr>
+        <tr>
+          <td>Service URL </td>
+          <td>{{ provider.server_url_r5 }}</td>
+        </tr>
+        <tr>
+          <td>FTE </td>
+          <td>{{ provider.day_of_month }}</td>
+        </tr>
+        <tr>
+          <td>Reports </td>
+          <td>
+            <template v-for="report in master_reports">
+              <v-chip v-if="provider_reports.includes(report.id)">
+                {{ report.name }}
+              </v-chip>
+            </template>
+          </td>
+        </tr>
+      </v-simple-table>
+    </div>
   </div>
 </template>
 
@@ -78,6 +115,7 @@
     export default {
         props: {
                 provider: { type:Object, default: () => {} },
+                prov_inst_name: { type:String, default: '' },
                 institutions: { type:Array, default: () => [] },
                 master_reports: { type:Array, default: () => [] },
                 provider_reports: { type:Array, default: () => [] },
@@ -87,7 +125,9 @@
         data() {
             return {
                 confirm: '',
-                status: ['Inactive','Active'],
+                status: '',
+                statusvals: ['Inactive','Active'],
+                inst_name: '',
                 form: new window.Form({
                     name: this.provider.name,
                     inst_id: this.provider.inst_id,
@@ -108,6 +148,12 @@
             },
         },
         mounted() {
+            if ( this.provider.inst_id==1 ) {
+                this.inst_name="Entire Consortium";
+            } else {
+                this.inst_name = this.prov_inst_name;
+            }
+            this.status=this.statusvals[this.provider.is_active];
             console.log('Provider Component mounted.');
         }
     }

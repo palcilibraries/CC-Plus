@@ -1,72 +1,93 @@
 <template>
   <div>
-      <span class="form-info" role="alert" v-text="warning"></span>
+    <span class="form-info" role="alert" v-text="warning"></span>
+    <div v-if="admin">
       <span class="form-good" role="alert" v-text="confirm"></span>
-    <v-app sushiform>
-        <form method="POST" action='/sushisettings-update' @submit.prevent="formSubmit"
-              @keydown="form.errors.clear($event.target.name)">
-            <input v-model="prov_id" type="hidden">
-            <v-container grid-list-xl>
-                <v-row align="center">
-                    <v-col class="d-flex" cols="12" sm="6">
-                        <v-select
-                            :items="institutions"
-                            v-model="form.inst_id"
-                            @change="onInstChange"
-                            label="Institution"
-                            placeholder="Choose an Institution"
-                            item-text="name"
-                            item-value="id"
+      <form method="POST" action='/sushisettings-update' @submit.prevent="formSubmit"
+            @keydown="form.errors.clear($event.target.name)">
+        <input v-model="prov_id" type="hidden">
+        <v-container grid-list-xl>
+          <v-row align="center">
+            <v-col class="d-flex" cols="12" sm="6">
+              <v-select
+                    :items="institutions"
+                    v-model="form.inst_id"
+                    @change="onInstChange"
+                    label="Institution"
+                    placeholder="Choose an Institution"
+                    item-text="name"
+                    item-value="id"
+                    outlined
+              ></v-select>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col class="d-flex" cols="12" sm="6">
+              <v-text-field v-model="form.customer_id"
+                            label="Customer ID"
+                            id="customer_id"
                             outlined
-                        ></v-select>
-                    </v-col>
-                </v-row>
-                <v-row>
-                    <v-col class="d-flex" cols="12" sm="6">
-                        <v-text-field v-model="form.customer_id"
-                                      label="Customer ID"
-                                      id="customer_id"
-                                      outlined
-                        ></v-text-field>
-                    </v-col>
-                </v-row>
-                <v-row>
-                    <v-col class="d-flex" cols="12" sm="6">
-                        <v-text-field v-model="form.requestor_id"
-                                      label="Requestor ID"
-                                      id="requestor_id"
-                                      outlined
-                        ></v-text-field>
-                    </v-col>
-                </v-row>
-                <v-row>
-                    <v-col class="d-flex" cols="12" sm="6">
-                        <v-text-field v-model="form.API_key"
-                                      label="API Key"
-                                      id="API_key"
-                                      outlined
-                        ></v-text-field>
-                    </v-col>
-                </v-row>
-                <v-row>
-                    <v-flex md3>
-                        <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Save Sushi Settings</v-btn>
-                    </v-flex>
-                </v-row>
-                <v-row v-if="allowTest">
-                    <v-flex md3>
-                        <br />
-                        <v-btn small color="primary" type="button" @click="testSettings">Test Settings</v-btn>
-                        <br />
-                    </v-flex>
-                </v-row>
-                <v-row v-if="showTest">
-                    <div>{{ testStatus }}</div>
-                    <div v-for="row in testData">{{ row }}</div>
-                </v-row>
-            </v-container>
-        </form>
-    </v-app>
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col class="d-flex" cols="12" sm="6">
+              <v-text-field v-model="form.requestor_id"
+                            label="Requestor ID"
+                            id="requestor_id"
+                            outlined
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col class="d-flex" cols="12" sm="6">
+              <v-text-field v-model="form.API_key"
+                            label="API Key"
+                            id="API_key"
+                            outlined
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-flex md3>
+              <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Save Sushi Settings</v-btn>
+            </v-flex>
+          </v-row>
+          <v-row v-if="allowTest">
+            <v-flex md3>
+              <br />
+              <v-btn small color="primary" type="button" @click="testSettings">Test Settings</v-btn>
+              <br />
+            </v-flex>
+          </v-row>
+          <v-row v-if="showTest">
+            <div>{{ testStatus }}</div>
+            <div v-for="row in testData">{{ row }}</div>
+          </v-row>
+        </v-container>
+      </form>
+    </div>
+    <!-- not admin -->
+    <div v-else>
+      <v-simple-table>
+        <tr>
+          <td>Institution </td>
+          <td>{{ inst_name }}</td>
+        </tr>
+        <tr>
+          <td>Customer ID </td>
+          <td>{{ form.customer_id }}</td>
+        </tr>
+        <tr>
+          <td>Requestor ID </td>
+          <td>{{ form.requestor_id }}</td>
+        </tr>
+        <tr>
+          <td>API Key </td>
+          <td>{{ form.API_key }}</td>
+        </tr>
+      </v-simple-table>
+    </div>
   </div>
 </template>
 
@@ -80,7 +101,8 @@
         props: {
                 prov_id: { type:Number, default:0 },
                 institutions: { type:Array, default: () => [] },
-                manager: { type:Number, default:0 },
+                admin: { type:Number, default:0 },
+                user_inst_id: { type:Number, default:0 },
                },
 
         data() {
@@ -89,6 +111,7 @@
                 confirm: '',
                 testData: '',
                 testStatus: '',
+                inst_name: '',
                 allowTest: false,
                 showTest: false,
                 form: new window.Form({
@@ -152,6 +175,25 @@
 
         mounted() {
             this.form.prov_id = this.prov_id;
+            if ( !this.admin ) {
+                var self = this;
+                axios.get('/sushisettings-refresh'+'?inst_id='+this.user_inst_id+'&'+'prov_id='+this.prov_id)
+                     .then( function(response) {
+                         if ( response.data.settings.count === 0) {
+                             self.warning = 'No settings defined; only an admin or manager is allowed to set these.';
+                             self.form.customer_id = '<Undefined>';
+                             self.form.requestor_id = '<Undefined>';
+                             self.form.API_key = '<Undefined>';
+                         } else {
+                             self.form.customer_id = response.data.settings.customer_id;
+                             self.form.requestor_id = response.data.settings.requestor_id;
+                             self.form.API_key = response.data.settings.API_key;
+                         }
+                     })
+                     .catch(error => {});
+            }
+            var user_inst=this.institutions[0];
+            this.inst_name = user_inst.name;
             console.log('Sushi-by-Inst Component mounted.')
         }
     }

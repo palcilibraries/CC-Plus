@@ -38,6 +38,6 @@ Route::post('/update-alert-status', 'AlertController@updateStatus')->middleware(
 Route::post('/alert-dash-refresh', 'AlertController@dashRefresh')->middleware('auth');
 Route::post('/alertsettings-fields-refresh', 'AlertSettingController@fieldsRefresh')
      ->middleware(['auth','role:Admin,Manager']);
-Route::get('/sushisettings-refresh', 'SushiSettingController@show')->middleware(['auth','role:Admin,Manager']);
+Route::get('/sushisettings-refresh', 'SushiSettingController@show')->middleware(['auth']);
 Route::post('/sushisettings-update', 'SushiSettingController@update')->middleware(['auth','role:Admin,Manager']);
 Route::get('/sushisettings-test', 'SushiSettingController@test')->middleware(['auth','role:Admin,Manager']);

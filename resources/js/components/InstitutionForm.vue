@@ -1,5 +1,6 @@
 <template>
   <div>
+    <div v-if="manager">
     <span class="form-good" role="alert" v-text="confirm"></span>
     <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
       <v-container grid-list-xl>
@@ -73,6 +74,42 @@
         </v-row>
       </v-container>
     </form>
+    </div>
+    <!-- not manager -->
+    <div v-else>
+      <v-simple-table>
+        <tr>
+          <td>Name </td>
+          <td>{{ institution.name }}</td>
+        </tr>
+        <tr>
+          <td>Type </td>
+          <td>{{ inst_type }}</td>
+        </tr>
+        <tr>
+          <td>Status </td>
+          <td>{{ status }}</td>
+        </tr>
+        <tr>
+          <td>FTE </td>
+          <td>{{ institution.fte }}</td>
+        </tr>
+        <tr>
+          <td>Groups </td>
+          <td>
+            <template v-for="group in all_groups">
+              <v-chip v-if="inst_groups.includes(group.id)">
+                {{ group.name }}
+              </v-chip>
+            </template>
+          </td>
+        </tr>
+        <tr>
+          <td>Notes </td>
+          <td>{{ institution.notes }}</td>
+        </tr>
+      </v-simple-table>
+    </div>
   </div>
 </template>
 
@@ -93,6 +130,9 @@
         data() {
             return {
                 confirm: '',
+                status: '',
+                inst_type: '',
+                statusvals: ['Inactive','Active'],
                 form: new window.Form({
                     name: this.institution.name,
                     is_active: this.institution.is_active,
@@ -113,6 +153,8 @@
             },
         },
         mounted() {
+            this.status=this.statusvals[this.institution.is_active];
+            this.inst_type = this.types[this.institution.type_id].name;
             console.log('Institution Component mounted.');
         }
     }

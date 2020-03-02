@@ -30,9 +30,8 @@ class SushiSettingController extends Controller
        // Validate form inputs
         $this->validate($request, ['inst_id' => 'required', 'prov_id' => 'required']);
 
-       // If user cannot change the settings, don't display them either
-        $institution = Institution::findOrFail($request->inst_id);
-        if (!$institution->canManage()) {
+        // User must be an admin or member-of inst to get the settings
+        if (!(auth()->user()->hasRole("Admin") || auth()->user()->inst_id==$request->inst_id)) {
             return response()->json(array('error' => 'Invalid request'));
         }
 

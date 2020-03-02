@@ -24,30 +24,22 @@
         <v-expansion-panels multiple focusable :value="[0]">
           <v-expansion-panel>
             <v-expansion-panel-header>
-              <h3>Settings for : {{ $institution->name }} (id: {{ $institution->id }})</h3>
+              <h4>Settings for : {{ $institution->name }}</h4>
             </v-expansion-panel-header>
             <v-expansion-panel-content>
-            @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )
-            <institution-form :institution="{{ json_encode($_inst) }}"
-                              :providers="{{ json_encode($providers) }}"
-                              :types="{{ json_encode($types) }}"
-                              :inst_groups="{{ json_encode($inst_groups) }}"
-                              :all_groups="{{ json_encode($all_groups) }}"
-                              :manager="{{ auth()->user()->hasAnyRole(['Admin','Manager']) }}"
-            ></institution-form>
-            @else
-            <institution-view :institution="{{ json_encode($_inst) }}"
-                              :inst_type="{{ json_encode($institution->institutionType->name) }}"
-                              :inst_groups="{{ json_encode($inst_groups) }}"
-                              :all_groups="{{ json_encode($all_groups) }}"
-            ></institution-view>
-            @endif
+              <institution-form :institution="{{ json_encode($_inst) }}"
+                                :providers="{{ json_encode($providers) }}"
+                                :types="{{ json_encode($types) }}"
+                                :inst_groups="{{ json_encode($inst_groups) }}"
+                                :all_groups="{{ json_encode($all_groups) }}"
+                                :manager="{{ auth()->user()->hasAnyRole(['Admin','Manager']) }}"
+              ></institution-form>
             </v-expansion-panel-content>
           </v-expansion-panel>
           @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )
           <v-expansion-panel>
             <v-expansion-panel-header>
-              User Accounts for : {{ $institution->name }}
+              <h4>User Accounts for : {{ $institution->name }}</h4>
             </v-expansion-panel-header>
             <v-expansion-panel-content>
               <p>hello world.</p>
@@ -61,12 +53,12 @@
         <v-expansion-panels multiple focusable :value="[0]">
           <v-expansion-panel>
             <v-expansion-panel-header>
-              Sushi Settings for : {{ $institution->name }}
+              <h4>Sushi Settings for : {{ $institution->name }}</h4>
             </v-expansion-panel-header>
             <v-expansion-panel-content>
               <sushi-by-prov :inst_id="{{ $institution->id }}"
                              :providers="{{ json_encode($providers) }}"
-                             :manager="{{ auth()->user()->hasAnyRole(['Admin','Manager']) }}"
+                             :admin="{{ auth()->user()->hasRole("Admin") }}"
               ></sushi-by-inst>
             </v-expansion-panel-content>
           </v-expansion-panel>

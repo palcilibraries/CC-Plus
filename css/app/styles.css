@@ -2,3 +2,36 @@ p.teaser {
     text-indent: 30px;
     }
 
+
+/* adding stuff here */
+.related-list {
+	width: 100%;
+	clear: both;
+	padding-top: 1em;
+}
+.details,
+.users {
+	float: left;
+}
+.details {
+	width: 35%;
+}
+.users {
+	width: 65%;
+	padding-left: 3em;
+}
+.section-title,
+.section-action {
+	display: inline-block;
+}
+.section-action {
+	margin-left: 1em;
+}
+.page-header {
+	float: left;
+	width: 80%;
+}
+.page-action {
+	float: left;
+	width: 20%;
+}

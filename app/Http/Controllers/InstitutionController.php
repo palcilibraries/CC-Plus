@@ -76,9 +76,10 @@ class InstitutionController extends Controller
      */
     public function show($id)
     {
-        abort_unless(auth()->user()->inst_id==$id, 403);
+        if (!auth()->user()->hasRole("Admin")) {
+            abort_unless(auth()->user()->inst_id==$id, 403);
+        }
         $institution = Institution::findOrFail($id);
-        // abort_unless($institution->canManage(), 403);
         $groups = InstitutionGroup::pluck('name', 'id');
 
         return view('institutions.show', compact('institution', 'groups'));
@@ -92,9 +93,10 @@ class InstitutionController extends Controller
      */
     public function edit($id)
     {
-        abort_unless(auth()->user()->inst_id==$id, 403);
+        if (!auth()->user()->hasRole("Admin")) {
+            abort_unless(auth()->user()->inst_id==$id, 403);
+        }
         $institution = Institution::findOrFail($id);
-        // abort_unless($institution->canManage(), 403);
         $_inst = $institution->toArray();
 
         $types = InstitutionType::get(['id','name'])->toArray();

@@ -9,9 +9,11 @@
         <div class="pull-left">
             <h2>Provider Management</h2>
         </div>
+        @if (auth()->user()->hasAnyRole(['Admin','Manager']))
         <div class="pull-right">
             <a class="btn btn-success" href="{{ route('providers.create') }}"> Create New Provider</a>
         </div>
+        @endif
     </div>
 </div>
 
@@ -36,10 +38,10 @@
     <td>{{ $inst_name }}</td>
     <td>{{ $provider->day_of_month }}</td>
     <td>
+      <a class="btn btn-info" href="{{ route('providers.show',$provider->id) }}">Show</a>
+      <a class="btn btn-primary" href="{{ route('providers.edit',$provider->id) }}">Edit</a>
       @if ( auth()->user()->hasRole('Admin') ||
            (auth()->user()->hasRole('Manager') && $provider->inst_id == auth()->user()->inst_id) )
-        <a class="btn btn-info" href="{{ route('providers.show',$provider->id) }}">Show</a>
-        <a class="btn btn-primary" href="{{ route('providers.edit',$provider->id) }}">Edit</a>
         {!! Form::open(['method' => 'DELETE','route' => ['providers.destroy', $provider->id],
                                    'style'=>'display:inline']) !!}
           {!! Form::submit('Delete', ['class' => 'btn btn-danger']) !!}

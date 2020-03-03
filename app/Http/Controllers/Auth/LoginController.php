@@ -79,7 +79,8 @@ class LoginController extends Controller
 
     protected function authenticated(Request $request, $user)
     {
-
+        $user->last_login = now();
+        $user->save();
         if ($user->hasRole("GlobalAdmin")) {
             return redirect('/globaladmin');
         } elseif ($user->hasRole("Admin") || $user->hasRole("Manager")) {

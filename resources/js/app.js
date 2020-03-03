@@ -20,6 +20,7 @@ import Vuetify from '@/js/plugins/vuetify';
 // files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default));
 Vue.component('topnav', require('./components/Navbar.vue').default);
 Vue.component('flash', require('./components/Flash.vue').default);
+Vue.component('user-form', require('./components/UserForm.vue').default);
 Vue.component('sushi-by-inst', require('./components/SushiByInst.vue').default);
 Vue.component('sushi-by-prov', require('./components/SushiByProv.vue').default);
 Vue.component('provider-form', require('./components/ProviderForm.vue').default);

@@ -29,7 +29,7 @@
           </v-row>
           <v-row>
             <v-col class="d-flex" cols="12" sm="6">
-              <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL:" outlined></v-text-field>
+              <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined></v-text-field>
             </v-col>
           </v-row>
           <v-row>

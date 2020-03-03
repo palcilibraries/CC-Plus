@@ -9,9 +9,11 @@
         <div class="pull-left">
             <h2>Institution Management</h2>
         </div>
+        @if (auth()->user()->hasRole("Admin"))
         <div class="pull-right">
             <a class="btn btn-success" href="{{ route('institutions.create') }}"> Create New Institution</a>
         </div>
+        @endif
     </div>
 </div>
 

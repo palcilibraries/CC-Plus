@@ -191,9 +191,9 @@
                          }
                      })
                      .catch(error => {});
+                var user_inst=this.institutions[0];
+                this.inst_name = user_inst.name;
             }
-            var user_inst=this.institutions[0];
-            this.inst_name = user_inst.name;
             console.log('Sushi-by-Inst Component mounted.')
         }
     }

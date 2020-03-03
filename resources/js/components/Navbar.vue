@@ -12,10 +12,10 @@
                      {{ item.name }}<span class="caret"></span>
                   </a>
                   <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <div v-if="item.role=='All' || manager">
-                      <div v-for="{ url, name, index, target } in item.children" :key="index">
-                        <a class="dropdown-item":href="url" :title="name" :target="target">{{ name }}</a>
-                      </div>
+                    <div v-for="child in item.children">
+                      <li v-if="child.role=='All' || manager">
+                        <a class="dropdown-item":href="child.url" :title="child.name">{{ child.name }}</a>
+                      </li>
                     </div>
                   </div>
                 </li>
@@ -71,7 +71,7 @@ export default {
               {
                 url: "#",
                 name: "Settings",
-                role: "Manager",
+                role: "All",
                 children: [
                   {
                     url: "/users",
@@ -81,12 +81,12 @@ export default {
                   {
                       url: "/providers",
                       name: "Providers",
-                      role: "Manager",
+                      role: "All",
                   },
                   {
                       url: "/institutions",
                       name: "Institutions",
-                      role: "Manager",
+                      role: "All",
                   },
                   {
                       url: "/institutiongroups",

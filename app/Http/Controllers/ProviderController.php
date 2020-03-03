@@ -23,7 +23,7 @@ class ProviderController extends Controller
      */
     public function index(Request $request)
     {
-        $this->middleware(['role:Admin,Manager']);
+        // $this->middleware(['role:Admin,Manager']);
         $data = Provider::orderBy('name', 'ASC')->paginate(10);
 
         return view('providers.index', compact('data'))
@@ -37,14 +37,15 @@ class ProviderController extends Controller
      */
     public function create()
     {
-        $this->middleware(['role:Admin,Manager']);
-        if (auth()->user()->hasRole("Admin")) {
+        // $this->middleware(['role:Admin,Manager']);
+        $this->middleware(['role:Admin']);
+        // if (auth()->user()->hasRole("Admin")) {
             $institutions = Institution::pluck('name', 'id')->all();
             $institutions[1] = 'Entire Consortium';
-        } else {    // is manager
-            $institutions = Institution::where('id', '=', auth()->user()->inst_id)
-                                       ->pluck('name', 'id');
-        }
+        // } else {    // is manager
+        //     $institutions = Institution::where('id', '=', auth()->user()->inst_id)
+        //                                ->pluck('name', 'id');
+        // }
         return view('providers.create', compact('institutions'));
     }
 
@@ -56,8 +57,8 @@ class ProviderController extends Controller
      */
     public function store(Request $request)
     {
-        $this->middleware(['role:Admin,Manager']);
-
+        // $this->middleware(['role:Admin,Manager']);
+        $this->middleware(['role:Admin']);
         $this->validate($request, [
           'name' => 'required'
         ]);
@@ -77,7 +78,7 @@ class ProviderController extends Controller
     public function show($id)
     {
         $provider = Provider::findOrFail($id);
-        abort_unless($provider->canManage(), 403);
+        // abort_unless($provider->canManage(), 403);
         return view('providers.show', compact('provider'));
     }
 
@@ -90,7 +91,10 @@ class ProviderController extends Controller
     public function edit($id)
     {
         $provider = Provider::findOrFail($id);
-        // abort_unless($provider->canManage(), 403);
+        // Limit access to edit form for inst-specific providers
+        if ($provider->inst_id!=1 && $provider->inst_id!=auth()->user()->inst_id) {
+           abort_unless($provider->canManage(), 403);
+        }
         $provider_reports = $provider->reports()->pluck('report_id')->all();
         $_prov = $provider->toArray();
 

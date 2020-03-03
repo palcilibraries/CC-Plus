@@ -124,14 +124,18 @@ class UserController extends Controller
 
         // Admin gets a select-box of institutions, otherwise just the users' inst
         if (auth()->user()->hasRole('Admin')) {
-            $institutions = Institution::pluck('name', 'id')->all();
+            // $institutions = Institution::pluck('name', 'id')->all();
+            $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
         } else {
+            // $institutions = Institution::where('id', '=', auth()->user()->inst_id)
+            //                            ->pluck('name', 'id');
             $institutions = Institution::where('id', '=', auth()->user()->inst_id)
-                                       ->pluck('name', 'id');
+                                       ->get(['id','name'])->toArray();
         }
 
         // Set choices for roles; disallow choosing roles higher current user's max role
-        $roles = Role::where('id', '<=', auth()->user()->maxRole())->pluck('name', 'id');
+        // $roles = Role::where('id', '<=', auth()->user()->maxRole())->pluck('name', 'id');
+        $roles = Role::where('id', '<=', auth()->user()->maxRole())->get(['name', 'id'])->toArray();
         $user_roles = $user->roles()->pluck('role_id')->all();
 
         return view('users.edit', compact('user', 'roles', 'user_roles', 'institutions'));
@@ -153,7 +157,7 @@ class UserController extends Controller
         $this->validate($request, [
             'name' => 'required',
             'email' => 'required|email|unique:consodb.users,email,' . $id,
-            'password' => 'same:confirm-password',
+            'password' => 'same:confirm_pass',
             'roles' => 'required',
             'inst_id' => 'required'
         ]);
@@ -162,7 +166,12 @@ class UserController extends Controller
         if (empty($input['password'])) {
             $input = array_except($input, array('password'));
         }
-        $input = array_except($input, array('confirm-password'));
+        $input = array_except($input, array('confirm_pass'));
+
+        // Only admins can change inst_id
+        if (!auth()->user()->hasRole("Admin")) {
+            $input['inst_id'] = auth()->user()->inst_id;
+        }
 
         // Update the record and assign roles
         $user->update($input);
@@ -173,8 +182,8 @@ class UserController extends Controller
             }
         }
 
-        return redirect()->route('users.index')
-                         ->with('success', 'User updated successfully');
+        // return redirect()->route('users.index')
+        //                  ->with('success', 'User updated successfully');
     }
 
     /**

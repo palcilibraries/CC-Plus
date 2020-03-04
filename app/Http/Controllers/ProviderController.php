@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use DB;
 use App\Provider;
 use App\Institution;
 use App\Report;
@@ -23,11 +24,15 @@ class ProviderController extends Controller
      */
     public function index(Request $request)
     {
-        // $this->middleware(['role:Admin,Manager']);
-        $data = Provider::orderBy('name', 'ASC')->paginate(10);
+        $p_table = config('database.connections.consodb.database') . ".providers";
+        $i_table = config('database.connections.consodb.database') . ".institutions";
+        $data = DB::table($p_table.' as prv')
+                             ->join($i_table .' as inst', 'inst.id', '=', 'prv.inst_id')
+                             ->orderBy('prov_name', 'ASC')
+                             ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
+                                    'prv.inst_id','inst.name as inst_name','day_of_month']);
 
-        return view('providers.index', compact('data'))
-             ->with('i', ($request->input('page', 1) - 1) * 10);
+        return view('providers.index', compact('data'));
     }
 
     /**

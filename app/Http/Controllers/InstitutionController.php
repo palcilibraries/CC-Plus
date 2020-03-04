@@ -24,13 +24,28 @@ class InstitutionController extends Controller
      */
     public function index(Request $request)
     {
-        // $this->middleware(['role:Admin,Manager']);
         $groups = InstitutionGroup::pluck('name', 'id');
         if (auth()->user()->hasRole("Admin")) { // show them all
-            $data = Institution::orderBy('name', 'ASC')->paginate(5);
-            return view('institutions.index', compact('data', 'groups'))
-               ->with('i', ($request->input('page', 1) - 1) * 10);
-        } else {    // is manager, load the edit view
+            $institutions = Institution::orderBy('name', 'ASC')->get();
+            $data = array();
+            foreach ($institutions as $inst) {
+                $_groups = "";
+                foreach ($inst->institutionGroups()->get() as $group) {
+                    $_groups .= $group->name . ", ";
+                }
+                $_groups = rtrim(trim($_groups),',');
+                $i_data = array(
+                    "id" => $inst->id,
+                    "name" => $inst->name,
+                    "type" => $inst->institutionType->name,
+                    "is_active" => $inst->is_active,
+                    "groups" => $_groups
+                );
+                $data[] = $i_data;
+            }
+            return view('institutions.index', compact('data'));
+
+        } else {    // not admin, load the edit view for user's inst
             return redirect()->route('institutions.edit', auth()->user()->inst_id);
         }
     }

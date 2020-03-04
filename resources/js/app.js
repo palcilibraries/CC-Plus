@@ -21,10 +21,13 @@ import Vuetify from '@/js/plugins/vuetify';
 Vue.component('topnav', require('./components/Navbar.vue').default);
 Vue.component('flash', require('./components/Flash.vue').default);
 Vue.component('user-form', require('./components/UserForm.vue').default);
+Vue.component('user-data-table', require('./components/UserDataTable.vue').default);
 Vue.component('sushi-by-inst', require('./components/SushiByInst.vue').default);
 Vue.component('sushi-by-prov', require('./components/SushiByProv.vue').default);
 Vue.component('provider-form', require('./components/ProviderForm.vue').default);
+Vue.component('provider-data-table', require('./components/ProviderDataTable.vue').default);
 Vue.component('institution-form', require('./components/InstitutionForm.vue').default);
+Vue.component('institution-data-table', require('./components/InstitutionDataTable.vue').default);
 
 /**
  * Create a fresh Vue application instance with Vuetify.

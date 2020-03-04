@@ -31,16 +31,34 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $this->middleware(['role:Admin,Manager']);
-        $roles = Role::pluck('name')->all();
-
         if (auth()->user()->hasRole("Admin")) {
-            $data = User::orderBy('ID', 'ASC')->paginate(5);
+            $users = User::orderBy('id', 'ASC')->get();
         } else {    // is manager
-            $data = User::orderBy('ID', 'ASC')->where('inst_id', '=', auth()->user()->inst_id)->paginate(5);
+            $users = User::orderBy('ID', 'ASC')->where('inst_id', '=', auth()->user()->inst_id)->get();
         }
 
-        return view('users.index', compact('data', 'roles'))
-               ->with('i', ($request->input('page', 1) - 1) * 10);
+        // Store data elements and roles in an array that simplifies them for Vue
+        $data = array();
+        foreach ($users as $user) {
+            $_roles = "";
+            foreach ($user->roles()->get() as $role) {
+                $_roles .= $role->name . ", ";
+            }
+            $_roles = rtrim(trim($_roles),',');
+            $u_data = array(
+                "id" => $user->id,
+                "name" => $user->name,
+                "inst" => $user->institution->name,
+                "inst_id" => $user->inst_id,
+                "is_active" => $user->is_active,
+                "email" => $user->email,
+                "roles" => $_roles,
+                "last_login" => $user->last_login
+            );
+            $data[] = $u_data;
+        }
+
+        return view('users.index', compact('data'));
     }
 
     /**
@@ -124,11 +142,8 @@ class UserController extends Controller
 
         // Admin gets a select-box of institutions, otherwise just the users' inst
         if (auth()->user()->hasRole('Admin')) {
-            // $institutions = Institution::pluck('name', 'id')->all();
             $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
         } else {
-            // $institutions = Institution::where('id', '=', auth()->user()->inst_id)
-            //                            ->pluck('name', 'id');
             $institutions = Institution::where('id', '=', auth()->user()->inst_id)
                                        ->get(['id','name'])->toArray();
         }
@@ -161,7 +176,6 @@ class UserController extends Controller
             'roles' => 'required',
             'inst_id' => 'required'
         ]);
-        $request['is_active'] = isset($request['is_active']) ? 1 : 0;
         $input = $request->all();
         if (empty($input['password'])) {
             $input = array_except($input, array('password'));

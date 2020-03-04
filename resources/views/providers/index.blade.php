@@ -1,56 +1,26 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="col-lg-12 margin-tb">
-  <a href="{{ route('admin') }}"><< Back</a>
-</div>
 <div class="row">
-    <div class="col-lg-12 margin-tb">
-        <div class="pull-left">
-            <h2>Provider Management</h2>
-        </div>
-        @if (auth()->user()->hasAnyRole(['Admin','Manager']))
-        <div class="pull-right">
-            <a class="btn btn-success" href="{{ route('providers.create') }}"> Create New Provider</a>
-        </div>
-        @endif
+  <div class="col-lg-12 margin-tb">
+    <div class="pull-left">
+      @if (auth()->user()->hasRole("Admin"))
+      <h2>{{ session('ccp_con_key','') }} : Providers</h2>
+      @else
+      <h2>Providers</h2>
+      @endif
     </div>
+    @if (auth()->user()->hasAnyRole(['Admin','Manager']))
+    <div class="pull-right">
+      <a class="btn btn-success" href="{{ route('providers.create') }}"> Create New Provider</a>
+    </div>
+    @endif
+  </div>
 </div>
-
 @if ($message = Session::get('success'))
 <flash class="alert-flash" message="{{ $message }}"></flash>
 @endif
-
-<table class="table table-bordered">
- <tr>
-   <th>Provider</th>
-   <th>Status</th>
-   <th>Serves</th>
-   <th>Harvest Day</th>
-   <th width="280px">Action</th>
- </tr>
-
- @foreach ($data as $key => $provider)
-  <?php $inst_name = ($provider->institution->id == 1) ? "Entire Consortium" : $provider->institution->name; ?>
-  <tr>
-    <td>{{ $provider->name }}</td>
-    <td>{{ $provider->is_active ? 'Active' : 'Inactive' }}</td>
-    <td>{{ $inst_name }}</td>
-    <td>{{ $provider->day_of_month }}</td>
-    <td>
-      <a class="btn btn-info" href="{{ route('providers.show',$provider->id) }}">Show</a>
-      <a class="btn btn-primary" href="{{ route('providers.edit',$provider->id) }}">Edit</a>
-      @if ( auth()->user()->hasRole('Admin') ||
-           (auth()->user()->hasRole('Manager') && $provider->inst_id == auth()->user()->inst_id) )
-        {!! Form::open(['method' => 'DELETE','route' => ['providers.destroy', $provider->id],
-                                   'style'=>'display:inline']) !!}
-          {!! Form::submit('Delete', ['class' => 'btn btn-danger']) !!}
-        {!! Form::close() !!}
-      @endif
-    </td>
-  </tr>
- @endforeach
-</table>
-
-{!! $data->render() !!}
+<v-app>
+  <provider-data-table :providers="{{ json_encode($data) }}"></provider-data-table>
+</v-app>
 @endsection

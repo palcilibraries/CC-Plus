@@ -10,11 +10,6 @@ use Hash;
 //Enables us to output flash messaging
 use Session;
 
-// auth()->id()  : helper function returns an ID
-// auth()->user() : returns a full user instance
-// auth()->check() : returns a boolean for signed in or not
-// auth()->guest() : boolean for guest (similar to check())
-
 class UserController extends Controller
 {
 
@@ -30,11 +25,12 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $this->middleware(['role:Admin,Manager']);
         if (auth()->user()->hasRole("Admin")) {
             $users = User::orderBy('id', 'ASC')->get();
-        } else {    // is manager
+        } else if (auth()->user()->hasRole("Manager")) {    // is manager
             $users = User::orderBy('ID', 'ASC')->where('inst_id', '=', auth()->user()->inst_id)->get();
+        } else {
+            abort(403, 'Forbidden');
         }
 
         // Store data elements and roles in an array that simplifies them for Vue
@@ -68,8 +64,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        $this->middleware(['role:Admin,Manager']);
-        // Disallow choosing roles higher current user's max role
+        abort_unless(auth()->user()->hasRole(['Admin','Manager']), 403);
         $roles = Role::where('id', '<=', auth()->user()->maxRole())->pluck('name', 'id');
 
         if (auth()->user()->hasRole("Admin")) {
@@ -90,8 +85,9 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-
-        $this->middleware(['role:Admin,Manager']);
+        if (!auth()->user()->hasRole(['Admin','Manager'])) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        }
         $this->validate($request, [
             'name' => 'required',
             'email' => 'required|email|unique:consodb.users,email',
@@ -111,8 +107,7 @@ class UserController extends Controller
             $user->roles()->attach($r);
         }
 
-        return redirect()->route('users.index')
-                        ->with('success', 'User created successfully');
+        return response()->json(['result' => true, 'msg' => 'User successfully created']);
     }
 
     /**
@@ -166,7 +161,9 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        abort_unless($user->canManage(), 403);
+        if (!$user->canManage()) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        }
 
         // Validate form inputs
         $this->validate($request, [
@@ -195,9 +192,7 @@ class UserController extends Controller
                 $user->roles()->attach($r);
             }
         }
-
-        // return redirect()->route('users.index')
-        //                  ->with('success', 'User updated successfully');
+        return response()->json(['result' => true, 'msg' => 'User settings successfully updated']);
     }
 
     /**
@@ -209,15 +204,14 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        abort_unless($user->canManage(), 403);
-
-        if (auth()->id() == $id) {
-            abort(403, 'Suicide not authorized; find an Admin or Manager to assist you.');
+        if (!$user->canManage()) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
-
+        if (auth()->id() == $id) {
+            return response()->json(['result' => false,
+                                     'msg' => 'Suicide forbidden (403); have an Admin or Manager assist you.']);
+        }
         $user->delete();
-
-        return redirect()->route('users.index')
-                      ->with('success', 'User deleted successfully');
+        return response()->json(['result' => true, 'msg' => 'User successfully deleted']);
     }
 }

@@ -1,22 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-@if (count($errors) > 0)
-  <div class="alert alert-danger">
-    <strong>Whoops!</strong> There were some problems with your input.<br><br>
-    <ul>
-       @foreach ($errors->all() as $error)
-         <li>{{ $error }}</li>
-       @endforeach
-    </ul>
-  </div>
-@endif
-
-<table width="100%">
-  <tr>
-    <td align="center"><div style="display:none; color:red;" id="notice"></div></td>
-  </tr>
-</table>
 <v-app institutionform>
   <table width="100%">
     <tr>
@@ -58,5 +42,4 @@
     </tr>
   </table>
 </v-app>
-
 @endsection

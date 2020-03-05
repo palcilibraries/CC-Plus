@@ -7,8 +7,9 @@ require('./bootstrap');
 
 import Vue from 'vue';
 
-// Plugins
+// Plugins and state store
 import Vuetify from '@/js/plugins/vuetify';
+import { store } from '@/js/plugins/store.js';
 
 /**
  * The following block of code may be used to recursively scan for
@@ -34,5 +35,6 @@ Vue.component('institution-data-table', require('./components/InstitutionDataTab
  */
 const app = new Vue({
     vuetify: Vuetify,
+    store,
     el: '#app',
 });

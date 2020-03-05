@@ -11,9 +11,6 @@
     </div>
   </div>
 </div>
-@if ($message = Session::get('success'))
-<flash class="alert-flash" message="{{ $message }}"></flash>
-@endif
 <v-app>
   <institution-data-table :institutions="{{ json_encode($data) }}"></institution-data-table>
 </v-app>

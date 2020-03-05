@@ -1,7 +1,5 @@
 <template>
   <div>
-    <span class="form-good" role="alert" v-text="confirm"></span>
-    <span class="form-info" role="alert" v-text="warning"></span>
     <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
       <v-container grid-list-md>
         <v-row>
@@ -83,6 +81,8 @@
           </v-flex>
         </v-row>
       </v-container>
+      <span class="form-good" role="alert" v-text="success"></span>
+      <span class="form-fail" role="alert" v-text="failure"></span>
     </form>
   </div>
 </template>
@@ -102,8 +102,8 @@
                },
         data() {
             return {
-                confirm: '',
-                warning: '',
+                success: '',
+                failure: '',
                 status: '',
                 statusvals: ['Inactive','Active'],
                 inst_name: '',
@@ -130,13 +130,19 @@
         },
         methods: {
             formSubmit (event) {
+                this.success = '';
+                this.failure = '';
                 var self = this;
                 if (self.form.password!=self.form.confirm_pass) {
-                    self.warning = 'Passwords do not match! Please re-enter';
+                    self.failure = 'Passwords do not match! Please re-enter';
                 }
                 this.form.patch('/users/'+self.user['id'])
                     .then( function(response) {
-                        self.confirm = 'User settings updated.';
+                        if (response.result) {
+                            self.success = response.msg;
+                        } else {
+                            self.failure = response.msg;
+                        }
                     });
             },
         },
@@ -160,5 +166,13 @@
     border: 1px solid transparent;
     border-radius: 0.25rem;
     color: green;
+}
+.form-fail {
+    position: relative;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    color: red;
 }
 </style>

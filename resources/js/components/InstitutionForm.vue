@@ -1,7 +1,6 @@
 <template>
   <div>
     <div v-if="manager">
-    <span class="form-good" role="alert" v-text="confirm"></span>
     <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
       <v-container grid-list-xl>
         <v-row>
@@ -73,6 +72,8 @@
           </v-flex>
         </v-row>
       </v-container>
+      <span class="form-good" role="alert" v-text="success"></span>
+      <span class="form-fail" role="alert" v-text="failure"></span>
     </form>
     </div>
     <!-- not manager -->
@@ -129,7 +130,8 @@
 
         data() {
             return {
-                confirm: '',
+                success: '',
+                failure: '',
                 status: '',
                 inst_type: '',
                 statusvals: ['Inactive','Active'],
@@ -145,10 +147,16 @@
         },
         methods: {
             formSubmit (event) {
+                this.success = '';
+                this.failure = '';
                 var self = this;
                 this.form.patch('/institutions/'+self.institution['id'])
                     .then( function(response) {
-                        self.confirm = 'Provider settings updated.';
+                        if (response.result) {
+                            self.success = response.msg;
+                        } else {
+                            self.failure = response.msg;
+                        }
                     });
             },
         },
@@ -168,5 +176,13 @@
     border: 1px solid transparent;
     border-radius: 0.25rem;
     color: green;
+}
+.form-fail {
+    position: relative;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    color: red;
 }
 </style>

@@ -6,20 +6,20 @@
             <!-- Left Side Of Navbar -->
             <ul class="navbar-nav mr-auto">
               <div v-for="item in navList">
-                <li v-if="item.children && (item.role=='All' || manager)" class="nav-item dropdown">
+                <li v-if="item.children && (item.role=='All' || is_manager)" class="nav-item dropdown">
                   <a id="navbarDropdown" class="nav-link dropdown-toggle" :href="item.url" :title="item.name"
                      role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                      {{ item.name }}<span class="caret"></span>
                   </a>
                   <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                     <div v-for="child in item.children">
-                      <li v-if="child.role=='All' || manager">
+                      <li v-if="child.role=='All' || is_manager">
                         <a class="dropdown-item":href="child.url" :title="child.name">{{ child.name }}</a>
                       </li>
                     </div>
                   </div>
                 </li>
-                <li v-else-if="item.role=='All' || manager" class="nav-item" >
+                <li v-else-if="item.role=='All' || is_manager" class="nav-item" >
                     <a class="nav-link" :href="item.url" :title="item.name">{{ item.name }}</a>
                 </li>
               </div>
@@ -37,7 +37,7 @@
                         {{ user["name"] }}<span class="caret"></span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                        <div v-if="manager">
+                        <div v-if="is_manager">
                             <a class="dropdown-item" href="/admin">Admin Dashboard</a>
                             <a class="dropdown-item" href="/">Reports Dashboard</a>
                         </div>
@@ -57,10 +57,11 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 export default {
     props: {
             user: { type:Object, default: () => {} },
-            manager: { type:Number, default:0 },
+            access: { type:String, default: '' },
     },
     data() {
         return {
@@ -115,7 +116,11 @@ export default {
             ]
         }
     },
+    computed: {
+      ...mapGetters(['is_manager'])
+    },
     mounted() {
+        this.$store.dispatch('updateAccess', this.access);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
         console.log('Navbar Component mounted.');
     }

@@ -22,7 +22,7 @@
         <!-- Skip <topnav> if auth()->user() is undefined... -->
         @if ( auth()->check() )
         <topnav :user="{{ json_encode(auth()->user()->toArray()) }}"
-                :manager="{{ auth()->user()->hasAnyRole(['Admin','Manager']) }}"></topnav>
+                :access="{{ json_encode(auth()->user()->maxRoleName()) }}"></topnav>
         @endif
         <main class="py-4">
             @yield('content')

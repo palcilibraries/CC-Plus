@@ -124,6 +124,13 @@ class User extends Authenticatable
         return $this->roles()->max('role_id');
     }
 
+    public function maxRoleName()
+    {
+        $_id = $this->roles()->max('role_id');
+        $role = $this->roles()->where('role_id',$_id)->first();
+        return $role->name;
+    }
+
     public function hasRole($role)
     {
         if ($this->roles()->where("name", $role)->first()) {

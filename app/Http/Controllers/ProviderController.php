@@ -7,8 +7,6 @@ use App\Provider;
 use App\Institution;
 use App\Report;
 use Illuminate\Http\Request;
-//Enables us to output flash messaging
-use Session;
 
 class ProviderController extends Controller
 {
@@ -42,15 +40,10 @@ class ProviderController extends Controller
      */
     public function create()
     {
-        // $this->middleware(['role:Admin,Manager']);
-        $this->middleware(['role:Admin']);
-        // if (auth()->user()->hasRole("Admin")) {
-            $institutions = Institution::pluck('name', 'id')->all();
-            $institutions[1] = 'Entire Consortium';
-        // } else {    // is manager
-        //     $institutions = Institution::where('id', '=', auth()->user()->inst_id)
-        //                                ->pluck('name', 'id');
-        // }
+        abort_unless(auth()->user()->hasRole("Admin"), 403);
+        $institutions = Institution::pluck('name', 'id')->all();
+        $institutions[1] = 'Entire Consortium';
+
         return view('providers.create', compact('institutions'));
     }
 
@@ -62,16 +55,16 @@ class ProviderController extends Controller
      */
     public function store(Request $request)
     {
-        // $this->middleware(['role:Admin,Manager']);
-        $this->middleware(['role:Admin']);
+        if (!auth()->user()->hasRole("Admin")) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        }
         $this->validate($request, [
           'name' => 'required'
         ]);
         $input = $request->all();
         $provider = Provider::create($input);
 
-        return redirect()->route('providers.index')
-                      ->with('success', 'Provider created successfully');
+        return response()->json(['result' => true, 'msg' => 'Provider successfully created']);
     }
 
     /**
@@ -83,7 +76,6 @@ class ProviderController extends Controller
     public function show($id)
     {
         $provider = Provider::findOrFail($id);
-        // abort_unless($provider->canManage(), 403);
         return view('providers.show', compact('provider'));
     }
 
@@ -139,7 +131,10 @@ class ProviderController extends Controller
     public function update(Request $request, $id)
     {
         $provider = Provider::findOrFail($id);
-        abort_unless($provider->canManage(), 403);
+        if (!$provider->canManage()) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        }
+
       // Validate form inputs
         $this->validate($request, [
             'name' => 'required',
@@ -156,9 +151,7 @@ class ProviderController extends Controller
                 $provider->reports()->attach($r);
             }
         }
-
-        // return redirect()->route('providers.index')
-        //                ->with('success', 'Provider updated successfully');
+        return response()->json(['result' => true, 'msg' => 'Provider settings successfully updated']);
     }
 
     /**
@@ -170,10 +163,10 @@ class ProviderController extends Controller
     public function destroy($id)
     {
         $provider = Provider::findOrFail($id);
-        abort_unless($provider->canManage(), 403);
+        if (!$provider->canManage()) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        }
         $provider->delete();
-
-        return redirect()->route('providers.index')
-                      ->with('success', 'Provider deleted successfully');
+        return response()->json(['result' => true, 'msg' => 'Provider successfully deleted']);
     }
 }

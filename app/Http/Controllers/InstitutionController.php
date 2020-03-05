@@ -7,8 +7,6 @@ use App\Institution;
 use App\InstitutionType;
 use App\InstitutionGroup;
 use App\Provider;
-//Enables us to output flash messaging
-use Session;
 
 class InstitutionController extends Controller
 {
@@ -57,7 +55,7 @@ class InstitutionController extends Controller
      */
     public function create()
     {
-        $this->middleware(['role:Admin']);
+        abort_unless(auth()->user()->hasRole("Admin"), 403);
         $types = InstitutionType::pluck('name', 'id')->all();
         $groups = InstitutionGroup::pluck('name', 'id')->all();
 
@@ -72,15 +70,16 @@ class InstitutionController extends Controller
      */
     public function store(Request $request)
     {
-        $this->middleware(['role:Admin']);
+        if (!auth()->user()->hasRole("Admin")) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        }
         $this->validate($request, [
           'name' => 'required',
         ]);
         $input = $request->all();
         $institution = Institution::create($input);
 
-        return redirect()->route('institutions.index')
-                      ->with('success', 'Institution created successfully');
+        return response()->json(['result' => true, 'msg' => 'Institution successfully created']);
     }
 
     /**
@@ -139,7 +138,9 @@ class InstitutionController extends Controller
     public function update(Request $request, $id)
     {
         $institution = Institution::findOrFail($id);
-        abort_unless($institution->canManage(), 403);
+        if (!$institution->canManage()) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        }
 
        // Validate form inputs
         $this->validate($request, [
@@ -158,8 +159,7 @@ class InstitutionController extends Controller
             }
         }
 
-        // return redirect()->route('institutions.index')
-        //                ->with('success', 'Institution updated successfully');
+        return response()->json(['result' => true, 'msg' => 'Institution settings successfully updated']);
     }
 
     /**
@@ -170,11 +170,12 @@ class InstitutionController extends Controller
      */
     public function destroy($id)
     {
-        $this->middleware(['role:Admin']);
+        if (!auth()->user()->hasRole("Admin")) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        }
         $institution = Institution::findOrFail($id);
         $institution->delete();
 
-        return redirect()->route('institutions.index')
-                      ->with('success', 'Institution deleted successfully');
+        return response()->json(['result' => true, 'msg' => 'Institution successfully deleted']);
     }
 }

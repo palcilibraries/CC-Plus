@@ -24,12 +24,24 @@ class ProviderController extends Controller
     {
         $p_table = config('database.connections.consodb.database') . ".providers";
         $i_table = config('database.connections.consodb.database') . ".institutions";
-        $data = DB::table($p_table.' as prv')
-                             ->join($i_table .' as inst', 'inst.id', '=', 'prv.inst_id')
-                             ->orderBy('prov_name', 'ASC')
-                             ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
-                                    'prv.inst_id','inst.name as inst_name','day_of_month']);
-
+       // Admins get list of all providers
+        if (auth()->user()->hasRole("Admin")) {
+            $data = DB::table($p_table.' as prv')
+                      ->join($i_table .' as inst', 'inst.id', '=', 'prv.inst_id')
+                      ->orderBy('prov_name', 'ASC')
+                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
+                             'prv.inst_id','inst.name as inst_name','day_of_month']);
+       // Otherwise, get all consortia-wide providers and those that match user's inst_id
+       // (exclude providers assigned to institutions.)
+        } else  {
+            $data = DB::table($p_table.' as prv')
+                      ->join($i_table .' as inst', 'inst.id', '=', 'prv.inst_id')
+                      ->where('prv.inst_id', 1)
+                      ->orWhere('prv.inst_id', auth()->user()->inst_id)
+                      ->orderBy('prov_name', 'ASC')
+                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
+                             'prv.inst_id','inst.name as inst_name','day_of_month']);
+        }
         return view('providers.index', compact('data'));
     }
 
@@ -87,16 +99,13 @@ class ProviderController extends Controller
      */
     public function edit($id)
     {
+       // Limit edit form access to admins and managers
+        abort_unless(auth()->user()->hasAnyRole(["Admin","Manager"]), 403);
         $provider = Provider::findOrFail($id);
-        // Limit access to edit form for inst-specific providers
-        if ($provider->inst_id!=1 && $provider->inst_id!=auth()->user()->inst_id) {
-           abort_unless($provider->canManage(), 403);
-        }
         $provider_reports = $provider->reports()->pluck('report_id')->all();
         $_prov = $provider->toArray();
 
-       // Build $institutions based on whether the provider is
-       // Inst-specific and/or whether user is admin or Manager
+       // Build $institutions based on whether the user is admin or Manager
         if (auth()->user()->hasRole("Admin")) {
             $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
             $sushi_insts = $institutions;

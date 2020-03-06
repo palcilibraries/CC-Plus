@@ -1,10 +1,8 @@
 <template>
   <div>
-    <span class="form-info" role="alert" v-text="warning"></span>
-    <span class="form-good" role="alert" v-text="confirm"></span>
     <form method="POST" action="/sushisettings-update" @submit.prevent="formSubmit"
           @keydown="form.errors.clear($event.target.name)">
-      <input v-model="inst_id" type="hidden">
+      <input v-model="inst_id" id="inst_id" type="hidden">
       <v-container grid-list-xl>
         <v-row align="center">
           <v-col class="d-flex" cols="12" sm="6">
@@ -20,7 +18,7 @@
             ></v-select>
           </v-col>
         </v-row>
-        <v-row v-if="admin">
+        <v-row v-if="is_manager || is_admin">
           <v-col class="d-flex" cols="12" sm="6">
             <v-text-field v-model="form.customer_id"
                           label="Customer ID"
@@ -33,7 +31,7 @@
           <v-col class="d-flex" cols="2">Customer ID</v-col>
           <v-col><div v-text="form.customer_id"></div></v-col>
         </v-row>
-        <v-row v-if="admin">
+        <v-row v-if="is_manager || is_admin">
           <v-col class="d-flex" cols="12" sm="6">
             <v-text-field v-model="form.requestor_id"
                           label="Requestor ID"
@@ -46,7 +44,7 @@
           <v-col class="d-flex" cols="2">Requestor ID</v-col>
           <v-col><div v-text="form.requestor_id"></div></v-col>
         </v-row>
-        <v-row v-if="admin">
+        <v-row v-if="is_manager || is_admin">
           <v-col class="d-flex" cols="12" sm="6">
             <v-text-field v-model="form.API_key"
                           label="API Key"
@@ -56,10 +54,10 @@
           </v-col>
         </v-row>
         <v-row v-else>
-            <v-col class="d-flex" cols="2">API Key</v-col>
-            <v-col><div v-text="form.API_key"></div></v-col>
+          <v-col class="d-flex" cols="2">API Key</v-col>
+          <v-col><div v-text="form.API_key"></div></v-col>
         </v-row>
-        <v-row v-if="admin">
+        <v-row v-if="is_manager || is_admin">
           <v-flex md3>
             <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Save Sushi Settings</v-btn>
           </v-flex>
@@ -76,11 +74,14 @@
           <div v-for="row in testData">{{ row }}</div>
         </v-row>
       </v-container>
+      <span class="form-info" role="alert" v-text="warning"></span>
+      <span class="form-good" role="alert" v-text="confirm"></span>
     </form>
   </div>
 </template>
 
 <script>
+    import { mapGetters } from 'vuex'
     import Form from '@/js/plugins/Form';
     import axios from 'axios';
     window.axios = axios;
@@ -90,9 +91,7 @@
         props: {
                 inst_id: { type:Number, default:0 },
                 providers: { type:Array, default: () => [] },
-                admin: { type:Number, default:0 },
                },
-
         data() {
             return {
                 warning: '',
@@ -120,39 +119,37 @@
                     });
             },
             onProvChange (prov) {
+                this.showTest = false;
                 var self = this;
-                self.showTest = false;
                 axios.get('/sushisettings-refresh'+'?prov_id='+prov+'&'+'inst_id='+this.inst_id)
                      .then( function(response) {
                          if ( response.data.settings.count === 0) {
                              self.confirm = '';
                              self.allowTest = false;
-                             if ( self.admin ) {
-                                 self.warning = 'No settings found for this provider - creating new entry.';
-                                 self.form.customer_id = '';
-                                 self.form.requestor_id = '';
-                                 self.form.API_key = '';
-                             } else {
-                                 self.warning = 'No settings defined; an admin or manager must assign these.';
-                                 self.form.customer_id = '<Undefined>';
-                                 self.form.requestor_id = '<Undefined>';
-                                 self.form.API_key = '<Undefined>';
+                             self.warning = 'No settings found for this provider';
+                             if (self.admin || self.is_manager) {
+                                 self.warning += ' - creating new entry.';
                              }
+                             self.form.customer_id = '';
+                             self.form.requestor_id = '';
+                             self.form.API_key = '';
                          } else {
                              self.form.customer_id = response.data.settings.customer_id;
                              self.form.requestor_id = response.data.settings.requestor_id;
                              self.form.API_key = response.data.settings.API_key;
                              self.warning = '';
                              self.confirm = '';
-                             if (this.admin) {
+                             if (self.is_admin || self.is_manager) {
                                  self.allowTest = true;
+                             } else {
+                                 self.allowTest = false;
                              }
                          }
                      })
                      .catch(error => {});
             },
             testSettings (event) {
-                if (!this.admin) { return; }
+                if (!(this.is_admin || this.is_manager)) { return; }
                 var self = this;
                 self.showTest = true;
                 self.testData = '';
@@ -168,6 +165,9 @@
                     })
                    .catch(error => {});
             }
+        },
+        computed: {
+          ...mapGetters(['is_admin','is_manager'])
         },
         mounted() {
             this.form.inst_id = this.inst_id;

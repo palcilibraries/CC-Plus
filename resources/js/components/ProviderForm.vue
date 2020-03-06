@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="manager">
+    <div v-if="is_admin || can_edit">
       <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
         <v-container grid-list-xl>
           <v-row>
@@ -110,6 +110,7 @@
 </template>
 
 <script>
+    import { mapGetters } from 'vuex'
     import Form from '@/js/plugins/Form';
     window.Form = Form;
 
@@ -120,7 +121,6 @@
                 institutions: { type:Array, default: () => [] },
                 master_reports: { type:Array, default: () => [] },
                 provider_reports: { type:Array, default: () => [] },
-                manager: { type:Number, default:0 },
                },
 
         data() {
@@ -130,6 +130,7 @@
                 status: '',
                 statusvals: ['Inactive','Active'],
                 inst_name: '',
+                can_edit: false,
                 form: new window.Form({
                     name: this.provider.name,
                     inst_id: this.provider.inst_id,
@@ -155,11 +156,19 @@
                     });
             },
         },
+        computed: {
+          ...mapGetters(['is_manager','is_admin','user_inst_id'])
+        },
         mounted() {
             if ( this.provider.inst_id==1 ) {
                 this.inst_name="Entire Consortium";
             } else {
                 this.inst_name = this.prov_inst_name;
+            }
+            if ( this.is_manager && this.provider.inst_id==this.user_inst_id) {
+                this.can_edit = true;
+            } else {
+                this.can_edit = false;
             }
             this.status=this.statusvals[this.provider.is_active];
             console.log('Provider Component mounted.');

@@ -24,8 +24,8 @@ class CreateAlertSettingsTable extends Migration
             $table->unsignedInteger('timespan');
             $table->timestamps();
 
-            $table->foreign('inst_id')->references('id')->on('institutions');
-            $table->foreign('field_id')->references('id')->on($global_db . '.reportfields');
+            $table->foreign('inst_id')->references('id')->on('institutions')->onDelete('cascade');
+            $table->foreign('field_id')->references('id')->on($global_db . '.reportfields')->onDelete('cascade');
         });
     }
 

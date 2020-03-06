@@ -21,8 +21,8 @@ class CreateSavedReportReportfieldTable extends Migration
             $table->integer('reportfield_id')->unsigned();
             $table->timestamps();
 
-            $table->foreign('report_id')->references('id')->on('savedreports');
-            $table->foreign('reportfield_id')->references('id')->on($global_db . '.reportfields');
+            $table->foreign('report_id')->references('id')->on('savedreports')->onDelete('cascade');
+            $table->foreign('reportfield_id')->references('id')->on($global_db . '.reportfields')->onDelete('cascade');
         });
     }
 

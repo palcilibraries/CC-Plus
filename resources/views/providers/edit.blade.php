@@ -16,7 +16,6 @@
                              :institutions="{{ json_encode($institutions) }}"
                              :master_reports="{{ json_encode($master_reports) }}"
                              :provider_reports="{{ json_encode($provider_reports) }}"
-                             :manager="{{ auth()->user()->hasAnyRole(['Admin','Manager']) }}"
               ></provider-form>
             </v-expansion-panel-content>
           </v-expansion-panel>
@@ -32,7 +31,6 @@
             <v-expansion-panel-content>
               <sushi-by-inst :prov_id="{{ $provider->id }}"
                              :institutions="{{ json_encode($sushi_insts) }}"
-                             :admin="{{ auth()->user()->hasRole("Admin") }}"
                              :user_inst_id="{{ json_encode(auth()->user()->inst_id) }}"
               ></sushi-by-inst>
             </v-expansion-panel-content>

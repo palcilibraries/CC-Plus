@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="manager">
+    <div v-if="is_manager">
     <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
       <v-container grid-list-xl>
         <v-row>
@@ -115,6 +115,7 @@
 </template>
 
 <script>
+    import { mapGetters } from 'vuex'
     import Form from '@/js/plugins/Form';
     window.Form = Form;
 
@@ -125,7 +126,6 @@
                 types: { type:Array, default: () => [] },
                 inst_groups: { type:Array, default: () => [] },
                 all_groups: { type:Array, default: () => [] },
-                manager: { type:Number, default:0 },
                },
 
         data() {
@@ -159,6 +159,9 @@
                         }
                     });
             },
+        },
+        computed: {
+          ...mapGetters(['is_manager'])
         },
         mounted() {
             this.status=this.statusvals[this.institution.is_active];

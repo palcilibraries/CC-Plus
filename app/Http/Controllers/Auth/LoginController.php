@@ -92,6 +92,7 @@ class LoginController extends Controller
 
     public function logout(Request $request) {
         Auth::logout();
+        session(['ccp_con_key' => '']);
         $request->session()->invalidate();
         return redirect('/login');
     }

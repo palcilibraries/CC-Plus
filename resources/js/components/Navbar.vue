@@ -38,8 +38,7 @@
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
                         <div v-if="is_manager">
-                            <a class="dropdown-item" href="/admin">Admin Dashboard</a>
-                            <a class="dropdown-item" href="/">Reports Dashboard</a>
+                            <a class="dropdown-item" href="/admin">Dashboard</a>
                         </div>
                         <a class="dropdown-item" :href="profile_url">Profile</a>
                         <a class="dropdown-item" href="/logout"
@@ -121,6 +120,7 @@ export default {
     },
     mounted() {
         this.$store.dispatch('updateAccess', this.access);
+        this.$store.dispatch('updateInst', this.user["inst_id"]);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
         console.log('Navbar Component mounted.');
     }

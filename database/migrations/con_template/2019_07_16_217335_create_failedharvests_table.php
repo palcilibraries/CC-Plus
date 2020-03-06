@@ -23,7 +23,7 @@ class CreateFailedHarvestsTable extends Migration
             $table->string('detail')->nullable();
             $table->timestamps();
 
-            $table->foreign('harvest_id')->references('id')->on('harvestlogs');
+            $table->foreign('harvest_id')->references('id')->on('harvestlogs')->onDelete('cascade');
             $table->foreign('error_id')->references('id')->on($global_db . '.ccplus_errors');
         });
     }

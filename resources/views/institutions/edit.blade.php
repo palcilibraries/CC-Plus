@@ -9,7 +9,7 @@
 <v-app institutionform>
   <table width="100%">
     <tr>
-      <td width="54%" valign="top">
+      <td width="53%" valign="top">
         <v-expansion-panels multiple focusable :value="[0]">
           <v-expansion-panel>
             <v-expansion-panel-header>
@@ -21,7 +21,6 @@
                                 :types="{{ json_encode($types) }}"
                                 :inst_groups="{{ json_encode($inst_groups) }}"
                                 :all_groups="{{ json_encode($all_groups) }}"
-                                :manager="{{ auth()->user()->hasAnyRole(['Admin','Manager']) }}"
               ></institution-form>
             </v-expansion-panel-content>
           </v-expansion-panel>
@@ -77,7 +76,7 @@
         </v-expansion-panels>
       </td>
       <td width="2%">&nbsp;</td>
-      <td width="44%" valign="top">
+      <td width="45%" valign="top">
         <v-expansion-panels multiple focusable :value="[0]">
           <v-expansion-panel>
             <v-expansion-panel-header>
@@ -86,7 +85,6 @@
             <v-expansion-panel-content>
               <sushi-by-prov :inst_id="{{ $institution->id }}"
                              :providers="{{ json_encode($providers) }}"
-                             :admin="{{ auth()->user()->hasRole("Admin") }}"
               ></sushi-by-inst>
             </v-expansion-panel-content>
           </v-expansion-panel>

@@ -37,7 +37,7 @@
         <v-row v-else>
           <v-col class="d-flex" cols="12" sm="6">
             <v-text-field outlined readonly label="Institution" :value="inst_name"></v-text-field>
-            <input type="hidden" id="inst_id" value="{{ user.inst_id }}"
+            <input type="hidden" id="inst_id" name="inst_id" :value="user.inst_id">
           </v-col>
         </v-row>
         <v-row>

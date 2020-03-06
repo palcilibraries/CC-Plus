@@ -22,8 +22,8 @@ class CreateSushiSettingsTable extends Migration
             $table->text('API_key')->nullable();
             $table->timestamps();
 
-            $table->foreign('inst_id')->references('id')->on('institutions');
-            $table->foreign('prov_id')->references('id')->on('providers');
+            $table->foreign('inst_id')->references('id')->on('institutions')->onDelete('cascade');
+            $table->foreign('prov_id')->references('id')->on('providers')->onDelete('cascade');
         });
     }
 

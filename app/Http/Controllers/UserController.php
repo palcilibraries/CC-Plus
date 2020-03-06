@@ -25,12 +25,11 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
+        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
         if (auth()->user()->hasRole("Admin")) {
             $users = User::orderBy('id', 'ASC')->get();
-        } else if (auth()->user()->hasRole("Manager")) {    // is manager
+        } else {    // is manager
             $users = User::orderBy('ID', 'ASC')->where('inst_id', '=', auth()->user()->inst_id)->get();
-        } else {
-            abort(403, 'Forbidden');
         }
 
         // Store data elements and roles in an array that simplifies them for Vue
@@ -64,7 +63,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        abort_unless(auth()->user()->hasRole(['Admin','Manager']), 403);
+        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
         $roles = Role::where('id', '<=', auth()->user()->maxRole())->pluck('name', 'id');
 
         if (auth()->user()->hasRole("Admin")) {
@@ -85,7 +84,7 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        if (!auth()->user()->hasRole(['Admin','Manager'])) {
+        if (!auth()->user()->hasAnyRole(['Admin','Manager'])) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
         $this->validate($request, [

@@ -20,7 +20,7 @@ class CreateReportFieldsTable extends Migration
             $table->boolean('is_alertable')->default(0);
             $table->timestamps();
 
-            $table->foreign('report_id')->references('id')->on('reports');
+            $table->foreign('report_id')->references('id')->on('reports')->onDelete('cascade');
         });
     }
 

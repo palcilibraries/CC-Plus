@@ -22,9 +22,9 @@ class CreateAlertsTable extends Migration
             $table->unsignedInteger('modified_by')->default('1');
             $table->enum('status', array('Active','Silent','Delete'))->nullable();
             $table->timestamps();
-            $table->foreign('prov_id')->references('id')->on('providers');
-            $table->foreign('alertsettings_id')->references('id')->on('alertsettings');
-            $table->foreign('harvest_id')->references('id')->on('harvestlogs');
+            $table->foreign('prov_id')->references('id')->on('providers')->onDelete('cascade');
+            $table->foreign('alertsettings_id')->references('id')->on('alertsettings')->onDelete('cascade');
+            $table->foreign('harvest_id')->references('id')->on('harvestlogs')->onDelete('cascade');
             $table->foreign('modified_by')->references('id')->on('users');
         });
     }

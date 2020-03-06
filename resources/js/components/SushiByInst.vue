@@ -1,13 +1,11 @@
 <template>
   <div>
-    <span class="form-info" role="alert" v-text="warning"></span>
-    <div v-if="admin">
-      <span class="form-good" role="alert" v-text="confirm"></span>
+    <div v-if="is_manager">
       <form method="POST" action='/sushisettings-update' @submit.prevent="formSubmit"
             @keydown="form.errors.clear($event.target.name)">
-        <input v-model="prov_id" type="hidden">
+        <input v-model="prov_id" id="prov_id" type="hidden">
         <v-container grid-list-xl>
-          <v-row align="center">
+          <v-row align="center" v-if="is_admin">
             <v-col class="d-flex" cols="12" sm="6">
               <v-select
                     :items="institutions"
@@ -19,6 +17,12 @@
                     item-value="id"
                     outlined
               ></v-select>
+            </v-col>
+          </v-row>
+          <v-row v-else>
+            <v-col class="d-flex" cols="12" sm="6">
+              <v-text-field outlined readonly label="Institution" :value="user_inst.name"></v-text-field>
+              <input type="hidden" id="inst_id" name="inst_id" :value="user_inst.id">
             </v-col>
           </v-row>
           <v-row>
@@ -66,13 +70,15 @@
           </v-row>
         </v-container>
       </form>
+      <span class="form-info" role="alert" v-text="warning"></span>
+      <span class="form-good" role="alert" v-text="confirm"></span>
     </div>
-    <!-- not admin -->
+    <!-- not manager -->
     <div v-else>
       <v-simple-table>
         <tr>
           <td>Institution </td>
-          <td>{{ inst_name }}</td>
+          <td>{{ user_inst.name }}</td>
         </tr>
         <tr>
           <td>Customer ID </td>
@@ -92,6 +98,7 @@
 </template>
 
 <script>
+    import { mapGetters } from 'vuex'
     import Form from '@/js/plugins/Form';
     import axios from 'axios';
     window.axios = axios;
@@ -101,8 +108,6 @@
         props: {
                 prov_id: { type:Number, default:0 },
                 institutions: { type:Array, default: () => [] },
-                admin: { type:Number, default:0 },
-                user_inst_id: { type:Number, default:0 },
                },
 
         data() {
@@ -111,7 +116,7 @@
                 confirm: '',
                 testData: '',
                 testStatus: '',
-                inst_name: '',
+                user_inst: {},
                 allowTest: false,
                 showTest: false,
                 form: new window.Form({
@@ -138,7 +143,10 @@
                 axios.get('/sushisettings-refresh'+'?inst_id='+inst+'&'+'prov_id='+this.prov_id)
                      .then( function(response) {
                          if ( response.data.settings.count === 0) {
-                             self.warning = 'No settings found for this institution - creating new entry.';
+                             self.warning = 'No settings found for this institution';
+                             if (self.admin || self.is_manager) {
+                                 self.warning += ' - creating new entry.';
+                             }
                              self.confirm = '';
                              self.form.customer_id = '';
                              self.form.requestor_id = '';
@@ -159,6 +167,8 @@
                 var self = this;
                 self.showTest = true;
                 self.testData = '';
+                self.warning = '';
+                self.confirm = '';
                 self.testStatus = "... Working ...";
                 axios.get('/sushisettings-test'+'?prov_id='+this.prov_id+'&'+'inst_id='+self.form.inst_id)
                      .then( function(response) {
@@ -172,18 +182,21 @@
                    .catch(error => {});
             }
         },
-
+        computed: {
+          ...mapGetters(['is_manager','is_admin'])
+        },
         mounted() {
             this.form.prov_id = this.prov_id;
-            if ( !this.admin ) {
+            if ( !this.is_admin ) {
                 var self = this;
-                axios.get('/sushisettings-refresh'+'?inst_id='+this.user_inst_id+'&'+'prov_id='+this.prov_id)
+                this.user_inst=this.institutions[0];
+                axios.get('/sushisettings-refresh'+'?inst_id='+this.user_inst.id+'&'+'prov_id='+this.prov_id)
                      .then( function(response) {
                          if ( response.data.settings.count === 0) {
-                             self.warning = 'No settings defined; only an admin or manager is allowed to set these.';
-                             self.form.customer_id = '<Undefined>';
-                             self.form.requestor_id = '<Undefined>';
-                             self.form.API_key = '<Undefined>';
+                             self.warning = 'No settings currenly assigned for this provider';
+                             self.form.customer_id = '';
+                             self.form.requestor_id = '';
+                             self.form.API_key = '';
                          } else {
                              self.form.customer_id = response.data.settings.customer_id;
                              self.form.requestor_id = response.data.settings.requestor_id;
@@ -191,8 +204,7 @@
                          }
                      })
                      .catch(error => {});
-                var user_inst=this.institutions[0];
-                this.inst_name = user_inst.name;
+                this.user_inst=this.institutions[0];
             }
             console.log('Sushi-by-Inst Component mounted.')
         }

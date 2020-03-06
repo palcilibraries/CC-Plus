@@ -26,8 +26,8 @@ class CreateHarvestLogsTable extends Migration
             $table->timestamps();
 
             $table->unique(['sushisettings_id', 'report_id', 'yearmon']);
-            $table->foreign('sushisettings_id')->references('id')->on('sushisettings');
-            $table->foreign('report_id')->references('id')->on($global_db . '.reports');
+            $table->foreign('sushisettings_id')->references('id')->on('sushisettings')->onDelete('cascade');
+            $table->foreign('report_id')->references('id')->on($global_db . '.reports')->onDelete('cascade');
         });
     }
 

@@ -93,10 +93,27 @@ class InstitutionController extends Controller
         if (!auth()->user()->hasRole("Admin")) {
             abort_unless(auth()->user()->inst_id==$id, 403);
         }
-        $institution = Institution::findOrFail($id);
-        $groups = InstitutionGroup::pluck('name', 'id');
+        // $institution = Institution::findOrFail($id);
+        // $groups = InstitutionGroup::pluck('name', 'id');
+        //
+        // return view('institutions.show', compact('institution', 'groups'));
 
-        return view('institutions.show', compact('institution', 'groups'));
+        $institution = Institution::findOrFail($id);
+        $_inst = $institution->toArray();
+        $types = InstitutionType::get(['id','name'])->toArray();
+        $all_groups = InstitutionGroup::get(['id','name'])->toArray();
+        $providers = Provider::orderBy('id', 'ASC')->get(['id','name'])->toArray();
+        $inst_groups = $institution->institutionGroups()->pluck('institution_group_id')->all();
+
+        return view('institutions.show', compact(
+            'institution',
+            '_inst',
+            'types',
+            'all_groups',
+            'inst_groups',
+            'providers'
+        ));
+
     }
 
     /**

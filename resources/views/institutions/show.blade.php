@@ -27,7 +27,7 @@
 	</div>
 	<div class="form-group">
 	  <strong>Groups:</strong>
-	  @foreach($groups as $group_id => $group_name)
+	  @foreach($inst_groups as $group_id => $group_name)
 	     @if($institution->isAMemberof($group_id))
 	        <label class="badge badge-success">{{ $group_name }} </label>
 	     @endif
@@ -49,7 +49,7 @@
 	    <strong>Notes:</strong>
 	    {{ $institution->notes }}
 	</div>
-	
+
     <institution-form :institution="{{ json_encode($_inst) }}"
                       :providers="{{ json_encode($providers) }}"
                       :types="{{ json_encode($types) }}"
@@ -108,16 +108,16 @@
 	<a href="#" class="section-action">add new</a>
     </v-expansion-panel-header>
     <v-expansion-panel-content>
-	
+
 	<div>[connect provider dropdown - shows form when selected]</div>
-	
+
 	<strong style="color:red;">grab list of only existing providers who are not yet connected to this institution</strong>
     <sushi-by-prov :inst_id="{{ $institution->id }}"
                        :providers="{{ json_encode($providers) }}"
         ></sushi-by-inst>
       </v-expansion-panel-content>
     </v-expansion-panel>
-	
+
 	<div class="provider-list">
 		<em>list of connected providers here</em>
 	</div>

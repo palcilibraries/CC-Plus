@@ -22,6 +22,7 @@ import { store } from '@/js/plugins/store.js';
 Vue.component('topnav', require('./components/Navbar.vue').default);
 Vue.component('flash', require('./components/Flash.vue').default);
 Vue.component('user-form', require('./components/UserForm.vue').default);
+Vue.component('users-by-inst', require('./components/UsersByInst.vue').default);
 Vue.component('user-data-table', require('./components/UserDataTable.vue').default);
 Vue.component('sushi-by-inst', require('./components/SushiByInst.vue').default);
 Vue.component('sushi-by-prov', require('./components/SushiByProv.vue').default);

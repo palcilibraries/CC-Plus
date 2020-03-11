@@ -36,40 +36,9 @@
                   Create New User
                 </v-btn>
               </div>
-              <v-simple-table :dense="false">
-                <template v-slot:default>
-                  <thead>
-                    <tr>
-                      <th class="text-left">Name</th>
-                      <th class="text-left">Active</th>
-                      <th class="text-left">Email</th>
-                      <!-- <th class="text-left">Roles</th> -->
-                      <th class="text-left">Last Login</th>
-                      <th class="text-left">&nbsp;</th>
-                    </tr>
-                  <thead>
-                  <tbody>
-                  @foreach ($institution->users as $key => $user)
-                    <tr>
-                      <td><a href="{{ route('users.edit',$user->id) }}">{{ $user->name }}</td>
-                      <td>{{ $user->is_active ? "Yes" : "No" }}</td>
-                      <td>{{ $user->email }}</td>
-                      <!-- <td>
-                        @foreach($user->roles as $r)
-                          <v-chip>{{ $r->name }}</v-chip>
-                        @endforeach
-                      </td> -->
-                      <td>{{ $user->last_login }}</td>
-                      <td>
-                        {!! Form::open(['method' => 'DELETE','route' => ['users.destroy', $user->id],'style'=>'display:inline']) !!}
-                          {!! Form::submit('Delete', ['class' => 'btn btn-danger']) !!}
-                        {!! Form::close() !!}
-                      </td>
-                    </tr>
-                  @endforeach
-                  </tbody>
-                </template>
-              </v-simple-table>
+              <users-by-inst :institution="{{ json_encode($_inst) }}"
+                             :users="{{ json_encode($institution->users) }}"
+              ></users-by-inst>
             </v-expansion-panel-content>
           </v-expansion-panel>
           @endif

@@ -15,12 +15,12 @@
             </v-text-field>
           </v-col>
         </v-row>
-        <v-row v-if="manager || admin">
+        <v-row v-if="is_manager || is_admin">
           <v-col class="d-flex" cols="12" sm="6">
             <v-switch v-model="form.is_active" label="Active?"></v-switch>
           </v-col>
         </v-row>
-        <v-row v-if="admin">
+        <v-row v-if="is_admin">
           <v-col class="d-flex" cols="12" sm="6">
             <v-select
                 outlined
@@ -56,7 +56,7 @@
             </v-text-field>
           </v-col>
         </v-row>
-        <v-row v-if="manager || admin">
+        <v-row v-if="is_manager || is_admin">
           <v-col class="d-flex" cols="12" sm="6">
             <v-subheader v-text="'User Roles'"></v-subheader>
             <v-select
@@ -88,6 +88,7 @@
 </template>
 
 <script>
+    import { mapGetters } from 'vuex'
     import Form from '@/js/plugins/Form';
     window.Form = Form;
 
@@ -97,8 +98,6 @@
                 roles: { type:Array, default: () => [] },
                 user_roles: { type:Array, default: () => [] },
                 institutions: { type:Array, default: () => [] },
-                manager: { type:Number, default:0 },
-                admin: { type:Number, default:0 },
                },
         data() {
             return {
@@ -146,8 +145,11 @@
                     });
             },
         },
+        computed: {
+          ...mapGetters(['is_manager','is_admin'])
+        },
         mounted() {
-            if (!this.admin) {
+            if (!this.is_admin) {
                 var user_inst=this.institutions[0];
                 this.inst_name = user_inst.name;
             }

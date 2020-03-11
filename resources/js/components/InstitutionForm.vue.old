@@ -2,8 +2,14 @@
   <div>
     <div v-if="is_manager">
     <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
-		<div class="form-field">
+      <v-container grid-list-xl>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
             <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
             <v-select
                 :items="types"
                 v-model="form.type_id"
@@ -13,10 +19,15 @@
                 item-value="id"
                 outlined
             ></v-select>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
             <v-switch v-model="form.is_active" label="Active?"></v-switch>
-		</div>
-
-		<div class="form-field"> 
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
             <v-subheader v-text="'FTE'"></v-subheader>
             <v-text-field v-model="form.fte"
                           label="FTE"
@@ -24,9 +35,10 @@
                           single-line
                           type="number"
             ></v-text-field>
-		</div>
-
-		<div class="form-field">
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
             <v-subheader v-text="'Belongs To'"></v-subheader>
             <v-select
                 :items="all_groups"
@@ -40,23 +52,26 @@
                 hint="Assign group membership for this institution"
                 persistent-hint
             ></v-select>
-		</div>
-
-		<div class="form-field">			
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12" sm="6">
             <v-textarea
                 v-model="form.notes"
                 value="institution.notes"
                 label="Notes"
                 auto-grow
             ></v-textarea>
-		</div>
-
+          </v-col>
+        </v-row>
+        <v-row align="center">
           <v-flex md3>
             <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
               Save Institution Settings
             </v-btn>
           </v-flex>
-
+        </v-row>
+      </v-container>
       <span class="form-good" role="alert" v-text="success"></span>
       <span class="form-fail" role="alert" v-text="failure"></span>
     </form>

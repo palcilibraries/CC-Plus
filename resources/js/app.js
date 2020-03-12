@@ -30,6 +30,8 @@ Vue.component('provider-form', require('./components/ProviderForm.vue').default)
 Vue.component('provider-data-table', require('./components/ProviderDataTable.vue').default);
 Vue.component('institution-form', require('./components/InstitutionForm.vue').default);
 Vue.component('institution-data-table', require('./components/InstitutionDataTable.vue').default);
+const files = require.context('./components/filters/', true, /\.vue$/i);
+files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default));
 
 /**
  * Create a fresh Vue application instance with Vuetify.

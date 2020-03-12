@@ -18,6 +18,8 @@ class CreateInstitutionInstitutiongroupTable extends Migration
               $table->integer('institution_id')->unsigned();
               $table->integer('institution_group_id')->unsigned();
               $table->timestamps();
+
+              $table->foreign('institution_id')->references('id')->on('institutions')->onDelete('cascade');
         });
     }
 

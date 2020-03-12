@@ -61,6 +61,7 @@ export default {
     props: {
             user: { type:Object, default: () => {} },
             access: { type:String, default: '' },
+            viewer: { type:Number, default: 0 },
     },
     data() {
         return {
@@ -120,8 +121,13 @@ export default {
     },
     mounted() {
         this.$store.dispatch('updateAccess', this.access);
-        this.$store.dispatch('updateInst', this.user["inst_id"]);
+        this.$store.dispatch('updateUserInst', this.user["inst_id"]);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
+        if (this.viewer) {
+            this.$store.dispatch('updateAccess', "Viewer");
+        }
+        this.$store.dispatch('updateAccess', this.access);
+
         console.log('Navbar Component mounted.');
     }
 }

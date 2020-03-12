@@ -60,8 +60,10 @@
                   axios.delete('/users/'+userid)
                        .then( (response) => {
                            if (response.data.result) {
+                               self.failure = '';
                                self.success = response.data.msg;
                            } else {
+                               self.success = '';
                                self.failure = response.data.msg;
                            }
                        })

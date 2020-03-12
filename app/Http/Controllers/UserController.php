@@ -183,12 +183,16 @@ class UserController extends Controller
             $input['inst_id'] = auth()->user()->inst_id;
         }
 
-        // Update the record and assign roles
+        // Update the user record
         $user->update($input);
-        $user->roles()->detach();
-        foreach ($request->input('roles') as $r) {
-            if (auth()->user()->maxRole() >= $r) {
-                $user->roles()->attach($r);
+
+        // Update roles (silently ignore roles if user saving their own record)
+        if (auth()->id() != $id) {
+            $user->roles()->detach();
+            foreach ($request->input('roles') as $r) {
+                if (auth()->user()->maxRole() >= $r) {
+                    $user->roles()->attach($r);
+                }
             }
         }
         return response()->json(['result' => true, 'msg' => 'User settings successfully updated']);

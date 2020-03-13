@@ -13,6 +13,8 @@
 </template>
 
 <script>
+  import { mapGetters } from 'vuex'
+  import axios from 'axios';
   export default {
     props: {
         datatypes: { type:Array, default: () => [] },
@@ -24,8 +26,23 @@
     },
     methods: {
       onChange (type) {
+        var self = this;
         this.$store.dispatch('updateDataTypeFilter', type);
+// -- Hard-wired for testing
+this.$store.dispatch('updateMasterReport', 'TR');
+// --
+        axios.post('/update-report-filters', {
+            filters: self.all_filters,
+            master_report: self.master_report,
+        })
+        .then( function(response) {
+            output = response.data;
+        })
+        .catch(error => {});
       },
+    },
+    computed: {
+      ...mapGetters(['all_filters','master_report'])
     },
   }
 </script>

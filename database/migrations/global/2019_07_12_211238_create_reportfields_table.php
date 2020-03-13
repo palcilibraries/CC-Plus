@@ -17,6 +17,7 @@ class CreateReportFieldsTable extends Migration
             $table->Increments('id');
             $table->unsignedInteger('report_id');
             $table->string('legend');
+            $table->string('filter_by')->nullable();
             $table->boolean('is_alertable')->default(0);
             $table->timestamps();
 

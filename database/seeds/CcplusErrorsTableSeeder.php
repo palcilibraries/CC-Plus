@@ -48,7 +48,6 @@ class CcplusErrorsTableSeeder extends Seeder
             ['id'=>3070, 'message'=>'Required ReportFilter Missing', 'severity'=>'Warning'],
             ['id'=>3071, 'message'=>'Required ReportAttribute Missing', 'severity'=>'Warning'],
             ['id'=>3080, 'message'=>'Limit Requested Greater than Maximum Server Limit', 'severity'=>'Warning'],
-                                     Got response code: 500 for request:
             ]);
         }
     }

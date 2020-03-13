@@ -9,12 +9,15 @@ export const store = new Vuex.Store({
       manager: false,
       viewer: false,
       user_inst_id: 0,
-      filterby: {
+      master_report: '',
+      filter_by: {
+          from_yearmon: '',
+          to_yearmon: '',
           accessmethod_id: 0,
           accesstype_id: 0,
           datatype_id: 0,
           institutiongroup_id: 0,
-          institution_id: 0,
+          inst_id: 0,
           platform_id: 0,
           provider_id: 0,
           publisher_id: 0,
@@ -40,32 +43,41 @@ export const store = new Vuex.Store({
     SET_USERINST(state, inst_id) {
         state.user_inst_id = inst_id;
     },
+    SET_MASTERREPORT(state, report) {
+        state.master_report = report;
+    },
+    SET_FROMYM(state, yearmon) {
+        state.filter_by.from_yearmon = yearmon;
+    },
+    SET_TOYM(state, yearmon) {
+        state.filter_by.to_yearmon = yearmon;
+    },
     SET_ACCESSMETHOD_FILTER(state, method_id) {
-        state.filterby.accessmethod_id = method_id;
+        state.filter_by.accessmethod_id = method_id;
     },
     SET_ACCESSTYPE_FILTER(state, type_id) {
-        state.filterby.accesstype_id = type_id;
+        state.filter_by.accesstype_id = type_id;
     },
     SET_DATATYPE_FILTER(state, type_id) {
-        state.filterby.datatype_id = type_id;
+        state.filter_by.datatype_id = type_id;
     },
     SET_INSTGROUP_FILTER(state, group_id) {
-        state.filterby.institutiongroup_id = group_id;
+        state.filter_by.institutiongroup_id = group_id;
     },
     SET_INSTITUTION_FILTER(state, inst_id) {
-        state.filterby.institution_id = inst_id;
+        state.filter_by.inst_id = inst_id;
     },
     SET_PLATFORM_FILTER(state, plat_id) {
-        state.filterby.platform_id = plat_id;
+        state.filter_by.platform_id = plat_id;
     },
     SET_PROVIDER_FILTER(state, prov_id) {
-        state.filterby.provider_id = prov_id;
+        state.filter_by.provider_id = prov_id;
     },
     SET_PUBLISHER_FILTER(state, pub_id) {
-        state.filterby.publisher_id = pub_id;
+        state.filter_by.publisher_id = pub_id;
     },
     SET_SECTIONTYPE_FILTER(state, type_id) {
-        state.filterby.sectiontype_id = type_id;
+        state.filter_by.sectiontype_id = type_id;
     },
   },
   actions: {
@@ -74,6 +86,15 @@ export const store = new Vuex.Store({
     },
     updateUserInst({ commit }, inst_id) {
       commit('SET_USERINST', inst_id);
+    },
+    updateMasterReport({ commit }, report) {
+      commit('SET_MASTERREPORT', report);
+    },
+    updateFromYM({ commit }, yearmon) {
+      commit('SET_FROMYM', yearmon);
+    },
+    updateToYM({ commit }, yearmon) {
+      commit('SET_TOYM', yearmon);
     },
     updateAccessMethodFilter({ commit }, method_id) {
       commit('SET_ACCESSMETHOD_FILTER', method_id);
@@ -116,32 +137,44 @@ export const store = new Vuex.Store({
     user_inst_id: state => {
       return state.user_inst_id
     },
-    filterby_accessmethod_id: state => {
-      return state.filterby.accessmethod_id
+    master_report: state => {
+      return state.master_report
     },
-    filterby_accesstype_id: state => {
-      return state.filterby.accesstype_id
+    all_filters: state => {
+        return state.filter_by
     },
-    filterby_datatype_id: state => {
-      return state.filterby.datatype_id
+    filter_by_from_yearmon: state => {
+        return state.filter_by.from_yearmon
     },
-    filterby_institutiongroup_id: state => {
-      return state.filterby.institutiongroup_id
+    filter_by_to_yearmon: state => {
+        return state.filter_by.to_yearmon
     },
-    filterby_institution_id: state => {
-      return state.filterby.institution_id
+    filter_by_accessmethod_id: state => {
+      return state.filter_by.accessmethod_id
     },
-    filterby_platform_id: state => {
-      return state.filterby.platform_id
+    filter_by_accesstype_id: state => {
+      return state.filter_by.accesstype_id
     },
-    filterby_provider_id: state => {
-      return state.filterby.provider_id
+    filter_by_datatype_id: state => {
+      return state.filter_by.datatype_id
     },
-    filterby_publisher_id: state => {
-      return state.filterby.publisher_id
+    filter_by_institutiongroup_id: state => {
+      return state.filter_by.institutiongroup_id
     },
-    filterby_sectiontype_id: state => {
-      return state.filterby.sectiontype_id
+    filter_by_institution_id: state => {
+      return state.filter_by.inst_id
+    },
+    filter_by_platform_id: state => {
+      return state.filter_by.platform_id
+    },
+    filter_by_provider_id: state => {
+      return state.filter_by.provider_id
+    },
+    filter_by_publisher_id: state => {
+      return state.filter_by.publisher_id
+    },
+    filter_by_sectiontype_id: state => {
+      return state.filter_by.sectiontype_id
     },
   },
 });

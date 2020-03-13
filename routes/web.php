@@ -34,6 +34,7 @@ Route::get('/alerts', 'AlertController@index')->name('alerts')->middleware('auth
 Route::get('/reports', 'ReportController@index')->name('reports.usage')->middleware('auth');
 Route::get('/reports/view', 'ReportController@view')->name('reports.view')->middleware('auth');
 Route::get('/reports/{id}', 'ReportController@show')->name('reports.show')->middleware('auth');
+Route::post('/update-report-filters', 'ReportController@updateFilters')->middleware(['auth']);
 Route::post('/update-alert-status', 'AlertController@updateStatus')->middleware(['auth','role:Admin,Manager']);
 Route::post('/alert-dash-refresh', 'AlertController@dashRefresh')->middleware('auth');
 Route::post('/alertsettings-fields-refresh', 'AlertSettingController@fieldsRefresh')

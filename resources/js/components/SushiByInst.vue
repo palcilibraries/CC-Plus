@@ -101,8 +101,8 @@
     import { mapGetters } from 'vuex'
     import Form from '@/js/plugins/Form';
     import axios from 'axios';
-    window.axios = axios;
     window.Form = Form;
+    // window.axios = axios;
 
     export default {
         props: {

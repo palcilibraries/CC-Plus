@@ -50,6 +50,7 @@
                       :types="{{ json_encode($types) }}"
                       :inst_groups="{{ json_encode($inst_groups) }}"
                       :all_groups="{{ json_encode($all_groups) }}"
+	></institution-form>
     </div>
 
           @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )

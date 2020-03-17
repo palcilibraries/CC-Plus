@@ -38,14 +38,10 @@ class ReportFieldsTableSeeder extends Seeder
 
            // TR Report info and optional fields
             DB::table($table)->insert(['id' =>  9,'report_id' => 1,'legend' => 'Title']);
-            DB::table($table)->insert(['id' => 10,'report_id' => 1,'legend' => 'Provider',
-                                       'filter_by' => 'provider_id']);
-            DB::table($table)->insert(['id' => 11,'report_id' => 1,'legend' => 'Publisher',
-                                       'filter_by' => 'publisher_id']);
-            DB::table($table)->insert(['id' => 12,'report_id' => 1,'legend' => 'Platform',
-                                       'filter_by' => 'platform_id']);
-            DB::table($table)->insert(['id' => 13,'report_id' => 1,'legend' => 'Institution',
-                                       'filter_by' => 'inst_id']);
+            DB::table($table)->insert(['id' => 10,'report_id' => 1,'legend' => 'Provider']);
+            DB::table($table)->insert(['id' => 11,'report_id' => 1,'legend' => 'Publisher']);
+            DB::table($table)->insert(['id' => 12,'report_id' => 1,'legend' => 'Platform']);
+            DB::table($table)->insert(['id' => 13,'report_id' => 1,'legend' => 'Institution']);
             DB::table($table)->insert(['id' => 14,'report_id' => 1,'legend' => 'DOI']);
             DB::table($table)->insert(['id' => 15,'report_id' => 1,'legend' => 'Proprietary ID']);
             DB::table($table)->insert(['id' => 16,'report_id' => 1,'legend' => 'URI']);
@@ -53,14 +49,10 @@ class ReportFieldsTableSeeder extends Seeder
             DB::table($table)->insert(['id' => 18,'report_id' => 1,'legend' => 'ISBN']);
             DB::table($table)->insert(['id' => 19,'report_id' => 1,'legend' => 'Print ISSN']);
             DB::table($table)->insert(['id' => 20,'report_id' => 1,'legend' => 'Online ISSN']);
-            DB::table($table)->insert(['id' => 21,'report_id' => 1,'legend' => 'Data Type',
-                                       'filter_by' => 'datatype_id']);
-            DB::table($table)->insert(['id' => 22,'report_id' => 1,'legend' => 'Section Type',
-                                       'filter_by' => 'sectiontype_id']);
-            DB::table($table)->insert(['id' => 23,'report_id' => 1,'legend' => 'Access Type',
-                                       'filter_by' => 'accesstype_id']);
-            DB::table($table)->insert(['id' => 24,'report_id' => 1,'legend' => 'Access Method',
-                                       'filter_by' => 'accessmethod_id']);
+            DB::table($table)->insert(['id' => 21,'report_id' => 1,'legend' => 'Data Type']);
+            DB::table($table)->insert(['id' => 22,'report_id' => 1,'legend' => 'Section Type']);
+            DB::table($table)->insert(['id' => 23,'report_id' => 1,'legend' => 'Access Type']);
+            DB::table($table)->insert(['id' => 24,'report_id' => 1,'legend' => 'Access Method']);
             DB::table($table)->insert(['id' => 25,'report_id' => 1,'legend' => 'Reporting Period Total']);
 
            // DR Report alertable fields
@@ -88,19 +80,13 @@ class ReportFieldsTableSeeder extends Seeder
                                        'legend' => 'No License']);
            // DR Report Info and Optional fields
             DB::table($table)->insert(['id' => 37,'report_id' => 2,'legend' => 'Database']);
-            DB::table($table)->insert(['id' => 38,'report_id' => 2,'legend' => 'Provider',
-                                       'filter_by' => 'provider_id']);
-            DB::table($table)->insert(['id' => 39,'report_id' => 2,'legend' => 'Publisher',
-                                       'filter_by' => 'publisher_id']);
-            DB::table($table)->insert(['id' => 40,'report_id' => 2,'legend' => 'Platform',
-                                       'filter_by' => 'platform_id']);
-            DB::table($table)->insert(['id' => 41,'report_id' => 2,'legend' => 'Institution',
-                                       'filter_by' => 'inst_id']);
+            DB::table($table)->insert(['id' => 38,'report_id' => 2,'legend' => 'Provider']);
+            DB::table($table)->insert(['id' => 39,'report_id' => 2,'legend' => 'Publisher']);
+            DB::table($table)->insert(['id' => 40,'report_id' => 2,'legend' => 'Platform']);
+            DB::table($table)->insert(['id' => 41,'report_id' => 2,'legend' => 'Institution']);
             DB::table($table)->insert(['id' => 42,'report_id' => 2,'legend' => 'Proprietary ID']);
-            DB::table($table)->insert(['id' => 43,'report_id' => 2,'legend' => 'Data Type',
-                                       'filter_by' => 'datatype_id']);
-            DB::table($table)->insert(['id' => 44,'report_id' => 2,'legend' => 'Access Method',
-                                       'filter_by' => 'accessmethod_id']);
+            DB::table($table)->insert(['id' => 43,'report_id' => 2,'legend' => 'Data Type']);
+            DB::table($table)->insert(['id' => 44,'report_id' => 2,'legend' => 'Access Method']);
             DB::table($table)->insert(['id' => 45,'report_id' => 2,'legend' => 'Reporting Period Total']);
 
            // PR Report alertable fields
@@ -120,14 +106,10 @@ class ReportFieldsTableSeeder extends Seeder
                                        'legend' => 'Unique Title Requests']);
            // PR Report Info and Optional fields
             DB::table($table)->insert(['id' => 53,'report_id' => 3,'legend' => 'Platform']);
-            DB::table($table)->insert(['id' => 54,'report_id' => 3,'legend' => 'Provider',
-                                       'filter_by' => 'provider_id']);
-            DB::table($table)->insert(['id' => 55,'report_id' => 3,'legend' => 'Institution',
-                                       'filter_by' => 'inst_id']);
-            DB::table($table)->insert(['id' => 56,'report_id' => 3,'legend' => 'Data Type',
-                                       'filter_by' => 'datatype_id']);
-            DB::table($table)->insert(['id' => 57,'report_id' => 3,'legend' => 'Access Method',
-                                       'filter_by' => 'accessmethod_id']);
+            DB::table($table)->insert(['id' => 54,'report_id' => 3,'legend' => 'Provider']);
+            DB::table($table)->insert(['id' => 55,'report_id' => 3,'legend' => 'Institution']);
+            DB::table($table)->insert(['id' => 56,'report_id' => 3,'legend' => 'Data Type']);
+            DB::table($table)->insert(['id' => 57,'report_id' => 3,'legend' => 'Access Method']);
             DB::table($table)->insert(['id' => 58,'report_id' => 3,'legend' => 'Reporting Period Total']);
 
            // IR Report alertable fields
@@ -137,14 +119,10 @@ class ReportFieldsTableSeeder extends Seeder
                                        'legend' => 'Unique Item Requests']);
            // IR Report Info and Optional fields
             DB::table($table)->insert(['id' => 61,'report_id' => 4,'legend' => 'Item']);
-            DB::table($table)->insert(['id' => 62,'report_id' => 4,'legend' => 'Provider',
-                                       'filter_by' => 'provider_id']);
-            DB::table($table)->insert(['id' => 63,'report_id' => 4,'legend' => 'Publisher',
-                                       'filter_by' => 'publisher_id']);
-            DB::table($table)->insert(['id' => 64,'report_id' => 4,'legend' => 'Platform',
-                                       'filter_by' => 'platform_id']);
-            DB::table($table)->insert(['id' => 65,'report_id' => 4,'legend' => 'Institution',
-                                       'filter_by' => 'inst_id']);
+            DB::table($table)->insert(['id' => 62,'report_id' => 4,'legend' => 'Provider']);
+            DB::table($table)->insert(['id' => 63,'report_id' => 4,'legend' => 'Publisher']);
+            DB::table($table)->insert(['id' => 64,'report_id' => 4,'legend' => 'Platform']);
+            DB::table($table)->insert(['id' => 65,'report_id' => 4,'legend' => 'Institution']);
             DB::table($table)->insert(['id' => 66,'report_id' => 4,'legend' => 'Authors']);
             DB::table($table)->insert(['id' => 67,'report_id' => 4,'legend' => 'Publication Date']);
             DB::table($table)->insert(['id' => 68,'report_id' => 4,'legend' => 'Article Version']);
@@ -175,13 +153,10 @@ class ReportFieldsTableSeeder extends Seeder
             DB::table($table)->insert(['id' => 93,'report_id' => 4,'legend' => 'Component Print ISSN']);
             DB::table($table)->insert(['id' => 94,'report_id' => 4,'legend' => 'Component Online ISSN']);
             DB::table($table)->insert(['id' => 95,'report_id' => 4,'legend' => 'Component URI']);
-            DB::table($table)->insert(['id' => 96,'report_id' => 4,'legend' => 'Data Type',
-                                       'filter_by' => 'datatype_id']);
+            DB::table($table)->insert(['id' => 96,'report_id' => 4,'legend' => 'Data Type']);
             DB::table($table)->insert(['id' => 97,'report_id' => 4,'legend' => 'YOP']);
-            DB::table($table)->insert(['id' => 98,'report_id' => 4,'legend' => 'Access Type',
-                                       'filter_by' => 'accesstype_id']);
-            DB::table($table)->insert(['id' => 99,'report_id' => 4,'legend' => 'Access Method',
-                                       'filter_by' => 'accessmethod_id']);
+            DB::table($table)->insert(['id' => 98,'report_id' => 4,'legend' => 'Access Type']);
+            DB::table($table)->insert(['id' => 99,'report_id' => 4,'legend' => 'Access Method']);
             DB::table($table)->insert(['id' => 100,'report_id' => 4,'legend' => 'Reporting Period Total']);
         }
     }

@@ -83,4 +83,10 @@ class Report extends Model
        // Get and return matching fields
         return ReportField::whereIn('id', $field_ids)->get();
     }
+
+    public function reportFilters()
+    {
+        return $this->hasMany('App\ReportFilter');
+    }
+
 }

@@ -9,20 +9,31 @@ export const store = new Vuex.Store({
       manager: false,
       viewer: false,
       user_inst_id: 0,
-      master_report: '',
+      master_id: 0,
       filter_by: {
           from_yearmon: '',
           to_yearmon: '',
+          // filters < 0 : means column is inactive, no need to refresh when other filters change
+          // filters = 0 : means column is active, no filter applied
+          // filters > 0 : means column is being filtered by the given ID
           accessmethod_id: 0,
           accesstype_id: 0,
           datatype_id: 0,
           institutiongroup_id: 0,
           inst_id: 0,
-          platform_id: 0,
-          provider_id: 0,
-          publisher_id: 0,
+          plat_id: 0,
+          prov_id: 0,
           sectiontype_id: 0
       },
+      options: {
+          accessmethods: [],
+          accesstypes: [],
+          datatypes: [],
+          institutions: [],
+          providers: {},
+          platforms: {},
+          sectiontypes: {}
+      }
   },
   mutations: {
     SET_ACCESS(state, access) {
@@ -43,8 +54,8 @@ export const store = new Vuex.Store({
     SET_USERINST(state, inst_id) {
         state.user_inst_id = inst_id;
     },
-    SET_MASTERREPORT(state, report) {
-        state.master_report = report;
+    SET_MASTERID(state, report_id) {
+        state.master_id = report_id;
     },
     SET_FROMYM(state, yearmon) {
         state.filter_by.from_yearmon = yearmon;
@@ -68,16 +79,34 @@ export const store = new Vuex.Store({
         state.filter_by.inst_id = inst_id;
     },
     SET_PLATFORM_FILTER(state, plat_id) {
-        state.filter_by.platform_id = plat_id;
+        state.filter_by.plat_id = plat_id;
     },
     SET_PROVIDER_FILTER(state, prov_id) {
-        state.filter_by.provider_id = prov_id;
-    },
-    SET_PUBLISHER_FILTER(state, pub_id) {
-        state.filter_by.publisher_id = pub_id;
+        state.filter_by.prov_id = prov_id;
     },
     SET_SECTIONTYPE_FILTER(state, type_id) {
         state.filter_by.sectiontype_id = type_id;
+    },
+    SET_ACCESSMETHOD_OPTIONS(state, options) {
+        state.options.accessmethods = options;
+    },
+    SET_ACCESSTYPE_OPTIONS(state, options) {
+        state.options.accesstypes = options;
+    },
+    SET_DATATYPE_OPTIONS(state, options) {
+        state.options.datatypes = options;
+    },
+    SET_INSTITUTION_OPTIONS(state, options) {
+        state.options.institutions = options;
+    },
+    SET_PLATFORM_OPTIONS(state, options) {
+        state.options.platforms = options;
+    },
+    SET_PROVIDER_OPTIONS(state, options) {
+        state.options.providers = options;
+    },
+    SET_SECTIONTYPE_OPTIONS(state, options) {
+        state.options.sectiontypes = options;
     },
   },
   actions: {
@@ -87,8 +116,8 @@ export const store = new Vuex.Store({
     updateUserInst({ commit }, inst_id) {
       commit('SET_USERINST', inst_id);
     },
-    updateMasterReport({ commit }, report) {
-      commit('SET_MASTERREPORT', report);
+    updateMasterId({ commit }, report_id) {
+      commit('SET_MASTERID', report_id);
     },
     updateFromYM({ commit }, yearmon) {
       commit('SET_FROMYM', yearmon);
@@ -117,11 +146,29 @@ export const store = new Vuex.Store({
     updateProviderFilter({ commit }, prov_id) {
       commit('SET_PROVIDER_FILTER', prov_id);
     },
-    updatePublisherFilter({ commit }, pub_id) {
-      commit('SET_PUBLISHER_FILTER', pub_id);
-    },
     updateSectionTypeFilter({ commit }, type_id) {
       commit('SET_SECTIONTYPE_FILTER', type_id);
+    },
+    updateAccessMethodOptions({ commit }, methods) {
+      commit('SET_ACCESSMETHOD_OPTIONS', methods);
+    },
+    updateAccessTypeOptions({ commit }, types) {
+      commit('SET_ACCESSTYPE_OPTIONS', types);
+    },
+    updateDataTypeOptions({ commit }, types) {
+      commit('SET_DATATYPE_OPTIONS', types);
+    },
+    updateInstitutionOptions({ commit }, insts) {
+      commit('SET_INSTITUTION_OPTIONS', insts);
+    },
+    updatePlatformOptions({ commit }, plats) {
+      commit('SET_PLATFORM_OPTIONS', plats);
+    },
+    updateProviderOptions({ commit }, provs) {
+      commit('SET_PROVIDER_OPTIONS', provs);
+    },
+    updateSectionTypeOptions({ commit }, types) {
+      commit('SET_SECTIONTYPE_OPTIONS', types);
     },
   },
   getters: {
@@ -137,8 +184,8 @@ export const store = new Vuex.Store({
     user_inst_id: state => {
       return state.user_inst_id
     },
-    master_report: state => {
-      return state.master_report
+    master_id: state => {
+      return state.master_id
     },
     all_filters: state => {
         return state.filter_by
@@ -170,11 +217,32 @@ export const store = new Vuex.Store({
     filter_by_provider_id: state => {
       return state.filter_by.provider_id
     },
-    filter_by_publisher_id: state => {
-      return state.filter_by.publisher_id
-    },
     filter_by_sectiontype_id: state => {
       return state.filter_by.sectiontype_id
+    },
+    all_options: state => {
+        return state.options
+    },
+    accessmethod_options: state => {
+      return state.options.accessmethods
+    },
+    accesstype_options: state => {
+      return state.options.accesstypes
+    },
+    datatype_options: state => {
+      return state.options.datatypes
+    },
+    institution_options: state => {
+      return state.options.institutions
+    },
+    platform_options: state => {
+      return state.options.platforms
+    },
+    provider_options: state => {
+      return state.options.providers
+    },
+    sectiontype_options: state => {
+      return state.options.sectiontypes
     },
   },
 });

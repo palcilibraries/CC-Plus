@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
           ReportsTableSeeder::class,
           ReportFieldsTableSeeder::class,
+          ReportFiltersTableSeeder::class,
           InstitutionTypesTableSeeder::class,
           InstitutionsTableSeeder::class,
           RolesTableSeeder::class,

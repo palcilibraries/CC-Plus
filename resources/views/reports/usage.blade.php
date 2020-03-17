@@ -27,7 +27,6 @@
       @endif
       <platform-filter :platforms="{{ json_encode($platforms) }}"></platform-filter>
       <provider-filter :providers="{{ json_encode($providers) }}"></provider-filter>
-      <publisher-filter :publishers="{{ json_encode($publishers) }}"></publisher-filter>
   </div>
   <div>
       <!-- report-data-table -->

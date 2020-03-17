@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateReportFieldsTable extends Migration
+class CreateReportFiltersTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,12 @@ class CreateReportFieldsTable extends Migration
      */
     public function up()
     {
-        Schema::create('reportfields', function (Blueprint $table) {
+        Schema::create('reportfilters', function (Blueprint $table) {
             $table->Increments('id');
             $table->unsignedInteger('report_id');
-            $table->string('legend');
-            $table->boolean('is_alertable')->default(0);
+            $table->boolean('is_global')->default(0);
+            $table->string('table_name');
+            $table->string('report_column');
             $table->timestamps();
 
             $table->foreign('report_id')->references('id')->on('reports')->onDelete('cascade');

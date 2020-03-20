@@ -36,9 +36,7 @@
                   Create New User
                 </v-btn>
               </div>
-              <users-by-inst :institution="{{ json_encode($_inst) }}"
-                             :users="{{ json_encode($institution->users) }}"
-              ></users-by-inst>
+              <users-by-inst :users="{{ json_encode($institution->users) }}"></users-by-inst>
             </v-expansion-panel-content>
           </v-expansion-panel>
           @endif

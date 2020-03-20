@@ -93,27 +93,19 @@ class InstitutionController extends Controller
         if (!auth()->user()->hasRole("Admin")) {
             abort_unless(auth()->user()->inst_id==$id, 403);
         }
-        // $institution = Institution::findOrFail($id);
-        // $groups = InstitutionGroup::pluck('name', 'id');
-        //
-        // return view('institutions.show', compact('institution', 'groups'));
 
-        $institution = Institution::findOrFail($id);
-        $_inst = $institution->toArray();
-        $types = InstitutionType::get(['id','name'])->toArray();
-        $all_groups = InstitutionGroup::get(['id','name'])->toArray();
-        $providers = Provider::orderBy('id', 'ASC')->get(['id','name'])->toArray();
+        $institution = Institution::with('sushiSettings','sushiSettings.provider','users')->find($id);
         $inst_groups = $institution->institutionGroups()->pluck('institution_group_id')->all();
+        $all_groups = InstitutionGroup::get(['id','name'])->toArray();
 
-        return view('institutions.show', compact(
-            'institution',
-            '_inst',
-            'types',
-            'all_groups',
-            'inst_groups',
-            'providers'
-        ));
-
+        // Get id+name pairs for accessible providers without settings
+        $set_provider_ids = $institution->sushiSettings->pluck('prov_id');
+        $unset_providers = Provider::whereNotIn('id',$set_provider_ids)
+                           ->where(function ($query) use ($id) {
+                               $query->where('inst_id',1)->orWhere('inst_id',$id);
+                           })
+                           ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
+        return view('institutions.show', compact('institution','unset_providers','inst_groups','all_groups'));
     }
 
     /**

@@ -8,14 +8,20 @@
 	    <h1>{{ $institution->name }}</h1>
 	</div>
 	<div class="page-action">
-		<a class="btn btn-primary" href="#">Delete</a>
+		<a class="btn btn-primary v-btn v-btn--contained theme--light v-size--small" href="#">Delete</a>
 	</div>
 </div>
 
   <div class="details">
 	<h2 class="section-title">Details</h2>
-	<a href="{{ route('institutions.edit',$institution->id) }}">Edit<a/>
+	<a href="{{ route('institutions.edit',$institution->id) }}">Edit</a>
 	<!-- <a href="#" class="section-action">edit</a> <em>can we make this swap in the edit view?</em> -->
+    <institution-form :institution="{{ json_encode($_inst) }}"
+                      :providers="{{ json_encode($providers) }}"
+                      :types="{{ json_encode($types) }}"
+                      :inst_groups="{{ json_encode($inst_groups) }}"
+                      :all_groups="{{ json_encode($all_groups) }}"
+    ></institution-form>
 	<div class="form-group">
 	    <strong>Type:</strong>
 	    {{ $institution->institutiontype->name }}

@@ -14,7 +14,6 @@
 
   <div class="details">
 	<h2 class="section-title">Details</h2>
-	<a href="{{ route('institutions.edit',$institution->id) }}">Edit</a>
     <institution-form :institution="{{ json_encode($_inst) }}"
                       :providers="{{ json_encode($providers) }}"
                       :types="{{ json_encode($types) }}"

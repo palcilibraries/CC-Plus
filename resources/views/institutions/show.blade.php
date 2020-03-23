@@ -8,7 +8,7 @@
 	    <h1>{{ $institution->name }}</h1>
 	</div>
 	<div class="page-action">
-		<a class="btn btn-primary v-btn v-btn--contained theme--light v-size--small" href="#">Delete</a>
+		<a class="btn btn-primary v-btn v-btn--contained btn-danger theme--light v-size--small" href="#">Delete</a>
 	</div>
 </div>
 

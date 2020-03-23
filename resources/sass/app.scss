@@ -28,7 +28,7 @@
 .section-action {
 	display: inline-block;
 }
-.section-action {
+.section-action.v-btn {
 	margin-left: 1em;
 	vertical-align: super;
 }
@@ -47,7 +47,7 @@ form .v-subheader,
 	display: inline-block;
 }*/
 .v-application--wrap {
-	display: block;
+	display: block !important;
 }
 main #app {
 	padding: 1em;

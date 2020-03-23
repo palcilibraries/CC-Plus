@@ -16,6 +16,12 @@
 	<h2 class="section-title">Details</h2>
 	<a href="{{ route('institutions.edit',$institution->id) }}">Edit</a>
 	<!-- <a href="#" class="section-action">edit</a> <em>can we make this swap in the edit view?</em> -->
+    <institution-form :institution="{{ json_encode($_inst) }}"
+                      :providers="{{ json_encode($providers) }}"
+                      :types="{{ json_encode($types) }}"
+                      :inst_groups="{{ json_encode($inst_groups) }}"
+                      :all_groups="{{ json_encode($all_groups) }}"
+    ></institution-form>
 	<div class="form-group">
 	    <strong>Type:</strong>
 	    {{ $institution->institutiontype->name }}
@@ -49,7 +55,8 @@
     <div class="users">
 	<h2 class="section-title">Users</h2>
     <v-btn small color="primary" type="button" href="{{ route('users.create') }}" class="section-action">add new</v-btn>
-	<users-by-inst :users="{{ json_encode($users) }}"></users-by-inst>
+	<users-by-inst :users="{{ json_encode($institution->users) }}"></users-by-inst>
+	</div>
   @endif
   <hr>
   <div class="related-list">

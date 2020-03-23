@@ -95,6 +95,14 @@ class InstitutionController extends Controller
         }
 
         $institution = Institution::with('sushiSettings','sushiSettings.provider','users')->find($id);
+
+        // Add user's highest role as "permission" as a separate array
+        $users = array();
+        foreach ($institution->users as $inst_user) {
+            $new_u = $inst_user->toArray();
+            $new_u['permission'] = $inst_user->maxRoleName();
+            array_push($users,$new_u);
+        }
         $inst_groups = $institution->institutionGroups()->pluck('institution_group_id')->all();
         $all_groups = InstitutionGroup::get(['id','name'])->toArray();
 
@@ -105,7 +113,7 @@ class InstitutionController extends Controller
                                $query->where('inst_id',1)->orWhere('inst_id',$id);
                            })
                            ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
-        return view('institutions.show', compact('institution','unset_providers','inst_groups','all_groups'));
+        return view('institutions.show', compact('institution','users','unset_providers','inst_groups','all_groups'));
     }
 
     /**

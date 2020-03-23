@@ -4,7 +4,7 @@
       <template v-slot:item="{ item }" >
         <tr>
           <td><a :href="'/users/'+item.id+'/edit'">{{ item.name }}</a></td>
-          <td>&nbsp;</td>
+          <td>{{ item.permission }}&nbsp;</td>
           <td>{{ item.last_login }}</td>
 		  <td><a class="btn btn-primary v-btn v-btn--contained theme--light v-size--small" :href="'/users/'+item.id+'/edit'">edit user</a></td>
           <!--<td><v-btn class='btn btn-danger' small type="button" @click="destroy(item.id)">Delete</v-btn></td>-->
@@ -35,7 +35,7 @@
                 failure: '',
                 mutable_users: this.users,
                 headers: [
-                  { text: 'Name ', value: 'name', align: 'start' },
+                  { text: 'Name ', value: 'name' },
                   { text: 'Permission Level', value: '' },
                   { text: 'Last Login', value: 'last_login' },
                   { text: '', value: ''}

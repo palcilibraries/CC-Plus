@@ -22,34 +22,6 @@
                       :all_groups="{{ json_encode($all_groups) }}"
     ></institution-form>
 	<!-- <a href="#" class="section-action">edit</a> <em>can we make this swap in the edit view?</em> -->
-	<div class="form-group">
-	    <strong>Type:</strong>
-	    {{ $institution->institutiontype->name }}
-	</div>
-	<div class="form-group">
-	  <strong>Groups:</strong>
-	  @foreach($inst_groups as $group_id => $group_name)
-	     @if($institution->isAMemberof($group_id))
-	        <label class="badge badge-success">{{ $group_name }} </label>
-	     @endif
-	  @endforeach
-	</div>
-	<div class="form-group">
-	    <strong>FTE:</strong>
-	    {{ $institution->fte }}
-	</div>
-	<div class="form-group">
-	    <strong>Visibility:</strong>
-	    <em>placeholder</em>
-	</div>
-	<div class="form-group">
-	    <strong>Status:</strong>
-	    {{ $institution->is_active ? 'Active' : 'Inactive' }}
-	</div>
-	<div class="form-group">
-	    <strong>Notes:</strong>
-	    {{ $institution->notes }}
-	</div>
   </div>
   @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )
     <div class="users">

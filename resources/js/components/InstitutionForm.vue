@@ -155,6 +155,7 @@
                 this.success = '';
                 this.failure = '';
                 var self = this;
+				self.showForm = false;
                 this.form.patch('/institutions/'+self.institution['id'])
                     .then( function(response) {
                         if (response.result) {

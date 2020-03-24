@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- form display control and confirmations  -->
-    <div v-if="is_manager">
+    <div v-if="is_manager && !showForm">
   	  <v-btn small color="primary" type="button" @click="swapForm">edit</v-btn>
       <span class="form-good" role="alert" v-text="success"></span>
       <span class="form-fail" role="alert" v-text="failure"></span>

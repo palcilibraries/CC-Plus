@@ -94,7 +94,8 @@ class InstitutionController extends Controller
             abort_unless(auth()->user()->inst_id==$id, 403);
         }
 
-        $institution = Institution::with('sushiSettings','sushiSettings.provider','users')->find($id);
+        $institution = Institution::with('institutionType','sushiSettings','sushiSettings.provider','users')
+                                  ->find($id);
 
         // Add user's highest role as "permission" as a separate array
         $users = array();
@@ -103,8 +104,11 @@ class InstitutionController extends Controller
             $new_u['permission'] = $inst_user->maxRoleName();
             array_push($users,$new_u);
         }
-        $inst_groups = $institution->institutionGroups()->pluck('institution_group_id')->all();
+
+        // Related models we'll be passing
+        $types = InstitutionType::get(['id','name'])->toArray();
         $all_groups = InstitutionGroup::get(['id','name'])->toArray();
+        $inst_groups = $institution->institutionGroups()->pluck('institution_group_id')->all();
 
         // Get id+name pairs for accessible providers without settings
         $set_provider_ids = $institution->sushiSettings->pluck('prov_id');
@@ -113,7 +117,8 @@ class InstitutionController extends Controller
                                $query->where('inst_id',1)->orWhere('inst_id',$id);
                            })
                            ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
-        return view('institutions.show', compact('institution','users','unset_providers','inst_groups','all_groups'));
+        return view('institutions.show',
+                    compact('institution','users','unset_providers','types','inst_groups','all_groups'));
     }
 
     /**
@@ -127,8 +132,7 @@ class InstitutionController extends Controller
         if (!auth()->user()->hasRole("Admin")) {
             abort_unless(auth()->user()->inst_id==$id, 403);
         }
-        $institution = Institution::findOrFail($id);
-        $_inst = $institution->toArray();
+        $institution = Institution::with('institutionType')->findOrFail($id);
 
         $types = InstitutionType::get(['id','name'])->toArray();
         $all_groups = InstitutionGroup::get(['id','name'])->toArray();
@@ -137,7 +141,6 @@ class InstitutionController extends Controller
 
         return view('institutions.edit', compact(
             'institution',
-            '_inst',
             'types',
             'all_groups',
             'inst_groups',

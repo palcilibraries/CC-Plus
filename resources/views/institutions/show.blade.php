@@ -11,11 +11,9 @@
 		<a class="btn btn-primary v-btn v-btn--contained btn-danger theme--light v-size--small" href="#">Delete</a>
 	</div>
 </div>
-
   <div class="details">
 	<h2 class="section-title">Details</h2>
-    <institution-form :institution="{{ json_encode($_inst) }}"
-                      :providers="{{ json_encode($providers) }}"
+    <institution-form :institution="{{ json_encode($institution) }}"
                       :types="{{ json_encode($types) }}"
                       :inst_groups="{{ json_encode($inst_groups) }}"
                       :all_groups="{{ json_encode($all_groups) }}"

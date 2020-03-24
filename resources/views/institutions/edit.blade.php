@@ -16,7 +16,7 @@
               <h4>Settings for : {{ $institution->name }}</h4>
             </v-expansion-panel-header>
             <v-expansion-panel-content>
-              <institution-form :institution="{{ json_encode($_inst) }}"
+              <institution-form :institution="{{ json_encode($institution) }}"
                                 :providers="{{ json_encode($providers) }}"
                                 :types="{{ json_encode($types) }}"
                                 :inst_groups="{{ json_encode($inst_groups) }}"

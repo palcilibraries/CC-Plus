@@ -1,8 +1,10 @@
 <template>
+  <div class="details">
+	<h2 class="section-title">Details</h2>
   <div>
     <!-- form display control and confirmations  -->
     <div v-if="is_manager && !showForm">
-  	  <v-btn small color="primary" type="button" @click="swapForm">edit</v-btn>
+  	  <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
       <span class="form-good" role="alert" v-text="success"></span>
       <span class="form-fail" role="alert" v-text="failure"></span>
    	</div>
@@ -43,15 +45,8 @@
     </div>
     <!-- display form if manager has activated it. onSubmit function closes and resets showForm -->
     <div v-else>
-      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
-        <v-container grid-list-xl>
-          <v-row>
-            <v-col class="d-flex" cols="12" sm="6">
+      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
               <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col class="d-flex" cols="12" sm="6">
               <v-select
                   :items="types"
                   v-model="form.type_id"
@@ -61,62 +56,45 @@
                   item-value="id"
                   outlined
               ></v-select>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col class="d-flex" cols="12" sm="6">
               <v-switch v-model="form.is_active" label="Active?"></v-switch>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col class="d-flex" cols="12" sm="6">
-              <v-subheader v-text="'FTE'"></v-subheader>
-              <v-text-field v-model="form.fte"
-                            label="FTE"
-                            hide-details
-                            single-line
-                            type="number"
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col class="d-flex" cols="12" sm="6">
-              <v-subheader v-text="'Belongs To'"></v-subheader>
-              <v-select
-                  :items="all_groups"
-                  v-model="form.institutiongroups"
-                  value="mutable_groups"
-                  item-text="name"
-                  item-value="id"
-                  label="Institution Group(s)"
-                  multiple
-                  chips
-                  hint="Assign group membership for this institution"
-                  persistent-hint
-              ></v-select>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col class="d-flex" cols="12" sm="6">
+			  <div class="field-wrapper">
+	              <v-subheader v-text="'FTE'"></v-subheader>
+	              <v-text-field v-model="form.fte"
+	                            label="FTE"
+	                            hide-details
+	                            single-line
+	                            type="number"
+	              ></v-text-field>
+			  </div>
+			  <div class="field-wrapper">
+	              <v-subheader v-text="'Belongs To'"></v-subheader>
+	              <v-select
+	                  :items="all_groups"
+	                  v-model="form.institutiongroups"
+	                  value="mutable_groups"
+	                  item-text="name"
+	                  item-value="id"
+	                  label="Institution Group(s)"
+	                  multiple
+	                  chips
+	                  hint="Assign group membership for this institution"
+	                  persistent-hint
+	              ></v-select>
+			  </div>
               <v-textarea
                   v-model="form.notes"
                   value="mutable_inst.notes"
                   label="Notes"
                   auto-grow
               ></v-textarea>
-            </v-col>
-          </v-row>
-          <v-row align="center">
-            <v-flex md3>
               <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
                 Save Institution Settings
               </v-btn>
-            </v-flex>
-          </v-row>
-        </v-container>
+			  <v-btn small type="button" @click="hideForm">cancel</v-btn>
       </form>
     </div>
   </div>
+</div>
 </template>
 
 <script>
@@ -178,6 +156,10 @@
             swapForm (event) {
                 var self = this;
                 self.showForm = true;
+			},
+            hideForm (event) {
+                var self = this;
+                self.showForm = false;
 			},
         },
         computed: {

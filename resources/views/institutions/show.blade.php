@@ -11,15 +11,13 @@
 		<a class="btn btn-primary v-btn v-btn--contained btn-danger theme--light v-size--small" href="#">Delete</a>
 	</div>
 </div>
-  <div class="details">
-	<h2 class="section-title">Details</h2>
+
     <institution-form :institution="{{ json_encode($institution) }}"
                       :types="{{ json_encode($types) }}"
                       :inst_groups="{{ json_encode($inst_groups) }}"
                       :all_groups="{{ json_encode($all_groups) }}"
     ></institution-form>
-	<!-- <a href="#" class="section-action">edit</a> <em>can we make this swap in the edit view?</em> -->
-  </div>
+
   @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )
     <div class="users">
 	<h2 class="section-title">Users</h2>

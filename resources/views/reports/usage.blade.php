@@ -14,19 +14,10 @@
       -->
       <!--
         These should be "embed-able" or "include-able" into a vuetify navigation drawer?
+        Probably need to push these down into the ReportDataTable compenents anyway...
+<inst-group-filter :institutiongroups="{{ json_encode($inst_groups) }}"></inst-group-filter>
       -->
-      <data-type-filter :datatypes="{{ json_encode($datatypes) }}"></data-type-filter>
-      <access-method-filter :accessmethods="{{ json_encode($accessmethods) }}"></access-method-filter>
-      <access-type-filter :accesstypes="{{ json_encode($accesstypes) }}"></access-type-filter>
-      <section-type-filter :sectiontypes="{{ json_encode($sectiontypes) }}"></section-type-filter>
-      @if ( Auth::user()->hasAnyRole(["Admin","Viewer"]) )
-        @if ( sizeof($inst_groups)>0 )
-        <inst-group-filter :institutiongroups="{{ json_encode($inst_groups) }}"></inst-group-filter>
-        @endif
-        <institution-filter :institutions="{{ json_encode($institutions) }}"></institution-filter>
-      @endif
-      <platform-filter :platforms="{{ json_encode($platforms) }}"></platform-filter>
-      <provider-filter :providers="{{ json_encode($providers) }}"></provider-filter>
+      <title-report></title-report>
   </div>
   <div>
       <!-- report-data-table -->

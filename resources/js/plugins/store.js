@@ -10,6 +10,7 @@ export const store = new Vuex.Store({
       viewer: false,
       user_inst_id: 0,
       master_id: 0,
+      report_data: [],
       filter_by: {
           from_yearmon: '',
           to_yearmon: '',
@@ -29,10 +30,10 @@ export const store = new Vuex.Store({
           accessmethods: [],
           accesstypes: [],
           datatypes: [],
+          sectiontypes: [],
           institutions: [],
-          providers: {},
-          platforms: {},
-          sectiontypes: {}
+          providers: [],
+          platforms: []
       }
   },
   mutations: {
@@ -56,6 +57,9 @@ export const store = new Vuex.Store({
     },
     SET_MASTERID(state, report_id) {
         state.master_id = report_id;
+    },
+    SET_REPORTDATA(state, data) {
+        state.report_data = data;
     },
     SET_FROMYM(state, yearmon) {
         state.filter_by.from_yearmon = yearmon;
@@ -118,6 +122,9 @@ export const store = new Vuex.Store({
     },
     updateMasterId({ commit }, report_id) {
       commit('SET_MASTERID', report_id);
+    },
+    updateReportData({ commit }, data) {
+      commit('SET_REPORTDATA', data);
     },
     updateFromYM({ commit }, yearmon) {
       commit('SET_FROMYM', yearmon);
@@ -186,6 +193,9 @@ export const store = new Vuex.Store({
     },
     master_id: state => {
       return state.master_id
+    },
+    report_data: state => {
+      return state.report_data
     },
     all_filters: state => {
         return state.filter_by

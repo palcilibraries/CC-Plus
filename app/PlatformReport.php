@@ -25,19 +25,19 @@ class PlatformReport extends Model
        'unique_item_requests', 'unique_title_investigations', 'unique_title_requests'
     ];
 
-    public function platforms()
+    public function platform()
     {
-        return $this->belongsToMany('App\Platform', 'plat_id');
+        return $this->belongsTo('App\Platform', 'plat_id');
     }
 
-    public function providers()
+    public function provider()
     {
-        return $this->belongsToMany('App\Provider', 'prov_id');
+        return $this->belongsTo('App\Provider', 'prov_id');
     }
 
-    public function institutions()
+    public function institution()
     {
-        return $this->belongsToMany('App\Institution' . 'inst_id');
+        return $this->belongsTo('App\Institution' . 'inst_id');
     }
 
     public function accessMethod()

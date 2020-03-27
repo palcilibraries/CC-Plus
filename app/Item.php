@@ -20,17 +20,17 @@ class Item extends Model
      * @var array
      */
     protected $fillable = [
-        'Title', 'authors', 'pub_date', 'article_version', 'DOI', 'PropID', 'ISBN', 'ISSN', 'eISSN', 'URI',
-        'parent_id', 'parent_datatype_id', 'component_id', 'component_datatype_id'
+        'title_id', 'authors', 'parent_id', 'parent_datatype_id', 'component_id', 'component_datatype_id'
     ];
+
+    public function title()
+    {
+        return $this->belongsTo('App\Title', 'title_id');
+    }
 
     public function itemReports()
     {
         return $this->hasMany('App\ItemReport');
     }
 
-    public function ident()
-    {
-        return $this->morphOne('App\Title', 'identifiers');
-    }
 }

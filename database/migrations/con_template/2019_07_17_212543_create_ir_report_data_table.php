@@ -17,7 +17,6 @@ class CreateIrReportDataTable extends Migration
             $global_db = DB::connection('globaldb')->getDatabaseName();
 
             $table->bigInteger('item_id')->unsigned();
-            $table->bigInteger('title_id')->unsigned();
             $table->unsignedInteger('prov_id');
             $table->unsignedInteger('publisher_id')->nullable();
             $table->unsignedInteger('plat_id')->nullable();
@@ -36,7 +35,6 @@ class CreateIrReportDataTable extends Migration
             $table->timestamps();
 
             $table->foreign('item_id')->references('id')->on($global_db . '.items');
-            $table->foreign('title_id')->references('id')->on($global_db . '.titles');
             $table->foreign('prov_id')->references('id')->on('providers');
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');
             $table->foreign('inst_id')->references('id')->on('institutions');

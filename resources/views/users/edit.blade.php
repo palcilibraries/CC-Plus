@@ -13,7 +13,6 @@
             <v-expansion-panel-content>
               <user-form :user="{{ json_encode($user) }}"
                          :roles="{{ json_encode($roles) }}"
-                         :user_roles="{{ json_encode($user_roles) }}"
                          :institutions="{{ json_encode($institutions) }}"
                          :manager="{{ auth()->user()->hasRole("Manager") }}"
                          :admin="{{ auth()->user()->hasRole("Admin") }}"

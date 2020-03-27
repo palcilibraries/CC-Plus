@@ -25,32 +25,27 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
+
+        // Admins see all, managers see only their inst, eveyone else gets an error
         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
         if (auth()->user()->hasRole("Admin")) {
-            $users = User::orderBy('id', 'ASC')->get();
+            $users = User::with('roles','institution')->orderBy('id', 'ASC')->get();
         } else {    // is manager
-            $users = User::orderBy('ID', 'ASC')->where('inst_id', '=', auth()->user()->inst_id)->get();
+            $users = User::with('roles','institution')->orderBy('ID', 'ASC')
+                         ->where('inst_id', '=', auth()->user()->inst_id)->get();
         }
 
-        // Store data elements and roles in an array that simplifies them for Vue
+        // Add user's roles as a string in the data array we're sending to the view
         $data = array();
-        foreach ($users as $user) {
+        foreach ($users as $_u) {
             $_roles = "";
-            foreach ($user->roles()->get() as $role) {
+            $new_u = $_u->toArray();
+            foreach ($_u->roles as $role) {
                 $_roles .= $role->name . ", ";
             }
             $_roles = rtrim(trim($_roles),',');
-            $u_data = array(
-                "id" => $user->id,
-                "name" => $user->name,
-                "inst" => $user->institution->name,
-                "inst_id" => $user->inst_id,
-                "is_active" => $user->is_active,
-                "email" => $user->email,
-                "roles" => $_roles,
-                "last_login" => $user->last_login
-            );
-            $data[] = $u_data;
+            $new_u['roles'] = $_roles;
+            array_push($data,$new_u);
         }
 
         return view('users.index', compact('data'));
@@ -117,7 +112,7 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        $user = User::findOrFail($id);
+        $user = User::with('roles')->findOrFail($id);
         abort_unless($user->canManage(), 403);
 
         return view('users.show', compact('user'));
@@ -131,7 +126,7 @@ class UserController extends Controller
      */
     public function edit($id)
     {
-        $user = User::findOrFail($id);
+        $user = User::with('roles')->findOrFail($id);
         abort_unless($user->canManage(), 403);
 
         // Admin gets a select-box of institutions, otherwise just the users' inst
@@ -143,11 +138,9 @@ class UserController extends Controller
         }
 
         // Set choices for roles; disallow choosing roles higher current user's max role
-        // $roles = Role::where('id', '<=', auth()->user()->maxRole())->pluck('name', 'id');
         $roles = Role::where('id', '<=', auth()->user()->maxRole())->get(['name', 'id'])->toArray();
-        $user_roles = $user->roles()->pluck('role_id')->all();
 
-        return view('users.edit', compact('user', 'roles', 'user_roles', 'institutions'));
+        return view('users.edit', compact('user', 'roles', 'institutions'));
     }
 
     /**

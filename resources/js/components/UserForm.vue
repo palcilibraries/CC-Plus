@@ -9,7 +9,6 @@
         </v-row>
         <v-row>
           <v-col class="d-flex" cols="12" sm="6">
-            <!-- <v-text-field v-model="form.email" label="Email" outlined></v-text-field> -->
             <v-text-field outlined required name="email" label="Email" type="email"
                           v-model="form.email" :rules="emailRules">
             </v-text-field>
@@ -42,7 +41,6 @@
         </v-row>
         <v-row>
           <v-col class="d-flex" cols="12" sm="6">
-            <!-- <v-text-field v-model="form.password" label="Password" outlined></v-text-field> -->
             <v-text-field outlined name="password" label="Password" id="password" type="password"
                           v-model="form.password" :rules="passwordRules">
             </v-text-field>
@@ -50,7 +48,6 @@
         </v-row>
         <v-row>
           <v-col class="d-flex" cols="12" sm="6">
-            <!-- <v-text-field v-model="form.confirm_pass" label="Confirm Password" outlined></v-text-field> -->
             <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
                           type="password" v-model="form.confirm_pass" :rules="passwordRules">
             </v-text-field>
@@ -62,7 +59,7 @@
             <v-select
                 :items="roles"
                 v-model="form.roles"
-                value="user_roles"
+                :value="user.roles"
                 item-text="name"
                 item-value="id"
                 label="User Role(s)"
@@ -96,7 +93,6 @@
         props: {
                 user: { type:Object, default: () => {} },
                 roles: { type:Array, default: () => [] },
-                user_roles: { type:Array, default: () => [] },
                 institutions: { type:Array, default: () => [] },
                },
         data() {
@@ -123,7 +119,7 @@
                     email: this.user.email,
                     password: '',
                     confirm_pass: '',
-                    roles: this.user_roles
+                    roles: this.user.roles
                 })
             }
         },

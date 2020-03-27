@@ -4,7 +4,7 @@
       <template v-slot:item="{ item }">
         <tr>
           <td><a :href="'/users/'+item.id+'/edit'">{{ item.name }}</a></td>
-          <td><a :href="'/institutions/'+item.inst_id+'/edit'">{{ item.inst }}</a></td>
+          <td><a :href="'/institutions/'+item.inst_id+'/edit'">{{ item.institution.name }}</a></td>
           <td v-if="item.is_active">Active</td>
           <td v-else>Inactive</td>
           <td>{{ item.email }}</td>
@@ -35,7 +35,7 @@
         failure: '',
         mutable_users: this.users,
         headers: [
-          { text: 'User Name ', value: 'name', align: 'start' },
+          { text: 'User Name ', value: 'name' },
           { text: 'Institution', value: 'inst' },
           { text: 'Status', value: 'is_active' },
           { text: 'Email', value: 'email' },

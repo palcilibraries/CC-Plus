@@ -23,6 +23,10 @@ class DataTypesTableSeeder extends Seeder
                                 ['id' => 2, 'name' => 'Book'],
                                 ['id' => 3, 'name' => 'Article'],
                                 ['id' => 4, 'name' => 'Multimedia'],
+                                ['id' => 5, 'name' => 'Platform'],
+                                ['id' => 6, 'name' => 'Database'],
+                                ['id' => 7, 'name' => 'Report'],
+                                ['id' => 8, 'name' => 'Unknown'],
                              ]);
       }
     }

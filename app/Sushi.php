@@ -144,12 +144,14 @@ class Sushi extends Model
         $request_uri = $_url . '/' . $method . '/';
 
        // Construct and execute the Request
-        $uri_auth = "?customer_id=" . $setting->customer_id;
-        $uri_auth .= "&requestor_id=" . $setting->requestor_id;
-// CHECK THIS... the Counter-Sushi docs say the argument is named "api_key", but
-// haven't (yet) found a vendor that recognizes the value (or the argument-name?)
+        $uri_auth = "?customer_id=" . urlencode($setting->customer_id);
+        if (!is_null($setting->requestor_id)) {
+            $uri_auth .= "&requestor_id=" . urlencode($setting->requestor_id);
+        }
+// Needs testing and confirmation:
+// haven't (yet) found a vendor that recognizes api_key .. the value (or the argument-name?)
         if (!is_null($setting->API_key)) {
-            $uri_auth .= "&api_key=" . $setting->API_key;
+            $uri_auth .= "&api_key=" . urlencode($setting->API_key);
         }
         if ($report=="") {
             return $request_uri . $uri_auth;

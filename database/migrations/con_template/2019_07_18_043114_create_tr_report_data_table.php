@@ -16,19 +16,17 @@ class CreateTrReportDataTable extends Migration
         Schema::create('tr_report_data', function (Blueprint $table) {
             $global_db = DB::connection('globaldb')->getDatabaseName();
 
-            $table->bigInteger('jrnl_id')->unsigned()->nullable();
-            $table->bigInteger('book_id')->unsigned()->nullable();
-            $table->bigInteger('item_id')->unsigned()->nullable();
-            $table->unsignedInteger('prov_id');
-            $table->unsignedInteger('publisher_id')->nullable();
-            $table->unsignedInteger('plat_id')->nullable();
-            $table->unsignedInteger('inst_id');
-            $table->string('yearmon', 7);
-            $table->unsignedInteger('datatype_id')->nullable();
-            $table->unsignedInteger('sectiontype_id')->nullable();
-            $table->string('YOP', 9)->nullable();
-            $table->unsignedInteger('accesstype_id')->nullable();
-            $table->unsignedInteger('accessmethod_id')->nullable();
+            $table->bigInteger('title_id')->unsigned();             // Required
+            $table->unsignedInteger('prov_id');                     // Required
+            $table->unsignedInteger('publisher_id')->default(1);    // _blank_
+            $table->unsignedInteger('plat_id')->default(1);         // _blank_
+            $table->unsignedInteger('inst_id');                     // Required
+            $table->string('yearmon', 7);                           // Required
+            $table->unsignedInteger('datatype_id')->default(8);     // Unknown
+            $table->unsignedInteger('sectiontype_id')->default(1);  // _blank_
+            $table->string('YOP', 9)->default('');
+            $table->unsignedInteger('accesstype_id')->default(1);   // Controlled
+            $table->unsignedInteger('accessmethod_id')->default(1); // Regular
             $table->unsignedInteger('total_item_investigations')->default(0);
             $table->unsignedInteger('total_item_requests')->default(0);
             $table->unsignedInteger('unique_item_investigations')->default(0);
@@ -39,9 +37,7 @@ class CreateTrReportDataTable extends Migration
             $table->unsignedInteger('no_license')->default(0);
             $table->timestamps();
 
-            $table->foreign('jrnl_id')->references('id')->on($global_db . '.journals');
-            $table->foreign('book_id')->references('id')->on($global_db . '.books');
-            $table->foreign('item_id')->references('id')->on($global_db . '.items');
+            $table->foreign('title_id')->references('id')->on($global_db . '.titles');
             $table->foreign('prov_id')->references('id')->on('providers');
             $table->foreign('publisher_id')->references('id')->on($global_db . '.publishers');
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');

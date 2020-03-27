@@ -1,13 +1,34 @@
 <template>
   <div>
-    <v-select v-if="is_manager || is_admin"
-          :items="unset"
-          @change="onUnsetChange"
-          placeholder="Connect a Provider"
-          item-text="name"
-          item-value="id"
-          outlined
-    ></v-select>
+	  <form  v-if="is_manager || is_admin" method="POST" action="/sushisettings-update" @submit.prevent="formSubmit"
+	        @keydown="form.errors.clear($event.target.name)">
+	    <v-select
+	          :items="unset"
+	          @change="onUnsetChange"
+	          placeholder="Connect a Provider"
+	          item-text="name"
+	          item-value="id"
+	          outlined
+	    ></v-select>
+		<div v-if="showForm" class="form-fields">
+            <v-text-field v-model="form.customer_id"
+                          label="Customer ID"
+                          id="customer_id"
+                          outlined
+            ></v-text-field>
+            <v-text-field v-model="form.requestor_id"
+                          label="Requestor ID"
+                          id="requestor_id"
+                          outlined
+            ></v-text-field>
+            <v-text-field v-model="form.API_key"
+                          label="API Key"
+                          id="API_key"
+                          outlined
+            ></v-text-field>
+			<v-btn small color="primary" type="submit" :disabled="form.errors.any()">Connect</v-btn>
+		</div>
+	  </form>
     <v-data-table :headers="headers" :items="mutable_settings" item-key="id" class="elevation-1">
       <template v-slot:item="{ item }" >
         <tr>
@@ -40,6 +61,7 @@
             return {
                 success: '',
                 failure: '',
+				showForm: false,
                 mutable_settings: this.settings,
                 headers: [
                   { text: 'Name ', value: 'name' },
@@ -80,7 +102,9 @@
                 .catch({});
             },
             onUnsetChange (prov) {
-                window.location.href = "/providers/"+prov+"/edit";
+				console.log(prov);
+				self.showForm = true;
+                //window.location.href = "/providers/"+prov+"/edit";
             },
         },
         computed: {

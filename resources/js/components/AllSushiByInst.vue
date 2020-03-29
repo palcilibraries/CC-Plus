@@ -1,6 +1,7 @@
 <template>
   <div>
-	  <form  v-if="is_manager || is_admin" method="POST" action="/sushisettings-update" @submit.prevent="formSubmit"
+  <template v-if="is_manager || is_admin">
+	  <form method="POST" action="/sushisettings-update" @submit.prevent="formSubmit"
 	        @keydown="form.errors.clear($event.target.name)">
 	    <v-select
 	          :items="unset"
@@ -29,6 +30,7 @@
 			<v-btn small color="primary" type="submit" :disabled="form.errors.any()">Connect</v-btn>
 		</div>
 	  </form>
+	  	</template>
     <v-data-table :headers="headers" :items="mutable_settings" item-key="id" class="elevation-1">
       <template v-slot:item="{ item }" >
         <tr>
@@ -36,10 +38,11 @@
           <td>{{ item.customer_id }}</td>
           <td>{{ item.requestor_id }}</td>
           <td>{{ item.API_key }}</td>
-          <td><v-btn class='btn btn-danger' small type="button" @click="destroy(item.id)">Delete</v-btn></td>
+          <td><v-btn class='btn btn-danger' small type="button" @click="destroy(item.id)">Delete connection</v-btn></td>
+		  <td><v-btn class='btn' small type="button">Settings & harvests</v-btn></td>
         </tr>
       </template>
-      <tr><td colspan="5">&nbsp;</td></tr>
+      <tr><td colspan="6">&nbsp;</td></tr>
     </v-data-table>
     <div>
       <span class="good" role="alert" v-text="success"></span>
@@ -103,6 +106,8 @@
             },
             onUnsetChange (prov) {
 				console.log(prov);
+				console.log(this);
+				console.log(self.showForm);
 				self.showForm = true;
                 //window.location.href = "/providers/"+prov+"/edit";
             },

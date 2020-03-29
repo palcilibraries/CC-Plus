@@ -66,7 +66,7 @@
 	                            type="number"
 	              ></v-text-field>
 			  </div>
-			  <div class="field-wrapper">
+			  <div class="field-wrapper has-label">
 	              <v-subheader v-text="'Belongs To'"></v-subheader>
 	              <v-select
 	                  :items="all_groups"

@@ -54,7 +54,10 @@
 <script>
     import { mapGetters } from 'vuex'
     import Swal from 'sweetalert2';
+    import Form from '@/js/plugins/Form';
     import axios from 'axios';
+    window.Form = Form;
+
     export default {
         props: {
                 settings: { type:Array, default: () => {} },
@@ -73,6 +76,13 @@
                   { text: 'API Key', value: 'API_key' },
                   { text: '', value: ''}
                 ],
+                form: new window.Form({
+                    inst_id: '0',
+                    prov_id: '0',
+                    customer_id: '',
+                    requestor_id: '',
+                    API_key: ''
+				})
             }
         },
         methods: {

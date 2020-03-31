@@ -1,4 +1,4 @@
-<?php
+qry<?php
 
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
@@ -17,7 +17,9 @@ class CreateReportFieldsTable extends Migration
             $table->Increments('id');
             $table->unsignedInteger('report_id');
             $table->string('legend');
-            $table->boolean('is_alertable')->default(0);
+            $table->string('qry')->nullable();
+            $table->string('group_it')->default(0);
+            $table->boolean('rebuild_it')->default(0);
             $table->timestamps();
 
             $table->foreign('report_id')->references('id')->on('reports')->onDelete('cascade');
@@ -31,6 +33,6 @@ class CreateReportFieldsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('metrics');
+        Schema::dropIfExists('reportfields');
     }
 }

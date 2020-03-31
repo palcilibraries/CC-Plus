@@ -105,7 +105,7 @@
     </v-navigation-drawer>
 
     <v-data-table :headers="filteredHeaders" :items='filteredItems' :loading="loading" class="elevation-1">
-      <template v-slot:item="{ item }" >
+      <template slot="filteredItems" slot-scope="item">
         <tr>
           <td v-if="showColumn('name')">{{ item.title.Title }}</td>
           <td v-if="showColumn('prov_id')">{{ item.provider.name }}</td>
@@ -117,8 +117,6 @@
           <td v-if="showColumn('accesstype_id')">{{ item.accesstype.name }}</td>
           <td v-if="showColumn('accessmethod_id')">{{ item.accessmethod.name }}</td>
           <td v-if="showColumn('YOP')">{{ item.YOP }}</td>
-          <td v-if="showColumn('pub_date')">{{ item.title.pub_date }}</td>
-          <td v-if="showColumn('article_version')">{{ item.title.article_version }}</td>
           <td v-if="showColumn('ISBN')">{{ item.title.ISBN }}</td>
           <td v-if="showColumn('ISSN')">{{ item.title.ISSN }}</td>
           <td v-if="showColumn('eISSN')">{{ item.title.eISSN }}</td>
@@ -163,24 +161,22 @@
           { name: 'accessmethods', act: 'updateAccessMethod' }
         ],
         headers: [
-          { text: 'Title', value: 'name', selected: true, act: '' },
-          { text: 'Provider', value: 'prov_id', selected: true, act: 'updateProvider' },
-          { text: 'Publisher', value: 'publisher_id', selected: false, act: '' },
-          { text: 'Plaftorm', value: 'plat_id', selected: false, act: 'updatePlatform' },
-          { text: 'Institution', value: 'inst_id', selected: true, act: 'updateInstitution' },
-          { text: 'Data Type', value: 'datatype_id', selected: false, act: 'updateDataType' },
-          { text: 'Section Type', value: 'sectiontype_id', selected: false, act: 'updateSectionType' },
-          { text: 'Access Type', value: 'accesstype_id', selected: false, act: 'updateAccessType' },
-          { text: 'Access Method', value: 'accessmethod_id', selected: false, act: 'updateAccessMethod' },
+          { text: 'Title', value: 'title.Title', selected: true, act: '' },
+          { text: 'Provider', value: 'provider.name', selected: true, act: 'updateProvider' },
+          { text: 'Publisher', value: 'publisher.name', selected: false, act: '' },
+          { text: 'Plaftorm', value: 'platform.name', selected: false, act: 'updatePlatform' },
+          { text: 'Institution', value: 'institution.name', selected: true, act: 'updateInstitution' },
+          { text: 'Data Type', value: 'datatype.name', selected: false, act: 'updateDataType' },
+          { text: 'Section Type', value: 'sectiontype.name', selected: false, act: 'updateSectionType' },
+          { text: 'Access Type', value: 'accesstype.name', selected: false, act: 'updateAccessType' },
+          { text: 'Access Method', value: 'accessmethod.name', selected: false, act: 'updateAccessMethod' },
           { text: 'Year of Publication', value: 'YOP', selected: false, act: '' },
-          { text: 'Publication Date', value: 'pub_date', selected: false, act: '' },
-          { text: 'Article Version', value: 'article_version', selected: false, act: '' },
-          { text: 'ISBN', value: 'ISBN', selected: false, act: '' },
-          { text: 'ISSN', value: 'ISSN', selected: false, act: '' },
-          { text: 'eISSN', value: 'eISSN', selected: false, act: '' },
-          { text: 'URI', value: 'URI', selected: false, act: '' },
-          { text: 'DOI', value: 'DOI', selected: false, act: '' },
-          { text: 'Proprietary ID', value: 'PropID', selected: false, act: '' },
+          { text: 'ISBN', value: 'title.ISBN', selected: false, act: '' },
+          { text: 'ISSN', value: 'title.ISSN', selected: false, act: '' },
+          { text: 'eISSN', value: 'title.eISSN', selected: false, act: '' },
+          { text: 'URI', value: 'title.URI', selected: false, act: '' },
+          { text: 'DOI', value: 'title.DOI', selected: false, act: '' },
+          { text: 'Proprietary ID', value: 'title.PropID', selected: false, act: '' },
           { text: 'Total Item Investigations', value: 'total_item_investigations', selected: false, act: '' },
           { text: 'Total Item Requests', value: 'total_item_requests', selected: true, act: '' },
           { text: 'Unique Item Investigations', value: 'unique_item_investigations', selected: false, act: '' },
@@ -251,7 +247,7 @@
           return true;
         });
 
-        // hide columns that are not being shown right now
+        // hide columns that are currently off
         return filtered_usage.map(item => {
           let filtered = Object.assign({}, item)
           this.headers.forEach(header => {

@@ -135,16 +135,48 @@ class ReportController extends Controller
         // Build where clause conditions for this report based on $input_filters
         $conditions = self::filterOnConditions($report);
 
-// NEED TO DO THIS....
-        // Get fields for this report
-        // $report_fields = $report->reportFields();
+        // Build a string of fields we're selecting "raw" an array for group-by
+        $raw_fields = '';
+        $group_by = [];
+        $report_fields = $report->reportFields();
+        foreach ($report_fields as $field) {
+            // ReportFields with qry=null get picked up via the with:: loading
+            if (is_null($field->qry)) {
+                continue;
+            }
+            // If the field has a filter connected to it...
+            if (isset(self::$input_filters[$field->qry])) {
+                // If the field/report-data column is being displayed
+                if (self::$input_filters[$field->qry] >= 0) {
+                    $raw_fields .= $field->qry . ',';
+                    if ($field->group_it) {
+                        $group_by[] = $field->qry;
+                    }
+                }
+            } else {
+                $raw_fields .= $field->qry . ',';
+                if ($field->group_it) {
+                    $group_by[] = $field->qry;
+                }
+            }
+        }
+        $raw_fields = rtrim($raw_fields, ',');
+// dump($raw_fields);
+// dump($group_by);
+//
+// for mapping YOP to alternate text ... something like this:
+// $records = \App\TitleReport::all()->map(function ($record) {
+//     if (is_numeric($record->YOP) && $record->YOP < '1990') {
+//         $record->YOP = "Pre-1990";
+//         return $record;
+//     }
+// })
+        // Setup tables we'll be joining
+        $inst_table = $conso_db . ".institutions";
+        $prov_table = $conso_db . ".providers";
 
         // Run the query
         if ($input['master_id']==1) {
-
-            // Build a list of columns to be included/returned by the query
-            // $get_columns = array();
-            // $get_columns = [titleInfo()->Title . ' as name'];
 
             // Setup an array of "eager loaded" relationships
             $relationships = ['institution:id,name','provider:id,name','publisher:id,name','platform:id,name',
@@ -153,10 +185,18 @@ class ReportController extends Controller
 
             // Run the query
             if (!empty($limit_to_insts)) {
-                $records = TitleReport::with($relationships)->where($conditions)
-                                      ->whereIn('inst_id', $limit_to_insts)->limit(100)->get();
+                $records = TitleReport::with($relationships)
+                           ->where($conditions)
+                           ->whereIn('inst_id', $limit_to_insts)
+                           ->selectRaw($raw_fields)
+                           ->groupBy($group_by)
+                           ->limit(100)->get();
             } else {
-                $records = TitleReport::with($relationships)->where($conditions)->limit(100)->get();
+                $records = TitleReport::with($relationships)
+                           ->where($conditions)
+                           ->selectRaw($raw_fields)
+                           ->groupBy($group_by)
+                           ->limit(100)->get();
             }
             return response()->json(['usage' => $records],200);
 

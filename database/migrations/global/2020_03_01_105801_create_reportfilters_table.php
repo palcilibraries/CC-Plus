@@ -32,6 +32,6 @@ class CreateReportFiltersTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('metrics');
+        Schema::dropIfExists('reportfilters');
     }
 }

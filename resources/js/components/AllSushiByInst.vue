@@ -117,8 +117,8 @@
             onUnsetChange (prov) {
 				console.log(prov);
 				console.log(this);
-				console.log(self.showForm);
-				self.showForm = true;
+				console.log(this.showForm);
+				this.showForm = true;
                 //window.location.href = "/providers/"+prov+"/edit";
             },
         },

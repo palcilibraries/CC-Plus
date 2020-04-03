@@ -1,13 +1,13 @@
 <template>
   <div class="details">
 	<h2 class="section-title">Details</h2>
-  <div>
-    <!-- form display control and confirmations  -->
-    <div v-if="is_manager && !showForm">
+    <template v-if="is_manager && !showForm">
   	  <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
       <span class="form-good" role="alert" v-text="success"></span>
       <span class="form-fail" role="alert" v-text="failure"></span>
-   	</div>
+   	</template>
+  <div>
+    <!-- form display control and confirmations  -->
     <!-- Values-only when form not active -->
     <div v-if="!showForm">
 	  <v-simple-table>

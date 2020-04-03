@@ -28,6 +28,7 @@
                           outlined
             ></v-text-field>
 			<v-btn small color="primary" type="submit" :disabled="form.errors.any()">Connect</v-btn>
+			<v-btn small type="button" @click="hideForm">cancel</v-btn>
 		</div>
 	  </form>
 	  	</template>
@@ -74,7 +75,8 @@
                   { text: 'Customer ID', value: 'customer_id' },
                   { text: 'Requestor ID', value: 'requestor_id' },
                   { text: 'API Key', value: 'API_key' },
-                  { text: '', value: ''}
+                  { text: '', value: ''},
+				  { text: '', value: ''}
                 ],
                 form: new window.Form({
                     inst_id: '0',
@@ -121,6 +123,10 @@
 				this.showForm = true;
                 //window.location.href = "/providers/"+prov+"/edit";
             },
+            hideForm (event) {
+                var self = this;
+                self.showForm = false;
+			},
         },
         computed: {
           ...mapGetters(['is_admin','is_manager'])

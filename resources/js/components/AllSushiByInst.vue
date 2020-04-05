@@ -5,6 +5,7 @@
 	        @keydown="form.errors.clear($event.target.name)">
 	    <v-select
 	          :items="unset"
+			  v-model="form.prov_id"
 	          @change="onUnsetChange"
 	          placeholder="Connect a Provider"
 	          item-text="name"
@@ -88,6 +89,14 @@
             }
         },
         methods: {
+	        formSubmit (event) {
+	            var self = this;
+	            this.form.post('/sushisettings-update')
+	                .then( function(response) {
+	                    self.warning = '';
+	                    self.confirm = 'Settings successfully updated.';
+	                });
+	        },
             destroy (settingid) {
                 var self = this;
                 Swal.fire({
@@ -121,7 +130,6 @@
 				console.log(this);
 				console.log(this.showForm);
 				this.showForm = true;
-                //window.location.href = "/providers/"+prov+"/edit";
             },
             hideForm (event) {
                 var self = this;
@@ -133,6 +141,7 @@
         },
         mounted() {
             console.log('Providers-by-Inst Component mounted.');
+			console.log(form);
         }
     }
 </script>

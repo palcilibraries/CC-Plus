@@ -17,8 +17,8 @@ class CreateFailedHarvestsTable extends Migration
             $global_db = DB::connection('globaldb')->getDatabaseName();
 
             $table->Increments('id');
-            $table->unsignedInteger('harvest_id');
-            $table->unsignedInteger('error_id');
+            $table->integer('harvest_id')->unsigned();
+            $table->integer('error_id')->unsigned();
             $table->string('process_step')->nullable();
             $table->string('detail')->nullable();
             $table->timestamps();

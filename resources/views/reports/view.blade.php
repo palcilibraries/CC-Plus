@@ -46,7 +46,7 @@
       <td><a href="{{ URL::route('reports.show',$report->id) }}">{{ $report->name }} (r{{ $report->revision }})</a></td>
       <td>{{ $report->legend }}</td>
       <td>--Master--</td>
-      <td>{{ $report->reportFields()->count() }}</td>
+      <td>{{ $report->reportFields->count() }}</td>
     </tr>
     @if ( $report->children->count() )
        @foreach ($report->children as $child)

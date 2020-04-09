@@ -17,9 +17,9 @@ class CreateReportFieldsTable extends Migration
             $table->Increments('id');
             $table->unsignedInteger('report_id');
             $table->string('legend');
+            $table->string('joins')->nullable();
             $table->string('qry')->nullable();
             $table->string('group_it')->default(0);
-            $table->boolean('rebuild_it')->default(0);
             $table->timestamps();
 
             $table->foreign('report_id')->references('id')->on('reports')->onDelete('cascade');

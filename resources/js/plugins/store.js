@@ -9,14 +9,12 @@ export const store = new Vuex.Store({
       manager: false,
       viewer: false,
       user_inst_id: 0,
-      master_id: 0,
-      report_data: [],
       filter_by: {
-          from_yearmon: '',
-          to_yearmon: '',
           // filters < 0 : means column is inactive, no need to refresh when other filters change
           // filters = 0 : means column is active, no filter applied
           // filters > 0 : means column is being filtered by the given ID
+          YM_from: '',
+          YM_to: '',
           accessmethod_id: 0,
           accesstype_id: 0,
           datatype_id: 0,
@@ -34,7 +32,8 @@ export const store = new Vuex.Store({
           institutions: [],
           providers: [],
           platforms: []
-      }
+      },
+      report_data: [],
   },
   mutations: {
     SET_ACCESS(state, access) {
@@ -55,17 +54,14 @@ export const store = new Vuex.Store({
     SET_USERINST(state, inst_id) {
         state.user_inst_id = inst_id;
     },
-    SET_MASTERID(state, report_id) {
-        state.master_id = report_id;
-    },
     SET_REPORTDATA(state, data) {
         state.report_data = data;
     },
-    SET_FROMYM(state, yearmon) {
-        state.filter_by.from_yearmon = yearmon;
+    SET_YMFROM(state, yearmon) {
+        state.filter_by.YM_from = yearmon;
     },
-    SET_TOYM(state, yearmon) {
-        state.filter_by.to_yearmon = yearmon;
+    SET_YMTO(state, yearmon) {
+        state.filter_by.YM_to = yearmon;
     },
     SET_ACCESSMETHOD_FILTER(state, method_id) {
         state.filter_by.accessmethod_id = method_id;
@@ -120,17 +116,14 @@ export const store = new Vuex.Store({
     updateUserInst({ commit }, inst_id) {
       commit('SET_USERINST', inst_id);
     },
-    updateMasterId({ commit }, report_id) {
-      commit('SET_MASTERID', report_id);
-    },
     updateReportData({ commit }, data) {
       commit('SET_REPORTDATA', data);
     },
     updateFromYM({ commit }, yearmon) {
-      commit('SET_FROMYM', yearmon);
+      commit('SET_YMFROM', yearmon);
     },
     updateToYM({ commit }, yearmon) {
-      commit('SET_TOYM', yearmon);
+      commit('SET_YMTO', yearmon);
     },
     updateAccessMethodFilter({ commit }, method_id) {
       commit('SET_ACCESSMETHOD_FILTER', method_id);
@@ -191,20 +184,14 @@ export const store = new Vuex.Store({
     user_inst_id: state => {
       return state.user_inst_id
     },
-    master_id: state => {
-      return state.master_id
-    },
-    report_data: state => {
-      return state.report_data
-    },
     all_filters: state => {
         return state.filter_by
     },
-    filter_by_from_yearmon: state => {
-        return state.filter_by.from_yearmon
+    filter_by_YM_from: state => {
+        return state.filter_by.YM_from
     },
-    filter_by_to_yearmon: state => {
-        return state.filter_by.to_yearmon
+    filter_by_YM_to: state => {
+        return state.filter_by.YM_to
     },
     filter_by_accessmethod_id: state => {
       return state.filter_by.accessmethod_id
@@ -254,5 +241,8 @@ export const store = new Vuex.Store({
     sectiontype_options: state => {
       return state.options.sectiontypes
     },
-  },
+    report_data: state => {
+      return state.report_data
+    },
+  }
 });

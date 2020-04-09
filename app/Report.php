@@ -25,9 +25,17 @@ class Report extends Model
         'name', 'legend', 'type', 'revision', 'parent_id', 'inherited_fields'
     ];
 
+    // Return the reportField relationship
     public function reportFields()
     {
-       // Get and return collection of ReportFields (not a relationship)
+        return $this->hasMany('App\ReportField');
+    }
+
+    // Return a collection of fields, incudling inherited fields
+    // (useful for handling custom or user-specific report layouts)
+    public function allFields()
+    {
+       // Get a collection of ReportFields (not a relationship)
         if ($this->parent_id == 0) {
             return ReportField::where('report_id', '=', $this->id)->get();
         } else {
@@ -48,9 +56,7 @@ class Report extends Model
     public function providers()
     {
         $_db = config('database.connections.consodb.database');
-        return $this
-            ->belongsToMany('App\Provider', $_db . '.provider_report')
-            ->withTimestamps();
+        return $this->belongsToMany('App\Provider', $_db . '.provider_report');
     }
 
     public function parent()
@@ -62,8 +68,7 @@ class Report extends Model
     public function children()
     {
        // Reports might have many children
-        return $this->hasMany(static::class, 'parent_id')
-                    ->orderBy('name', 'asc');
+        return $this->hasMany(static::class, 'parent_id')->orderBy('name', 'asc');
     }
 
     public function inheritedFields()

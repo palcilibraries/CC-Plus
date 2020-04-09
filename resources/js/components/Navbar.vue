@@ -68,7 +68,29 @@ export default {
             profile_url: '',
             navList: [
               { url: "/", name: "Home", role: "All" },
-              { url: "/reports", name: "Reports", role: "All" },
+              // { url: "/reports", name: "Reports", role: "All" },
+              {
+                url: "#",
+                name: "Reports",
+                role: "All",
+                children: [
+                  {
+                    url: "/reports",
+                    name: "List",
+                    role: "Manager",
+                  },
+                  {
+                    url: "/reports/display",
+                    name: "Display",
+                    role: "All",
+                  },
+                  {
+                    url: "/reports/export",
+                    name: "Export",
+                    role: "All",
+                  }
+                ]
+              },
               {
                 url: "#",
                 name: "Settings",

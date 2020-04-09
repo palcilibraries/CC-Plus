@@ -17,7 +17,7 @@ class ReportField extends Model
    *
    * @var array
    */
-    protected $fillable = ['report_id', 'legend', 'qry', 'group_it', 'rebuild_it'];
+    protected $fillable = ['report_id', 'legend', 'joins', 'qry', 'group_it'];
 
     public function report()
     {

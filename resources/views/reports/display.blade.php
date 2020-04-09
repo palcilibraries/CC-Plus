@@ -2,8 +2,10 @@
 
 @section('content')
 <h3> Usage Report</h3>
-<v-app>
-  <div>
+<div id="app">
+  <v-app>
+    <v-content>
+
       <!-- SideNav/Filters/etc. -->
       <!--
          The filtering vue components need to be able up affect the choices available in the
@@ -15,19 +17,22 @@
       <!--
         These should be "embed-able" or "include-able" into a vuetify navigation drawer?
         Probably need to push these down into the ReportDataTable compenents anyway...
-<inst-group-filter :institutiongroups="{{ json_encode($inst_groups) }}"></inst-group-filter>
+<inst-group-filter :institutiongroups="json_encode(inst_groups)"></inst-group-filter>
       -->
-      <title-report></title-report>
-  </div>
-  <div>
-      <!-- report-data-table -->
+
+<!--
+<test-report></test-report>
+-->
+      <ttitle-report-view></title-report-view>
+
       <!--
         on mounted(), need to call a "data-refresh" call to build initial display?
         Vue component will handle the data-table rendering and calling for data-refresh
         if any of the filters/facets are changed
       -->
-  </div>
-</v-app>
+    </v-content>
+  </v-app>
+</div>
 @if ( Auth::user()->hasRole("Admin") )
     I See You're an Admin!
 @elseif ( Auth::user()->hasRole("Manager") )

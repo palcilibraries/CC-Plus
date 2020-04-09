@@ -14,8 +14,6 @@
               <user-form :user="{{ json_encode($user) }}"
                          :roles="{{ json_encode($roles) }}"
                          :institutions="{{ json_encode($institutions) }}"
-                         :manager="{{ auth()->user()->hasRole("Manager") }}"
-                         :admin="{{ auth()->user()->hasRole("Admin") }}"
               ></user-form>
             </v-expansion-panel-content>
           </v-expansion-panel>

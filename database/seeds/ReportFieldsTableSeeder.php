@@ -65,7 +65,7 @@ class ReportFieldsTableSeeder extends Seeder
             DB::table($table)->insert(['id' => 21, 'report_id' => 1, 'legend' => 'Data Type', 'group_it' => 1,
                              'joins' => '_global_.datatypes as DTYP', 'qry' => 'DTYP.name as datatype']);
             DB::table($table)->insert(['id' => 22, 'report_id' => 1, 'legend' => 'Section Type', 'group_it' => 1,
-                             'joins' => '_global_.datatypes as DTYP', 'qry' => 'STYP.name as sectiontype']);
+                             'joins' => '_global_.sectiontypes as STYP', 'qry' => 'STYP.name as sectiontype']);
             DB::table($table)->insert(['id' => 23, 'report_id' => 1, 'legend' => 'Access Type', 'group_it' => 1,
                              'joins' => '_global_.accesstypes as ATYP', 'qry' => 'ATYP.name as accesstype']);
             DB::table($table)->insert(['id' => 24, 'report_id' => 1, 'legend' => 'Access Method', 'group_it' => 1,

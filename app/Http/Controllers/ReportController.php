@@ -281,6 +281,9 @@ class ReportController extends Controller
         // Query the XX_report_data table to build select options for all filters connected
         // to active columns (id >= 0) regardless of whether the filter is actively limiting.
         foreach ($report->reportFilters as $filt) {
+            if ( !isset(self::$input_filters[$filt->report_column])) {
+                continue;
+            }
             if (self::$input_filters[$filt->report_column] < 0) { // Don't query if column is inactive
                 continue;
             }
@@ -288,18 +291,14 @@ class ReportController extends Controller
             if ($filt->report_column == 'inst_id' && !empty($limit_to_insts)) {
                 $_ids = $limit_to_insts;
             } else {
-                $_ids = array();
-                if (!empty($limit_to_insts)) {
-                    $_ids = DB::table($report_table)
-                              ->whereIn('inst_id', $limit_to_insts)
-                              ->where($conditions)
-                              ->distinct()
-                              ->pluck($filt->report_column);
-                } else {
-                    $_ids = DB::table($report_table)->where($conditions)->distinct()->pluck($filt->report_column);
-                }
+                $_ids = DB::table($report_table)
+                          ->when($limit_to_insts, function ($query, $limit_to_insts) {
+                              return $query->whereIn('inst_id', $limit_to_insts);
+                          })
+                          ->where($conditions)
+                          ->distinct()
+                          ->pluck($filt->report_column);
             }
-
             // Setup an array of ID+name pairs for the filter, append it to $return_values
             $_db = ($filt->is_global) ? config('database.connections.globaldb.database') . "."
                                       : config('database.connections.consodb.database') . ".";
@@ -308,7 +307,8 @@ class ReportController extends Controller
                                      ->get(['id','name'])
                                      ->toArray();
             array_unshift(${$filt->table_name}, ['id' => 0, 'name' => 'ALL']);
-            $return_values[$filt->table_name] = ${$filt->table_name};
+            $_key = rtrim($filt->table_name, "s");
+            $return_values[$_key] = ${$filt->table_name};
         }
 
         return response()->json(['result' => true, 'filters' => $return_values]);
@@ -382,7 +382,7 @@ class ReportController extends Controller
     {
         $conditions = array();
         foreach ($report->reportFilters as $filt) {
-            // Skip inst & inst-group and any unmatched filter
+            // Skip inst & inst-group and any unmatched/missing filter
             if ((!isset(self::$input_filters[$filt->report_column])) ||       // unmatched?
                 ($filt->report_column == "inst_id" || $filt->report_column == "institutiongroup_id")) {
                 continue;

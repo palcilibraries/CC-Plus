@@ -243,7 +243,7 @@
                   this.filter_data[head.value].value = 0;
                   this.$store.dispatch(action,0);
                   // Update options for this column in the datastore
-                  this.updateReportFilters(this.all_filters[theFilter.col]);
+                  this.updateReportFilters({[theFilter.col]:0 });
               }
           // Turning off a column...
           } else {
@@ -271,10 +271,6 @@
           let columns = {};
           this.headers.forEach(head => {
             var filter = (typeof(this.filter_data[head.value])=='undefined') ? '' : this.filter_data[head.value].value;
-            // var filter = '';
-            // if (typeof(this.filter_data[head.value]) != 'undefined') {    // filtered column?
-            //     filter = this.filter_data[head.value].value;
-            // }
             columns[head.value] = {active: head.active, limit: filter};
           })
           params['columns'] = JSON.stringify(columns);

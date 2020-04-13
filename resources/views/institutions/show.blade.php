@@ -30,6 +30,7 @@
 	  <h2 class="section-title">Providers</h2>
 	  <v-btn small color="primary" type="button" href="{{ route('providers.create') }}" class="section-action">add new</v-btn>
 	  <all-sushi-by-inst :settings="{{ json_encode($institution->sushiSettings->toArray()) }}"
+		  				 :inst_id="{{ json_encode($institution->id) }}"
 		  				 :unset="{{ json_encode($unset_providers) }}"
 	  ></all-sushi-by-inst>
   </div>

@@ -1,8 +1,9 @@
 <template>
   <div>
   <template v-if="is_manager || is_admin">
-	  <form method="POST" action="/sushisettings-update" @submit.prevent="formSubmit"
+	  <form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
 	        @keydown="form.errors.clear($event.target.name)">
+        <input v-model="form.inst_id" id="inst_id" type="hidden">
 	    <v-select
 	          :items="unset"
 			  v-model="form.prov_id"
@@ -64,6 +65,7 @@
         props: {
                 settings: { type:Array, default: () => {} },
                 unset: { type:Array, default: () => {} },
+                inst_id: { type:Number, default: 0 }
                },
         data() {
             return {
@@ -80,7 +82,7 @@
 				  { text: '', value: ''}
                 ],
                 form: new window.Form({
-                    inst_id: '0',
+                    inst_id: this.inst_id,
                     prov_id: '0',
                     customer_id: '',
                     requestor_id: '',
@@ -91,7 +93,8 @@
         methods: {
 	        formSubmit (event) {
 	            var self = this;
-	            this.form.post('/sushisettings-update')
+	            // this.form.post('/sushisettings-update')
+                this.form.post('/sushisettings')
 	                .then( function(response) {
 	                    self.warning = '';
 	                    self.confirm = 'Settings successfully updated.';
@@ -126,9 +129,7 @@
                 .catch({});
             },
             onUnsetChange (prov) {
-				console.log(prov);
-				//console.log(form);
-				console.log(this.showForm);
+				// console.log(this.showForm);
 				this.showForm = true;
             },
             hideForm (event) {
@@ -141,7 +142,6 @@
         },
         mounted() {
             console.log('Providers-by-Inst Component mounted.');
-			//console.log(form);
         }
     }
 </script>

@@ -50,6 +50,27 @@ class SushiSettingController extends Controller
     }
 
     /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+        if (!auth()->user()->hasAnyRole(['Admin','Staff','Manager'])) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        }
+
+        $input = $request->all();
+        if (!auth()->user()->hasAnyRole(['Admin','Staff']) &&
+            $input['inst_id'] != auth()->user()->inst_id) {
+            return response()->json(['result' => false, 'msg' => 'You can only assign settings for your institution']);
+        }
+        $setting = SushiSetting::create($input);
+        return response()->json(['result' => true, 'msg' => 'Settings successfully created']);
+    }
+
+    /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request

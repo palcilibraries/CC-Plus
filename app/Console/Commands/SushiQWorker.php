@@ -226,7 +226,7 @@ class SushiQWorker extends Command
                 if (!is_dir($full_path)) {
                     mkdir($full_path, 0755, true);
                 }
-                $sushi->raw_datafile = $full_path . $report->name . '_' . $begin . '_' . $end . '.json';
+                $sushi->raw_datafile = $full_path . $report->name . '_' . $begin . '_' . $end;
             }
 
            // Construct URI for the request

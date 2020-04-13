@@ -26,11 +26,11 @@ class C5TestCommand extends Command
      * @var string
      */
     protected $signature = 'ccplus:C5test {consortium : The Consortium ID or key-string}
-                             {provider : Provider ID}
-                             {institution : Institution ID}
-                             {report : Report Name to request}
-                             {month : YYYY-MM of the dataset}
-                             {infile : The input file}';
+                              {infile : The input file}
+                              {--M|month= : YYYY-MM to process [lastmonth]}
+                              {--P|provider= : Provider ID to process [ALL]}
+                              {--I|institution= : Institution ID to process [ALL]}
+                              {--R|report= : Master report NAME to harvest [ALL]}';
 
     /**
      * The console command description.
@@ -68,10 +68,10 @@ class C5TestCommand extends Command
         }
 
        // The other required arguments
-        $prov_id = $this->argument('provider');
-        $inst_id = $this->argument('institution');
-        $rept = $this->argument('report');
-        $month  = $this->argument('month');
+        $month  = is_null($this->option('month')) ? 'lastmonth' : $this->option('month');
+        $prov_id = is_null($this->option('provider')) ? 0 : $this->option('provider');
+        $inst_id = is_null($this->option('institution')) ? 0 : $this->option('institution');
+        $rept = is_null($this->option('report')) ? 'ALL' : $this->option('report');
         $infile = $this->argument('infile');
 
        // Aim the consodb connection at specified consortium's database and setup

@@ -78,6 +78,7 @@ class Sushi extends Model
 
        // Save raw data
         if ($this->raw_datafile != "") {
+            // file_put_contents($this->raw_datafile, $result->getBody());
             if (File::put($this->raw_datafile, Crypt::encrypt(bzcompress($result->getBody(), 9), false)) === false) {
                 echo "Failed to save raw data in: ".$this->raw_datafile;
                 // ... OR ...

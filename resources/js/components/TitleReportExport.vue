@@ -1,108 +1,83 @@
 <template>
   <div>
-    <v-row>
-      <v-col cols="1" sm="1">
-        <v-btn color="pink" dark @click.stop="filter_drawer = !filter_drawer">Filter</v-btn>
+    <span><strong>Show/Hide Columns</strong></span>
+    <v-row no-gutters>
+      <v-col class="ma-2" v-for="header in headers" :key="header.value">
+        <v-checkbox :label="header.text" v-model="header.active" :value="header.active"
+                    @change="onColumnChange(header)"></v-checkbox>
       </v-col>
-      <v-col cols="1" sm="1">
-        <v-btn color="pink" dark @click.stop="column_drawer = !column_drawer">Columns</v-btn>
+    </v-row>
+    <span><strong>Filters</strong></span>
+    <v-row no-gutters>
+      <v-col v-if='filter_data["provider"].value >= 0' class="ma-2" cols="1" sm="1">
+        <v-select :items='all_options.providers'
+                  v-model='filter_data.provider.value'
+                  @change="onFilterChange('provider')"
+                  label="Provider"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col v-if='filter_data["platform"].value >= 0' class="ma-2" cols="1" sm="1">
+        <v-select :items='all_options.platforms'
+                  v-model='filter_data.platform.value'
+                  @change="onFilterChange('platform')"
+                  label="Platform"
+                  placeholder="Filter by Platform"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col v-if='filter_data["institution"].value >= 0' class="ma-2" cols="1" sm="1">
+        <v-select :items='all_options.institutions'
+                  v-model='filter_data.institution.value'
+                  @change="onFilterChange('institution')"
+                  label="Institution"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col v-if='filter_data["datatype"].value >= 0' class="ma-2" cols="1" sm="1">
+        <v-select :items='all_options.datatypes'
+                  v-model='filter_data.datatype.value'
+                  @change="onFilterChange('datatype')"
+                  label="Data Type"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col v-if='filter_data["sectiontype"].value >= 0' class="ma-2" cols="1" sm="1">
+        <v-select :items='all_options.sectiontypes'
+                  v-model='filter_data.sectiontype.value'
+                  @change="onFilterChange('sectiontype')"
+                  label="SectionType"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col v-if='filter_data["accesstype"].value >= 0' class="ma-2" cols="1" sm="1">
+        <v-select :items='all_options.accesstypes'
+                  v-model='filter_data.accesstype.value'
+                  @change="onFilterChange('accesstype')"
+                  label="Access Type"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col v-if='filter_data["accessmethod"].value >= 0' class="ma-2" cols="1" sm="1">
+        <v-select :items='all_options.accessmethods'
+                  v-model='filter_data.accessmethod.value'
+                  @change="onFilterChange('accessmethod')"
+                  label="Access Method"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
       </v-col>
     </v-row>
     <v-row>
       <v-btn color="green" type="button" @click="previewData">{{ preview_text }}</v-btn>
     </v-row>
-
-    <v-navigation-drawer v-model="column_drawer" absolute temporary>
-      <v-menu origin="center center" :close-on-content-click="false" transition="v-scale-transition" bottom>
-        <template v-slot:activator="{ on }">
-          <v-btn v-on="on">Show/Hide Columns</v-btn>
-          <v-list dense>
-            <v-list-item v-for="header in headers" :key="header.value">
-              <v-checkbox :label="header.text" v-model="header.active" :value="header.active"
-                          @change="onColumnChange(header)"></v-checkbox>
-            </v-list-item>
-          </v-list>
-        </template>
-      </v-menu>
-    </v-navigation-drawer>
-
-    <v-navigation-drawer v-model="filter_drawer" absolute temporary>
-      <v-list dense>
-        <v-list-item>
-          <v-select :items='all_options.providers'
-              v-if='all_filters.prov_id >= 0'
-              v-model='filter_data.provider.value'
-              @change="onFilterChange('providers')"
-              label="Provider"
-              item-text="name"
-              item-value="id"
-          ></v-select>
-        </v-list-item>
-        <v-list-item>
-          <v-select :items='all_options.platforms'
-              v-if='all_filters.plat_id >= 0'
-              v-model='filter_data.platform.value'
-              @change="onFilterChange('platforms')"
-              label="Platform"
-              placeholder="Filter by Platform"
-              item-text="name"
-              item-value="id"
-          ></v-select>
-        </v-list-item>
-        <v-list-item>
-          <v-select :items='all_options.institutions'
-              v-if='all_filters.inst_id >= 0'
-              v-model='filter_data.institution.value'
-              @change="onFilterChange('institutions')"
-              label="Institution"
-              item-text="name"
-              item-value="id"
-          ></v-select>
-        </v-list-item>
-        <v-list-item>
-          <v-select :items='all_options.datatypes'
-              v-if='all_filters.datatype_id >= 0'
-              v-model='filter_data.datatype.value'
-              @change="onFilterChange('datatypes')"
-              label="Data Type"
-              item-text="name"
-              item-value="id"
-          ></v-select>
-        </v-list-item>
-        <v-list-item>
-          <v-select :items='all_options.sectiontypes'
-              v-if='all_filters.sectiontype_id >= 0'
-              v-model='filter_data.sectiontype.value'
-              @change="onFilterChange('sectiontypes')"
-              label="SectionType"
-              item-text="name"
-              item-value="id"
-          ></v-select>
-        </v-list-item>
-        <v-list-item>
-          <v-select :items='all_options.accesstypes'
-              v-if='all_filters.accesstype_id >= 0'
-              v-model='filter_data.accesstype.value'
-              @change="onFilterChange('accesstypes')"
-              label="Access Type"
-              item-text="name"
-              item-value="id"
-           ></v-select>
-        </v-list-item>
-        <v-list-item>
-          <v-select :items='all_options.accessmethods'
-               v-if='all_filters.accessmethod_id >= 0'
-               v-model='filter_data.accessmethod.value'
-               @change="onFilterChange('accessmethods')"
-               label="Access Type"
-               item-text="name"
-               item-value="id"
-          ></v-select>
-        </v-list-item>
-      </v-list>
-    </v-navigation-drawer>
-
-    <div v-if="showPreview">
+    <v-container v-if="showPreview" fluid>
       <v-data-table :headers="filteredHeaders" :items="filteredItems"
                     :loading="loading" :footer-props="footer_props" dense class="elevation-1">
         <template slot="filteredItems" slot-scope="item">
@@ -134,7 +109,7 @@
           </tr>
         </template>
       </v-data-table>
-    </div>
+    </v-container>
     <v-row>
       <v-btn color="green" dark>Export</v-btn>
     </v-row>
@@ -149,10 +124,6 @@
       return {
         showPreview: false,
         preview_text: 'Display Preview',
-        // fromMenu: false,
-        // toMenu: false,
-        // YMFrom: '',
-        // YMTo: '',
         master_id: 1,          // for TR report
         change_counter: 0,
         totalRecs: 0,
@@ -174,10 +145,10 @@
           provider: { col:'prov_id', act:'updateProvider', value:0 },
           platform: { col:'plat_id', act:'updatePlatform', value:0 },
           institution: { col:'inst_id', act:'updateInstitution', value:0 },
-          datatype: { col:'datatype_id', act:'updateDataType', value:0 },
-          sectiontype: { col:'sectiontype_id', act:'updateSectionType', value:0 },
-          accesstype: { col:'accesstype_id', act:'updateAccessType', value:0 },
-          accessmethod: { col:'accessmethod_id', act:'updateAccessMethod', value:0 },
+          datatype: { col:'datatype_id', act:'updateDataType', value: -1 },
+          sectiontype: { col:'sectiontype_id', act:'updateSectionType', value: -1 },
+          accesstype: { col:'accesstype_id', act:'updateAccessType', value: -1 },
+          accessmethod: { col:'accessmethod_id', act:'updateAccessMethod', value: -1 },
         },
         headers: [
           { text:'Title', value:'Title', active:true, reload: true },
@@ -207,14 +178,6 @@
         ],
       }
     },
-    // watch: {
-    //   YMFrom: function (newVal) {
-    //       this.$store.dispatch('updateFromYM',newVal);
-    //   },
-    //   YMTo: function (newVal) {
-    //       this.$store.dispatch('updateToYM',newVal);
-    //   }
-    // },
     methods: {
         previewData (event) {
             if (!this.showPreview) {
@@ -247,6 +210,8 @@
               }
           // Turning off a column...
           } else {
+              // Remove the filter from the list
+              this.filter_data[head.value].value = -1;
               // If column was actively filtering, rebuild all filtering options
               if (hasFilter && this.all_filters[theFilter.col]>0) {
                   // Update filter in store to -1 to remove column from data queries/reloads
@@ -353,10 +318,6 @@
             if (!head.active) this.$store.dispatch(action,-1);
         }
       });
-
-      // Set From/To Yearmon based on current state
-      // this.YMFrom = this.all_filters.YM_from;
-      // this.YMTo = this.all_filters.YM_to;
 
       // Set options for all filters and in the datastore
       this.updateReportFilters();

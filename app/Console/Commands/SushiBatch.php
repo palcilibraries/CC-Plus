@@ -176,7 +176,7 @@ class SushiBatchCommand extends Command
                         if (!is_dir($full_path)) {
                             mkdir($full_path, 0755, true);
                         }
-                        $sushi->raw_datafile = $full_path . $report->name . '_' . $begin . '_' . $end . '.json';
+                        $sushi->raw_datafile = $full_path . $report->name . '_' . $begin . '_' . $end ;
                     }
 
                    // Create new HarvestLog record; if one already exists, use it instead
@@ -211,7 +211,6 @@ class SushiBatchCommand extends Command
                     $retries = 0;
                     $req_state = "Pending";
                     $ts = date("Y-m-d H:i:s");
-
 
                    // Sleeps and retries if request is queued.
                     while ($retries <= $retry_limit  && $req_state == "Pending") {

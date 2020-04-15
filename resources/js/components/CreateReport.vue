@@ -5,7 +5,7 @@
         <h4>Choose Institution(s)</h4>
       </v-col>
       <v-col v-if="inst_id!==null || inst_group_id!==0">
-        <v-btn color="gray" x-small @click="resetForm">Reset Selections</v-btn>
+        <v-btn color="gray" small @click="resetForm">Reset Selections</v-btn>
       </v-col>
     </v-row>
     <v-row v-if="dialogs.inst && inst_group_id==0">
@@ -56,25 +56,21 @@
             <span><strong>There is no saved data for this combination of Institution(s) and Provider(s)</strong></span>
         </div>
         <div v-else>
-        <v-radio-group v-model="report_id" :mandatory="false">
+        <v-radio-group v-model="selectedReport" :mandatory="false" @change="onReportChange">
           <v-expansion-panels multiple focusable>
             <v-expansion-panel v-if="report_data['TR'].count>0">
               <v-expansion-panel-header>
                 <h4>Title</h4>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
+                <p>
+                    Available Views<br />
+                    Your selection here will provide you with some default settings to get started, but you'll
+                    still be able to customize the report if you need to.
+                </p>
+                <v-radio :label="reports[0].legend+' ('+reports[0].name+')'" value='1'></v-radio>
                 <v-radio v-for="(value, idx) in tr_reports" :key="idx" :value="value"
-                         :label="value.name+' : '+value.legend"></v-radio>
-              </v-expansion-panel-content>
-            </v-expansion-panel>
-
-            <v-expansion-panel v-if="report_data['PR'].count>0">
-              <v-expansion-panel-header>
-                <h4>Platform</h4>
-              </v-expansion-panel-header>
-              <v-expansion-panel-content>
-                  <v-radio v-for="(value, idx) in pr_reports" :key="idx" :value="value"
-                           :label="value.name+' : '+value.legend"></v-radio>
+                         :label="value.name+' : '+value.legend">Hello World</v-radio>
               </v-expansion-panel-content>
             </v-expansion-panel>
 
@@ -83,8 +79,22 @@
                 <h4>Database</h4>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
+                  <p>Available Views</p>
+                  <v-radio :label="reports[1].legend+' ('+reports[0].name+')'" value='2'></v-radio>
                   <v-radio v-for="(value, idx) in dr_reports" :key="idx" :value="value"
                            :label="value.name+' : '+value.legend"></v-radio>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+
+            <v-expansion-panel v-if="report_data['PR'].count>0">
+              <v-expansion-panel-header>
+                <h4>Platform</h4>
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                  <p>Available Views</p>
+                  <v-radio :label="reports[2].legend+' ('+reports[0].name+')'" value='3'></v-radio>
+                  <v-radio v-for="(value, idx) in pr_reports" :key="idx" :value="value"
+                           :label="value.name+' : '+value.legend">Hi Sailor!</v-radio>
               </v-expansion-panel-content>
             </v-expansion-panel>
 
@@ -93,6 +103,8 @@
                 <h4>Item</h4>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
+                  <p>Available Views</p>
+                  <v-radio :label="reports[2].legend+' ('+reports[0].name+')'" value='4'></v-radio>
                   <v-radio v-for="(value, idx) in ir_reports" :key="idx" :value="value"
                            :label="value.name+' : '+value.legend"></v-radio>
               </v-expansion-panel-content>
@@ -104,6 +116,18 @@
     </v-row>
 
     <v-row v-if="dialogs.date">
+        <span><h4>Choose Report Dates</h4></span>
+        <v-col class="ma-2" cols="12">
+          <v-radio-group v-model="dateRange" @change="dialogs.done=true">
+            <v-radio :label="'Latest Month ['+latestMonth+']'" :value='latestMonth'></v-radio>
+            <v-radio :label="'Latest Year ['+latestYear+']'" :value='latestYear'></v-radio>
+            <v-radio :label="'Custom Date Range'"></v-radio>
+          </v-radio-group>
+        </v-col>
+    </v-row>
+
+    <v-row v-if="dialogs.done">
+      <v-btn color="green" small @click="">Finish</v-btn>
     </v-row>
   </v-form>
 </template>
@@ -123,12 +147,15 @@
 
     data() {
         return {
-            dialogs: { inst: false, prov: false, rept: false, date: false },
+            dialogs: { inst: false, prov: false, rept: false, date: false, done:false },
             inst_id: null,
             prov_id: null,
             inst_group_id: 0,
-            master_id: 0,
-            report_id: 0,
+            selectedReport: {},
+            masterId: 0,
+            dateRange: '',
+            latestYear: '',
+            latestMonth: '',
             mutable_insts: this.institutions,
             mutable_groups: this.inst_groups,
             tr_reports: this.reports[0].children,
@@ -137,6 +164,24 @@
             ir_reports: this.reports[3].children,
             report_data: {},
         }
+    },
+    watch: {
+      //watcher to watch for changes to masterId
+      masterId: {
+        handler() {
+            let key = this.reports[this.masterId-1].name;
+            this.latestMonth = this.report_data[key].YM_max;
+            var ym_to = this.latestMonth;
+            var from_parts = this.report_data[key].YM_max.split("-");
+            var fromDate = new Date(from_parts[0], from_parts[1] - 1, 1);
+            fromDate.setMonth(fromDate.getMonth()-11);
+            var ym_from = fromDate.toISOString().substring(0,7);
+            if (ym_from<this.report_data[key].YM_min) {
+                ym_from = this.report_data[key].YM_min;
+            }
+            this.latestYear = ym_from+' to '+ym_to;
+        },
+      }
     },
     methods: {
         resetForm () {
@@ -152,7 +197,6 @@
             this.inst_id = null,
             this.prov_id = null,
             this.inst_group_id = 0,
-            this.master_id = 1,
             this.mutable_insts = this.institutions;
             this.mutable_groups = this.inst_groups;
             // Reset the data store
@@ -177,7 +221,13 @@
             this.updateAvailable();
         },
         onReportChange () {
-            this.$store.dispatch('updateMasterId',this.master_id);
+            let parent_id = this.reports[this.selectedReport.id-1].parent_id;
+            if (parent_id == 0) {  // choice was a master report?
+                this.masterId = this.selectedReport.id-1
+            } else {               // choice was a child report
+                this.masterId = parent_id;
+            }
+            this.$store.dispatch('updateMasterId',this.masterId);
             this.dialogs.date = true;
         },
         updateAvailable () {
@@ -197,7 +247,7 @@
               count += this.report_data[key].count;
           }
           return count>0;
-      }
+      },
     },
     mounted() {
       if (this.is_admin || this.is_viewer) {

@@ -32,6 +32,7 @@ Vue.component('provider-data-table', require('./components/ProviderDataTable.vue
 Vue.component('institution-form', require('./components/InstitutionForm.vue').default);
 Vue.component('institution-data-table', require('./components/InstitutionDataTable.vue').default);
 Vue.component('date-range', require('./components/DateRange.vue').default);
+Vue.component('create-report', require('./components/CreateReport.vue').default);
 Vue.component('title-report-view', require('./components/TitleReportView.vue').default);
 Vue.component('title-report-export', require('./components/TitleReportExport.vue').default);
 // const files = require.context('./components/filters/', true, /\.vue$/i);

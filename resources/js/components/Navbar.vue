@@ -80,8 +80,8 @@ export default {
                     role: "Manager",
                   },
                   {
-                    url: "/reports/display",
-                    name: "Display",
+                    url: "/reports/create",
+                    name: "Create",
                     role: "All",
                   },
                   {

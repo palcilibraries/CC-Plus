@@ -50,7 +50,7 @@ export default {
     },
     YMTo: function (newVal) {
         this.$store.dispatch('updateToYM',newVal);
-    }
+    },
   },
   mounted() {
     // Testing - need to pass this in as a prop...

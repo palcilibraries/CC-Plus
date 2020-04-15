@@ -9,12 +9,13 @@ export const store = new Vuex.Store({
       manager: false,
       viewer: false,
       user_inst_id: 0,
+      master_id: 1,     // default to TR
       filter_by: {
           // filters < 0 : means column is inactive, no need to refresh when other filters change
           // filters = 0 : means column is active, no filter applied
           // filters > 0 : means column is being filtered by the given ID
-          YM_from: '',
-          YM_to: '',
+          fromYM: "",
+          toYM: "",
           accessmethod_id: 0,
           accesstype_id: 0,
           datatype_id: 0,
@@ -54,14 +55,17 @@ export const store = new Vuex.Store({
     SET_USERINST(state, inst_id) {
         state.user_inst_id = inst_id;
     },
+    SET_MASTERID(state, report_id) {
+        state.master_id = report_id;
+    },
     SET_REPORTDATA(state, data) {
         state.report_data = data;
     },
-    SET_YMFROM(state, yearmon) {
-        state.filter_by.YM_from = yearmon;
+    SET_FROMYM(state, yearmon) {
+        state.filter_by.fromYM = yearmon;
     },
-    SET_YMTO(state, yearmon) {
-        state.filter_by.YM_to = yearmon;
+    SET_TOYM(state, yearmon) {
+        state.filter_by.toYM = yearmon;
     },
     SET_ACCESSMETHOD_FILTER(state, method_id) {
         state.filter_by.accessmethod_id = method_id;
@@ -116,14 +120,17 @@ export const store = new Vuex.Store({
     updateUserInst({ commit }, inst_id) {
       commit('SET_USERINST', inst_id);
     },
+    updateMasterId({ commit }, report_id) {
+      commit('SET_MASTERID', report_id);
+    },
     updateReportData({ commit }, data) {
       commit('SET_REPORTDATA', data);
     },
     updateFromYM({ commit }, yearmon) {
-      commit('SET_YMFROM', yearmon);
+      commit('SET_FROMYM', yearmon);
     },
     updateToYM({ commit }, yearmon) {
-      commit('SET_YMTO', yearmon);
+      commit('SET_TOYM', yearmon);
     },
     updateAccessMethodFilter({ commit }, method_id) {
       commit('SET_ACCESSMETHOD_FILTER', method_id);
@@ -184,14 +191,17 @@ export const store = new Vuex.Store({
     user_inst_id: state => {
       return state.user_inst_id
     },
+    master_id: state => {
+      return state.master_id
+    },
     all_filters: state => {
         return state.filter_by
     },
-    filter_by_YM_from: state => {
-        return state.filter_by.YM_from
+    filter_fromYM: state => {
+        return state.filter_by.fromYM
     },
-    filter_by_YM_to: state => {
-        return state.filter_by.YM_to
+    filter_toYM: state => {
+        return state.filter_by.toYM
     },
     filter_by_accessmethod_id: state => {
       return state.filter_by.accessmethod_id

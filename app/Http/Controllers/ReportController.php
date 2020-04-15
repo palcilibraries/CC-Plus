@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use DB;
 use App\Report;
+use App\ReportField;
 use App\SavedReport;
 use App\Institution;
 use App\InstitutionGroup;
@@ -45,38 +46,56 @@ class ReportController extends Controller
     }
 
     /**
-     * Setup dashboard for generating usage report summaries
+     * View defined reports
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
     {
-        return view('reports.usage');
-        // $platforms = Platform::orderBy('name', 'asc')->get(['name','id'])->toArray();
-        // $publishers = Publisher::orderBy('name', 'asc')->get(['name','id'])->toArray();
-        // $accesstypes = AccessType::orderBy('name', 'asc')->get(['name','id'])->toArray();
-        // $accessmethods = AccessMethod::orderBy('name', 'asc')->get(['name','id'])->toArray();
-        // $datatypes = DataType::orderBy('name', 'asc')->get(['name','id'])->toArray();
-        // $sectiontypes = SectionType::orderBy('name', 'asc')->get(['name','id'])->toArray();
-        // $master_reports = Report::orderBy('name', 'asc')->where('parent_id', '=', 0)->get(['name','id'])->toArray();
-        // if (auth()->user()->hasRole("Admin") || auth()->user()->hasRole("Viewer")) {
-        //     $inst_groups = InstitutionGroup::get(['name', 'id'])->toArray();
-        //     $institutions = Institution::where('is_active',true)->orderBy('name', 'ASC')->get();
-        //     $providers = Provider::where('is_active',true)->orderBy('name', 'ASC')->get();
-        // } else {
-        //     $inst_groups = array();
-        //     $institutions = Institution::where('id', auth()->user()->inst_id)->get();
-        //     $providers = Provider::where('is_active',true)
-        //                          ->where(function($qry) {
-        //                              $qry->where('inst_id', 1)
-        //                                  ->orWhere('inst_id', auth()->user()->inst_id);
-        //                          })
-        //                          ->orderBy('name', 'ASC')->get();
-        // }
-        // return view('reports.usage', compact('platforms','publishers','accesstypes','accessmethods',
-        //                                      'datatypes', 'sectiontypes','master_reports','inst_groups',
-        //                                      'institutions', 'providers'));
+        // $master_reports = Report::orderBy('name', 'asc')->where('parent_id', '=', 0)->get();
+        $master_reports = Report::with('reportFields','children')
+                                ->orderBy('name', 'asc')
+                                ->where('parent_id', '=', 0)
+                                ->get();
+        $user_reports = SavedReport::orderBy('title', 'asc')
+                                   ->where('user_id', '=', auth()
+                                   ->id())
+                                   ->get();
+
+        return view('reports.view', compact('master_reports', 'user_reports'));
+    }
+
+    /**
+     * Setup wizard for creating usage report summaries
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function create(Request $request)
+    {
+        if (auth()->user()->hasAnyRole(['Admin','Viewer'])) {
+            $institutions = Institution::orderBy('name', 'ASC')->where('id','<>',1)->get(['id','name'])->toArray();
+            array_unshift($institutions, ['id' => 0, 'name' => 'Entire Consortium']);
+            $inst_groups = InstitutionGroup::get(['name', 'id'])->toArray();
+            array_unshift($inst_groups, ['id' => 0, 'name' => 'Choose a Group']);
+            $providers = Provider::with('reports')->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+        } else {    // limited view
+            $user_inst = auth()->user()->inst_id;
+            $institutions = Institution::where('id', '=', $user_inst)->get(['id','name'])->toArray();
+            $inst_groups = array();
+            $providers = Provider::with('reports')
+                                 ->where(function ($query) use ($user_inst) {
+                                     $query->where('inst_id',1)->orWhere('inst_id',$user_inst);
+                                 })
+                                 ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+        }
+        array_unshift($providers, ['id' => 0, 'name' => 'All Providers']);
+        $reports = Report::with('reportFields','children')->orderBy('id', 'asc')->get()->toArray();
+        $fields = ReportField::orderBy('id', 'asc')->get()->toArray();
+
+        return view('reports.usage',
+                    compact('institutions','inst_groups','providers','reports','fields'));
     }
 
     /**
@@ -102,27 +121,6 @@ class ReportController extends Controller
     }
 
     /**
-     * View defined reports
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function view(Request $request)
-    {
-        // $master_reports = Report::orderBy('name', 'asc')->where('parent_id', '=', 0)->get();
-        $master_reports = Report::with('reportFields','children')
-                                ->orderBy('name', 'asc')
-                                ->where('parent_id', '=', 0)
-                                ->get();
-        $user_reports = SavedReport::orderBy('title', 'asc')
-                                   ->where('user_id', '=', auth()
-                                   ->id())
-                                   ->get();
-
-        return view('reports.view', compact('master_reports', 'user_reports'));
-    }
-
-    /**
      * Display a specific report
      *
      * @param  \App\Report  $id
@@ -136,6 +134,50 @@ class ReportController extends Controller
         return view('reports.show', compact('report', 'fields'));
     }
 
+    /**
+     * Return dates-available for each master report type, within contraints
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return JSON array
+     */
+    public function getAvailable(Request $request)
+    {
+        $this->validate($request, ['filters' => 'required']);
+        $_filters = json_decode($request->filters, true);
+
+        // update the private global
+// self::$input_filters = ['prov_id' => 9, 'inst_id' => 3];
+        self::$input_filters = $_filters;
+
+        // Setup institution limiter array for whereIn clause later
+        $limit_to_insts = self::limitToInstitutions();
+
+        // Setup where clause conditions for this report based on $input_filters
+        $conditions = array();
+        if (self::$input_filters['prov_id'] > 0) {
+            $conditions[] = array('prov_id',self::$input_filters['prov_id']);
+        }
+
+        // Get counts and min/max yearmon for each master report
+        $output = array();
+        $models = ['TR' => '\\App\\TitleReport',    'DR' => '\\App\\DatabaseReport',
+                   'PR' => '\\App\\PlatformReport', 'IR' => '\\App\\ItemReport'];
+        $raw_query = "Count(*) as  count, min(yearmon) as YM_min, max(yearmon) as YM_max";
+        foreach ($models as $key => $model) {
+            $result = $model::when($limit_to_insts, function ($query, $limit_to_insts) {
+                                return $query->whereIn('inst_id', $limit_to_insts);
+                              })
+                            ->when($conditions, function ($query, $conditions) {
+                                return $query->where($conditions);
+                            })
+                            ->selectRaw($raw_query)
+                            ->get()
+                            ->toArray();
+            $output[$key] = $result[0];
+        }
+        return response()->json(['reports' => $output],200);
+
+    }
     /**
      * Get usage report data records date-range, columns/filters, and sorting
      *

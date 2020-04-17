@@ -84,11 +84,6 @@ export default {
                     name: "Create",
                     role: "All",
                   },
-                  {
-                    url: "/reports/export",
-                    name: "Export",
-                    role: "All",
-                  }
                 ]
               },
               {

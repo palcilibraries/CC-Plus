@@ -94,7 +94,7 @@ class ReportController extends Controller
         $reports = Report::with('reportFields','children')->orderBy('id', 'asc')->get()->toArray();
         $fields = ReportField::orderBy('id', 'asc')->get()->toArray();
 
-        return view('reports.usage',
+        return view('reports.create',
                     compact('institutions','inst_groups','providers','reports','fields'));
     }
 
@@ -115,9 +115,11 @@ class ReportController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function export(Request $request)
+    public function preview(Request $request)
     {
-        return view('reports.export');
+        // Catch inbound filters (if they exist) and pass to the view
+        $filters = (isset($request->filters)) ? json_decode($request->filters, true) : array();
+        return view('reports.preview',compact('filters'));
     }
 
     /**
@@ -146,7 +148,6 @@ class ReportController extends Controller
         $_filters = json_decode($request->filters, true);
 
         // update the private global
-// self::$input_filters = ['prov_id' => 9, 'inst_id' => 3];
         self::$input_filters = $_filters;
 
         // Setup institution limiter array for whereIn clause later
@@ -189,9 +190,9 @@ class ReportController extends Controller
          global $joins, $raw_fields, $group_by, $global_db, $conso_db;
 
          // Validate and deal w/ inputs
-         $this->validate($request, ['master_id' => 'required', 'columns' => 'required',
+         $this->validate($request, ['report_id' => 'required', 'columns' => 'required',
                                     'YM_from' => 'required', 'YM_to' => 'required']);
-         $master_id = $request->master_id;
+         $report_id = $request->report_id;
          $columns = json_decode($request->columns, true);
          $rows = (isset($request->itemsPerPage)) ? $request->itemsPerPage : 20;
          $preview = (isset($request->preview)) ? $request->preview : 0;
@@ -203,11 +204,17 @@ class ReportController extends Controller
          $conso_db = config('database.connections.consodb.database');
 
         // Get Report model, set report table target
-        $report = Report::where('id',$master_id)->where('parent_id','0')->first();
+        $report = Report::where('id',$report_id)->first();
         if (!$report) {
-            return response()->json(['result' => false, 'msg' => 'Master Report is undefined!']);
+            return response()->json(['result' => false, 'msg' => 'Report ID: ' . $report_id . ' is undefined']);
         }
-        $report_table = $conso_db . '.' . strtolower($report->name) . '_report_data';
+
+        if ($report->parent_id == 0) {
+            $master_name = $report->name;
+        } else {
+            $master_name = $report->parent->name;
+        }
+        $report_table = $conso_db . '.' . strtolower($master_name) . '_report_data';
 
         // Setup institution limiter array for whereIn clause later
         $limit_to_insts = self::limitToInstitutions();
@@ -224,7 +231,7 @@ class ReportController extends Controller
         $sortDir = ($request->sortDesc) ? 'desc' : 'asc';
 
         // Run the query
-        if ($master_id==1) {    // TR report
+        if ($master_name == "TR") {
             $records = DB::table($report_table . ' as TR')
                       ->join($global_db . '.titles as TI', 'TR.title_id', 'TI.id')
                       ->when($joins['institution'], function ($query, $join) {
@@ -272,31 +279,40 @@ class ReportController extends Controller
      * Update usage report filter options based on Vue state date-range and/or active columns/filters
      *
      * @param  \Illuminate\Http\Request  $request
-     *         Expects $request to be a JSON object holding the Vue state.filter_by object and master_id
+     *         Expects $request to be a JSON object holding the Vue state.filter_by object and report_id
      * @return \Illuminate\Http\Response
      */
     public function updateFilters(Request $request)
     {
+        global $conso_db;
+        $conso_db = config('database.connections.consodb.database');
+
         // Get and verify input or bail with error in json response
         try {
             $input = json_decode($request->getContent(), true);
         } catch (\Exception $e) {
             return response()->json(['result' => false, 'msg' => 'Error decoding input']);
         }
-        if (!isset($input['filters']) || !isset($input['master_id'])) {
+        if (!isset($input['filters'])) {
             return response()->json(['result' => false, 'msg' => 'One or more inputs are missing!']);
         }
 
         // update the private global
         self::$input_filters = $input['filters'];
+        $report_id = self::$input_filters['report_id'];
 
-        // Get Report model, set database table target
-        $report = Report::where('id',$input['master_id'])->where('parent_id','0')->first();
+        // Get Report model, set report table target
+        $report = Report::where('id',$report_id)->first();
         if (!$report) {
-            return response()->json(['result' => false, 'msg' => 'Master Report is undefined!']);
+            return response()->json(['result' => false, 'msg' => 'Report ID: ' . $report_id . ' is undefined']);
         }
-        $report_table = config('database.connections.consodb.database') . "." .
-                        strtolower($report->name) . '_report_data';
+
+        if ($report->parent_id == 0) {
+            $master_name = $report->name;
+        } else {
+            $master_name = $report->parent->name;
+        }
+        $report_table = $conso_db . '.' . strtolower($master_name) . '_report_data';
 
         // Setup institution limiter array for whereIn clause later
         $limit_to_insts = self::limitToInstitutions();
@@ -304,24 +320,23 @@ class ReportController extends Controller
         // Build where clause conditions for this report based on $input_filters
         $conditions = self::filterOnConditions($report);
 
-    // Not sure this is really necessary...
-        // // Query for min and max yearmon values, store in the return_values array
-        // $return_values = array();
-        // if (!empty($limit_to_insts)) {
-        //     $ym_range = DB::table($report_table)
-        //                   ->whereIn('inst_id', $limit_to_insts)
-        //                   ->where($conditions)
-        //                   ->selectRaw('min(yearmon) as YM_min, max(yearmon) as YM_max')
-        //                   ->get();
-        // } else {
-        //     $ym_range = DB::table($report_table)
-        //                   ->where($conditions)
-        //                   ->selectRaw('min(yearmon) as YM_min, max(yearmon) as YM_max')
-        //                   ->get();
-        // }
-        //
+        // Query for min and max yearmon values, store in the return_values array
+        $raw_query = "Count(*) as count, min(yearmon) as YM_min, max(yearmon) as YM_max";
+        $result = DB::table($report_table)
+                    ->when($limit_to_insts, function ($query, $limit_to_insts) {
+                        return $query->whereIn('inst_id', $limit_to_insts);
+                    })
+                    ->when($conditions, function ($query, $conditions) {
+                        return $query->where($conditions);
+                    })
+                    ->selectRaw($raw_query)
+                    ->get()
+                    ->toArray();
+        $bounds = $result[0];
+
         // Query the XX_report_data table to build select options for all filters connected
         // to active columns (id >= 0) regardless of whether the filter is actively limiting.
+        $filter_data = array();
         foreach ($report->reportFilters as $filt) {
             if ( !isset(self::$input_filters[$filt->report_column])) {
                 continue;
@@ -329,10 +344,11 @@ class ReportController extends Controller
             if (self::$input_filters[$filt->report_column] < 0) { // Don't query if column is inactive
                 continue;
             }
-            // Skip getting inst-ids if we're limiting institution
+            // Don't need to query to limit by institution
             if ($filt->report_column == 'inst_id' && !empty($limit_to_insts)) {
                 $_ids = $limit_to_insts;
             } else {
+                // Get distinct ids for the column from the report
                 $_ids = DB::table($report_table)
                           ->when($limit_to_insts, function ($query, $limit_to_insts) {
                               return $query->whereIn('inst_id', $limit_to_insts);
@@ -341,7 +357,7 @@ class ReportController extends Controller
                           ->distinct()
                           ->pluck($filt->report_column);
             }
-            // Setup an array of ID+name pairs for the filter, append it to $return_values
+            // Setup an array of ID+name pairs for the filter, append it to $filter_data
             $_db = ($filt->is_global) ? config('database.connections.globaldb.database') . "."
                                       : config('database.connections.consodb.database') . ".";
             ${$filt->table_name} = DB::table($_db . $filt->table_name)
@@ -350,10 +366,10 @@ class ReportController extends Controller
                                      ->toArray();
             array_unshift(${$filt->table_name}, ['id' => 0, 'name' => 'ALL']);
             $_key = rtrim($filt->table_name, "s");
-            $return_values[$_key] = ${$filt->table_name};
+            $filter_data[$_key] = ${$filt->table_name};
         }
 
-        return response()->json(['result' => true, 'filters' => $return_values]);
+        return response()->json(['result' => true, 'filters' => $filter_data, 'bounds' => $bounds]);
     }
 
     /**

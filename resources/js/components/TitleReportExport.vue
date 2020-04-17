@@ -1,5 +1,9 @@
 <template>
   <div>
+    <date-range :minym="minYM" :maxym="maxYM"
+                :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM"
+                :key="rangeKey"
+    ></date-range>
     <span><strong>Show/Hide Columns</strong></span>
     <v-row no-gutters>
       <v-col class="ma-2" v-for="header in headers" :key="header.value">
@@ -119,17 +123,23 @@
 <script>
   import { mapGetters } from 'vuex';
   export default {
-    props: { },
+    props: {
+        input_filters: { type:Object, default: () => {} },
+        // input_filters: { type:Array, default: () => [] },
+    },
     data () {
       return {
         showPreview: false,
         preview_text: 'Display Preview',
-        master_id: 1,          // for TR report
+        report_id: 1, // default to TR master
         change_counter: 0,
         totalRecs: 0,
         filter_drawer: null,
         column_drawer: null,
         loading: true,
+        minYM: '',
+        maxYM: '',
+        rangeKey: 1,
         pagination: {
             page: 1,
             itemsPerPage: 20,
@@ -257,7 +267,7 @@
           var self = this;
           axios.post('/update-report-filters', {
               filters: targets,
-              master_id: this.master_id,
+              report_id: this.report_id,
           })
           .then( function(response) {
               for (var key in self.filter_data) {
@@ -267,18 +277,34 @@
                       self.$store.dispatch(action, response.data.filters[key]);
                   }
               }
+              self.minYM = response.data.bounds.YM_min;
+              self.maxYM = response.data.bounds.YM_max;
           })
           .catch(error => {});
         },
     },
     computed: {
+      ...mapGetters(['is_manager','is_viewer','all_filters','all_options', 'filter_by_fromYM', 'filter_by_toYM']),
+      // Returns an array of yearmon strings based on From/To in the store
+      months(nv) {
+        let _mons = new Array();
+        var from_parts = this.filter_by_fromYM.split("-");
+        var to_parts = this.filter_by_toYM.split("-");
+        var fromDate = new Date(+from_parts[0], from_parts[1] - 1, 1);
+        var toDate = new Date(+to_parts[0], to_parts[1] - 1, 1);
+
+        for (var m = fromDate; m <= toDate; m.setMonth(m.getMonth() + 1)) {
+            _mons.push(m.toISOString().substring(0,7));
+        }
+        return _mons;
+      },
       //computed params to return pagination and settings
       params(nv) {
         return {
             preview: 100,
-            master_id: this.master_id,
-            YM_from: this.all_filters.YM_from,
-            YM_to: this.all_filters.YM_to,
+            report_id: this.report_id,
+            YM_from: this.all_filters.fromYM,
+            YM_to: this.all_filters.toYM,
             ...this.pagination
         };
       },
@@ -306,21 +332,36 @@
           return filtered;
         });
       },
-
-      ...mapGetters(['is_manager','is_viewer','all_filters','all_options']),
+      showCounts() {
+          return this.showColumn('total_item_investigations') || this.showColumn('total_item_requests') ||
+                 this.showColumn('unique_item_investigations') || this.showColumn('unique_item_requests') ||
+                 this.showColumn('unique_title_investigations') || this.showColumn('unique_title_requests') ||
+                 this.showColumn('limit_exceeded') || this.showColumn('no_license');
+      },
     },
     mounted() {
-      // Turn off initial filter-state for "filterable" columns defaulted as not active
-      this.headers.forEach(head => {
-        if (typeof(this.filter_data[head.value]) != 'undefined') {    // filtered column?
-            var theFilter = this.filter_data[head.value];
-            var action = theFilter.act+'Filter';
-            if (!head.active) this.$store.dispatch(action,-1);
-        }
-      });
+// --->>    NOW: need a way to set/get/pass-in which columns to default on+off
+// --->>         based on store.report_id  ...
+// --->>         may be something to be added to updateReportFilters
+      // If we got filters as a valid prop, push into the state
+      if (typeof(this.input_filters) != 'undefined') {
+          if (Object.keys(this.input_filters).length >= 11) {
+              this.$store.dispatch('updateAllFilters',this.input_filters);
+          }
+      } else {
+          // Turn off initial filter-state for "filterable" columns defaulted as not active
+          this.headers.forEach(head => {
+            if (typeof(this.filter_data[head.value]) != 'undefined') {    // filtered column?
+                var theFilter = this.filter_data[head.value];
+                var action = theFilter.act+'Filter';
+                if (!head.active) this.$store.dispatch(action,-1);
+            }
+          });
+      }
 
       // Set options for all filters and in the datastore
       this.updateReportFilters();
+      this.rangeKey += 1;           // force re-render of the date-range component
       console.log('TitleReport Component mounted.');
     }
   }

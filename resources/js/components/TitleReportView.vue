@@ -137,7 +137,7 @@
     },
     data () {
       return {
-        master_id: 1,          // for TR report
+        report_id: 1,          // for master TR
         YM_from: '2020-01',    //testing
         YM_to: '2020-01',      //testing
         // change_counter: 0,
@@ -309,7 +309,7 @@
           var self = this;
           axios.post('/update-report-filters', {
               filters: targets,
-              master_id: this.master_id,
+              report_id: this.report_id,
           })
           .then( function(response) {
               for (var key in self.filter_data) {
@@ -327,7 +327,7 @@
       //computed params to return pagination, sorting, and date-range
       params(nv) {
         return {
-            master_id: this.master_id,
+            report_id: this.report_id,
             YM_from: this.YM_from,
             YM_to: this.YM_to,
             ...this.pagination

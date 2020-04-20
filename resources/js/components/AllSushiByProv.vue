@@ -30,7 +30,12 @@
                           outlined
             ></v-text-field>
 			<v-btn small color="primary" type="submit" :disabled="form.errors.any()">Connect</v-btn>
+            <v-btn small color="secondary" type="button" @click="testSettings">Test Settings</v-btn>
 			<v-btn small type="button" @click="hideForm">cancel</v-btn>
+            <div v-if="showTest">
+            	<div>{{ testStatus }}</div>
+            	<div v-for="row in testData">{{ row }}</div>
+			</div>
 		</div>
 	  </form>
 	  	</template>
@@ -72,6 +77,9 @@
                 success: '',
                 failure: '',
 				showForm: false,
+                showTest: false,
+                testData: '',
+                testStatus: '',
                 mutable_settings: this.settings,
                 headers: [
                   { text: 'Name ', value: 'name' },
@@ -127,6 +135,27 @@
                   }
                 })
                 .catch({});
+            },
+            testSettings (event) {
+                if (!(this.is_admin || this.is_manager)) { return; }
+                var self = this;
+                self.showTest = true;
+                self.testData = '';
+                self.testStatus = "... Working ...";
+                // axios.get('/sushisettings-test'+'?prov_id='+self.form.prov_id+'&'+'inst_id='+this.inst_id)
+                axios.get('/sushisettings-test'+'?prov_id='+self.form.prov_id+'&'
+                                               +'requestor_id='+this.form.requestor_id+'&'
+                                               +'customer_id='+this.form.customer_id+'&'
+                                               +'apikey='+this.form.API_key)
+                     .then( function(response) {
+                        if ( response.data.result == '') {
+                            self.testStatus = "No results!";
+                        } else {
+                            self.testStatus = response.data.result;
+                            self.testData = response.data.rows;
+                        }
+                    })
+                   .catch(error => {});
             },
             onUnsetChange (prov) {
 				// console.log(this.showForm);

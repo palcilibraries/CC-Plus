@@ -143,7 +143,11 @@
                 self.showTest = true;
                 self.testData = '';
                 self.testStatus = "... Working ...";
-                axios.get('/sushisettings-test'+'?prov_id='+self.form.prov_id+'&'+'inst_id='+this.inst_id)
+                // axios.get('/sushisettings-test'+'?prov_id='+self.form.prov_id+'&'+'inst_id='+this.inst_id)
+                axios.get('/sushisettings-test'+'?prov_id='+self.form.prov_id+'&'
+                                               +'requestor_id='+this.form.requestor_id+'&'
+                                               +'customer_id='+this.form.customer_id+'&'
+                                               +'apikey='+this.form.API_key)
                      .then( function(response) {
                         if ( response.data.result == '') {
                             self.testStatus = "No results!";

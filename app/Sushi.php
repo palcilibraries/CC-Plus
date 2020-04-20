@@ -145,7 +145,7 @@ class Sushi extends Model
         $_url = preg_replace('/\/?status\/?/i', '', $_url);  //   "   "   "     "      "   "     "        "
         $_url = preg_replace('/\/?members\/?/i', '', $_url); //   "   "   "     "      "   "     "        "
         $_uri = rtrim($_url, '/');                           // remove any remaining trailing slashes
-        $request_uri = $_url . '/' . $method . '/';
+        $request_uri = $_uri . '/' . $method . '/';
 
        // Construct and execute the Request
         $uri_auth = "?customer_id=" . urlencode($setting->customer_id);

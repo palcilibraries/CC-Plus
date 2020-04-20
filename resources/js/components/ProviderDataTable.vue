@@ -3,13 +3,13 @@
     <template v-slot:item="{ item }">
       <tr>
         <td v-if="is_admin || is_manager">
-          <a :href="'/providers/'+item.prov_id+'/edit'">{{ item.prov_name }}</a>
+          <a :href="'/providers/'+item.prov_id">{{ item.prov_name }}</a>
         </td>
         <td v-else>{{ item.prov_name }}</a>
         <td v-if="item.is_active">Active</td>
         <td v-else>Inactive</td>
         <td v-if="item.inst_id==1">Entire Consortium</td>
-        <td v-else><a :href="'/institutions/'+item.inst_id+'/edit'">{{ item.inst_name }}</a></td>
+        <td v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></td>
         <td>{{ item.day_of_month }}</td>
         <td>&nbsp;</td>
       </tr>

@@ -2,7 +2,7 @@
   <v-data-table :headers="headers" :items="institutions" item-key="id" class="elevation-1">
     <template v-slot:item="{ item }">
       <tr>
-        <td><a :href="'/institutions/'+item.id+'/edit'">{{ item.name }}</a></td>
+        <td><a :href="'/institutions/'+item.id">{{ item.name }}</a></td>
         <td>{{ item.type }}</td>
         <td v-if="item.is_active">Active</td>
         <td v-else>Inactive</td>

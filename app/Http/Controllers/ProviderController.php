@@ -145,7 +145,6 @@ class ProviderController extends Controller
             '_prov',
             'institutions',
             'master_reports',
-            'provider_reports',
             'sushi_insts'
         ));
     }

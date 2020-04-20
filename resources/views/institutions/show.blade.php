@@ -7,9 +7,11 @@
 	<div class="page-header">
 	    <h1>{{ $institution->name }}</h1>
 	</div>
+	@if ( auth()->user()->hasAnyRole(['Admin']) )
 	<div class="page-action">
 		<a class="btn btn-primary v-btn v-btn--contained btn-danger theme--light v-size--small" href="#">Delete</a>
 	</div>
+	@endif
 </div>
 
     <institution-form :institution="{{ json_encode($institution) }}"

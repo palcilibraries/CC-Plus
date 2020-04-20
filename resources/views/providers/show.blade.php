@@ -1,62 +1,37 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="row">
-    <div class="col-lg-12 margin-tb">
-        <div class="pull-left">
-            <h2> Show Providers</h2>
-        </div>
-        <div class="pull-right">
-            <a class="btn btn-primary" href="{{ route('providers.index') }}"> Back</a>
-        </div>
-    </div>
+<v-app providerform>
+
+<div>
+	<div class="page-header">
+	    <h1>{{ $provider->name }}</h1>
+	</div>
+	@if ( auth()->user()->hasAnyRole(['Admin']) )
+	<div class="page-action">
+		<a class="btn btn-primary v-btn v-btn--contained btn-danger theme--light v-size--small" href="#">Delete</a>
+	</div>
+	@endif
 </div>
 
-<div class="row">
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <strong>Name:</strong>
-            {{ $provider->name }}
-        </div>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <strong>Status:</strong>
-            {{ $provider->is_active ? 'Active' : 'Inactive' }}
-        </div>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <?php
-            $inst_name = ($provider->institution->id == 1) ? "Entire Consortium" : $provider->institution->name;
-            ?>
-            <strong>Serves:</strong> {{ $inst_name }}
-        </div>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <strong>Service URL:</strong> {{ $provider->server_url_r5 }}
-        </div>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <strong>Security:</strong> {{ $provider->security }}
-        </div>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <strong>Username:</strong> {{ $provider->auth_username }}
-        </div>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <strong>Password:</strong> {{ $provider->auth_password }}
-        </div>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <strong>Harvests on Day:</strong> {{ $provider->day_of_month }}
-        </div>
-    </div>
-</div>
+<provider-form :provider="{{ json_encode($_prov) }}"
+	 :prov_inst_name="{{ json_encode($provider->institution->name) }}"
+	 :institutions="{{ json_encode($institutions) }}"
+	 :master_reports="{{ json_encode($master_reports) }}"
+	 :provider_reports="{{ json_encode($provider_reports) }}"
+></provider-form>
+
+<!-- ******** create all-sushi-by-prov  ******** -->
+
+  <div class="related-list">
+	  <h2 class="section-title">Institutions</h2>
+	  <v-btn small color="primary" type="button" href="{{ route('institutions.create') }}" class="section-action">add new</v-btn>
+	  <all-sushi-by-prov :settings="{{ json_encode($provider->sushiSettings->toArray()) }}"
+		  				 :prov_id="{{ json_encode($provider->id) }}"
+		  				 :unset="{{ json_encode($unset_institutions) }}"
+	  ></all-sushi-by-prov>
+  </div>
+
+</v-app>
+
 @endsection

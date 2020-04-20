@@ -30,7 +30,12 @@
                           outlined
             ></v-text-field>
 			<v-btn small color="primary" type="submit" :disabled="form.errors.any()">Connect</v-btn>
+			<v-btn small color="secondary" type="button" @click="testSettings">Test Settings</v-btn>
 			<v-btn small type="button" @click="hideForm">cancel</v-btn>
+			<div v-if="showTest">
+            	<div>{{ testStatus }}</div>
+            	<div v-for="row in testData">{{ row }}</div>
+			</div>
 		</div>
 	  </form>
 	  	</template>
@@ -71,6 +76,10 @@
             return {
                 success: '',
                 failure: '',
+                testData: '',
+                testStatus: '',
+                allowTest: false,
+                showTest: false,
 				showForm: false,
                 mutable_settings: this.settings,
                 headers: [
@@ -127,6 +136,23 @@
                   }
                 })
                 .catch({});
+            },
+            testSettings (event) {
+                if (!(this.is_admin || this.is_manager)) { return; }
+                var self = this;
+                self.showTest = true;
+                self.testData = '';
+                self.testStatus = "... Working ...";
+                axios.get('/sushisettings-test'+'?prov_id='+self.form.prov_id+'&'+'inst_id='+this.inst_id)
+                     .then( function(response) {
+                        if ( response.data.result == '') {
+                            self.testStatus = "No results!";
+                        } else {
+                            self.testStatus = response.data.result;
+                            self.testData = response.data.rows;
+                        }
+                    })
+                   .catch(error => {});
             },
             onUnsetChange (prov) {
 				// console.log(this.showForm);

@@ -6,7 +6,7 @@
       <span class="form-good" role="alert" v-text="success"></span>
       <span class="form-fail" role="alert" v-text="failure"></span>
    	</template>
-    
+
 	<div>
     <!-- form display control and confirmations  -->
     <!-- Values-only when form not active -->
@@ -44,7 +44,7 @@
   	    </tr>
   	  </v-simple-table>
     </div>
-	
+
     <div v-else>
       <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
 	          <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
@@ -88,6 +88,7 @@
               </v-btn>
 			  <v-btn small type="button" @click="hideForm">cancel</v-btn>
       </form>
+    </div>
     </div>
   </div>
 </template>

@@ -37,7 +37,7 @@
     <v-data-table :headers="headers" :items="mutable_settings" item-key="id" class="elevation-1">
       <template v-slot:item="{ item }" >
         <tr>
-          <td><a :href="'/institutions/'+item.institution.id+'/edit'">{{ item.institution.name }}</a></td>
+          <td><a :href="'/institutions/'+item.institution.id">{{ item.institution.name }}</a></td>
           <td>{{ item.customer_id }}</td>
           <td>{{ item.requestor_id }}</td>
           <td>{{ item.API_key }}</td>

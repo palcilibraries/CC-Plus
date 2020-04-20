@@ -87,8 +87,27 @@ class ProviderController extends Controller
      */
     public function show($id)
     {
-        $provider = Provider::findOrFail($id);
-        return view('providers.show', compact('provider'));
+        // $provider = Provider::findOrFail($id);
+        $provider = Provider::with(['reports', 'sushiSettings','sushiSettings.institution'])->findOrFail($id);
+
+       // Build $institutions based on whether the user is admin or Manager
+        if (auth()->user()->hasRole("Admin")) {
+            $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
+            $institutions[0]['name'] = 'Entire Consortium';
+        } else {  // Manager limited their own inst
+            $institutions = Institution::where('id', '=', auth()->user()->inst_id)->get(['id','name'])->toArray();
+        }
+
+        // Get id+name pairs for institutions without settings for this provider. This is used to
+        // set per-inst sushi settings... so keep inst=1 (whole consortium) out of the list.
+        $set_inst_ids = $provider->sushiSettings->pluck('inst_id');
+        $set_inst_ids[] = 1;
+        $unset_institutions = Institution::whereNotIn('id',$set_inst_ids)
+                                         ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
+        $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
+                                 ->get(['id','name'])->toArray();
+
+        return view('providers.show', compact('provider', 'institutions', 'unset_institutions', 'master_reports'));
     }
 
     /**
@@ -101,8 +120,9 @@ class ProviderController extends Controller
     {
        // Limit edit form access to admins and managers
         abort_unless(auth()->user()->hasAnyRole(["Admin","Manager"]), 403);
-        $provider = Provider::findOrFail($id);
-        $provider_reports = $provider->reports()->pluck('report_id')->all();
+        $provider = Provider::with(['reports', 'sushiSettings','sushiSettings.institution'])->findOrFail($id);
+        // $provider_reports = $provider->reports()->pluck('report_id')->all();
+
         $_prov = $provider->toArray();
 
        // Build $institutions based on whether the user is admin or Manager

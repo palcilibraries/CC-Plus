@@ -73,7 +73,7 @@
 	              <v-select
 	                  :items="master_reports"
 	                  v-model="form.master_reports"
-	                  value="provider_reports"
+	                  value="provider.reports"
 	                  item-text="name"
 	                  item-value="id"
 	                  label="Select"
@@ -101,10 +101,8 @@
     export default {
         props: {
                 provider: { type:Object, default: () => {} },
-                prov_inst_name: { type:String, default: '' },
                 institutions: { type:Array, default: () => [] },
                 master_reports: { type:Array, default: () => [] },
-                provider_reports: { type:Array, default: () => [] },
                },
 
         data() {
@@ -116,15 +114,15 @@
                 inst_name: '',
                 can_edit: false,
 				showForm: false,
-                mutable_prov: {},
-				mutable_reports: this.provider_reports,
+                mutable_prov: this.provider,
+				mutable_reports: this.provider.reports,
                 form: new window.Form({
                     name: this.provider.name,
                     inst_id: this.provider.inst_id,
                     is_active: this.provider.is_active,
                     server_url_r5: this.provider.server_url_r5,
                     day_of_month: this.provider.day_of_month,
-                    master_reports: this.provider_reports,
+                    master_reports: this.master_reports,
                 })
             }
         },
@@ -168,7 +166,8 @@
             if ( this.provider.inst_id==1 ) {
                 this.inst_name="Entire Consortium";
             } else {
-                this.inst_name = this.prov_inst_name;
+                this.inst_name = this.institutions[this.provider.inst_id];
+                // this.inst_name = this.provider.institution.name;
             }
             if ( this.is_manager && this.provider.inst_id==this.user_inst_id) {
                 this.can_edit = true;
@@ -176,7 +175,7 @@
                 this.can_edit = false;
             }
             this.status=this.statusvals[this.provider.is_active];
-			Object.assign(this.mutable_prov, this.provider);
+			// Object.assign(this.mutable_prov, this.provider);
             console.log('Provider Component mounted.');
         }
     }

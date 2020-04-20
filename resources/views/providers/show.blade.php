@@ -14,11 +14,9 @@
 	@endif
 </div>
 
-<provider-form :provider="{{ json_encode($_prov) }}"
-	 :prov_inst_name="{{ json_encode($provider->institution->name) }}"
-	 :institutions="{{ json_encode($institutions) }}"
-	 :master_reports="{{ json_encode($master_reports) }}"
-	 :provider_reports="{{ json_encode($provider_reports) }}"
+<provider-form :provider="{{ json_encode($provider) }}"
+	 		   :institutions="{{ json_encode($institutions) }}"
+	 	   	   :master_reports="{{ json_encode($master_reports) }}"
 ></provider-form>
 
 <!-- ******** create all-sushi-by-prov  ******** -->

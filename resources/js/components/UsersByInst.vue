@@ -27,7 +27,7 @@
     import axios from 'axios';
     export default {
         props: {
-                users: { type:Array, default: () => {} },
+                users: { type:Array, default: () => [] },
                },
         data() {
             return {

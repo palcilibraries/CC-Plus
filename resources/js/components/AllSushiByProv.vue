@@ -68,8 +68,8 @@
 
     export default {
         props: {
-                settings: { type:Array, default: () => {} },
-                unset: { type:Array, default: () => {} },
+                settings: { type:Array, default: () => [] },
+                unset: { type:Array, default: () => [] },
                 prov_id: { type:Number, default: 0 }
                },
         data() {

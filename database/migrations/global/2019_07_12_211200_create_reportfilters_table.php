@@ -15,13 +15,10 @@ class CreateReportFiltersTable extends Migration
     {
         Schema::create('reportfilters', function (Blueprint $table) {
             $table->Increments('id');
-            $table->unsignedInteger('report_id');
             $table->boolean('is_global')->default(0);
             $table->string('table_name');
             $table->string('report_column');
             $table->timestamps();
-
-            $table->foreign('report_id')->references('id')->on('reports')->onDelete('cascade');
         });
     }
 

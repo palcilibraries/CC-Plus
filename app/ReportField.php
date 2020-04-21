@@ -17,7 +17,8 @@ class ReportField extends Model
    *
    * @var array
    */
-    protected $fillable = ['report_id', 'legend', 'joins', 'qry', 'group_it'];
+    protected $fillable = ['report_id', 'legend', 'joins', 'qry', 'qry_as','group_it',
+                           'report_filter_id', 'active', 'reload'];
 
     public function report()
     {
@@ -35,5 +36,10 @@ class ReportField extends Model
     public function alertSettings()
     {
         return $this->hasMany('App\AlertSetting');
+    }
+
+    public function reportFilter()
+    {
+        return $this->hasOne('App\ReportFilter', 'report_filter_id');
     }
 }

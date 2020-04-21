@@ -248,7 +248,7 @@
         },
         onGroupChange () {
             this.$store.dispatch('updateInstGroupFilter',this.inst_group_id);
-            let grp = this.inst_groups.find(obj => obj.id == this.inst_group.id);
+            let grp = this.inst_groups.find(obj => obj.id == this.inst_group_id);
             this.inst_name = grp.name;
             this.dialogs.prov = true;
             // this.updateAvailable();

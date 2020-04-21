@@ -17,10 +17,10 @@ class ReportFilter extends Model
    *
    * @var array
    */
-    protected $fillable = ['report_id', 'is_global', 'table_name', 'report_column'];
+    protected $fillable = ['is_global', 'table_name', 'report_column'];
 
-    public function report()
+    public function reportField()
     {
-        return $this->belongsTo('App\Report', 'report_id');
+        return $this->belongsToMany('App\ReportField', 'report_filter_id');
     }
 }

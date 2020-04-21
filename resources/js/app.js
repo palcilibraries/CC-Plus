@@ -18,6 +18,7 @@ import { store } from '@/js/plugins/store.js';
  * Eg. ./components/ExampleComponent.vue -> <example-component></example-component>
  */
 // const files = require.context('./', true, /\.vue$/i);
+// const files = require.context('./components/filters/', true, /\.vue$/i);
 // files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default));
 Vue.component('topnav', require('./components/Navbar.vue').default);
 Vue.component('flash', require('./components/Flash.vue').default);
@@ -34,10 +35,9 @@ Vue.component('institution-form', require('./components/InstitutionForm.vue').de
 Vue.component('institution-data-table', require('./components/InstitutionDataTable.vue').default);
 Vue.component('date-range', require('./components/DateRange.vue').default);
 Vue.component('create-report', require('./components/CreateReport.vue').default);
-Vue.component('title-report-view', require('./components/TitleReportView.vue').default);
-Vue.component('title-report-export', require('./components/TitleReportExport.vue').default);
-// const files = require.context('./components/filters/', true, /\.vue$/i);
-// files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default));
+Vue.component('report-export', require('./components/ReportExport.vue').default);
+// Vue.component('title-report-view', require('./components/TitleReportView.vue').default);
+// Vue.component('title-report-export', require('./components/TitleReportExport.vue').default);
 
 /**
  * Create a fresh Vue application instance with Vuetify.

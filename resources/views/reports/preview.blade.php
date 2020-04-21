@@ -5,8 +5,9 @@
 <div id="app">
   <v-app>
     <v-content>
-<? dd($filters); ?>
-      <title-report-export :input_filters="{{ json_encode($filters) }}"></title-report-export>
+      <report-export :preset_filters="{{ json_encode($preset_filters) }}"
+                     :columns="{{ json_encode($columns) }}"
+      ></report-export>
     </v-content>
   </v-app>
 </div>

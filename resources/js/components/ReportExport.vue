@@ -82,34 +82,18 @@
       <v-btn color="green" type="button" @click="previewData">{{ preview_text }}</v-btn>
     </v-row>
     <v-container v-if="showPreview" fluid>
+<!--
       <v-data-table :headers="filteredHeaders" :items="filteredItems"
                     :loading="loading" :footer-props="footer_props" dense class="elevation-1">
         <template slot="filteredItems" slot-scope="item">
+-->
+      <v-data-table :headers="filteredHeaders" :items="report_data"
+                    :loading="loading" :footer-props="footer_props" dense class="elevation-1">
+        <template slot-scope="item">
           <tr>
-            <td v-if="showColumn('Title')">{{ item.Title }}</td>
-            <td v-if="showColumn('provider')">{{ item.provider }}</td>
-            <td v-if="showColumn('publisher')">{{ item.publisher }}</td>
-            <td v-if="showColumn('platform')">{{ item.platform }}</td>
-            <td v-if="showColumn('institution')">{{ item.institution }}</td>
-            <td v-if="showColumn('datatype')">{{ item.datatype }}</td>
-            <td v-if="showColumn('sectiontype')">{{ item.sectiontype }}</td>
-            <td v-if="showColumn('accesstype')">{{ item.accesstype }}</td>
-            <td v-if="showColumn('accessmethod')">{{ item.accessmethod }}</td>
-            <td v-if="showColumn('YOP')">{{ item.YOP }}</td>
-            <td v-if="showColumn('ISBN')">{{ item.ISBN }}</td>
-            <td v-if="showColumn('ISSN')">{{ item.ISSN }}</td>
-            <td v-if="showColumn('eISSN')">{{ item.eISSN }}</td>
-            <td v-if="showColumn('URI')">{{ item.URI }}</td>
-            <td v-if="showColumn('DOI')">{{ item.DOI }}</td>
-            <td v-if="showColumn('PropID')">{{ item.PropID }}</td>
-            <td v-if="showColumn('total_item_investigations')">{{ item.total_item_investigations }}</td>
-            <td v-if="showColumn('total_item_requests')">{{ item.total_item_requests }}</td>
-            <td v-if="showColumn('unique_item_investigations')">{{ item.unique_item_investigations }}</td>
-            <td v-if="showColumn('unique_item_requests')">{{ item.unique_item_requests }}</td>
-            <td v-if="showColumn('unique_title_investigations')">{{ item.unique_title_investigations }}</td>
-            <td v-if="showColumn('unique_title_requests')">{{ item.unique_title_requests }}</td>
-            <td v-if="showColumn('limit_exceeded')">{{ item.limit_exceeded }}</td>
-            <td v-if="showColumn('no_license')">{{ item.no_license }}</td>
+            <template slot="headers" slot-scope="header">
+              <td v-if="showColum(header.value)">{{ item[header.value] }}</td>
+            </template>
           </tr>
         </template>
       </v-data-table>
@@ -124,14 +108,13 @@
   import { mapGetters } from 'vuex';
   export default {
     props: {
-        input_filters: { type:Object, default: () => {} },
-        // input_filters: { type:Array, default: () => [] },
+        preset_filters: { type:Object, default: () => {} },
+        columns: { type:Array, default: () => [] },
     },
     data () {
       return {
         showPreview: false,
         preview_text: 'Display Preview',
-        report_id: 1, // default to TR master
         change_counter: 0,
         totalRecs: 0,
         filter_drawer: null,
@@ -143,7 +126,7 @@
         pagination: {
             page: 1,
             itemsPerPage: 20,
-            sortBy: ["Title"],
+            sortBy: [],
             sortDesc: [0],
             totalItems: 0
         },
@@ -160,32 +143,7 @@
           accesstype: { col:'accesstype_id', act:'updateAccessType', value: -1 },
           accessmethod: { col:'accessmethod_id', act:'updateAccessMethod', value: -1 },
         },
-        headers: [
-          { text:'Title', value:'Title', active:true, reload: true },
-          { text:'Provider', value:'provider', active:true, reload: true },
-          { text:'Publisher', value:'publisher', active:false, reload: true },
-          { text:'Platform', value:'platform', active:true, reload: true },
-          { text:'Institution', value:'institution', active:true, reload: true },
-          { text:'Data Type', value:'datatype', active:false, reload: true },
-          { text:'Section Type', value:'sectiontype', active:false, reload: true },
-          { text:'Access Type', value:'accesstype', active:false, reload: true },
-          { text:'Access Method', value:'accessmethod', active:false, reload: true },
-          { text:'Year of Publication', value:'YOP', active:false, reload: true },
-          { text:'ISBN', value:'ISBN', active:false, reload: true },
-          { text:'ISSN', value:'ISSN', active:false, reload: true },
-          { text:'eISSN', value:'eISSN', active:false, reload: true },
-          { text:'URI', value:'URI', active:false, reload: true },
-          { text:'DOI', value:'DOI', active:false, reload: true },
-          { text:'Proprietary ID', value:'PropID', active:false, reload: true },
-          { text:'Total Item Investigations', value:'total_item_investigations', active:false, reload: false },
-          { text:'Total Item Requests', value:'total_item_requests', active:true, reload: false },
-          { text:'Unique Item Investigations', value:'unique_item_investigations', active:false, reload: false },
-          { text:'Unique Item Requests', value:'unique_item_requests', active:false, reload: false },
-          { text:'Unique Title Investigations', value:'unique_title_investigations', active:false, reload: false },
-          { text:'Unique Title Requests', value:'unique_title_requests', active:false, reload: false },
-          { text:'Limit Exceeded', value:'limit_exceeded', active:false, reload: false },
-          { text:'No License', value:'no_license', active:false, reload: false },
-        ],
+        headers: this.columns,
       }
     },
     methods: {
@@ -243,12 +201,12 @@
           //copy current params to modify
           let params = this.params;
           params['filters'] = JSON.stringify(this.all_filters);
-          let columns = {};
+          let cols = {};
           this.headers.forEach(head => {
             var filter = (typeof(this.filter_data[head.value])=='undefined') ? '' : this.filter_data[head.value].value;
-            columns[head.value] = {active: head.active, limit: filter};
+            cols[head.value] = {active: head.active, limit: filter};
           })
-          params['columns'] = JSON.stringify(columns);
+          params['columns'] = JSON.stringify(cols);
 
           return new Promise((resolve, reject) => {
             axios.get("/usage-report-data?"+Object.keys(params).map(key => key+'='+params[key]).join('&'))
@@ -264,10 +222,10 @@
         },
         updateReportFilters (arg) {
           var targets = (typeof arg !== 'undefined') ? arg : this.all_filters;
+          targets['report_id'] = this.all_filters.report_id;
           var self = this;
           axios.post('/update-report-filters', {
               filters: targets,
-              report_id: this.report_id,
           })
           .then( function(response) {
               for (var key in self.filter_data) {
@@ -284,7 +242,7 @@
         },
     },
     computed: {
-      ...mapGetters(['is_manager','is_viewer','all_filters','all_options', 'filter_by_fromYM', 'filter_by_toYM']),
+      ...mapGetters(['is_manager', 'is_viewer', 'all_filters', 'all_options', 'filter_by_fromYM', 'filter_by_toYM']),
       // Returns an array of yearmon strings based on From/To in the store
       months(nv) {
         let _mons = new Array();
@@ -302,36 +260,34 @@
       params(nv) {
         return {
             preview: 100,
-            report_id: this.report_id,
-            YM_from: this.all_filters.fromYM,
-            YM_to: this.all_filters.toYM,
+            report_id: this.all_filters.report_id,
             ...this.pagination
         };
       },
       filteredHeaders() {
         return this.headers.filter(h => h.active)
       },
-      filteredItems() {
-        // Filtering matching report rows
-        var self = this;
-        let filtered_usage = this.report_data.filter(function(row) {
-          for (let [key, value] of Object.entries(self.all_filters)) {
-            if (value>0) {
-              if (row[key] === undefined || row[key] != value) return false;
-            }
-          }
-          return true;
-        });
-
-        // hide columns that are currently off
-        return filtered_usage.map(item => {
-          let filtered = Object.assign({}, item)
-          this.headers.forEach(header => {
-            if (!header.active) delete filtered[header.value]
-          });
-          return filtered;
-        });
-      },
+      // filteredItems() {
+      //   // Filtering matching report rows
+      //   var self = this;
+      //   let filtered_usage = this.report_data.filter(function(row) {
+      //     for (let [key, value] of Object.entries(self.all_filters)) {
+      //       if (value>0) {
+      //         if (row[key] === undefined || row[key] != value) return false;
+      //       }
+      //     }
+      //     return true;
+      //   });
+      //
+      //   // hide columns that are currently off
+      //   return filtered_usage.map(item => {
+      //     let filtered = Object.assign({}, item)
+      //     this.headers.forEach(header => {
+      //       if (!header.active) delete filtered[header.value]
+      //     });
+      //     return filtered;
+      //   });
+      // },
       showCounts() {
           return this.showColumn('total_item_investigations') || this.showColumn('total_item_requests') ||
                  this.showColumn('unique_item_investigations') || this.showColumn('unique_item_requests') ||
@@ -340,24 +296,27 @@
       },
     },
     mounted() {
-// --->>    NOW: need a way to set/get/pass-in which columns to default on+off
-// --->>         based on store.report_id  ...
-// --->>         may be something to be added to updateReportFilters
-      // If we got filters as a valid prop, push into the state
-      if (typeof(this.input_filters) != 'undefined') {
-          if (Object.keys(this.input_filters).length >= 11) {
-              this.$store.dispatch('updateAllFilters',this.input_filters);
-          }
-      } else {
-          // Turn off initial filter-state for "filterable" columns defaulted as not active
-          this.headers.forEach(head => {
-            if (typeof(this.filter_data[head.value]) != 'undefined') {    // filtered column?
-                var theFilter = this.filter_data[head.value];
-                var action = theFilter.act+'Filter';
-                if (!head.active) this.$store.dispatch(action,-1);
+      // Turn off initial filter-state for inactive "filterable" columns
+      this.headers.forEach(head => {
+        if (typeof(this.filter_data[head.value]) != 'undefined') {    // filtered column?
+            var theFilter = this.filter_data[head.value];
+            var action = theFilter.act+'Filter';
+            if (!head.active) {
+                theFilter.value = -1;
+                this.$store.dispatch(action,-1);
             }
-          });
+        }
+      });
+
+      // Manually disable platform filtering for platform reports
+      if (this.preset_filters['report_id']==3 || this.preset_filters['report_id']==14) {
+          this.filter_data.platform.value = -1
       }
+
+      // Assign preset report_id, and from/to date fields to the store variables
+      this.$store.dispatch('updateReportId',this.preset_filters['report_id']);
+      this.$store.dispatch('updateFromYM',this.preset_filters['fromYM']);
+      this.$store.dispatch('updateToYM',this.preset_filters['toYM']);
 
       // Set options for all filters and in the datastore
       this.updateReportFilters();

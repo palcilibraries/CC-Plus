@@ -297,7 +297,7 @@ class ReportController extends Controller
                       })
                       ->selectRaw($raw_fields)
                       ->when($limit_to_insts, function ($query, $limit_to_insts) {
-                          return $query->whereIn('inst_id', $limit_to_insts);
+                          return $query->whereIn('TR.inst_id', $limit_to_insts);
                       })
                       ->where($conditions)
                       ->groupBy($group_by)
@@ -331,7 +331,7 @@ class ReportController extends Controller
                       })
                       ->selectRaw($raw_fields)
                       ->when($limit_to_insts, function ($query, $limit_to_insts) {
-                          return $query->whereIn('inst_id', $limit_to_insts);
+                          return $query->whereIn('DR.inst_id', $limit_to_insts);
                       })
                       ->where($conditions)
                       ->groupBy($group_by)
@@ -344,7 +344,8 @@ class ReportController extends Controller
         } else if ($master_name == "IR") {
             $sortBy = ($request->sortBy != '') ? $request->sortBy : 'Title';
             $records = DB::table($report_table . ' as IR')
-                      ->join($global_db . '.titles as TI', 'IR.title_id', 'TI.id')
+                      ->join($global_db . '.items as Item', 'IR.item_id', 'Item.id')
+                      ->join($global_db . '.titles as TI', 'Item.title_id', 'TI.id')
                       ->when($joins['institution'], function ($query, $join) {
                           return $query->join($join, 'IR.inst_id', 'INST.id');
                       })
@@ -357,9 +358,6 @@ class ReportController extends Controller
                       ->when($joins['publisher'], function ($query, $join) {
                           return $query->join($join, 'IR.publisher_id', 'PUBL.id');
                       })
-                      ->when($joins['datatype'], function ($query, $join) {
-                          return $query->join($join, 'IR.datatype_id', 'DTYP.id');
-                      })
                       ->when($joins['accesstype'], function ($query, $join) {
                           return $query->join($join, 'IR.accesstype_id', 'ATYP.id');
                       })
@@ -368,7 +366,7 @@ class ReportController extends Controller
                       })
                       ->selectRaw($raw_fields)
                       ->when($limit_to_insts, function ($query, $limit_to_insts) {
-                          return $query->whereIn('inst_id', $limit_to_insts);
+                          return $query->whereIn('IR.inst_id', $limit_to_insts);
                       })
                       ->where($conditions)
                       ->groupBy($group_by)
@@ -398,7 +396,7 @@ class ReportController extends Controller
                       })
                       ->selectRaw($raw_fields)
                       ->when($limit_to_insts, function ($query, $limit_to_insts) {
-                          return $query->whereIn('inst_id', $limit_to_insts);
+                          return $query->whereIn('PR.inst_id', $limit_to_insts);
                       })
                       ->where($conditions)
                       ->groupBy($group_by)
@@ -628,22 +626,23 @@ class ReportController extends Controller
         // Setup limit(s) on which institution(s) we're looking at. Groups are an aggregate connected
         // to the interface that affect the inst filter, but are NOT in the report->reportFilters()
         // If user is not an "admin" or "viewer", return only their own inst.
+        $return_values = array();
         if (!auth()->user()->hasAnyRole(['Admin','Viewer'])) {
             array_push($return_values,auth()->user()->inst_id);
         } else {
             if (isset(self::$input_filters['inst_id'])) {
                 if (self::$input_filters['inst_id'] > 0) {
                     array_push($return_values,self::$input_filters['inst_id']);
-                    return array(self::$input_filters['inst_id']);
                 }
             }
             if (isset(self::$input_filters['institutiongroup_id'])) {
                 if (self::$input_filters['institutiongroup_id'] > 0) {
                     $group = InstitutionGroup::find(self::$input_filters['institutiongroup_id']);
-                    return $group->institutions->pluck('id')->toArray();
+                    $return_values = $group->institutions->pluck('id')->toArray();
                 }
             }
         }
+        return $return_values;
     }
 
 }

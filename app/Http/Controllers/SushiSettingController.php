@@ -20,12 +20,27 @@ class SushiSettingController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Get and show the requested resource.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function show(Request $request)
+    public function edit($id)
+    {
+        // User must be able to manage the settings
+        $setting = SushiSetting::with('institution','provider','harvestLogs','harvestLogs.report')->findOrFail($id);
+        abort_unless($setting->institution->canManage(), 403);
+
+        return view('sushisettings.edit', compact('setting'));
+    }
+
+    /**
+     * Pull settings and return JSON for the requested resource.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return Json
+     */
+    public function refresh(Request $request)
     {
        // Validate form inputs
         $this->validate($request, ['inst_id' => 'required', 'prov_id' => 'required']);
@@ -145,45 +160,21 @@ class SushiSettingController extends Controller
        // return ... something
         $return = array('rows' => $rows, 'result' => $result);
         return response()->json($return);
+    }
 
-       // // Validate form inputs
-       //  $this->validate($request, ['inst_id' => 'required', 'prov_id' => 'required']);
-       //  $input = $request->all();
-       //
-       // // Get the settings
-       //  $setting = SushiSetting::where([
-       //                              ['inst_id', '=', $request->inst_id],
-       //                              ['prov_id', '=', $request->prov_id]
-       //                          ])->first();
-       //
-       // // Create a new Sushi object and request_uri (dates don't matter)
-       //  $sushi = new Sushi("","");
-       //  $request_uri = $sushi->buildUri($setting, 'status');
-       //
-       // // Make the request and convert into JSON
-       //  $rows = array();
-       //  $client = new Client();   //GuzzleHttp\Client
-       //  try {
-       //       $response = $client->get($request_uri);
-       //       $rows[] = "JSON Response:";
-       //       $rows[] = json_decode($response->getBody(), JSON_PRETTY_PRINT);
-       //       // foreach ($json_output as $key => $value) {
-       //       //     $rows[] = $key . " : " . $value;
-       //       // }
-       //       $result = 'Service status successfully received';
-       //  } catch (\Exception $e) {
-       //      $result = 'Request for service status failed!';
-       //      if ($e->hasResponse()) {
-       //          $response = $e->getResponse();
-       //          $rows[] = "Error Returned: (" . $response->getStatusCode() . ") ";
-       //          $rows[] = $response->getReasonPhrase();
-       //      } else {
-       //          $rows[] = "No response from provider.";
-       //      }
-       //  }
-       //
-       // // return ... something
-       //  $return = array('rows' => $rows, 'result' => $result);
-       //  return response()->json($return);
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \App\SushiSetting  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id)
+    {
+        $setting = SushiSetting::findOrFail($id);
+        if (!$setting->institution->canManage()) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        }
+        $setting->delete();
+        return response()->json(['result' => true, 'msg' => 'Settings successfully deleted']);
     }
 }

@@ -45,7 +45,7 @@ class SushiSetting extends Model
 
     public function harvestLogs()
     {
-        return $this->hasMany('App\HarvestLog');
+        return $this->hasMany('App\HarvestLog', 'sushisettings_id');
     }
 
     public function failedHarvests()

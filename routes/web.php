@@ -23,6 +23,7 @@ Route::resource('/institutiongroups', 'InstitutionGroupController');
 Route::resource('/providers', 'ProviderController');
 Route::resource('/harvestlogs', 'HarvestLogController');
 Route::resource('/failedharvests', 'FailedHarvestController');
+Route::resource('/sushisettings', 'SushiSettingController')->middleware(['auth','role:Admin,Manager']);
 Route::resource('/alertsettings', 'AlertSettingController')->middleware(['auth','role:Admin,Manager']);
 
 Auth::routes();
@@ -45,7 +46,8 @@ Route::post('/alert-dash-refresh', 'AlertController@dashRefresh')->middleware('a
 Route::post('/alertsettings-fields-refresh', 'AlertSettingController@fieldsRefresh')
      ->middleware(['auth','role:Admin,Manager']);
 //
-Route::post('/sushisettings', 'SushiSettingController@store')->middleware(['auth']);
-Route::get('/sushisettings-refresh', 'SushiSettingController@show')->middleware(['auth']);
+// Route::post('/sushisettings', 'SushiSettingController@store')->middleware(['auth']);
+// Route::get('/sushisettings/{id}', 'SushiSettingController@edit')->middleware(['auth']);
 Route::post('/sushisettings-update', 'SushiSettingController@update')->middleware(['auth','role:Admin,Manager']);
+Route::get('/sushisettings-refresh', 'SushiSettingController@refresh')->middleware(['auth']);
 Route::get('/sushisettings-test', 'SushiSettingController@test')->middleware(['auth','role:Admin,Manager']);

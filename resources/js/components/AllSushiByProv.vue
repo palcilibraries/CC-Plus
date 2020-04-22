@@ -47,7 +47,9 @@
           <td>{{ item.requestor_id }}</td>
           <td>{{ item.API_key }}</td>
           <td><v-btn class='btn btn-danger' small type="button" @click="destroy(item.id)">Delete connection</v-btn></td>
-		  <td><v-btn class='btn' small type="button">Settings & harvests</v-btn></td>
+          <td>
+            <v-btn class='btn' small type="button" :href="'/sushisettings/'+item.id+'/edit'">Settings & harvests</v-btn>
+          </td>
         </tr>
       </template>
       <tr><td colspan="6">&nbsp;</td></tr>

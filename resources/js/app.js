@@ -29,10 +29,12 @@ Vue.component('all-sushi-by-inst', require('./components/AllSushiByInst.vue').de
 Vue.component('all-sushi-by-prov', require('./components/AllSushiByProv.vue').default);
 Vue.component('sushi-by-inst', require('./components/SushiByInst.vue').default);
 Vue.component('sushi-by-prov', require('./components/SushiByProv.vue').default);
+Vue.component('sushi-setting-form', require('./components/SushiSettingForm.vue').default);
 Vue.component('provider-form', require('./components/ProviderForm.vue').default);
 Vue.component('provider-data-table', require('./components/ProviderDataTable.vue').default);
 Vue.component('institution-form', require('./components/InstitutionForm.vue').default);
 Vue.component('institution-data-table', require('./components/InstitutionDataTable.vue').default);
+Vue.component('harvestlog-data-table', require('./components/HarvestlogDataTable.vue').default);
 Vue.component('date-range', require('./components/DateRange.vue').default);
 Vue.component('create-report', require('./components/CreateReport.vue').default);
 Vue.component('report-export', require('./components/ReportExport.vue').default);

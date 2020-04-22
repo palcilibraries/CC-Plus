@@ -1,6 +1,6 @@
 <template>
   <div>
-    <form method="POST" action="/sushisettings-update" @submit.prevent="formSubmit"
+    <form method="POST" action="" @submit.prevent="formSubmit"
           @keydown="form.errors.clear($event.target.name)">
       <input v-model="inst_id" id="inst_id" type="hidden">
       <v-container grid-list-xl>

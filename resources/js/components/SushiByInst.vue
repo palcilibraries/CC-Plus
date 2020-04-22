@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="is_manager">
-      <form method="POST" action='/sushisettings-update' @submit.prevent="formSubmit"
+      <form method="POST" action="" @submit.prevent="formSubmit"
             @keydown="form.errors.clear($event.target.name)">
         <input v-model="prov_id" id="prov_id" type="hidden">
         <v-container grid-list-xl>

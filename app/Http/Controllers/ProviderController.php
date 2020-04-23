@@ -194,7 +194,13 @@ class ProviderController extends Controller
         if (!$provider->canManage()) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
-        $provider->delete();
+
+        try {
+            $provider->delete();
+        } catch (\Exception $ex) {
+            return response()->json(['result' => false, 'msg' => $ex->getMessage()]);
+        }
+
         return response()->json(['result' => true, 'msg' => 'Provider successfully deleted']);
     }
 }

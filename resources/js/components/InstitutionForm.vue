@@ -1,51 +1,56 @@
 <template>
-  <div class="details">
-	<h2 class="section-title">Details</h2>
-    <template v-if="is_manager && !showForm">
-  	  <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
-      <span class="form-good" role="alert" v-text="success"></span>
-      <span class="form-fail" role="alert" v-text="failure"></span>
-   	</template>
   <div>
-    <!-- form display control and confirmations  -->
-    <!-- Values-only when form not active -->
-    <div v-if="!showForm">
-	  <v-simple-table>
-	    <tr>
-	      <td>Name </td>
-	      <td>{{ mutable_inst.name }}</td>
-	    </tr>
-	    <tr>
-	      <td>Type </td>
-	      <td>{{ inst_type }}</td>
-	    </tr>
-	    <tr>
-	      <td>Status </td>
-	      <td>{{ status }}</td>
-	    </tr>
-	    <tr>
-	      <td>FTE </td>
-	      <td>{{ mutable_inst.fte }}</td>
-	    </tr>
-	    <tr>
-	      <td>Groups </td>
-	      <td>
-	        <template v-for="group in all_groups">
-	          <v-chip v-if="mutable_groups.includes(group.id)">
-	            {{ group.name }}
-	          </v-chip>
-	        </template>
-	      </td>
-	    </tr>
-	    <tr>
-	      <td>Notes </td>
-	      <td>{{ mutable_inst.notes }}</td>
-	    </tr>
-	  </v-simple-table>
-    </div>
-    <!-- display form if manager has activated it. onSubmit function closes and resets showForm -->
-    <div v-else>
-      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
+    <v-row class="page-header">
+      <v-col><h1>{{ institution.name }}</h1></v-col>
+      <v-col v-if="is_admin">
+        <v-btn class='btn btn-danger' small type="button" @click="destroy(institution.id)">Delete</v-btn>
+      </v-col>
+    </v-row>
+    <v-row class="details">
+  	  <h2 class="section-title">Details</h2>
+      <template v-if="is_manager && !showForm">
+    	<v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+        <span class="form-good" role="alert" v-text="success"></span>
+        <span class="form-fail" role="alert" v-text="failure"></span>
+   	  </template>
+      <div>
+        <!-- form display control and confirmations  -->
+        <!-- Values-only when form not active -->
+        <div v-if="!showForm">
+	      <v-simple-table>
+	        <tr>
+	          <td>Name </td>
+	          <td>{{ mutable_inst.name }}</td>
+	        </tr>
+	        <tr>
+	          <td>Type </td>
+	          <td>{{ inst_type }}</td>
+	        </tr>
+	        <tr>
+    	      <td>Status </td>
+	          <td>{{ status }}</td>
+	        </tr>
+	        <tr>
+	          <td>FTE </td>
+	          <td>{{ mutable_inst.fte }}</td>
+	        </tr>
+	        <tr>
+	          <td>Groups </td>
+	          <td>
+	            <template v-for="group in all_groups">
+	              <v-chip v-if="mutable_groups.includes(group.id)">{{ group.name }}</v-chip>
+    	        </template>
+	          </td>
+	        </tr>
+	        <tr>
+	          <td>Notes </td>
+	          <td>{{ mutable_inst.notes }}</td>
+	        </tr>
+	      </v-simple-table>
+        </div>
+        <!-- display form if manager has activated it. onSubmit function closes and resets showForm -->
+        <div v-else>
+          <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
               <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
               <v-select
                   :items="types"
@@ -91,14 +96,16 @@
                 Save Institution Settings
               </v-btn>
 			  <v-btn small type="button" @click="hideForm">cancel</v-btn>
-      </form>
-    </div>
+          </form>
+        </div>
+      </div>
+    </v-row>
   </div>
-</div>
 </template>
 
 <script>
     import { mapGetters } from 'vuex'
+    import Swal from 'sweetalert2';
     import Form from '@/js/plugins/Form';
     window.Form = Form;
 
@@ -118,7 +125,7 @@
                 inst_type: '',
                 statusvals: ['Inactive','Active'],
 				showForm: false,
-                mutable_inst: {},
+                mutable_inst: this.institution,
                 mutable_groups: this.inst_groups,
                 form: new window.Form({
                     name: this.institution.name,
@@ -161,15 +168,42 @@
                 var self = this;
                 self.showForm = false;
 			},
+            destroy (instid) {
+                var self = this;
+                Swal.fire({
+                  title: 'Are you sure?',
+                  text: "Deleting an institution cannot be reversed, only manually recreated."+
+                        " Any harvested usage data will remain, but will be disconnected from "+
+                        " any active institution(s).",
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: '#3085d6',
+                  cancelButtonColor: '#d33',
+                  confirmButtonText: 'Yes, proceed'
+                }).then((result) => {
+                  if (result.value) {
+                      axios.delete('/institutions/'+instid)
+                           .then( (response) => {
+                               if (response.data.result) {
+                                   window.location.assign("/institutions");
+                               } else {
+                                   self.success = '';
+                                   self.failure = response.data.msg;
+                               }
+                           })
+                           .catch({});
+                  }
+                })
+                .catch({});
+            },
         },
         computed: {
-          ...mapGetters(['is_manager'])
+          ...mapGetters(['is_manager', 'is_admin'])
         },
         mounted() {
             this.showForm = false;
             this.status=this.statusvals[this.institution.is_active];
             this.inst_type = this.types[this.institution.type_id-1].name;
-            Object.assign(this.mutable_inst, this.institution);
             console.log('Institution Component mounted.');
         }
     }

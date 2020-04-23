@@ -175,7 +175,6 @@
                 this.can_edit = false;
             }
             this.status=this.statusvals[this.provider.is_active];
-			// Object.assign(this.mutable_prov, this.provider);
             console.log('Provider Component mounted.');
         }
     }

@@ -150,15 +150,8 @@
 
 <script>
 //
-// Future enhancements?
-//  * get lists of institutions and providers from the **_report_data tables,
-//    and constrain them instead of showing everything
-//      * means at least 2 new GET routes?
-//      * may or may not apply to inst-groups
-//      * pull insts in mounted()
-//      * pull providers on inst/inst-group changing
+// Future enhancement?
 //  * Active.vs.Inactive in the lists... another option/flag?
-//
 //
   import { mapGetters } from 'vuex';
   export default {
@@ -298,7 +291,6 @@
         },
         goRedirect () {
             let filters = JSON.stringify(this.all_filters);
-            // window.location.href = '/reports/export?filters='+filters;
             window.location.assign("/reports/preview?filters=" + filters);
         },
     },

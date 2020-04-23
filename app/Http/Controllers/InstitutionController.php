@@ -194,7 +194,12 @@ class InstitutionController extends Controller
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
         $institution = Institution::findOrFail($id);
-        $institution->delete();
+
+        try {
+            $institution->delete();
+        } catch (\Exception $ex) {
+            return response()->json(['result' => false, 'msg' => $ex->getMessage()]);
+        }
 
         return response()->json(['result' => true, 'msg' => 'Institution successfully deleted']);
     }

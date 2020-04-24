@@ -82,7 +82,8 @@ class SushiSettingController extends Controller
             return response()->json(['result' => false, 'msg' => 'You can only assign settings for your institution']);
         }
         $setting = SushiSetting::create($input);
-        return response()->json(['result' => true, 'msg' => 'Settings successfully created']);
+        $setting->load('institution','provider');
+        return response()->json(['result' => true, 'msg' => 'Settings successfully created', 'setting' => $setting]);
     }
 
     /**

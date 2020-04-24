@@ -530,6 +530,17 @@ class ReportController extends Controller
     }
 
     /**
+     * Get usage report data records date-range, columns/filters, and sorting
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return JSON array
+     */
+    public function saveReportConfig(Request $request)
+    {
+    }
+
+
+    /**
      * Set joins, the raw-select string, and group_by array based on fields and Columns
      *
      * @param  ReportField $fields, $columns

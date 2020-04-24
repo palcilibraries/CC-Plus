@@ -5,7 +5,7 @@
 	        @keydown="form.errors.clear($event.target.name)">
         <input v-model="form.prov_id" id="prov_id" type="hidden">
 	    <v-select
-	          :items="unset"
+	          :items="mutable_unset"
 			  v-model="form.inst_id"
 	          @change="onUnsetChange"
 	          placeholder="Connect an Institution"
@@ -38,7 +38,11 @@
 			</div>
 		</div>
 	  </form>
-	  	</template>
+	</template>
+    <div>
+      <span class="good" role="alert" v-text="success"></span>
+      <span class="fail" role="alert" v-text="failure"></span>
+    </div>
     <v-data-table :headers="headers" :items="mutable_settings" item-key="id" class="elevation-1">
       <template v-slot:item="{ item }" >
         <tr>
@@ -46,7 +50,7 @@
           <td>{{ item.customer_id }}</td>
           <td>{{ item.requestor_id }}</td>
           <td>{{ item.API_key }}</td>
-          <td><v-btn class='btn btn-danger' small type="button" @click="destroy(item.id)">Delete connection</v-btn></td>
+          <td><v-btn class='btn btn-danger' small type="button" @click="destroy(item)">Delete connection</v-btn></td>
           <td>
             <v-btn class='btn' small type="button" :href="'/sushisettings/'+item.id+'/edit'">Settings & harvests</v-btn>
           </td>
@@ -54,10 +58,6 @@
       </template>
       <tr><td colspan="6">&nbsp;</td></tr>
     </v-data-table>
-    <div>
-      <span class="good" role="alert" v-text="success"></span>
-      <span class="fail" role="alert" v-text="failure"></span>
-    </div>
   </div>
 </template>
 
@@ -78,11 +78,12 @@
             return {
                 success: '',
                 failure: '',
-				showForm: false,
-                showTest: false,
                 testData: '',
                 testStatus: '',
+				showForm: false,
+                showTest: false,
                 mutable_settings: this.settings,
+                mutable_unset: this.unset,
                 headers: [
                   { text: 'Name ', value: 'name' },
                   { text: 'Customer ID', value: 'customer_id' },
@@ -102,15 +103,24 @@
         },
         methods: {
 	        formSubmit (event) {
-	            var self = this;
-	            // this.form.post('/sushisettings-update')
                 this.form.post('/sushisettings')
-	                .then( function(response) {
-	                    self.warning = '';
-	                    self.confirm = 'Settings successfully updated.';
+	                .then((response) => {
+                        if (response.result) {
+                            this.failure = '';
+                            this.success = response.msg;
+                            // Add the new connection to the settings rows
+                            this.mutable_settings.push(response.setting);
+                            // Remove the unset row that just got added
+                            let newid = response.setting.inst_id;
+                            this.mutable_unset.splice(this.mutable_unset.findIndex(s=> s.id == newid),1);
+                            this.showForm = false;
+                        } else {
+                            this.success = '';
+                            this.failure = response.msg;
+                        }
 	                });
 	        },
-            destroy (settingid) {
+            destroy (setting) {
                 var self = this;
                 Swal.fire({
                   title: 'Are you sure?',
@@ -122,50 +132,50 @@
                   confirmButtonText: 'Yes, proceed'
                 }).then((result) => {
                   if (result.value) {
-                      axios.delete('/sushisettings/'+settingid)
+                      axios.delete('/sushisettings/'+setting.id)
                            .then( (response) => {
                                if (response.data.result) {
-                                   self.failure = '';
-                                   self.success = response.data.msg;
+                                   this.failure = '';
+                                   this.success = response.data.msg;
                                } else {
-                                   self.success = '';
-                                   self.failure = response.data.msg;
+                                   this.success = '';
+                                   this.failure = response.data.msg;
                                }
                            })
                            .catch({});
-                       this.mutable_settings.splice(this.mutable_settings.findIndex(u=> u.id == userid),1);
+                      // Add the entry to the "unset" list
+                      this.mutable_unset.push({'id': setting.inst_id, 'name': setting.institution.name});
+                      // Remove the setting from the "set" list
+                      this.mutable_settings.splice(this.mutable_settings.findIndex(u=> u.id == setting.id),1);
+                      this.form.inst_id = 0;
                   }
                 })
                 .catch({});
             },
             testSettings (event) {
                 if (!(this.is_admin || this.is_manager)) { return; }
-                var self = this;
-                self.showTest = true;
-                self.testData = '';
-                self.testStatus = "... Working ...";
-                // axios.get('/sushisettings-test'+'?prov_id='+self.form.prov_id+'&'+'inst_id='+this.inst_id)
-                axios.get('/sushisettings-test'+'?prov_id='+self.form.prov_id+'&'
+                this.showTest = true;
+                this.testData = '';
+                this.testStatus = "... Working ...";
+                axios.get('/sushisettings-test'+'?prov_id='+this.form.prov_id+'&'
                                                +'requestor_id='+this.form.requestor_id+'&'
                                                +'customer_id='+this.form.customer_id+'&'
                                                +'apikey='+this.form.API_key)
-                     .then( function(response) {
-                        if ( response.data.result == '') {
-                            self.testStatus = "No results!";
+                     .then((response) => {
+                        if (response.data.result == '') {
+                            this.testStatus = "No results!";
                         } else {
-                            self.testStatus = response.data.result;
-                            self.testData = response.data.rows;
+                            this.testStatus = response.data.result;
+                            this.testData = response.data.rows;
                         }
                     })
                    .catch(error => {});
             },
             onUnsetChange (prov) {
-				// console.log(this.showForm);
 				this.showForm = true;
             },
             hideForm (event) {
-                var self = this;
-                self.showForm = false;
+                this.showForm = false;
 			},
         },
         computed: {

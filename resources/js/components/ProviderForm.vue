@@ -150,12 +150,10 @@
 				self.showForm = false;
             },
             swapForm (event) {
-                var self = this;
-                self.showForm = true;
+                this.showForm = true;
 			},
             hideForm (event) {
-                var self = this;
-                self.showForm = false;
+                this.showForm = false;
 			},
         },
         computed: {

@@ -11,8 +11,8 @@
                     @change="onColumnChange(header)"></v-checkbox>
       </v-col>
     </v-row>
-    <span><strong>Filters</strong></span>
-    <v-row no-gutters>
+    <span v-if="showFilters"><strong>Filters</strong></span>
+    <v-row v-if="showFilters" no-gutters>
       <v-col v-if='filter_data["provider"].value >= 0' class="ma-2" cols="1" sm="1">
         <v-select :items='all_options.providers'
                   v-model='filter_data.provider.value'
@@ -79,7 +79,12 @@
       </v-col>
     </v-row>
     <v-row>
-      <v-btn color="green" type="button" @click="previewData">{{ preview_text }}</v-btn>
+      <v-col class="pa-2" cols="4" sm="2">
+        <v-btn class='btn' small type="button" color="primary" @click="previewData">{{ preview_text }}</v-btn>
+      </v-col>
+      <v-col class="pa-2" cols="4" sm="2">
+        <v-btn class='btn' small type="button" color="primary" @click="showForm">Save Configuration</v-btn>
+      </v-col>
     </v-row>
     <v-container v-if="showPreview" fluid>
 <!--
@@ -98,14 +103,39 @@
         </template>
       </v-data-table>
     </v-container>
-    <v-row>
-      <v-btn color="green" dark>Export</v-btn>
-    </v-row>
+    <div v-if="!configForm">
+      <v-row>
+        <span class="form-good" role="alert" v-text="success"></span>
+        <span class="form-fail" role="alert" v-text="failure"></span>
+        <v-col class="pa-2" cols="4" sm="2">
+          <v-btn class='btn' small type="button" color="green" @click="goExport">Export</v-btn>
+        </v-col>
+      </v-row>
+    </div>
+    <div v-else>
+      <form method="POST" action="" @submit.prevent="saveConfig" @keydown="form.errors.clear($event.target.name)">
+        <v-row>
+          <v-col class="pa-2" cols="8" sm="4">
+            <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="pa-2" cols="4" sm="2">
+            <v-btn class='btn' small type="submit" color="green" :disabled="form.errors.any()">Save</v-btn>
+          </v-col>
+          <v-col class="pa-2" cols="4" sm="2">
+            <v-btn class='btn' small type="button" @click="hideForm">Cancel</v-btn>
+          </v-col>
+        </v-row>
+      </form>
+    </div>
   </div>
 </template>
 
 <script>
   import { mapGetters } from 'vuex';
+  import Form from '@/js/plugins/Form';
+  window.Form = Form;
   export default {
     props: {
         preset_filters: { type:Object, default: () => {} },
@@ -114,6 +144,8 @@
     data () {
       return {
         showPreview: false,
+        showFilters: false,
+        configForm: false,
         preview_text: 'Display Preview',
         change_counter: 0,
         totalRecs: 0,
@@ -144,7 +176,20 @@
           accessmethod: { col:'accessmethod_id', act:'updateAccessMethod', value: -1 },
         },
         headers: this.columns,
+        success: '',
+        failure: '',
+        form: new window.Form({
+            name: '',
+        })
       }
+    },
+    watch: {
+      filter_data: {
+        handler() {
+          this.showFilters = this.filtersEnabled;
+        },
+        deep: true
+      },
     },
     methods: {
         previewData (event) {
@@ -240,11 +285,41 @@
           })
           .catch(error => {});
         },
+        showForm (event) {
+            this.configForm = true;
+        },
+        hideForm (event) {
+            this.configForm = false;
+        },
+        saveConfig() {
+// May need an prop for an input-saved-report setting (or ID)... that this will update instead of trying to create ..?
+            var self = this;
+            axios.post('/save-report-config', {
+                filters: this.all_filters,
+// Anything else needed as input?
+            })
+            .then( function(response) {
+                if (response.result) {
+                    self.success = response.msg;
+                } else {
+                    self.failure = response.msg;
+                }
+                self.showSaveConfigForm = false;
+            })
+            .catch(error => {});
+        },
+        goExport() {
+        },
     },
     computed: {
       ...mapGetters(['is_manager', 'is_viewer', 'all_filters', 'all_options', 'filter_by_fromYM', 'filter_by_toYM']),
-      // Returns an array of yearmon strings based on From/To in the store
-      months(nv) {
+      filtersEnabled() { // Returns T/F if there are active filters
+          for (let key in this.filter_data) {
+            if (this.filter_data[key].value >= 0) return true;
+          }
+          return false;
+      },
+      months(nv) {  // Returns an array of yearmon strings based on From/To in the store
         let _mons = new Array();
         var from_parts = this.filter_by_fromYM.split("-");
         var to_parts = this.filter_by_toYM.split("-");
@@ -256,8 +331,7 @@
         }
         return _mons;
       },
-      //computed params to return pagination and settings
-      params(nv) {
+      params(nv) {  // Computed params to return pagination and settings
         return {
             preview: 100,
             report_id: this.all_filters.report_id,
@@ -267,27 +341,6 @@
       filteredHeaders() {
         return this.headers.filter(h => h.active)
       },
-      // filteredItems() {
-      //   // Filtering matching report rows
-      //   var self = this;
-      //   let filtered_usage = this.report_data.filter(function(row) {
-      //     for (let [key, value] of Object.entries(self.all_filters)) {
-      //       if (value>0) {
-      //         if (row[key] === undefined || row[key] != value) return false;
-      //       }
-      //     }
-      //     return true;
-      //   });
-      //
-      //   // hide columns that are currently off
-      //   return filtered_usage.map(item => {
-      //     let filtered = Object.assign({}, item)
-      //     this.headers.forEach(header => {
-      //       if (!header.active) delete filtered[header.value]
-      //     });
-      //     return filtered;
-      //   });
-      // },
       showCounts() {
           return this.showColumn('total_item_investigations') || this.showColumn('total_item_requests') ||
                  this.showColumn('unique_item_investigations') || this.showColumn('unique_item_requests') ||
@@ -320,6 +373,7 @@
 
       // Set options for all filters and in the datastore
       this.updateReportFilters();
+      this.showFilters = this.filtersEnabled;
       this.rangeKey += 1;           // force re-render of the date-range component
       console.log('TitleReport Component mounted.');
     }

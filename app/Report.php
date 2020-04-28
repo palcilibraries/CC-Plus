@@ -31,17 +31,17 @@ class Report extends Model
         return $this->hasMany('App\ReportField');
     }
 
-    // Return a collection of fields, incudling inherited fields
-    // (useful for handling custom or user-specific report layouts)
-    public function allFields()
-    {
-       // Get a collection of ReportFields (not a relationship)
-        if ($this->parent_id == 0) {
-            return ReportField::where('report_id', '=', $this->id)->get();
-        } else {
-            return $this->inheritedFields();
-        }
-    }
+    // // Return a collection of fields, incudling inherited fields
+    // // (useful for handling custom or user-specific report layouts)
+    // public function allFields()
+    // {
+    //    // Get a collection of ReportFields (not a relationship)
+    //     if ($this->parent_id == 0) {
+    //         return ReportField::where('report_id', '=', $this->id)->get();
+    //     } else {
+    //         return $this->inheritedFields();
+    //     }
+    // }
 
     public function harvests()
     {
@@ -71,22 +71,22 @@ class Report extends Model
         return $this->hasMany(static::class, 'parent_id')->orderBy('name', 'asc');
     }
 
-    public function inheritedFields()
-    {
-       // decode the inherited_fields string to an array
-        $_decoded = array();
-        foreach (preg_split('/\,/', $this->inherited_fields) as $key => $value) {
-            if (!strpos($value, ":")) {
-                $_decoded[$value] = null;
-                continue;
-            }
-            $_parts = preg_split('/:/', $value);
-            $_decoded[$_parts[0]] = $_parts[1];
-        }
-        $field_ids = array_keys($_decoded);
-
-       // Get and return matching fields
-        return ReportField::whereIn('id', $field_ids)->get();
-    }
+    // public function inheritedFields()
+    // {
+    //    // decode the inherited_fields string to an array
+    //     $_decoded = array();
+    //     foreach (preg_split('/\,/', $this->inherited_fields) as $key => $value) {
+    //         if (!strpos($value, ":")) {
+    //             $_decoded[$value] = null;
+    //             continue;
+    //         }
+    //         $_parts = preg_split('/:/', $value);
+    //         $_decoded[$_parts[0]] = $_parts[1];
+    //     }
+    //     $field_ids = array_keys($_decoded);
+    //
+    //    // Get and return matching fields
+    //     return ReportField::whereIn('id', $field_ids)->get();
+    // }
 
 }

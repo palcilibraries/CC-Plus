@@ -51,7 +51,7 @@ class ReportsTableSeeder extends Seeder
                 'inherited_fields' => '26,27,28,29,30,31,32:1,33,43,44']);
             DB::table($table)->insert(['id' => 14,'name' => 'PR_P1',
                 'legend' => 'Platform Usage','parent_id' => 3,
-                'inherited_fields' => '46,47,48,49,50:1,51,52,53,54,55,56,57,58']);
+                'inherited_fields' => '46,47,48,49,50:1,51,52,53,54,55,56,57']);
             DB::table($table)->insert(['id' => 15,'name' => 'IR_A1',
                 'legend' => 'Journal Article Requests','parent_id' => 4,
                 'inherited_fields' => '59,60,61,62,63,64,65,66,67,68,70,71,72,73,74,76,78,79,81,82,83,'

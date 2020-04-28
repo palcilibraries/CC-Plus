@@ -290,8 +290,8 @@
                  .catch(error => {});
         },
         goRedirect () {
-            let filters = JSON.stringify(this.all_filters);
-            window.location.assign("/reports/preview?filters=" + filters);
+            let params = {...this.all_filters, dateRange: this.dateRange};
+            window.location.assign("/reports/preview?filters=" + JSON.stringify(params));
         },
     },
     computed: {

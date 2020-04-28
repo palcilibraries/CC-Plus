@@ -62,8 +62,8 @@ export default {
       ...mapGetters(['filter_by_fromYM', 'filter_by_toYM']),
   },
   mounted() {
-    this.YMFrom = this.ymfrom;
-    this.YMTo = this.ymto;
+    this.$store.dispatch('updateFromYM',this.ymfrom);
+    this.$store.dispatch('updateToYM',this.ymto);
     console.log('DateRange Component mounted.');
   }
 }

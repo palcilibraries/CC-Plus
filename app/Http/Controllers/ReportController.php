@@ -131,10 +131,10 @@ class ReportController extends Controller
 
         // Get (master) fields
         if ($report->parent_id ==0) {   // previewing a master report?
-            $field_data = $report->reportfields;
+            $field_data = $report->reportFields;
         } else {
             // Build field array from inherited fields
-            $master_fields = $report->parent->reportfields;
+            $master_fields = $report->parent->reportFields;
             $inherited = preg_split('/,/',$report->inherited_fields);   //should be a CSV list of fields
             $child_fields = array();
             foreach ($inherited as $field) {
@@ -151,15 +151,29 @@ class ReportController extends Controller
             $field_data = collect($child_fields);
         }
 
-        // Turn the field-map into the columns-map the component expects
+        // Turn the field-map into the columns-map the component expects. Allow input
+        // filter presets for inst & provider to override defaults.
         $columns = array();
         foreach($field_data as $fld) {
             $_qry = (is_null($fld->qry_as)) ? $fld->qry : $fld->qry_as;
-            $columns[] = array('text' => $fld->legend, 'value' => $_qry, 'active' => $fld->active,
-                               'reload' => $fld->reload);
+            $data = array('text' => $fld->legend, 'value' => $_qry, 'active' => $fld->active,
+                                    'reload' => $fld->reload);
+            if ($_qry == "institution") {
+                if ($preset_filters['inst_id']>0) {
+                    $data['active'] = true;
+                }
+            }
+            if ($_qry == "provider") {
+                if ($preset_filters['prov_id']>0) {
+                    $data['active'] = true;
+                }
+            }
+            $columns[] = $data;
         }
 
-        return view('reports.preview',compact('preset_filters','columns'));
+        // Get list of saved reports for this user
+        $saved_reports = SavedReport::where('user_id',auth()->id())->get(['id','title'])->toArray();
+        return view('reports.preview',compact('preset_filters','columns','saved_reports'));
     }
 
     /**
@@ -442,7 +456,7 @@ class ReportController extends Controller
             return response()->json(['result' => false, 'msg' => 'Report ID: ' . $report_id . ' is undefined']);
         }
 
-        // Get all known filters and reportfields
+        // Get all known filters and reportFields
         $all_filters = ReportFilter::all();
         if ($report->parent_id == 0) {
             $master_name = $report->name;
@@ -528,17 +542,6 @@ class ReportController extends Controller
 
         return response()->json(['result' => true, 'filters' => $filter_data, 'bounds' => $bounds]);
     }
-
-    /**
-     * Get usage report data records date-range, columns/filters, and sorting
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return JSON array
-     */
-    public function saveReportConfig(Request $request)
-    {
-    }
-
 
     /**
      * Set joins, the raw-select string, and group_by array based on fields and Columns

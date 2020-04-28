@@ -7,6 +7,7 @@
     <v-content>
       <report-export :preset_filters="{{ json_encode($preset_filters) }}"
                      :columns="{{ json_encode($columns) }}"
+                     :saved_reports="{{ json_encode($saved_reports) }}"
       ></report-export>
     </v-content>
   </v-app>

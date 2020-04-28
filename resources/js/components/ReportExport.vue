@@ -85,13 +85,53 @@
       <v-col class="pa-2" cols="4" sm="2">
         <v-btn class='btn' small type="button" color="primary" @click="showForm">Save Configuration</v-btn>
       </v-col>
+      <v-col class="pa-2" cols="4" sm="2">
+        <v-btn class='btn' small type="button" color="green" @click="goExport">Export</v-btn>
+      </v-col>
     </v-row>
+    <div v-if="!configForm">
+      <v-row>
+        <span class="form-good" role="alert" v-text="success"></span>
+        <span class="form-fail" role="alert" v-text="failure"></span>
+      </v-row>
+    </div>
+    <div v-else>
+      <form method="POST" action="" @submit.prevent="saveConfig" @keydown="form.errors.clear($event.target.name)">
+        <div v-if="form.title=='' && saved_reports.length>0">
+          <h5 v-if="form.save_id!=input_save_id">Overwrite an existing saved configuration</h5>
+          <h5 v-else>Overwrite an existing saved configuration, OR</h5>
+          <v-row>
+            <v-col class="pa-2" cols="8" sm="4">
+              <input id="title" name="title" value="" type="hidden">
+              <v-select :items='saved_reports'
+                        v-model='form.save_id'
+                        label="Saved Report"
+                        item-text="title"
+                        item-value="id"
+              ></v-select>
+            </v-col>
+          </v-row>
+        </div>
+        <div v-if="form.save_id==input_save_id">
+          <h5>Create a new saved configuration</h5>
+          <v-row v-if="form.save_id==0">
+            <v-col class="pa-2" cols="8" sm="4">
+              <input name="save_id" id="save_id" value=0 type="hidden">
+              <v-text-field v-model="form.title" label="Name" outlined></v-text-field>
+            </v-col>
+          </v-row>
+        </div>
+        <v-row>
+          <v-col class="pa-2" cols="4" sm="2">
+            <v-btn class='btn' small type="submit" color="green" :disabled="form.errors.any()">Save</v-btn>
+          </v-col>
+          <v-col class="pa-2" cols="4" sm="2">
+            <v-btn class='btn' small type="button" @click="hideForm">Cancel</v-btn>
+          </v-col>
+        </v-row>
+      </form>
+    </div>
     <v-container v-if="showPreview" fluid>
-<!--
-      <v-data-table :headers="filteredHeaders" :items="filteredItems"
-                    :loading="loading" :footer-props="footer_props" dense class="elevation-1">
-        <template slot="filteredItems" slot-scope="item">
--->
       <v-data-table :headers="filteredHeaders" :items="report_data"
                     :loading="loading" :footer-props="footer_props" dense class="elevation-1">
         <template slot-scope="item">
@@ -103,32 +143,6 @@
         </template>
       </v-data-table>
     </v-container>
-    <div v-if="!configForm">
-      <v-row>
-        <span class="form-good" role="alert" v-text="success"></span>
-        <span class="form-fail" role="alert" v-text="failure"></span>
-        <v-col class="pa-2" cols="4" sm="2">
-          <v-btn class='btn' small type="button" color="green" @click="goExport">Export</v-btn>
-        </v-col>
-      </v-row>
-    </div>
-    <div v-else>
-      <form method="POST" action="" @submit.prevent="saveConfig" @keydown="form.errors.clear($event.target.name)">
-        <v-row>
-          <v-col class="pa-2" cols="8" sm="4">
-            <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col class="pa-2" cols="4" sm="2">
-            <v-btn class='btn' small type="submit" color="green" :disabled="form.errors.any()">Save</v-btn>
-          </v-col>
-          <v-col class="pa-2" cols="4" sm="2">
-            <v-btn class='btn' small type="button" @click="hideForm">Cancel</v-btn>
-          </v-col>
-        </v-row>
-      </form>
-    </div>
   </div>
 </template>
 
@@ -140,6 +154,8 @@
     props: {
         preset_filters: { type:Object, default: () => {} },
         columns: { type:Array, default: () => [] },
+        saved_reports: { type:Array, default: () => [] },
+        input_save_id: { type:Number, default: 0 },
     },
     data () {
       return {
@@ -179,7 +195,8 @@
         success: '',
         failure: '',
         form: new window.Form({
-            name: '',
+            title: '',
+            save_id: this.input_save_id,
         })
       }
     },
@@ -246,12 +263,12 @@
           //copy current params to modify
           let params = this.params;
           params['filters'] = JSON.stringify(this.all_filters);
-          let cols = {};
+          let _cols = {};
           this.headers.forEach(head => {
-            var filter = (typeof(this.filter_data[head.value])=='undefined') ? '' : this.filter_data[head.value].value;
-            cols[head.value] = {active: head.active, limit: filter};
+            var fval = (typeof(this.filter_data[head.value])=='undefined') ? '' : this.filter_data[head.value].value;
+            _cols[head.value] = {active: head.active, limit: fval};
           })
-          params['columns'] = JSON.stringify(cols);
+          params['columns'] = JSON.stringify(_cols);
 
           return new Promise((resolve, reject) => {
             axios.get("/usage-report-data?"+Object.keys(params).map(key => key+'='+params[key]).join('&'))
@@ -266,11 +283,12 @@
           });
         },
         updateReportFilters (arg) {
-          var targets = (typeof arg !== 'undefined') ? arg : this.all_filters;
-          targets['report_id'] = this.all_filters.report_id;
+          // var targets = (typeof arg !== 'undefined') ? arg : this.all_filters;
+          // targets['report_id'] = this.all_filters.report_id;
           var self = this;
           axios.post('/update-report-filters', {
-              filters: targets,
+              // filters: targets,
+              filters: this.all_filters,
           })
           .then( function(response) {
               for (var key in self.filter_data) {
@@ -292,19 +310,40 @@
             this.configForm = false;
         },
         saveConfig() {
-// May need an prop for an input-saved-report setting (or ID)... that this will update instead of trying to create ..?
-            var self = this;
-            axios.post('/save-report-config', {
-                filters: this.all_filters,
-// Anything else needed as input?
+            if (this.form.title=='' && this.form.save_id==0) {
+                this.failure = 'A name is required to save the configuration';
+                return;
+            }
+            let _cols = {};
+            this.headers.forEach(head => {
+              var fval = (typeof(this.filter_data[head.value])=='undefined') ? '' : this.filter_data[head.value].value;
+              _cols[head.value] = {active: head.active, limit: fval};
             })
-            .then( function(response) {
-                if (response.result) {
-                    self.success = response.msg;
+            let num_months = 1;     // default to lastMonth
+            if (this.preset_filters.dateRange == 'latestYear') {
+                num_months = 12;
+            } else if (this.preset_filters.dateRange == 'Custom') {
+                var from_parts = this.filter_by_fromYM.split("-");
+                var to_parts = this.filter_by_toYM.split("-");
+                var fromDate = new Date(from_parts[0], from_parts[1]-1, 1);
+                var toDate = new Date(to_parts[0], to_parts[1]-1, 1);
+                num_months = toDate.getMonth() - fromDate.getMonth() +
+                         (12 * (toDate.getFullYear() - fromDate.getFullYear())) + 1;
+            }
+            axios.post('/save-report-config', {
+                title: this.form.title,
+                save_id: this.form.save_id,
+                report_id: this.all_filters.report_id,
+                months: num_months,
+                fields: JSON.stringify(_cols),
+            })
+            .then((response) => {
+                if (response.data.result) {
+                    this.success = response.data.msg;
                 } else {
-                    self.failure = response.msg;
+                    this.failure = response.data.msg;
                 }
-                self.showSaveConfigForm = false;
+                this.configForm = false;
             })
             .catch(error => {});
         },
@@ -364,6 +403,20 @@
       // Manually disable platform filtering for platform reports
       if (this.preset_filters['report_id']==3 || this.preset_filters['report_id']==14) {
           this.filter_data.platform.value = -1
+      }
+
+      // Assign preset inst and provider filters
+      if (typeof(this.preset_filters['inst_id']) != 'undefined') {
+          if (this.preset_filters['inst_id'] > 0) {
+              this.$store.dispatch('updateInstitutionFilter',this.preset_filters['inst_id']);
+              this.filter_data.institution.value = this.preset_filters['inst_id'];
+          }
+      }
+      if (typeof(this.preset_filters['prov_id']) != 'undefined') {
+          if (this.preset_filters['prov_id'] > 0) {
+              this.$store.dispatch('updateProviderFilter',this.preset_filters['prov_id']);
+              this.filter_data.provider.value = this.preset_filters['prov_id'];
+          }
       }
 
       // Assign preset report_id, and from/to date fields to the store variables

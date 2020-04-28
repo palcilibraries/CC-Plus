@@ -20,7 +20,7 @@ class SavedReport extends Model
    * @var array
    */
     protected $fillable = [
-      'title', 'user_id', 'months'
+      'title', 'user_id', 'months', 'master_id', 'inherited_fields'
     ];
 
     public function user()
@@ -28,8 +28,23 @@ class SavedReport extends Model
         return $this->belongsTo('App\User', 'user_id');
     }
 
-    public function reportFields()
+    public function master()
     {
-        return $this->belongsToMany('App\ReportField')->withTimestamps();
+        return $this->belongsTo('App\Report', 'master_id');
     }
+
+    public function canManage()
+    {
+      // Admin can manage anything
+        if (auth()->user()->hasRole("Admin")) {
+            return true;
+        }
+      // Managers can manage reports for their own inst
+        if (auth()->user()->hasRole("Manager")) {
+            return auth()->user()->inst_id == $this->user->inst_id;
+        }
+      // Users can manage their own reports
+        return $this->user_id == auth()->id();
+    }
+
 }

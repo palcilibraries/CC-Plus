@@ -39,7 +39,7 @@ Route::get('/reports/{id}', 'ReportController@show')->name('reports.show')->midd
 Route::get('/reports-available', 'ReportController@getAvailable')->middleware(['auth']);
 Route::get('/usage-report-data', 'ReportController@getReportData')->middleware(['auth']);
 Route::post('/update-report-filters', 'ReportController@updateFilters')->middleware(['auth']);
-Route::post('/save-report-config', 'ReportController@saveReportConfig')->middleware(['auth']);
+Route::post('/save-report-config', 'SavedReportController@saveReportConfig')->middleware(['auth']);
 //
 Route::post('/update-alert-status', 'AlertController@updateStatus')->middleware(['auth','role:Admin,Manager']);
 Route::post('/alert-dash-refresh', 'AlertController@dashRefresh')->middleware('auth');

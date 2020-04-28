@@ -8,6 +8,9 @@
         <v-col cols="4"><strong>Customer ID: </strong>{{ form.customer_id }}</v-col>
       	<v-col cols="4"><strong>Requestor ID: </strong>{{ form.requestor_id }}</v-col>
       	<v-col cols="4"><strong>API Key: </strong>{{ form.API_key }}</v-col>
+        <v-col cols="12">
+          <strong>Support Email: </strong><a :href="'mailto:'+form.support_email">{{ form.support_email }}</a>
+        </v-col>
       </v-row>
       <v-row>
     	<v-col cols="4">
@@ -44,6 +47,9 @@
           <v-col>
             <v-text-field v-model="form.API_key" label="API_key" outlined></v-text-field>
           </v-col>
+          <v-col>
+            <v-text-field v-model="form.support_email" label="Support Email" outlined></v-text-field>
+          </v-col>
           <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
             Save Settings
           </v-btn>
@@ -58,12 +64,10 @@
     import Form from '@/js/plugins/Form';
     import Swal from 'sweetalert2';
     window.Form = Form;
-
     export default {
         props: {
                 setting: { type:Object, default: () => {} },
                },
-
         data() {
             return {
                 success: '',
@@ -77,6 +81,7 @@
                     customer_id: this.setting.customer_id,
                     requestor_id: this.setting.requestor_id,
                     API_key: this.setting.API_key,
+                    support_email: this.setting.support_email,
                     inst_id: this.setting.inst_id,
                     prov_id: this.setting.prov_id,
                 })
@@ -118,6 +123,7 @@
                                    self.form.customer_id = '';
                                    self.form.requestor_id = '';
                                    self.form.API_key = '';
+                                   self.form.support_email = '';
                                } else {
                                    self.success = '';
                                    self.failure = response.data.msg;

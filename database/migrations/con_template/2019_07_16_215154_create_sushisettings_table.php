@@ -20,6 +20,7 @@ class CreateSushiSettingsTable extends Migration
             $table->text('customer_id')->nullable();
             $table->text('requestor_id')->nullable();
             $table->text('API_key')->nullable();
+            $table->text('support_email')->nullable();
             $table->timestamps();
 
             $table->foreign('inst_id')->references('id')->on('institutions')->onDelete('cascade');

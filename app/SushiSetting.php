@@ -23,7 +23,7 @@ class SushiSetting extends Model
    * @var array
    */
     protected $fillable = [
-      'inst_id', 'prov_id', 'requestor_id', 'customer_id', 'API_key'
+      'inst_id', 'prov_id', 'requestor_id', 'customer_id', 'API_key', 'support_email'
     ];
 
   /**

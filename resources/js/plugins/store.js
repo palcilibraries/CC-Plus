@@ -19,8 +19,8 @@ export const store = new Vuex.Store({
           accessmethod_id: 0,
           accesstype_id: 0,
           datatype_id: 0,
-          institutiongroup_id: 0,
           inst_id: 0,
+          institutiongroup_id: 0,
           plat_id: 0,
           prov_id: 0,
           sectiontype_id: 0
@@ -31,6 +31,7 @@ export const store = new Vuex.Store({
           datatypes: [],
           sectiontypes: [],
           institutions: [],
+          institutiongroups: [],
           providers: [],
           platforms: []
       },
@@ -79,11 +80,11 @@ export const store = new Vuex.Store({
     SET_DATATYPE_FILTER(state, type_id) {
         state.filter_by.datatype_id = type_id;
     },
-    SET_INSTGROUP_FILTER(state, group_id) {
-        state.filter_by.institutiongroup_id = group_id;
-    },
     SET_INSTITUTION_FILTER(state, inst_id) {
         state.filter_by.inst_id = inst_id;
+    },
+    SET_INSTGROUP_FILTER(state, group_id) {
+        state.filter_by.institutiongroup_id = group_id;
     },
     SET_PLATFORM_FILTER(state, plat_id) {
         state.filter_by.plat_id = plat_id;
@@ -105,6 +106,9 @@ export const store = new Vuex.Store({
     },
     SET_INSTITUTION_OPTIONS(state, options) {
         state.options.institutions = options;
+    },
+    SET_INSTGROUP_OPTIONS(state, options) {
+        state.options.institutiongroups = options;
     },
     SET_PLATFORM_OPTIONS(state, options) {
         state.options.platforms = options;
@@ -147,11 +151,11 @@ export const store = new Vuex.Store({
     updateDataTypeFilter({ commit }, type_id) {
       commit('SET_DATATYPE_FILTER', type_id);
     },
-    updateInstGroupFilter({ commit }, group_id) {
-      commit('SET_INSTGROUP_FILTER', group_id);
-    },
     updateInstitutionFilter({ commit }, inst_id) {
       commit('SET_INSTITUTION_FILTER', inst_id);
+    },
+    updateInstGroupFilter({ commit }, group_id) {
+      commit('SET_INSTGROUP_FILTER', group_id);
     },
     updatePlatformFilter({ commit }, plat_id) {
       commit('SET_PLATFORM_FILTER', plat_id);
@@ -173,6 +177,9 @@ export const store = new Vuex.Store({
     },
     updateInstitutionOptions({ commit }, insts) {
       commit('SET_INSTITUTION_OPTIONS', insts);
+    },
+    updateInstGroupOptions({ commit }, insts) {
+      commit('SET_INSTGROUP_OPTIONS', insts);
     },
     updatePlatformOptions({ commit }, plats) {
       commit('SET_PLATFORM_OPTIONS', plats);
@@ -247,6 +254,9 @@ export const store = new Vuex.Store({
     },
     institution_options: state => {
       return state.options.institutions
+    },
+    institutiongroup_options: state => {
+      return state.options.institutiongroups
     },
     platform_options: state => {
       return state.options.platforms

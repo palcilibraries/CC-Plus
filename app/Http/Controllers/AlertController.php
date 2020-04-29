@@ -19,11 +19,27 @@ class AlertController extends Controller
         $__options = Alert::getEnumValues('status');
         array_unshift($__options, 'ALL');
         $status_options = array_combine($__options, $__options);
+
         if (auth()->user()->hasRole("Admin")) { // show them all
             $data = Alert::orderBy('id', 'ASC')->get();
         } else {                                // limit to user's inst
-            $data = Alert::orderBy('id', 'ASC')->where('inst_id', '=', auth()->user()->inst_id)->get();
+            $data = Alert::orderBy('id', 'ASC')->where('inst_id', auth()->user()->inst_id)->get();
         }
+
+        $records = $data->map(function($record){
+            $record['inst_name'] = ($record->inst_id == 1)  ? "Consortia-wide" : $record->institution()->name;
+            $record['stat_id'] = "stat_" . $record->id;
+            $record['mod_by'] = ($record->modified_by == 1) ? 'CC-Plus System' : $record->user->name;
+            if (!is_null($record->harvest_id)) {
+                $record['detail_url'] = "/harvestlogs/" . $record->harvest->id;
+                $record['detail_txt'] = "details";
+            }
+            if (!is_null($record->alertsettings_id)) {
+                $record['detail_url'] = "/alertsettings/" . $record->alertsettings_id;
+                $record['detail_txt'] = $record->alertSetting->reportField->legend . " is out of bounds!";
+            }
+            return $record;
+        });
 
        // Providers to display in the dropdown
         $providers = $data->map(function ($item, $key) {
@@ -31,7 +47,7 @@ class AlertController extends Controller
         })->unique('id')->pluck('name', 'id')->toArray();
         array_unshift($providers, 'ALL');
 
-        return view('alerts.dashboard', compact('data', 'status_options', 'providers'))
+        return view('alerts.dashboard', compact('records', 'status_options', 'providers'))
                ->with('i', ($request->input('page', 1) - 1) * 10);
     }
 

@@ -27,16 +27,24 @@
                   v-model='filter_data.platform.value'
                   @change="onFilterChange('platform')"
                   label="Platform"
-                  placeholder="Filter by Platform"
                   item-text="name"
                   item-value="id"
         ></v-select>
       </v-col>
-      <v-col v-if='filter_data["institution"].value >= 0' class="ma-2" cols="1" sm="1">
+      <v-col v-if='filter_data["institution"].value >= 0 && filterInst' class="ma-2" cols="1" sm="1">
         <v-select :items='all_options.institutions'
                   v-model='filter_data.institution.value'
                   @change="onFilterChange('institution')"
                   label="Institution"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col v-if='filter_data["institutiongroup"].value >= 0 && !filterInst' class="ma-2" cols="1" sm="1">
+        <v-select :items='all_options.institutiongroups'
+                  v-model='filter_data.institutiongroup.value'
+                  @change="onFilterChange('institutiongroup')"
+                  label="Institution Group"
                   item-text="name"
                   item-value="id"
         ></v-select>
@@ -162,6 +170,7 @@
         showPreview: false,
         showFilters: false,
         configForm: false,
+        filterInst: true,   // T: filter-by-inst,  F: filter-by-inst-group
         preview_text: 'Display Preview',
         change_counter: 0,
         totalRecs: 0,
@@ -186,6 +195,7 @@
           provider: { col:'prov_id', act:'updateProvider', value:0 },
           platform: { col:'plat_id', act:'updatePlatform', value:0 },
           institution: { col:'inst_id', act:'updateInstitution', value:0 },
+          institutiongroup: { col:'institutiongroup_id', act:'updateInstGroup', value:0 },
           datatype: { col:'datatype_id', act:'updateDataType', value: -1 },
           sectiontype: { col:'sectiontype_id', act:'updateSectionType', value: -1 },
           accesstype: { col:'accesstype_id', act:'updateAccessType', value: -1 },
@@ -232,8 +242,10 @@
           // Turning on a column...
           if (head.active) {
               if (hasFilter) {
-                  // Set filter to "all"
-                  this.filter_data[head.value].value = 0;
+                  // Set filter to "all" unless this is for institution and we're filtering by inst-group
+                  if (head.value!='institution' || (head.value!='institution' && this.filterInst)) {
+                      this.filter_data[head.value].value = 0;
+                  }
                   this.$store.dispatch(action,0);
                   // Update options for this column in the datastore
                   this.updateReportFilters({[theFilter.col]:0 });
@@ -400,23 +412,19 @@
         }
       });
 
+      // Assign preset filter values
+      for (let [key, data] of Object.entries(this.filter_data)) {
+          if (this.preset_filters[data.col]>0) {
+              let filt = data.act+'Filter';
+              this.$store.dispatch(filt,this.preset_filters[data.col]);
+              data.value = this.preset_filters[data.col];
+          }
+      }
+      if (this.preset_filters['institutiongroup_id']>0)  this.filterInst = false;
+
       // Manually disable platform filtering for platform reports
       if (this.preset_filters['report_id']==3 || this.preset_filters['report_id']==14) {
           this.filter_data.platform.value = -1
-      }
-
-      // Assign preset inst and provider filters
-      if (typeof(this.preset_filters['inst_id']) != 'undefined') {
-          if (this.preset_filters['inst_id'] > 0) {
-              this.$store.dispatch('updateInstitutionFilter',this.preset_filters['inst_id']);
-              this.filter_data.institution.value = this.preset_filters['inst_id'];
-          }
-      }
-      if (typeof(this.preset_filters['prov_id']) != 'undefined') {
-          if (this.preset_filters['prov_id'] > 0) {
-              this.$store.dispatch('updateProviderFilter',this.preset_filters['prov_id']);
-              this.filter_data.provider.value = this.preset_filters['prov_id'];
-          }
       }
 
       // Assign preset report_id, and from/to date fields to the store variables

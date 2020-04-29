@@ -461,15 +461,13 @@ class ReportController extends Controller
         if ($report->parent_id == 0) {
             $master_name = $report->name;
             $report_fields = $report->reportFields;
-            // $report_filters = $report->reportFilters;
         } else {
             $master_name = $report->parent->name;
             $report_fields = $report->parent->reportFields;
-            // $report_filters = $report->parent->reportFilters;
         }
         $report_table = $conso_db . '.' . strtolower($master_name) . '_report_data';
 
-        // Update filters to get rid of filters that don't apply to this report
+        // Update filters to remove filters that don't apply to this report
         $active_ids = $report_fields->where('report_filter_id','<>',null)->pluck('report_filter_id')->toArray();
         $active_filters =  $all_filters->whereIn('id', $active_ids)->pluck('report_column')->toArray();
         foreach ($_filters as $key => $value) {
@@ -479,8 +477,12 @@ class ReportController extends Controller
             }
         }
 
+        $filter_data = array();
         // Setup institution limiter array for whereIn clause later
         $limit_to_insts = self::limitToInstitutions();
+        if (isset(self::$input_filters['institutiongroup_id'])) {
+            $filter_data['institutiongroup'] = InstitutionGroup::get(['id','name'])->toArray();
+        }
 
         // Build where clause conditions for this report based on $input_filters
         // WITHOUT date-limiters since we're after the min/max available dates
@@ -506,7 +508,6 @@ class ReportController extends Controller
         // Rebuild conditions to include date-range
         $conditions = self::filterOnConditions();
 
-        $filter_data = array();
         // foreach ($report_filters as $filt) {
         foreach ($all_filters as $filt) {
             if (!isset(self::$input_filters[$filt->report_column])) {
@@ -528,7 +529,7 @@ class ReportController extends Controller
                           ->distinct()
                           ->pluck($filt->report_column);
             }
-            // Setup an array of ID+name pairs for the filter, append it to $filter_data
+            // Setup an array of ID+name pairs for the filter options, append it to $filter_data
             $_db = ($filt->is_global) ? config('database.connections.globaldb.database') . "."
                                       : config('database.connections.consodb.database') . ".";
             ${$filt->table_name} = DB::table($_db . $filt->table_name)

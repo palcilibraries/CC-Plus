@@ -60,7 +60,7 @@ class Alert extends BaseModel
    // to either an alert-setting or to a failed harvest
     public function institution()
     {
-        if ($this->harvest_id == 0) {
+        if (is_null($this->harvest_id)) {
             return $this->alertSetting->institution;
         } else {
             return $this->harvest->sushiSetting->institution;
@@ -69,7 +69,7 @@ class Alert extends BaseModel
 
     public function reportName()
     {
-        if ($this->harvest_id == 0) {
+        if (is_null($this->harvest_id)) {
             return $this->alertSetting->metric->report->name;
         } else {
             return $this->harvest->report->name;

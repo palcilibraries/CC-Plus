@@ -17,8 +17,8 @@ class CreateAlertsTable extends Migration
             $table->Increments('id');
             $table->string('yearmon', 7);
             $table->unsignedInteger('prov_id');
-            $table->unsignedInteger('alertsettings_id')->default(0);
-            $table->unsignedInteger('harvest_id')->default(0);
+            $table->unsignedInteger('alertsettings_id')->nullable();
+            $table->unsignedInteger('harvest_id')->nullable();
             $table->unsignedInteger('modified_by')->default('1');
             $table->enum('status', array('Active','Silent','Delete'))->nullable();
             $table->timestamps();

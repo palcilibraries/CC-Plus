@@ -21,6 +21,6 @@ class ReportFilter extends Model
 
     public function reportField()
     {
-        return $this->belongsToMany('App\ReportField', 'report_filter_id');
+        return $this->hasMany('App\ReportField', 'report_filter_id');
     }
 }

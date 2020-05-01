@@ -71,22 +71,19 @@ class Report extends Model
         return $this->hasMany(static::class, 'parent_id')->orderBy('name', 'asc');
     }
 
-    // public function inheritedFields()
-    // {
-    //    // decode the inherited_fields string to an array
-    //     $_decoded = array();
-    //     foreach (preg_split('/\,/', $this->inherited_fields) as $key => $value) {
-    //         if (!strpos($value, ":")) {
-    //             $_decoded[$value] = null;
-    //             continue;
-    //         }
-    //         $_parts = preg_split('/:/', $value);
-    //         $_decoded[$_parts[0]] = $_parts[1];
-    //     }
-    //     $field_ids = array_keys($_decoded);
-    //
-    //    // Get and return matching fields
-    //     return ReportField::whereIn('id', $field_ids)->get();
-    // }
+    // Turn inherited_fields into key=>value array
+    public function parsedInherited()
+    {
+        $_fields = array();
+        foreach (preg_split('/,/', $this->inherited_fields) as $field) {
+            $_f = preg_split('/:/',$field);
+            $_fields[$_f[0]] = (isset($_f[1])) ? $_f[1] : null;
+        }
+       //  $field_ids = array_keys($_decoded);
+       //
+       // // Get and return matching fields
+       //  return ReportField::whereIn('id', $field_ids)->get();
+        return $_fields;
+    }
 
 }

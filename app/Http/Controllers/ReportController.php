@@ -59,11 +59,19 @@ class ReportController extends Controller
                                 ->orderBy('name', 'asc')
                                 ->where('parent_id', '=', 0)
                                 ->get();
-        $user_reports = SavedReport::orderBy('title', 'asc')
-                                   ->where('user_id', '=', auth()
-                                   ->id())
-                                   ->get();
+        $user_report_data = SavedReport::with('master')->orderBy('title', 'asc')
+                                       ->where('user_id', '=', auth()->id())
+                                       ->get();
 
+        // Map the data to get a count fields in the inherited_fields string
+        if ($user_report_data) {
+            $user_reports = $user_report_data->map(function($record) {
+                                $record['field_count'] = sizeof(preg_split('/,/',$record->inherited_fields));
+                                return $record;
+                            });
+        } else {
+            $user_reports = null;
+        }
         return view('reports.view', compact('master_reports', 'user_reports'));
     }
 
@@ -135,37 +143,39 @@ class ReportController extends Controller
         } else {
             // Build field array from inherited fields
             $master_fields = $report->parent->reportFields;
-            $inherited = preg_split('/,/',$report->inherited_fields);   //should be a CSV list of fields
+            // Turn report->inherited_fields into key=>value array
+            $inherited = $report->parsedInherited();
             $child_fields = array();
-            foreach ($inherited as $field) {
-                $split_field = preg_split('/:/',$field);
-                $_field = $master_fields->find($split_field[0]);
-                $child_fields[] = $_field;
+            foreach ($inherited as $key => $value) {
+                $field = $master_fields->find($key);
+                if (!$field) {
+                    continue;
+                }
+                $child_fields[] = $field;
 
-                // If the field carries a filter-preset update the filters array
-                $_filter = $all_filters->find($_field->report_filter_id);
-                if ($_filter && isset($split_field[2])) {
-                    $preset_filters[$_filter->report_column] = $split_field[2];
+                // If the field has a filter, update the filters array with any inherited value
+                $filter = $all_filters->find($field->report_filter_id);
+                if ($filter && !is_null($value)) {
+                    $preset_filters[$filter->report_column] = $value;
                 }
             }
             $field_data = collect($child_fields);
         }
 
         // Turn the field-map into the columns-map the component expects. Allow input
-        // filter presets for inst & provider to override defaults.
+        // filter presets for inst & provider to override defaults
         $columns = array();
         foreach($field_data as $fld) {
             $_qry = (is_null($fld->qry_as)) ? $fld->qry : $fld->qry_as;
             $data = array('text' => $fld->legend, 'value' => $_qry, 'active' => $fld->active,
                                     'reload' => $fld->reload);
-            if ($_qry == "institution") {
-                if ($preset_filters['inst_id']>0) {
-                    $data['active'] = true;
-                }
-            }
-            if ($_qry == "provider") {
-                if ($preset_filters['prov_id']>0) {
-                    $data['active'] = true;
+
+            // Activate any field w/a filter preset defined
+            if (!$data['active'] && $fld->reportFilter) {
+                if (isset($preset_filters[$fld->reportFilter->report_column])) {
+                    if ($preset_filters[$fld->reportFilter->report_column] > 0) {
+                        $data['active'] = 1;
+                    }
                 }
             }
             $columns[] = $data;
@@ -517,7 +527,8 @@ class ReportController extends Controller
                 continue;
             }
             // Don't need to query to limit by institution
-            if ($filt->report_column == 'inst_id' && !empty($limit_to_insts)) {
+            if (!empty($limit_to_insts) &&
+                ($filt->report_column == 'inst_id' || $filt->report_column == 'institutiongroup_id')) {
                 $_ids = $limit_to_insts;
             } else {
                 // Get distinct ids for the column from the report

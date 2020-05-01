@@ -331,6 +331,9 @@
               var fval = (typeof(this.filter_data[head.value])=='undefined') ? '' : this.filter_data[head.value].value;
               _cols[head.value] = {active: head.active, limit: fval};
             })
+            if (!this.filterInst) {   // If filtering by-inst-group, add to the cols array
+                _cols['institutiongroup'] = {active: false, limit: this.filter_data['institutiongroup'].value};
+            }
             let num_months = 1;     // default to lastMonth
             if (this.preset_filters.dateRange == 'latestYear') {
                 num_months = 12;
@@ -342,7 +345,7 @@
                 num_months = toDate.getMonth() - fromDate.getMonth() +
                          (12 * (toDate.getFullYear() - fromDate.getFullYear())) + 1;
             }
-            axios.post('/save-report-config', {
+            axios.post('/savedreports', {
                 title: this.form.title,
                 save_id: this.form.save_id,
                 report_id: this.all_filters.report_id,

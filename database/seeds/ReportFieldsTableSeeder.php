@@ -224,7 +224,7 @@ class ReportFieldsTableSeeder extends Seeder
             DB::table($table)->insert(['id' => 92, 'report_id' => 4, 'legend' => 'Component Online ISSN']);
             DB::table($table)->insert(['id' => 93, 'report_id' => 4, 'legend' => 'Component URI']);
             DB::table($table)->insert(['id' => 94, 'report_id' => 4, 'legend' => 'Data Type', 'qry' => 'datatype_id',
-                'group_it' => 1, 'report_filter_id' => 4]);
+                'qry_as' => 'datatype', 'group_it' => 1, 'report_filter_id' => 4]);
             DB::table($table)->insert(['id' => 95, 'report_id' => 4, 'legend' => 'YOP', 'qry' => 'YOP',
                 'group_it' => 1]);
             DB::table($table)->insert(['id' => 96, 'report_id' => 4, 'legend' => 'Access Type', 'group_it' => 1,

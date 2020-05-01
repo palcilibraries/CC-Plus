@@ -20,15 +20,17 @@
     <tr>
       <th>User-Defined Report</th>
       <!-- <th>Description</th> -->
+      <th>Based-on (Master)</th>
       <th>#-Months</th>
       <th>#-Fields</th>
     </tr>
     @foreach ($user_reports as $u_report)
       <tr>
-        <td><a href="{{ URL::route('reports.show',$u_report->id) }}">{{ $u_report->title }}</a></td>
+        <td><a href="{{ URL::route('savedreports.edit',$u_report->id) }}">{{ $u_report->title }}</a></td>
         <!-- <td> u_report->description</td> -->
+        <td>{{ $u_report->master->name }}</td>
         <td>{{ $u_report->months }}</td>
-        <td>{{ $u_report->reportFields()->count() }}</td>
+        <td>{{ $u_report->field_count }}</td>
       </tr>
     @endforeach
   </table>

@@ -22,6 +22,7 @@ class CreateSavedReportsTable extends Migration
             $table->integer('months')->default(1);
             $table->unsignedInteger('master_id');
             $table->string('inherited_fields')->nullable();
+            $table->string('filters')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

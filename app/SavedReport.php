@@ -20,7 +20,7 @@ class SavedReport extends Model
    * @var array
    */
     protected $fillable = [
-      'title', 'user_id', 'months', 'master_id', 'inherited_fields'
+      'title', 'user_id', 'months', 'master_id', 'inherited_fields', 'filters'
     ];
 
     public function user()
@@ -47,4 +47,14 @@ class SavedReport extends Model
         return $this->user_id == auth()->id();
     }
 
+    // Turn filters into key=>value array
+    public function parsedFilters()
+    {
+        $return_filters = array();
+        foreach (preg_split('/,/', $this->filters) as $filter) {
+            $_f = preg_split('/:/',$filter);
+            $return_filters[$_f[0]] = (isset($_f[1])) ? $_f[1] : null;
+        }
+        return $return_filters;
+    }
 }

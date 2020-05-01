@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<v-app institutionform>
+<v-app providerform>
   <table width="100%">
     <tr>
       <td width="49%" valign="top">

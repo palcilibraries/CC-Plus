@@ -40,6 +40,6 @@ class ReportField extends Model
 
     public function reportFilter()
     {
-        return $this->hasOne('App\ReportFilter', 'report_filter_id');
+        return $this->belongsTo('App\ReportFilter', 'report_filter_id');
     }
 }

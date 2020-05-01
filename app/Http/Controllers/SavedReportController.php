@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use DB;
 use App\SavedReport;
 use App\Report;
+use App\ReportFilter;
+use App\InstitutionGroup;
 use Illuminate\Http\Request;
 
 class SavedReportController extends Controller
@@ -22,22 +25,59 @@ class SavedReportController extends Controller
     public function edit($id)
     {
         // User must be able to manage the settings
-        $report = SavedReport::findOrFail($id);
+        $report = SavedReport::with('master','user')->findOrFail($id);
         abort_unless($report->canManage(), 403);
 
-        return view('savedreports.edit', compact('report'));
+        // Get master fields for $report->inherited_fields and tack on filter relationship
+        $fields = $report->master->reportFields->whereIn('id', preg_split('/,/',$report->inherited_fields));
+        $fields->load('reportFilter');
+
+        // Turn report->filters into key=>value arrays, named by the field column
+        $filters = array();
+        $filter_data = $report->parsedFilters();
+
+        // Set the filter for institution-group if its present (since it inst a "field")
+        $group_filter = ReportFilter::where('report_column','=','institutiongroup_id')->pluck('id')->first();
+        if (isset($filter_data[$group_filter])) {
+            $filters['Institution Group'] = array('legend' => 'Institution Group');
+            $filters['Institution Group']['name'] = InstitutionGroup::where('id',$filter_data[$group_filter])
+                                                                    ->pluck('name')->first();
+        }
+
+        foreach ($fields as $field) {
+            if ($field->reportFilter) {
+                if ($field->qry_as == 'institution' && isset($filter_data[$group_filter])) {
+                    // If filtering by group, inst is on/off - not all/selected
+                    $data = array('legend' => $field->legend, 'name' => '');
+                } else {
+                    $data = array('legend' => $field->legend, 'name' => 'All');
+                }
+                if (isset($filter_data[$field->report_filter_id])) {
+                    if ($filter_data[$field->report_filter_id]>0) {
+                        $_db = ($field->reportFilter->is_global)
+                                ? config('database.connections.globaldb.database') . "."
+                                : config('database.connections.consodb.database') . ".";
+                        $data['name'] = DB::table($_db . $field->reportFilter->table_name)
+                                          ->where('id',$filter_data[$field->report_filter_id])->pluck('name')->first();
+                    }
+                }
+                $filters[$field->qry_as] = $data;
+            }
+        }
+        return view('savedreports.edit', compact('report','fields','filters'));
     }
 
     /**
-     * Save a report configuration (New or Update)
+     * Save a report configuration
+     * --> IF $request includes a non-zero 'save_id', the request is treated as an update
      *
      * @param  \Illuminate\Http\Request  $request
      * @return JSON array
      */
-    public function saveReportConfig(Request $request)
+    public function store(Request $request)
     {
-        $this->validate($request, ['title' => 'required', 'save_id' => 'required', 'report_id' => 'required',
-                                   'months' => 'required', 'fields' => 'required']);
+        $this->validate($request, ['title' => 'required', 'save_id' => 'required', 'months' => 'required',
+                                   'report_id' => 'required', 'fields' => 'required']);
         $title = $request->title;
         $save_id = $request->save_id;
         $report_id = $request->report_id;
@@ -67,26 +107,62 @@ class SavedReportController extends Controller
             $saved_report->master_id = $master_id;
         }
 
-       // Build inherited fields string based on active columns and filters
+       // Build inherited fields and filters strings based on active columns/filters
+        $filters = '';
         $inherited_fields = '';
         foreach ($all_fields as $field) {
-            if ($input_fields[$field->qry_as]) {
+            if (isset($input_fields[$field->qry_as])) {
                 if ($input_fields[$field->qry_as]['active']) {
                     $inherited_fields .= ($inherited_fields == '') ? '' : ',';
                     $inherited_fields .= $field->id;
-                    if ($input_fields[$field->qry_as]['limit']>0) {
-                        $inherited_fields .= ":" . $input_fields[$field->qry_as]['limit'];
+                    if ($input_fields[$field->qry_as]['limit'] > 0 && $field->reportFilter) {
+                        $filters .= ($filters == '') ? '' : ',';
+                        $filters .= $field->reportFilter->id;
+                        $filters .= ":" . $input_fields[$field->qry_as]['limit'];
                     }
                 }
             }
         }
 
-       // Save record with inherited fields and dates
+       // Tack on institution-group if it is in input_fields. It isn't a column, but is a filter-setting
+        if (isset($input_fields['institutiongroup'])) {
+            $filt = ReportFilter::where('report_column','=','institutiongroup_id')->first();
+            if ($input_fields['institutiongroup']['limit'] > 0 && $filt) {
+                $filters .= "," . $filt->id . ":" . $input_fields['institutiongroup']['limit'];
+            }
+        }
+
+       // Save record with inherited fields, filters and dates
         $saved_report->title = $title;
         $saved_report->inherited_fields = $inherited_fields;
+        $saved_report->filters = $filters;
         $saved_report->months = $request->months;
         $saved_report->save();
         return response()->json(['result' => true, 'msg' => 'Configuration saved successfully']);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\SavedReport $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        $report = SavedReport::findOrFail($id);
+        if (!$report->canManage()) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        }
+
+       // Validate form inputs
+        $this->validate($request, ['title' => 'required', 'months' => 'required']);
+        $input = $request->all();
+
+       // Update the record and assign groups
+        $report->update($input);
+
+        return response()->json(['result' => true, 'msg' => 'Report settings successfully updated']);
     }
 
     /**

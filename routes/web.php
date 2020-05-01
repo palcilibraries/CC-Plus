@@ -25,6 +25,8 @@ Route::resource('/harvestlogs', 'HarvestLogController');
 Route::resource('/failedharvests', 'FailedHarvestController');
 Route::resource('/sushisettings', 'SushiSettingController')->middleware(['auth','role:Admin,Manager']);
 Route::resource('/alertsettings', 'AlertSettingController')->middleware(['auth','role:Admin,Manager']);
+Route::resource('/savedreports', 'SavedReportController')->middleware(['auth']);
+Route::post('/save-report-config', 'SavedReportController@saveReportConfig')->middleware(['auth']);
 
 Auth::routes();
 Route::get('logout', 'Auth\LoginController@logout');

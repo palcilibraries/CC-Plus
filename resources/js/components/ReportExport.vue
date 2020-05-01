@@ -252,14 +252,16 @@
               }
           // Turning off a column...
           } else {
-              // Remove the filter from the list
-              this.filter_data[head.value].value = -1;
-              // If column was actively filtering, rebuild all filtering options
-              if (hasFilter && this.all_filters[theFilter.col]>0) {
-                  // Update filter in store to -1 to remove column from data queries/reloads
-                  this.$store.dispatch(action,-1);
-                  // Update options for all columns
-                  this.updateReportFilters();
+              if (hasFilter) {
+                  // Remove the filter from the list
+                  this.filter_data[head.value].value = -1;
+                  // If column was actively filtering, rebuild all filtering options
+                  if (this.all_filters[theFilter.col] > 0) {
+                      // Update filter in store to -1 to remove column from data queries/reloads
+                      this.$store.dispatch(action,-1);
+                      // Update options for all columns
+                      this.updateReportFilters();
+                  }
               }
           }
         },

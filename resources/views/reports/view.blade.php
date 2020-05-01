@@ -19,18 +19,18 @@
   <table class="table table-bordered">
     <tr>
       <th>User-Defined Report</th>
-      <!-- <th>Description</th> -->
       <th>Based-on (Master)</th>
       <th>#-Months</th>
       <th>#-Fields</th>
+      <th></th>
     </tr>
     @foreach ($user_reports as $u_report)
       <tr>
         <td><a href="{{ URL::route('savedreports.edit',$u_report->id) }}">{{ $u_report->title }}</a></td>
-        <!-- <td> u_report->description</td> -->
         <td>{{ $u_report->master->name }}</td>
         <td>{{ $u_report->months }}</td>
         <td>{{ $u_report->field_count }}</td>
+        <td><a class="btn btn-success"href="/reports/preview?saved_id={{ $u_report->id }}">Preview</a></td>
       </tr>
     @endforeach
   </table>

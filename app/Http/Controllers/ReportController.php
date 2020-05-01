@@ -18,7 +18,6 @@ use App\SectionType;
 use App\AccessType;
 use App\AccessMethod;
 use App\TitleReport;
-
 //Enables us to output flash messaging
 use Session;
 
@@ -38,9 +37,9 @@ class ReportController extends Controller
      */
     public function __construct()
     {
-        self::$input_filters=[];
-        $group_by=[];
-        $raw_fields='';
+        self::$input_filters = [];
+        $group_by = [];
+        $raw_fields = '';
         $joins = [];
 
         // $this->middleware(['auth','role:Admin']);
@@ -55,7 +54,7 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         // $master_reports = Report::orderBy('name', 'asc')->where('parent_id', '=', 0)->get();
-        $master_reports = Report::with('reportFields','children')
+        $master_reports = Report::with('reportFields', 'children')
                                 ->orderBy('name', 'asc')
                                 ->where('parent_id', '=', 0)
                                 ->get();
@@ -65,10 +64,10 @@ class ReportController extends Controller
 
         // Map the data to get a count fields in the inherited_fields string
         if ($user_report_data) {
-            $user_reports = $user_report_data->map(function($record) {
-                                $record['field_count'] = sizeof(preg_split('/,/',$record->inherited_fields));
+            $user_reports = $user_report_data->map(function ($record) {
+                                $record['field_count'] = sizeof(preg_split('/,/', $record->inherited_fields));
                                 return $record;
-                            });
+            });
         } else {
             $user_reports = null;
         }
@@ -84,7 +83,7 @@ class ReportController extends Controller
     public function create(Request $request)
     {
         if (auth()->user()->hasAnyRole(['Admin','Viewer'])) {
-            $institutions = Institution::orderBy('name', 'ASC')->where('id','<>',1)->get(['id','name'])->toArray();
+            $institutions = Institution::orderBy('name', 'ASC')->where('id', '<>', 1)->get(['id','name'])->toArray();
             array_unshift($institutions, ['id' => 0, 'name' => 'Entire Consortium']);
             $inst_groups = InstitutionGroup::get(['name', 'id'])->toArray();
             array_unshift($inst_groups, ['id' => 0, 'name' => 'Choose a Group']);
@@ -95,16 +94,18 @@ class ReportController extends Controller
             $inst_groups = array();
             $providers = Provider::with('reports')
                                  ->where(function ($query) use ($user_inst) {
-                                     $query->where('inst_id',1)->orWhere('inst_id',$user_inst);
+                                     $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
                                  })
                                  ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
         }
         array_unshift($providers, ['id' => 0, 'name' => 'All Providers']);
-        $reports = Report::with('reportFields','children')->orderBy('id', 'asc')->get()->toArray();
+        $reports = Report::with('reportFields', 'children')->orderBy('id', 'asc')->get()->toArray();
         $fields = ReportField::orderBy('id', 'asc')->get()->toArray();
 
-        return view('reports.create',
-                    compact('institutions','inst_groups','providers','reports','fields'));
+        return view(
+            'reports.create',
+            compact('institutions', 'inst_groups', 'providers', 'reports', 'fields')
+        );
     }
 
     /**
@@ -126,19 +127,29 @@ class ReportController extends Controller
      */
     public function preview(Request $request)
     {
-        // Get filters as incoming Json (expects the full filter_by object from the datastore)
-        $this->validate($request, ['filters' => 'required']);
-        $preset_filters = json_decode($request->filters, true);
+        // Start by getting a full filter-set (all elements from the datastore)
+        // If saved_id requested, get filters via SavedReport
+        if (isset($request->saved_id)) {
+            $saved_report = SavedReport::findOrFail($request->saved_id);
+            if (!$saved_report->canManage()) {
+                return response()->json(['result' => false, 'msg' => 'Access Forbidden (403)']);
+            }
+            $preset_filters = $saved_report->filterBy();
+        } else {
+            // otherwiser, get filters from $request as Json
+            $this->validate($request, ['filters' => 'required']);
+            $preset_filters = json_decode($request->filters, true);
+        }
 
         // Get the report model and all rows of the reportFilter model
-        $report = Report::where('id',$preset_filters['report_id'])->first();
+        $report = Report::where('id', $preset_filters['report_id'])->first();
         if (!$report) {
             return response()->json(['result' => false, 'msg' => 'Report ID: ' . $report_id . ' is undefined']);
         }
         $all_filters = ReportFilter::all();
 
         // Get (master) fields
-        if ($report->parent_id ==0) {   // previewing a master report?
+        if ($report->parent_id == 0) {   // previewing a master report?
             $field_data = $report->reportFields;
         } else {
             // Build field array from inherited fields
@@ -165,7 +176,7 @@ class ReportController extends Controller
         // Turn the field-map into the columns-map the component expects. Allow input
         // filter presets for inst & provider to override defaults
         $columns = array();
-        foreach($field_data as $fld) {
+        foreach ($field_data as $fld) {
             $_qry = (is_null($fld->qry_as)) ? $fld->qry : $fld->qry_as;
             $data = array('text' => $fld->legend, 'value' => $_qry, 'active' => $fld->active,
                                     'reload' => $fld->reload);
@@ -182,8 +193,8 @@ class ReportController extends Controller
         }
 
         // Get list of saved reports for this user
-        $saved_reports = SavedReport::where('user_id',auth()->id())->get(['id','title'])->toArray();
-        return view('reports.preview',compact('preset_filters','columns','saved_reports'));
+        $saved_reports = SavedReport::where('user_id', auth()->id())->get(['id','title'])->toArray();
+        return view('reports.preview', compact('preset_filters', 'columns', 'saved_reports'));
     }
 
     /**
@@ -230,7 +241,7 @@ class ReportController extends Controller
         foreach ($models as $key => $model) {
             $result = $model::when($limit_to_insts, function ($query, $limit_to_insts) {
                                 return $query->whereIn('inst_id', $limit_to_insts);
-                              })
+            })
                             ->when($conditions, function ($query, $conditions) {
                                 return $query->where($conditions);
                             })
@@ -239,7 +250,7 @@ class ReportController extends Controller
                             ->toArray();
             $output[$key] = $result[0];
         }
-        return response()->json(['reports' => $output],200);
+        return response()->json(['reports' => $output], 200);
     }
 
     /**
@@ -266,7 +277,7 @@ class ReportController extends Controller
          $conso_db = config('database.connections.consodb.database');
 
         // Get Report model, set report table target
-        $report = Report::where('id',$report_id)->first();
+        $report = Report::where('id', $report_id)->first();
         if (!$report) {
             return response()->json(['result' => false, 'msg' => 'Report ID: ' . $report_id . ' is undefined']);
         }
@@ -331,7 +342,7 @@ class ReportController extends Controller
                       }, function ($query) {
                           return $query->get()->paginate($rows);
                       });
-        } else if ($master_name == "DR") {
+        } elseif ($master_name == "DR") {
             $sortBy = ($request->sortBy != '') ? $request->sortBy : 'Dbase';
             $records = DB::table($report_table . ' as DR')
                       ->join($global_db . '.databases as DB', 'DR.db_id', 'DB.id')
@@ -365,7 +376,7 @@ class ReportController extends Controller
                       }, function ($query) {
                           return $query->get()->paginate($rows);
                       });
-        } else if ($master_name == "IR") {
+        } elseif ($master_name == "IR") {
             $sortBy = ($request->sortBy != '') ? $request->sortBy : 'Title';
             $records = DB::table($report_table . ' as IR')
                       ->join($global_db . '.items as Item', 'IR.item_id', 'Item.id')
@@ -431,7 +442,7 @@ class ReportController extends Controller
                           return $query->get()->paginate($rows);
                       });
         }
-        return response()->json(['usage' => $records],200);
+        return response()->json(['usage' => $records], 200);
     }
 
     /**
@@ -461,7 +472,7 @@ class ReportController extends Controller
         $report_id = $_filters['report_id'];
 
         // Get Report model, set report table target
-        $report = Report::where('id',$report_id)->first();
+        $report = Report::where('id', $report_id)->first();
         if (!$report) {
             return response()->json(['result' => false, 'msg' => 'Report ID: ' . $report_id . ' is undefined']);
         }
@@ -478,11 +489,19 @@ class ReportController extends Controller
         $report_table = $conso_db . '.' . strtolower($master_name) . '_report_data';
 
         // Update filters to remove filters that don't apply to this report
-        $active_ids = $report_fields->where('report_filter_id','<>',null)->pluck('report_filter_id')->toArray();
+        $active_ids = $report_fields->where('report_filter_id', '<>', null)->pluck('report_filter_id')->toArray();
         $active_filters =  $all_filters->whereIn('id', $active_ids)->pluck('report_column')->toArray();
         foreach ($_filters as $key => $value) {
-            if ($key == 'inst_id' || $key == 'institutiongroup_id' || $key == 'fromYM' || $key == 'toYM' ||
-                $key == 'report_id' || $key == 'plat_id' || $key == 'prov_id' || in_array($key,$active_filters)) {
+            if (
+                $key == 'inst_id'
+                || $key == 'institutiongroup_id'
+                || $key == 'fromYM'
+                || $key == 'toYM'
+                || $key == 'report_id'
+                || $key == 'plat_id'
+                || $key == 'prov_id'
+                || in_array($key, $active_filters)
+            ) {
                 self::$input_filters[$key] = $value;
             }
         }
@@ -518,7 +537,6 @@ class ReportController extends Controller
         // Rebuild conditions to include date-range
         $conditions = self::filterOnConditions();
 
-        // foreach ($report_filters as $filt) {
         foreach ($all_filters as $filt) {
             if (!isset(self::$input_filters[$filt->report_column])) {
                 continue;
@@ -527,27 +545,37 @@ class ReportController extends Controller
                 continue;
             }
             // Don't need to query to limit by institution
-            if (!empty($limit_to_insts) &&
-                ($filt->report_column == 'inst_id' || $filt->report_column == 'institutiongroup_id')) {
+            if (
+                !empty($limit_to_insts) &&
+                ($filt->report_column == 'inst_id' ||
+                $filt->report_column == 'institutiongroup_id')
+            ) {
                 $_ids = $limit_to_insts;
             } else {
-                // Get distinct ids for the column from the report
-                $_ids = DB::table($report_table)
-                          ->when($limit_to_insts, function ($query, $limit_to_insts) {
-                              return $query->whereIn('inst_id', $limit_to_insts);
-                          })
-                          ->where($conditions)
-                          ->distinct()
-                          ->pluck($filt->report_column);
+                // Get distinct ids for the column from the report (Groups are not report-fields ... skip them)
+                if ($filt->report_column != 'institutiongroup_id') {
+                    $_ids = DB::table($report_table)
+                              ->when($limit_to_insts, function ($query, $limit_to_insts) {
+                                  return $query->whereIn('inst_id', $limit_to_insts);
+                              })
+                              ->where($conditions)
+                              ->distinct()
+                              ->pluck($filt->report_column);
+                }
             }
             // Setup an array of ID+name pairs for the filter options, append it to $filter_data
-            $_db = ($filt->is_global) ? config('database.connections.globaldb.database') . "."
-                                      : config('database.connections.consodb.database') . ".";
-            ${$filt->table_name} = DB::table($_db . $filt->table_name)
-                                     ->whereIn('id',$_ids)
-                                     ->get(['id','name'])
-                                     ->toArray();
-            array_unshift(${$filt->table_name}, ['id' => 0, 'name' => 'ALL']);
+            if ($filt->table_name == 'institutiongroups') {
+                // Get all of them instead of trying to build a list of "possibles" based on the data-in-table
+                ${$filt->table_name} = InstitutionGroup::get(['id', 'name'])->toArray();
+            } else {
+                $_db = ($filt->is_global) ? config('database.connections.globaldb.database') . "."
+                                          : config('database.connections.consodb.database') . ".";
+                ${$filt->table_name} = DB::table($_db . $filt->table_name)
+                                         ->whereIn('id', $_ids)
+                                         ->get(['id','name'])
+                                         ->toArray();
+                array_unshift(${$filt->table_name}, ['id' => 0, 'name' => 'ALL']);
+            }
             $_key = rtrim($filt->table_name, "s");
             $filter_data[$_key] = ${$filt->table_name};
         }
@@ -578,10 +606,10 @@ class ReportController extends Controller
                 if ($columns[$field->qry_as]['active']) {
                     // set join if needed
                     if (!is_null($field->joins)) {
-                        if (preg_match('/_conso_/',$field->joins)) {
+                        if (preg_match('/_conso_/', $field->joins)) {
                             $_join = preg_replace('/_conso_/', $conso_db, $field->joins);
                         }
-                        if (preg_match('/_global_/',$field->joins)) {
+                        if (preg_match('/_global_/', $field->joins)) {
                             $_join = preg_replace('/_global_/', $global_db, $field->joins);
                         }
                         $joins[$field->qry_as] = $_join;
@@ -611,15 +639,18 @@ class ReportController extends Controller
      *
      * @return Array  $conditions
      */
-    private function filterOnConditions($with_dates=true)
+    private function filterOnConditions($with_dates = true)
     {
         $conditions = array();
         foreach (self::$input_filters as $filt => $value) {
-
             // Skip report_id, date-fields, inst, and inst-group
-            if ($filt == "report_id" ||
-                $filt == "inst_id" || $filt == "institutiongroup_id" ||
-                $filt == 'fromYM' || $filt == 'toYM') {
+            if (
+                $filt == "report_id" ||
+                $filt == "inst_id" ||
+                $filt == "institutiongroup_id" ||
+                $filt == 'fromYM' ||
+                $filt == 'toYM'
+            ) {
                 continue;
             }
 
@@ -631,7 +662,7 @@ class ReportController extends Controller
 
         // Add date range as a condition if they're *both* set
         if ($with_dates) {
-            if (isset(self::$input_filters['fromYM']) && isset(self::$input_filters['toYM'])){
+            if (isset(self::$input_filters['fromYM']) && isset(self::$input_filters['toYM'])) {
                 if (self::$input_filters['fromYM'] != '' && self::$input_filters['toYM'] != '') {
                     $conditions[] = array('yearmon','>=',self::$input_filters['fromYM']);
                     $conditions[] = array('yearmon','<=',self::$input_filters['toYM']);
@@ -654,11 +685,11 @@ class ReportController extends Controller
         // If user is not an "admin" or "viewer", return only their own inst.
         $return_values = array();
         if (!auth()->user()->hasAnyRole(['Admin','Viewer'])) {
-            array_push($return_values,auth()->user()->inst_id);
+            array_push($return_values, auth()->user()->inst_id);
         } else {
             if (isset(self::$input_filters['inst_id'])) {
                 if (self::$input_filters['inst_id'] > 0) {
-                    array_push($return_values,self::$input_filters['inst_id']);
+                    array_push($return_values, self::$input_filters['inst_id']);
                 }
             }
             if (isset(self::$input_filters['institutiongroup_id'])) {
@@ -670,5 +701,4 @@ class ReportController extends Controller
         }
         return $return_values;
     }
-
 }

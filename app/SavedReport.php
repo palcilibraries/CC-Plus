@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\ReportFilter;
 use Illuminate\Database\Eloquent\Model;
 
 class SavedReport extends Model
@@ -52,8 +53,42 @@ class SavedReport extends Model
     {
         $return_filters = array();
         foreach (preg_split('/,/', $this->filters) as $filter) {
-            $_f = preg_split('/:/',$filter);
+            $_f = preg_split('/:/', $filter);
             $return_filters[$_f[0]] = (isset($_f[1])) ? $_f[1] : null;
+        }
+        return $return_filters;
+    }
+
+    // Return a filters array that matches the vue-datastore filter_by object
+    public function filterBy()
+    {
+        $return_filters = array('report_id' => $this->master->id);
+        $return_filters['toYM'] = date("Y-m", strtotime("-1 month"));
+        $return_filters['fromYM'] = date("Y-m", strtotime("-" . $this->months . " months"));
+
+        // Get master fields for $report->inherited_fields and tack on reportFilter relationship(s)
+        $fields = $this->master->reportFields->whereIn('id', preg_split('/,/', $this->inherited_fields));
+        $fields->load('reportFilter');
+        $my_filters = $this->parsedFilters();
+
+        // Loop through $my_filters to define the filter presets found in SavedReport
+        if (count($my_filters) > 0) {
+            foreach ($my_filters as $key => $value) {
+                $rf = ReportFilter::where('id', $key)->first();
+                if ($rf) {
+                    $return_filters[$rf->report_column] = $value;
+                }
+            }
+        }
+
+        // Tack on any master field filters not defined in $my_filters
+        foreach ($fields as $field) {
+            if ($field->reportFilter && !isset($return_filters[$rf->report_column])) {
+                $return_filters[$field->reportFilter->report_column] = 0;
+            }
+        }
+        if (!isset($return_filters['institutiongroup_id'])) {   // This isn't a field, just a filter
+            $return_filters['institutiongroup_id'] = 0;
         }
         return $return_filters;
     }

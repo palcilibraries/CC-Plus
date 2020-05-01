@@ -25,46 +25,45 @@ class SavedReportController extends Controller
     public function edit($id)
     {
         // User must be able to manage the settings
-        $report = SavedReport::with('master','user')->findOrFail($id);
+        $report = SavedReport::with('master', 'user')->findOrFail($id);
         abort_unless($report->canManage(), 403);
 
         // Get master fields for $report->inherited_fields and tack on filter relationship
-        $fields = $report->master->reportFields->whereIn('id', preg_split('/,/',$report->inherited_fields));
+        $fields = $report->master->reportFields->whereIn('id', preg_split('/,/', $report->inherited_fields));
         $fields->load('reportFilter');
 
-        // Turn report->filters into key=>value arrays, named by the field column
+        // Turn report->filterBy into key=>value arrays, named by the field column
         $filters = array();
-        $filter_data = $report->parsedFilters();
+        $filter_data = $report->filterBy();
 
-        // Set the filter for institution-group if its present (since it inst a "field")
-        $group_filter = ReportFilter::where('report_column','=','institutiongroup_id')->pluck('id')->first();
-        if (isset($filter_data[$group_filter])) {
-            $filters['Institution Group'] = array('legend' => 'Institution Group');
-            $filters['Institution Group']['name'] = InstitutionGroup::where('id',$filter_data[$group_filter])
-                                                                    ->pluck('name')->first();
+        // If insitutiongroup is filtering, add it to the $filters array first (since it isn't a "field")
+        if ($filter_data['institutiongroup_id'] > 0) {
+            $filters['institutiongroup'] = array('legend' => 'Institution Group');
+            $filters['institutiongroup']['name'] = InstitutionGroup::where('id', $filter_data['institutiongroup_id'])
+                                                                   ->pluck('name')->first();
         }
-
         foreach ($fields as $field) {
             if ($field->reportFilter) {
-                if ($field->qry_as == 'institution' && isset($filter_data[$group_filter])) {
-                    // If filtering by group, inst is on/off - not all/selected
+                if ($field->qry_as == 'institution' && $filter_data['institutiongroup_id'] > 0) {
+                    // If filtering by inst-group, institution is on/off - not all/selected
                     $data = array('legend' => $field->legend, 'name' => '');
                 } else {
                     $data = array('legend' => $field->legend, 'name' => 'All');
-                }
-                if (isset($filter_data[$field->report_filter_id])) {
-                    if ($filter_data[$field->report_filter_id]>0) {
-                        $_db = ($field->reportFilter->is_global)
-                                ? config('database.connections.globaldb.database') . "."
-                                : config('database.connections.consodb.database') . ".";
-                        $data['name'] = DB::table($_db . $field->reportFilter->table_name)
-                                          ->where('id',$filter_data[$field->report_filter_id])->pluck('name')->first();
+                    if (isset($filter_data[$field->reportFilter->report_column])) {
+                        $filter_id = $filter_data[$field->reportFilter->report_column];
+                        if ($filter_id > 0) {
+                            $_db = ($field->reportFilter->is_global)
+                                    ? config('database.connections.globaldb.database') . "."
+                                    : config('database.connections.consodb.database') . ".";
+                            $data['name'] = DB::table($_db . $field->reportFilter->table_name)
+                                              ->where('id', $filter_id)->pluck('name')->first();
+                        }
                     }
                 }
                 $filters[$field->qry_as] = $data;
             }
         }
-        return view('savedreports.edit', compact('report','fields','filters'));
+        return view('savedreports.edit', compact('report', 'fields', 'filters'));
     }
 
     /**
@@ -95,7 +94,7 @@ class SavedReportController extends Controller
 
        // Get the saved report config
         if ($save_id != 0) {
-            $saved_report = SavedReport::where('user_id',auth()->id())->where('id',$save_id)->first();
+            $saved_report = SavedReport::where('user_id', auth()->id())->where('id', $save_id)->first();
             if (!$saved_report) {
                 return response()->json(['result' => false, 'msg' => 'Cannot access saved report data']);
             }
@@ -126,7 +125,7 @@ class SavedReportController extends Controller
 
        // Tack on institution-group if it is in input_fields. It isn't a column, but is a filter-setting
         if (isset($input_fields['institutiongroup'])) {
-            $filt = ReportFilter::where('report_column','=','institutiongroup_id')->first();
+            $filt = ReportFilter::where('report_column', '=', 'institutiongroup_id')->first();
             if ($input_fields['institutiongroup']['limit'] > 0 && $filt) {
                 $filters .= "," . $filt->id . ":" . $input_fields['institutiongroup']['limit'];
             }

@@ -2,7 +2,7 @@
   <v-container fluid>
     <!-- <v-row no-gutters class="page-header"> -->
     <v-row no-gutters>
-      <v-col><h1>{{ report.title }}</h1></v-col>
+      <v-col><h3>{{ report.title }}</h3></v-col>
       <v-col v-if="is_admin">
          <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
       </v-col>
@@ -10,7 +10,7 @@
 
     <!-- <v-row class="details"> -->
     <v-row>
-  	  <v-col><h3>Report Settings</h3></v-col>
+  	  <v-col><h4>Report Settings</h4></v-col>
       <v-col>
           <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
       </v-col>
@@ -30,7 +30,7 @@
             <td>Owner : {{ mutable_report.user.name }}</td>
           </tr>
           <tr>
-            <td>Report covers {{ mutable_report.months }} months</td>
+            <td>Report covers {{ mutable_report.months }} month(s)</td>
           </tr>
           <tr v-if="typeof(filters['Institution Group']) != 'undefined'">
             <td>Includes all institutions in: {{ filters['Institution Group'].name }}</td>

@@ -26,7 +26,7 @@ class AlertController extends Controller
             $data = Alert::orderBy('id', 'ASC')->where('inst_id', auth()->user()->inst_id)->get();
         }
 
-        $records = $data->map(function($record){
+        $records = $data->map(function ($record) {
             $record['inst_name'] = ($record->inst_id == 1)  ? "Consortia-wide" : $record->institution()->name;
             $record['stat_id'] = "stat_" . $record->id;
             $record['mod_by'] = ($record->modified_by == 1) ? 'CC-Plus System' : $record->user->name;

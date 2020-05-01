@@ -18,7 +18,7 @@ class AssignConsortiumDb
     public function handle($request, Closure $next)
     {
        // Check to ensure that the consortium key session variable is set.
-        if (session('ccp_con_key','') == '') {
+        if (session('ccp_con_key', '') == '') {
            // Set session based on $request for a login request.
             if ($request->getPathInfo() == "/login" && isset($request['consortium'])) {
                 session(['ccp_con_key' => $request['consortium']]);
@@ -33,5 +33,5 @@ class AssignConsortiumDb
         config(['database.connections.consodb.database' => 'ccplus_' . session('ccp_con_key')]);
         DB::reconnect();
         return $next($request);
-     }
+    }
 }

@@ -80,7 +80,7 @@ class Sushi extends Model
         if ($this->raw_datafile != "") {
             // file_put_contents($this->raw_datafile, $result->getBody());
             if (File::put($this->raw_datafile, Crypt::encrypt(bzcompress($result->getBody(), 9), false)) === false) {
-                echo "Failed to save raw data in: ".$this->raw_datafile;
+                echo "Failed to save raw data in: " . $this->raw_datafile;
                 // ... OR ...
                 // throw new \Exception("Failed to save raw data in: ".$this->raw_datafile);
             }
@@ -137,7 +137,7 @@ class Sushi extends Model
     * @param Report $_report
     * @return string $request_uri
     */
-    public function buildUri($setting, $method="reports", $report="")
+    public function buildUri($setting, $method = "reports", $report = "")
     {
        // Begin setting up the URI by cleaning/standardizing the server_url_r5 string in the setting
         $_url = rtrim($setting->provider->server_url_r5);    // remove trailing whitespace
@@ -157,7 +157,7 @@ class Sushi extends Model
         if (!is_null($setting->API_key)) {
             $uri_auth .= "&api_key=" . urlencode($setting->API_key);
         }
-        if ($report=="") {
+        if ($report == "") {
             return $request_uri . $uri_auth;
         }
 
@@ -246,36 +246,36 @@ class Sushi extends Model
     {
         // Check JSON for Exceptions. Sometimes they're expressed differently
          $has_exception = false;
-         if (property_exists($this->json, 'Exception')) {
-             $has_exception = true;
-             $this->error_code = $this->json->Exception->Code;
-             $this->severity = strtoupper($this->json->Exception->Severity);
-             $this->message = $this->json->Exception->Message;
-         } elseif (property_exists($this->json, 'Code') && property_exists($this->json, 'Message')) {
-             $has_exception = true;
-             $this->error_code = $this->json->Code;
-             $this->severity = strtoupper($this->json->Severity);
-             $this->message = $this->json->Message;
-         } else {
-             if (property_exists($this->json, 'Report_Header')) {
-                 $header = $this->json->Report_Header;
-                 if (is_object($header)) {
+        if (property_exists($this->json, 'Exception')) {
+            $has_exception = true;
+            $this->error_code = $this->json->Exception->Code;
+            $this->severity = strtoupper($this->json->Exception->Severity);
+            $this->message = $this->json->Exception->Message;
+        } elseif (property_exists($this->json, 'Code') && property_exists($this->json, 'Message')) {
+            $has_exception = true;
+            $this->error_code = $this->json->Code;
+            $this->severity = strtoupper($this->json->Severity);
+            $this->message = $this->json->Message;
+        } else {
+            if (property_exists($this->json, 'Report_Header')) {
+                $header = $this->json->Report_Header;
+                if (is_object($header)) {
                     // Scan the JSON header for exception(s)
-                     if (property_exists($header, 'Exception')) {
-                         $has_exception = true;
-                         $this->error_code = $header->Exception->Code;
-                         $this->severity = strtoupper($header->Exception->Severity);
-                         $this->message = $header->Exception->Message;
-                     }
-                     if (property_exists($header, 'Exceptions')) {
-                         $has_exception = true;
-                         $this->error_code = $header->Exceptions[0]->Code;
-                         $this->severity = strtoupper($header->Exceptions[0]->Severity);
-                         $this->message = $header->Exceptions[0]->Message;
-                     }
-                 }
-             }
-         }
+                    if (property_exists($header, 'Exception')) {
+                        $has_exception = true;
+                        $this->error_code = $header->Exception->Code;
+                        $this->severity = strtoupper($header->Exception->Severity);
+                        $this->message = $header->Exception->Message;
+                    }
+                    if (property_exists($header, 'Exceptions')) {
+                        $has_exception = true;
+                        $this->error_code = $header->Exceptions[0]->Code;
+                        $this->severity = strtoupper($header->Exceptions[0]->Severity);
+                        $this->message = $header->Exceptions[0]->Message;
+                    }
+                }
+            }
+        }
          return $has_exception;
     }
 }

@@ -31,7 +31,7 @@ class InstitutionController extends Controller
                 foreach ($inst->institutionGroups()->get() as $group) {
                     $_groups .= $group->name . ", ";
                 }
-                $_groups = rtrim(trim($_groups),',');
+                $_groups = rtrim(trim($_groups), ',');
                 $i_data = array(
                     "id" => $inst->id,
                     "name" => $inst->name,
@@ -42,7 +42,6 @@ class InstitutionController extends Controller
                 $data[] = $i_data;
             }
             return view('institutions.index', compact('data'));
-
         } else {    // not admin, load the edit view for user's inst
             return redirect()->route('institutions.edit', auth()->user()->inst_id);
         }
@@ -91,10 +90,10 @@ class InstitutionController extends Controller
     public function show($id)
     {
         if (!auth()->user()->hasRole("Admin")) {
-            abort_unless(auth()->user()->inst_id==$id, 403);
+            abort_unless(auth()->user()->inst_id == $id, 403);
         }
 
-        $institution = Institution::with('institutionType','sushiSettings','sushiSettings.provider','users')
+        $institution = Institution::with('institutionType', 'sushiSettings', 'sushiSettings.provider', 'users')
                                   ->find($id);
 
         // Add user's highest role as "permission" as a separate array
@@ -102,7 +101,7 @@ class InstitutionController extends Controller
         foreach ($institution->users as $inst_user) {
             $new_u = $inst_user->toArray();
             $new_u['permission'] = $inst_user->maxRoleName();
-            array_push($users,$new_u);
+            array_push($users, $new_u);
         }
 
         // Related models we'll be passing
@@ -112,13 +111,15 @@ class InstitutionController extends Controller
 
         // Get id+name pairs for accessible providers without settings
         $set_provider_ids = $institution->sushiSettings->pluck('prov_id');
-        $unset_providers = Provider::whereNotIn('id',$set_provider_ids)
+        $unset_providers = Provider::whereNotIn('id', $set_provider_ids)
                            ->where(function ($query) use ($id) {
-                               $query->where('inst_id',1)->orWhere('inst_id',$id);
+                               $query->where('inst_id', 1)->orWhere('inst_id', $id);
                            })
                            ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
-        return view('institutions.show',
-                    compact('institution','users','unset_providers','types','inst_groups','all_groups'));
+        return view(
+            'institutions.show',
+            compact('institution', 'users', 'unset_providers', 'types', 'inst_groups', 'all_groups')
+        );
     }
 
     /**
@@ -130,7 +131,7 @@ class InstitutionController extends Controller
     public function edit($id)
     {
         if (!auth()->user()->hasRole("Admin")) {
-            abort_unless(auth()->user()->inst_id==$id, 403);
+            abort_unless(auth()->user()->inst_id == $id, 403);
         }
         $institution = Institution::with('institutionType')->findOrFail($id);
 

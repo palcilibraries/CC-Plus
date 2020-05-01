@@ -247,9 +247,9 @@ class SushiBatchCommand extends Command
                         $valid_report = $sushi->validateJson();
                     } catch (\Exception $e) {
                        // Update logs
-                        FailedHarvest::insert(['harvest_id' => $harvest->id,'process_step' => 'COUNTER','error_id' => 100,
-                                              'detail' => 'Validation error: ' . $e->getMessage(),
-                                              'created_at' => $ts]);
+                        FailedHarvest::insert(['harvest_id' => $harvest->id, 'process_step' => 'COUNTER',
+                                               'error_id' => 100, 'detail' => 'Validation error: ' . $e->getMessage(),
+                                               'created_at' => $ts]);
                         $this->line("COUNTER report failed validation : " . $e->getMessage());
                         $harvest->status = 'Fail';
                         $harvest->update();

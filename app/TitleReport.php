@@ -71,5 +71,4 @@ class TitleReport extends Report
     {
         return $this->belongsTo('App\SectionType', 'sectiontype_id');
     }
-
 }

@@ -5,11 +5,13 @@ namespace App;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+
 // use AustinHeap\Database\Encryption\Traits\HasEncryptedAttributes;
 
 class User extends Authenticatable
 {
     use Notifiable;
+
     // use HasEncryptedAttributes;
 
     /**
@@ -127,7 +129,7 @@ class User extends Authenticatable
     public function maxRoleName()
     {
         $_id = $this->roles()->max('role_id');
-        $role = $this->roles()->where('role_id',$_id)->first();
+        $role = $this->roles()->where('role_id', $_id)->first();
         return $role->name;
     }
 

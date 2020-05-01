@@ -121,16 +121,19 @@ class SushiQLoader extends Command
        // Loop through the providers
         foreach ($providers as $provider) {
             // If not overriding day-of-month, and today is not the day, skip to next provider
-             if (!$override_dom && $provider->day_of_month != date('j')) {
-                 continue;
-             }
+            if (!$override_dom && $provider->day_of_month != date('j')) {
+                continue;
+            }
 
            // Loop through all sushisettings for this provider
             foreach ($provider->sushiSettings as $setting) {
                // If institution is inactive, -or- only processing a single instituution and this isn't it,
                // skip to next setting.
-                if ( (!$setting->institution->is_active) ||
-                     ($inst_id != 0 && $setting->inst_id != $inst_id) ) {
+                if (
+                    (!$setting->institution->is_active) ||
+                     ($inst_id != 0 &&
+                     $setting->inst_id != $inst_id)
+                ) {
                     continue;
                 }
 

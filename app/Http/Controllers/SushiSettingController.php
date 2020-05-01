@@ -28,7 +28,7 @@ class SushiSettingController extends Controller
     public function edit($id)
     {
         // User must be able to manage the settings
-        $setting = SushiSetting::with('institution','provider','harvestLogs','harvestLogs.report')->findOrFail($id);
+        $setting = SushiSetting::with('institution', 'provider', 'harvestLogs', 'harvestLogs.report')->findOrFail($id);
         abort_unless($setting->institution->canManage(), 403);
 
         return view('sushisettings.edit', compact('setting'));
@@ -46,7 +46,7 @@ class SushiSettingController extends Controller
         $this->validate($request, ['inst_id' => 'required', 'prov_id' => 'required']);
 
         // User must be an admin or member-of inst to get the settings
-        if (!(auth()->user()->hasRole("Admin") || auth()->user()->inst_id==$request->inst_id)) {
+        if (!(auth()->user()->hasRole("Admin") || auth()->user()->inst_id == $request->inst_id)) {
             return response()->json(array('error' => 'Invalid request'));
         }
 
@@ -77,12 +77,14 @@ class SushiSettingController extends Controller
         }
 
         $input = $request->all();
-        if (!auth()->user()->hasAnyRole(['Admin','Staff']) &&
-            $input['inst_id'] != auth()->user()->inst_id) {
+        if (
+            !auth()->user()->hasAnyRole(['Admin','Staff']) &&
+            $input['inst_id'] != auth()->user()->inst_id
+        ) {
             return response()->json(['result' => false, 'msg' => 'You can only assign settings for your institution']);
         }
         $setting = SushiSetting::create($input);
-        $setting->load('institution','provider');
+        $setting->load('institution', 'provider');
         return response()->json(['result' => true, 'msg' => 'Settings successfully created', 'setting' => $setting]);
     }
 
@@ -131,32 +133,32 @@ class SushiSettingController extends Controller
          // Construct and execute the test request
          $_uri .= '/status/';
          $uri_auth = "?customer_id=" . urlencode($request->customer_id);
-         if (!is_null($request->requestor_id)) {
-             $uri_auth .= "&requestor_id=" . urlencode($request->requestor_id);
-         }
-         if (!is_null($request->API_key)) {
-             $uri_auth .= "&api_key=" . urlencode($request->API_key);
-         }
+        if (!is_null($request->requestor_id)) {
+            $uri_auth .= "&requestor_id=" . urlencode($request->requestor_id);
+        }
+        if (!is_null($request->API_key)) {
+            $uri_auth .= "&api_key=" . urlencode($request->API_key);
+        }
          $request_uri = $_uri . $uri_auth;
 
         // Make the request and convert result into JSON
          $rows = array();
          $client = new Client();   //GuzzleHttp\Client
-         try {
-              $response = $client->get($request_uri);
-              $rows[] = "JSON Response:";
-              $rows[] = json_decode($response->getBody(), JSON_PRETTY_PRINT);
-              $result = 'Service status successfully received';
-         } catch (\Exception $e) {
-             $result = 'Request for service status failed!';
-             if ($e->hasResponse()) {
-                 $response = $e->getResponse();
-                 $rows[] = "Error Returned: (" . $response->getStatusCode() . ") ";
-                 $rows[] = $response->getReasonPhrase();
-             } else {
-                 $rows[] = "No response from provider.";
-             }
-          }
+        try {
+             $response = $client->get($request_uri);
+             $rows[] = "JSON Response:";
+             $rows[] = json_decode($response->getBody(), JSON_PRETTY_PRINT);
+             $result = 'Service status successfully received';
+        } catch (\Exception $e) {
+            $result = 'Request for service status failed!';
+            if ($e->hasResponse()) {
+                $response = $e->getResponse();
+                $rows[] = "Error Returned: (" . $response->getStatusCode() . ") ";
+                $rows[] = $response->getReasonPhrase();
+            } else {
+                $rows[] = "No response from provider.";
+            }
+        }
 
        // return ... something
         $return = array('rows' => $rows, 'result' => $result);

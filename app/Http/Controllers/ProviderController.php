@@ -26,16 +26,16 @@ class ProviderController extends Controller
         $i_table = config('database.connections.consodb.database') . ".institutions";
        // Admins get list of all providers
         if (auth()->user()->hasRole("Admin")) {
-            $data = DB::table($p_table.' as prv')
-                      ->join($i_table .' as inst', 'inst.id', '=', 'prv.inst_id')
+            $data = DB::table($p_table . ' as prv')
+                      ->join($i_table . ' as inst', 'inst.id', '=', 'prv.inst_id')
                       ->orderBy('prov_name', 'ASC')
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
                              'prv.inst_id','inst.name as inst_name','day_of_month']);
        // Otherwise, get all consortia-wide providers and those that match user's inst_id
        // (exclude providers assigned to institutions.)
-        } else  {
-            $data = DB::table($p_table.' as prv')
-                      ->join($i_table .' as inst', 'inst.id', '=', 'prv.inst_id')
+        } else {
+            $data = DB::table($p_table . ' as prv')
+                      ->join($i_table . ' as inst', 'inst.id', '=', 'prv.inst_id')
                       ->where('prv.inst_id', 1)
                       ->orWhere('prv.inst_id', auth()->user()->inst_id)
                       ->orderBy('prov_name', 'ASC')
@@ -102,7 +102,7 @@ class ProviderController extends Controller
         // set per-inst sushi settings... so keep inst=1 (whole consortium) out of the list.
         $set_inst_ids = $provider->sushiSettings->pluck('inst_id');
         $set_inst_ids[] = 1;
-        $unset_institutions = Institution::whereNotIn('id',$set_inst_ids)
+        $unset_institutions = Institution::whereNotIn('id', $set_inst_ids)
                                          ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
                                  ->get(['id','name'])->toArray();

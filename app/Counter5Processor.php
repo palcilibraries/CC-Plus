@@ -88,7 +88,7 @@ class Counter5Processor extends Model
             $datatype = (isset($reportitem->Data_Type)) ? self::getDataType($reportitem->Data_Type)
                                                         : self::getDataType("Unknown");
             $Item_ID['type'] = ($datatype->name == "Journal" || $datatype->name == "Book") ?
-                               substr($datatype->name,0,1) :
+                               substr($datatype->name, 0, 1) :
                                 "I";
 
            // Get or Create Title entry
@@ -354,7 +354,7 @@ class Counter5Processor extends Model
             $datatype = (isset($reportitem->Data_Type)) ? self::getDataType($reportitem->Data_Type)
                                                         : self::getDataType("Unknown");
             $Item_ID['type'] = ($datatype->name == "Journal" || $datatype->name == "Book") ?
-                                substr($datatype->name,0,1) :
+                                substr($datatype->name, 0, 1) :
                                 "I";
 
            // Get publication date and article version
@@ -403,7 +403,7 @@ class Counter5Processor extends Model
                     $_pdatatype = (isset($item_parent->Data_Type)) ? $item_parent->Data_Type : "Unknown";
                     $parent_datatype = self::getDataType($_pdatatype);
                     $_pitem_ID['type'] = ($parent_datatype->name == "Journal" || $parent_datatype->name == "Book") ?
-                                          substr($parent_datatype->name,0,1) :
+                                          substr($parent_datatype->name, 0, 1) :
                                           "I";
 
                    // Get-Create the title for the parent
@@ -417,9 +417,11 @@ class Counter5Processor extends Model
             }
 
            // Get or create the Item in the global table
-            $_item = Item::firstOrCreate(['title_id' => $title->id],
-                                         ['parent_id' => $parent_id],
-                                         ['parent_datatype_id' => $parent_datatype_id]);
+            $_item = Item::firstOrCreate(
+                ['title_id' => $title->id],
+                ['parent_id' => $parent_id],
+                ['parent_datatype_id' => $parent_datatype_id]
+            );
             if (is_null($_item)) {
                 continue;
             }
@@ -604,10 +606,17 @@ class Counter5Processor extends Model
      *
      * $title = self::titleFindOrCreate($_title, $ident, $pub, $ver);
      */
-    private static function titleFindOrCreate($_title, $ident, $pub="", $ver="")
+    private static function titleFindOrCreate($_title, $ident, $pub = "", $ver = "")
     {
-        if ($_title == "" && $ident['PropID'] = "" && $ident['ISBN'] == "" && $ident['ISSN'] == "" &&
-            $ident['eISSN'] == "" && $ident['DOI'] == "" && $ident['URI'] == "") {
+        if (
+            $_title == ""
+            && $ident['PropID'] = ""
+            && $ident['ISBN'] == ""
+            && $ident['ISSN'] == ""
+            && $ident['eISSN'] == ""
+            && $ident['DOI'] == ""
+            && $ident['URI'] == ""
+        ) {
             return null;
         }
        // UFT8 Encode any special chars in the title
@@ -625,18 +634,24 @@ class Counter5Processor extends Model
        // Loop through all the possibles
         $save_it = false;
         foreach ($matches as $match) {
-
             $matched = false;
            // If Title matches and other input fields are null, call it a match
             if (
                 $input_title != ""
                 && $input_title == $match->Title
-                && ( ($ident['PropID'] == "" && $ident['ISSN'] == "" && $ident['eISSN'] == "" &&
-                      $ident['DOI'] == "" && $ident['URI'] == "") ||
-                     ($match->PropID == "" && $match->ISSN == "" && $match->eISSN == "" && $match->ISBN == "" &&
-                      $match->DOI == "" && $match->URI == "")
+                && ( ($ident['PropID'] == ""
+                && $ident['ISSN'] == ""
+                && $ident['eISSN'] == ""
+                      && $ident['DOI'] == ""
+                      && $ident['URI'] == "")
+                     || ($match->PropID == ""
+                     && $match->ISSN == ""
+                     && $match->eISSN == ""
+                     && $match->ISBN == ""
+                      && $match->DOI == ""
+                      && $match->URI == "")
                    )
-               ) {
+            ) {
                  $matched = true;
             }
 
@@ -644,12 +659,19 @@ class Counter5Processor extends Model
             if (
                 $ident['URI'] != ""
                 && $ident['URI'] == $match->URI
-                && ( ($input_title == "" && $ident['PropID'] == "" && $ident['ISSN'] == "" &&
-                      $ident['eISSN'] == "" && $ident['DOI'] == "") ||
-                     ($match->title == "" && $match->PropID == "" && $match->ISSN == "" && $match->ISBN == "" &&
-                      $match->eISSN == "" && $match->DOI == "")
+                && ( ($input_title == ""
+                && $ident['PropID'] == ""
+                && $ident['ISSN'] == ""
+                      && $ident['eISSN'] == ""
+                      && $ident['DOI'] == "")
+                     || ($match->title == ""
+                     && $match->PropID == ""
+                     && $match->ISSN == ""
+                     && $match->ISBN == ""
+                      && $match->eISSN == ""
+                      && $match->DOI == "")
                    )
-               ) {
+            ) {
                  $matched = true;
             }
 
@@ -657,11 +679,15 @@ class Counter5Processor extends Model
            // model that we have values for.
             if (
                 $matched ||
-                ($ident['PropID'] != "" && $match->PropID == $ident['PropID']) ||
-                ($ident['DOI'] != "" && $match->DOI == $ident['DOI']) ||
-                ($ident['ISSN'] != "" && $match->ISSN == $ident['ISSN']) ||
-                ($ident['eISSN'] != "" && $match->eISSN == $ident['eISSN'])
-                ) {
+                ($ident['PropID'] != "" &&
+                $match->PropID == $ident['PropID']) ||
+                ($ident['DOI'] != "" &&
+                $match->DOI == $ident['DOI']) ||
+                ($ident['ISSN'] != "" &&
+                $match->ISSN == $ident['ISSN']) ||
+                ($ident['eISSN'] != "" &&
+                $match->eISSN == $ident['eISSN'])
+            ) {
                // Check matched fields, don't overwrite non-null model values with null
                 if ($input_title != "" && $match->Title != $input_title) {
                     $save_it = true;
@@ -705,7 +731,7 @@ class Counter5Processor extends Model
         } catch (\PDOException $e) {
             echo $e->getMessage();
             return null;
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             echo $e->getMessage();
             return null;
         }

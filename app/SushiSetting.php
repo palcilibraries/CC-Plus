@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+
 // use AustinHeap\Database\Encryption\Traits\HasEncryptedAttributes;
 
 class SushiSetting extends Model

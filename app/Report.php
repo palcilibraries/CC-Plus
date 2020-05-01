@@ -76,7 +76,7 @@ class Report extends Model
     {
         $_fields = array();
         foreach (preg_split('/,/', $this->inherited_fields) as $field) {
-            $_f = preg_split('/:/',$field);
+            $_f = preg_split('/:/', $field);
             $_fields[$_f[0]] = (isset($_f[1])) ? $_f[1] : null;
         }
        //  $field_ids = array_keys($_decoded);
@@ -85,5 +85,4 @@ class Report extends Model
        //  return ReportField::whereIn('id', $field_ids)->get();
         return $_fields;
     }
-
 }

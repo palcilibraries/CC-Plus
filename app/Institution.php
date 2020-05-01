@@ -97,5 +97,4 @@ class Institution extends Model
     {
         return $this->hasMany('App\ItemReport');
     }
-
 }

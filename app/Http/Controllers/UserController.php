@@ -29,9 +29,9 @@ class UserController extends Controller
         // Admins see all, managers see only their inst, eveyone else gets an error
         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
         if (auth()->user()->hasRole("Admin")) {
-            $users = User::with('roles','institution')->orderBy('id', 'ASC')->get();
+            $users = User::with('roles', 'institution')->orderBy('id', 'ASC')->get();
         } else {    // is manager
-            $users = User::with('roles','institution')->orderBy('ID', 'ASC')
+            $users = User::with('roles', 'institution')->orderBy('ID', 'ASC')
                          ->where('inst_id', '=', auth()->user()->inst_id)->get();
         }
 
@@ -43,9 +43,9 @@ class UserController extends Controller
             foreach ($_u->roles as $role) {
                 $_roles .= $role->name . ", ";
             }
-            $_roles = rtrim(trim($_roles),',');
+            $_roles = rtrim(trim($_roles), ',');
             $new_u['roles'] = $_roles;
-            array_push($data,$new_u);
+            array_push($data, $new_u);
         }
 
         return view('users.index', compact('data'));

@@ -21,8 +21,6 @@ class InstitutionGroup extends Model
 
     public function institutions()
     {
-        return $this
-          ->belongsToMany('App\Institution')
-          ->withTimestamps();
+        return $this->belongsToMany('App\Institution')->withTimestamps();
     }
 }

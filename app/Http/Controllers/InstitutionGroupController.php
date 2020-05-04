@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\InstitutionGroup;
+use App\Institution;
+use Illuminate\Http\Request;
 
 class InstitutionGroupController extends Controller
 {
@@ -73,8 +74,16 @@ class InstitutionGroupController extends Controller
      */
     public function edit($id)
     {
-        $group = InstitutionGroup::findOrFail($id);
-        return view('institutiongroups.edit', compact('group'));
+        $group = InstitutionGroup::with('institutions')->findOrFail($id);
+
+        $member_ids = $group->institutions->pluck('id');
+        $not_members = Institution::whereNotIn('id', $member_ids)
+                           ->where(function ($query) use ($id) {
+                               $query->where('id', '<>', 1)->where('is_active', true);
+                           })
+                           ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+
+        return view('institutiongroups.edit', compact('group','not_members'));
     }
 
     /**

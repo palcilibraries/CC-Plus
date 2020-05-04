@@ -3,16 +3,9 @@
 @section('content')
 <v-app providerform>
 
-<div>
 	<div class="page-header">
 	    <h1>{{ $provider->name }}</h1>
 	</div>
-	@if ( auth()->user()->hasAnyRole(['Admin']) )
-	<div class="page-action">
-		<a class="btn btn-primary v-btn v-btn--contained btn-danger theme--light v-size--small" href="#">Delete</a>
-	</div>
-	@endif
-</div>
 
 <provider-form :provider="{{ json_encode($provider) }}"
 	 		   :institutions="{{ json_encode($institutions) }}"

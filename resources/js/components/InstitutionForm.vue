@@ -1,12 +1,5 @@
 <template>
-  <div>
-    <v-row class="page-header">
-      <v-col><h1>{{ institution.name }}</h1></v-col>
-      <v-col v-if="is_admin">
-        <v-btn class='btn btn-danger' small type="button" @click="destroy(institution.id)">Delete</v-btn>
-      </v-col>
-    </v-row>
-    <v-row class="details">
+  <div class="details">
   	  <h2 class="section-title">Details</h2>
       <template v-if="is_manager && !showForm">
     	<v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
@@ -99,7 +92,7 @@
           </form>
         </div>
       </div>
-    </v-row>
+    </div>
   </div>
 </template>
 

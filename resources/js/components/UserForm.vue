@@ -1,27 +1,49 @@
 <template>
-  <div>
-    <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
-      <v-container grid-list-md>
-        <v-row>
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-text-field outlined required name="email" label="Email" type="email"
+  <div class="details">
+  
+	  <div class="page-action" v-if="is_admin">
+		  <template v-if="is_manager && !showForm">
+			<v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+		    <span class="form-good" role="alert" v-text="success"></span>
+		    <span class="form-fail" role="alert" v-text="failure"></span>
+		  </template>
+		  <v-btn class='btn btn-danger' small type="button" @click="destroy(user.id)">Delete</v-btn>
+	  </div>
+	  
+	  <div>
+        <div v-if="!showForm">
+	      <v-simple-table>
+	        <tr>
+	          <td>Name </td>
+			  <td>{{ $user->name }}</td>
+			</tr>
+			<tr>
+		       <td>Email </td>
+		       <td>{{ $user->email }}</td>
+		    </tr>
+			<tr>
+				<td>Roles </td>
+				<td>
+		              @if(!empty($user->roles()->pluck('name')))
+		                  @foreach($user->roles()->pluck('name') as $v)
+		                      <label class="badge badge-success">{{ $v }} </label>
+		                  @endforeach
+		              @endif
+		          </td>
+		      </tr>
+			</v-simple-table>
+		  </div>
+		  
+		</div>
+	  
+	<div v-else>  
+    <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
+          <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+          <v-text-field outlined required name="email" label="Email" type="email"
                           v-model="form.email" :rules="emailRules">
             </v-text-field>
-          </v-col>
-        </v-row>
-        <v-row v-if="is_manager || is_admin">
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-switch v-model="form.is_active" label="Active?"></v-switch>
-          </v-col>
-        </v-row>
-        <v-row v-if="is_admin">
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-select
+          <v-switch v-model="form.is_active" label="Active?"></v-switch>
+            <v-select v-if="is_admin"
                 outlined
                 required
                 :items="institutions"
@@ -31,56 +53,37 @@
                 item-text="name"
                 item-value="id"
             ></v-select>
-          </v-col>
-        </v-row>
-        <v-row v-else>
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-text-field outlined readonly label="Institution" :value="inst_name"></v-text-field>
+            <v-text-field v-else outlined readonly label="Institution" :value="inst_name"></v-text-field>
             <input type="hidden" id="inst_id" name="inst_id" :value="user.inst_id">
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col class="d-flex" cols="12" sm="6">
             <v-text-field outlined name="password" label="Password" id="password" type="password"
                           v-model="form.password" :rules="passwordRules">
             </v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col class="d-flex" cols="12" sm="6">
             <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
                           type="password" v-model="form.confirm_pass" :rules="passwordRules">
             </v-text-field>
-          </v-col>
-        </v-row>
-        <v-row v-if="is_manager || is_admin">
-          <v-col class="d-flex" cols="12" sm="6">
-            <v-subheader v-text="'User Roles'"></v-subheader>
-            <v-select
-                :items="roles"
-                v-model="form.roles"
-                :value="user.roles"
-                item-text="name"
-                item-value="id"
-                label="User Role(s)"
-                multiple
-                chips
-                hint="Define roles for user"
-                persistent-hint
-            ></v-select>
-          </v-col>
-        </v-row>
-        <v-row align="center">
-          <v-flex md3>
+			<div class="field-wrapper">
+	            <v-subheader v-text="'User Roles'"></v-subheader>
+	            <v-select v-if="is_manager || is_admin"
+	                :items="roles"
+	                v-model="form.roles"
+	                :value="user.roles"
+	                item-text="name"
+	                item-value="id"
+	                label="User Role(s)"
+	                multiple
+	                chips
+	                hint="Define roles for user"
+	                persistent-hint
+	            ></v-select>
+			</div>
             <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
               Save User Settings
             </v-btn>
-          </v-flex>
-        </v-row>
-      </v-container>
+			<v-btn small type="button" @click="hideForm">cancel</v-btn>
       <span class="form-good" role="alert" v-text="success"></span>
       <span class="form-fail" role="alert" v-text="failure"></span>
     </form>
+	</div>
   </div>
 </template>
 
@@ -101,6 +104,7 @@
                 failure: '',
                 status: '',
                 statusvals: ['Inactive','Active'],
+				showForm: false,
                 inst_name: '',
                 email: '',
                 password: '',
@@ -139,7 +143,42 @@
                             self.failure = response.msg;
                         }
                     });
+					self.showForm = false;
             },
+            destroy (userid) {
+                var self = this;
+                Swal.fire({
+                  title: 'Are you sure?',
+                  text: "This user will be permanently deleted along with any saved report views.",
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: '#3085d6',
+                  cancelButtonColor: '#d33',
+                  confirmButtonText: 'Yes, proceed'
+                }).then((result) => {
+                  if (result.value) {
+                      axios.delete('/users/'+userid)
+                           .then( (response) => {
+                               if (response.data.result) {
+                                   window.location.assign("/users");
+                               } else {
+                                   self.success = '';
+                                   self.failure = response.data.msg;
+                               }
+                           })
+                           .catch({});
+                  }
+                })
+                .catch({});
+            },
+	        swapForm (event) {
+	            var self = this;
+	            self.showForm = true;
+			},
+	        hideForm (event) {
+	            var self = this;
+	            self.showForm = false;
+			},
         },
         computed: {
           ...mapGetters(['is_manager','is_admin'])

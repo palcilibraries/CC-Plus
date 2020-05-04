@@ -31,5 +31,15 @@
     </div>
     <!-- Scripts -->
     <script src="{{ asset('js/app.js') }}"></script>
+    <script type="text/javascript">
+      (function() {
+          var s = document.createElement("script");
+          s.type = "text/javascript";
+          s.async = true;
+          s.src = '//api.usersnap.com/load/e3380418-7c3b-4537-8023-dd1f9dcd4899.js';
+          var x = document.getElementsByTagName('script')[0];
+          x.parentNode.insertBefore(s, x);
+      })();
+    </script>
 </body>
 </html>

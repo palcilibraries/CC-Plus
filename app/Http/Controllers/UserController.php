@@ -126,7 +126,9 @@ class UserController extends Controller
      */
     public function edit($id)
     {
-        $user = User::with('roles')->findOrFail($id);
+        // $user = User::with('roles')->findOrFail($id);
+        $user = User::findOrFail($id);
+        $user_roles = $user->roles()->pluck('role_id')->all();
         abort_unless($user->canManage(), 403);
 
         // Admin gets a select-box of institutions, otherwise just the users' inst
@@ -138,9 +140,9 @@ class UserController extends Controller
         }
 
         // Set choices for roles; disallow choosing roles higher current user's max role
-        $roles = Role::where('id', '<=', auth()->user()->maxRole())->get(['name', 'id'])->toArray();
+        $all_roles = Role::where('id', '<=', auth()->user()->maxRole())->get(['name', 'id'])->toArray();
 
-        return view('users.edit', compact('user', 'roles', 'institutions'));
+        return view('users.edit', compact('user', 'user_roles', 'all_roles', 'institutions'));
     }
 
     /**

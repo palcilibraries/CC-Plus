@@ -1,89 +1,90 @@
 <template>
-  <div class="details">
-  
-	  <div class="page-action" v-if="is_admin">
-		  <template v-if="is_manager && !showForm">
-			<v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
-		    <span class="form-good" role="alert" v-text="success"></span>
-		    <span class="form-fail" role="alert" v-text="failure"></span>
-		  </template>
-		  <v-btn class='btn btn-danger' small type="button" @click="destroy(user.id)">Delete</v-btn>
-	  </div>
-	  
-	  <div>
-        <div v-if="!showForm">
-	      <v-simple-table>
+  <div>
+    <div v-if="is_manager && !showForm">
+      <v-row>
+        <v-col>
+    	  <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+        </v-col>
+        <v-col>
+          <v-btn class='btn btn-danger' small type="button" @click="destroy(user.id)">Delete</v-btn>
+        </v-col>
+      </v-row>
+	  <span class="form-good" role="alert" v-text="success"></span>
+	  <span class="form-fail" role="alert" v-text="failure"></span>
+    </div>
+	<div v-if="!showForm">
+      <v-row>
+        <v-col>
+          <v-simple-table>
+            <tr>
+              <td>Name </td>
+  	          <td>{{ user.name }}</td>
+  	        </tr>
 	        <tr>
-	          <td>Name </td>
-			  <td>{{ $user->name }}</td>
-			</tr>
-			<tr>
-		       <td>Email </td>
-		       <td>{{ $user->email }}</td>
-		    </tr>
-			<tr>
-				<td>Roles </td>
-				<td>
-		              @if(!empty($user->roles()->pluck('name')))
-		                  @foreach($user->roles()->pluck('name') as $v)
-		                      <label class="badge badge-success">{{ $v }} </label>
-		                  @endforeach
-		              @endif
-		          </td>
-		      </tr>
-			</v-simple-table>
-		  </div>
-		  
+	          <td>Email </td>
+	          <td>{{ user.email }}</td>
+	        </tr>
+            <tr>
+              <td>Roles</td>
+              <td>
+                <template v-for="role in all_roles">
+                  <v-chip v-if="user_roles.includes(role.id)">{{ role.name }}</v-chip>
+                </template>
+              </td>
+            </tr>
+          </v-simple-table>
+        </v-col>
+      </v-row>
+    </div>
+    <div v-else>
+      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
+        <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+        <v-text-field outlined required name="email" label="Email" type="email"
+                      v-model="form.email" :rules="emailRules">
+        </v-text-field>
+        <v-switch v-model="form.is_active" label="Active?"></v-switch>
+        <v-select v-if="is_admin"
+                  outlined
+                  required
+                  :items="institutions"
+                  v-model="form.inst_id"
+                  value="user.inst_id"
+                  label="Institution"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
+        <v-text-field v-else outlined readonly label="Institution" :value="inst_name"></v-text-field>
+        <input type="hidden" id="inst_id" name="inst_id" :value="user.inst_id">
+        <v-text-field outlined name="password" label="Password" id="password" type="password"
+                      v-model="form.password" :rules="passwordRules">
+        </v-text-field>
+        <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
+                      type="password" v-model="form.confirm_pass" :rules="passwordRules">
+        </v-text-field>
+  		<div class="field-wrapper">
+	      <v-subheader v-text="'User Roles'"></v-subheader>
+	      <v-select v-if="is_manager || is_admin"
+	               :items="all_roles"
+	               v-model="form.roles"
+	               :value="mutable_roles"
+	               item-text="name"
+	               item-value="id"
+	               label="User Role(s)"
+	               multiple
+	               chips
+	               hint="Define roles for user"
+	               persistent-hint
+	      ></v-select>
 		</div>
-	  
-	<div v-else>  
-    <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
-          <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-          <v-text-field outlined required name="email" label="Email" type="email"
-                          v-model="form.email" :rules="emailRules">
-            </v-text-field>
-          <v-switch v-model="form.is_active" label="Active?"></v-switch>
-            <v-select v-if="is_admin"
-                outlined
-                required
-                :items="institutions"
-                v-model="form.inst_id"
-                value="user.inst_id"
-                label="Institution"
-                item-text="name"
-                item-value="id"
-            ></v-select>
-            <v-text-field v-else outlined readonly label="Institution" :value="inst_name"></v-text-field>
-            <input type="hidden" id="inst_id" name="inst_id" :value="user.inst_id">
-            <v-text-field outlined name="password" label="Password" id="password" type="password"
-                          v-model="form.password" :rules="passwordRules">
-            </v-text-field>
-            <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
-                          type="password" v-model="form.confirm_pass" :rules="passwordRules">
-            </v-text-field>
-			<div class="field-wrapper">
-	            <v-subheader v-text="'User Roles'"></v-subheader>
-	            <v-select v-if="is_manager || is_admin"
-	                :items="roles"
-	                v-model="form.roles"
-	                :value="user.roles"
-	                item-text="name"
-	                item-value="id"
-	                label="User Role(s)"
-	                multiple
-	                chips
-	                hint="Define roles for user"
-	                persistent-hint
-	            ></v-select>
-			</div>
-            <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
-              Save User Settings
-            </v-btn>
-			<v-btn small type="button" @click="hideForm">cancel</v-btn>
-      <span class="form-good" role="alert" v-text="success"></span>
-      <span class="form-fail" role="alert" v-text="failure"></span>
-    </form>
-	</div>
+        <v-spacer></v-spacer>
+        <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
+          Save User Settings
+        </v-btn>
+		<v-btn small type="button" @click="hideForm">cancel</v-btn>
+        <span class="form-good" role="alert" v-text="success"></span>
+        <span class="form-fail" role="alert" v-text="failure"></span>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -95,7 +96,8 @@
     export default {
         props: {
                 user: { type:Object, default: () => {} },
-                roles: { type:Array, default: () => [] },
+                user_roles: { type:Array, default: () => [] },
+                all_roles: { type:Array, default: () => [] },
                 institutions: { type:Array, default: () => [] },
                },
         data() {
@@ -108,6 +110,7 @@
                 inst_name: '',
                 email: '',
                 password: '',
+                mutable_roles: this.user_roles,
                 emailRules: [
                     v => !!v || 'E-mail is required',
                     v => /.+@.+/.test(v) || 'E-mail must be valid'
@@ -123,7 +126,7 @@
                     email: this.user.email,
                     password: '',
                     confirm_pass: '',
-                    roles: this.user.roles
+                    roles: this.user_roles
                 })
             }
         },

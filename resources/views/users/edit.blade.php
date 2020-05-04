@@ -12,7 +12,8 @@
             </v-expansion-panel-header>
             <v-expansion-panel-content>
               <user-form :user="{{ json_encode($user) }}"
-                         :roles="{{ json_encode($roles) }}"
+                         :user_roles="{{ json_encode($user_roles) }}"
+                         :all_roles="{{ json_encode($all_roles) }}"
                          :institutions="{{ json_encode($institutions) }}"
               ></user-form>
             </v-expansion-panel-content>

@@ -51,12 +51,8 @@ class SavedReportController extends Controller
                     $data = array('legend' => $field->legend, 'name' => 'All');
                     if (isset($filter_data[$field->reportFilter->report_column])) {
                         $filter_id = $filter_data[$field->reportFilter->report_column];
-                        if ($filter_id > 0) {
-                            $_db = ($field->reportFilter->is_global)
-                                    ? config('database.connections.globaldb.database') . "."
-                                    : config('database.connections.consodb.database') . ".";
-                            $data['name'] = DB::table($_db . $field->reportFilter->table_name)
-                                              ->where('id', $filter_id)->pluck('name')->first();
+                        if ($field->reportFilter->model) {
+                            $data['name'] = $field->reportFilter->model::where('id', $filter_id)->value('name');
                         }
                     }
                 }

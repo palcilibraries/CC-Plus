@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use DB;
+use Session;
+use App\Consortium;
 use App\Report;
 use App\ReportField;
 use App\ReportFilter;
@@ -17,9 +19,8 @@ use App\DataType;
 use App\SectionType;
 use App\AccessType;
 use App\AccessMethod;
-use App\TitleReport;
-//Enables us to output flash messaging
-use Session;
+use League\Csv\Writer;
+use SplTempFileObject;
 
 class ReportController extends Controller
 {
@@ -118,9 +119,9 @@ class ReportController extends Controller
     {
         return view('reports.display');
     }
-    /**
 
-     * Setup view for exporting usage
+    /**
+     * Setup preview of usage data
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
@@ -136,10 +137,12 @@ class ReportController extends Controller
             }
             $preset_filters = $saved_report->filterBy();
         } else {
-            // otherwiser, get filters from $request as Json
+            // otherwise, get filters from $request as Json
             $this->validate($request, ['filters' => 'required']);
             $preset_filters = json_decode($request->filters, true);
         }
+        // update the private global
+        self::$input_filters = $preset_filters;
 
         // Get the report model and all rows of the reportFilter model
         $report = Report::where('id', $preset_filters['report_id'])->first();
@@ -173,28 +176,142 @@ class ReportController extends Controller
             $field_data = collect($child_fields);
         }
 
-        // Turn the field-map into the columns-map the component expects. Allow input
-        // filter presets for inst & provider to override defaults
+        // Turn the field-map into a field-map and a columns-map for the component
+        $fields = array();
         $columns = array();
+        $year_mons = self::createYMarray();
         foreach ($field_data as $fld) {
-            $_qry = (is_null($fld->qry_as)) ? $fld->qry : $fld->qry_as;
-            $data = array('text' => $fld->legend, 'value' => $_qry, 'active' => $fld->active,
-                                    'reload' => $fld->reload);
+            $key = (is_null($fld->qry_as)) ? $fld->qry : $fld->qry_as;
+            $field = array('id' => $key, 'text' => $fld->legend, 'active' => $fld->active, 'reload' => $fld->reload);
 
-            // Activate any field w/a filter preset defined
-            if (!$data['active'] && $fld->reportFilter) {
+            // Activate any field w/ an filter preset defined
+            if (!$fld->active && $fld->reportFilter) {
                 if (isset($preset_filters[$fld->reportFilter->report_column])) {
                     if ($preset_filters[$fld->reportFilter->report_column] > 0) {
-                        $data['active'] = 1;
+                        $field['active'] = 1;
                     }
                 }
             }
-            $columns[] = $data;
+            $fields[] = $field;
+
+            // If this is a summing-metric field, add a column for each month
+            if (preg_match('/^sum/',$fld->qry)) {
+                foreach ($year_mons as $ym) {
+                    $columns[] = array('text' => $fld->legend, 'field' => $key, 'active' => $fld->active,
+                                       'value' => $fld->qry_as . '_' . self::prettydate($ym));
+                }
+
+            // Otherwise add a single column to the map
+            } else {
+                $columns[] = array('text' => $fld->legend, 'field' => $key, 'active' => $fld->active, 'value' => $key);
+            }
         }
 
         // Get list of saved reports for this user
         $saved_reports = SavedReport::where('user_id', auth()->id())->get(['id','title'])->toArray();
-        return view('reports.preview', compact('preset_filters', 'columns', 'saved_reports'));
+        return view('reports.preview', compact('preset_filters', 'fields', 'columns', 'saved_reports'));
+    }
+
+    /**
+     * Setup export file: name, headers and info and return an active handle for writing data records
+     *
+     * @param Array $fields
+     * @return League\Csv\Writer $writer
+     */
+    public function prepareExport($report, $fields)
+    {
+        // Get/set global things
+        $filters = self::$input_filters;
+        $con_key = Session::get('ccp_con_key');
+        $con_name = Consortium::where('ccp_key','=',$con_key)->value('name');
+
+        // Setup the output stream for sending info and header records
+        $writer = Writer::createFromFileObject(new SplTempFileObject());
+
+        // Build some info to precede headers
+        $rpt_info = array();
+        $rpt_info[] = array("CC-Plus " . $report->legend, " Summary Report Created: " . date("d-M-Y G:i"));
+        $rpt_info[] = array("Consortium: " . $con_name,
+                            "Date Range: " . self::$input_filters['fromYM'] . " to " . self::$input_filters['toYM']);
+
+        // Turn filter settings into an output line and/or as part of the output filename
+        $limits = "";
+        $out_file = "CCPLUS";
+        $all_filters = ReportFilter::all();
+        foreach (self::$input_filters as $key => $value) {
+            $filt = $all_filters->where('report_column','=',$key)->first();
+            if ($filt) {
+                if ($value <= 0) {  // skip if filter is off
+                    continue;
+                }
+                if ($filt->report_column == 'inst_id' || $filt->report_column == 'institutiongroup_id' ||
+                    $filt->report_column == 'prov_id') {
+                    $out_file .= "_" . preg_replace('/ /','',$filt->model::where('id', $value)->value('name'));
+                } else {
+                    $limits .= ($limits=="") ? '' : ', ';
+                    $limits .= rtrim($filt->table_name, "s") . "=";
+                    $limits .= $filt->model::where('id', $value)->value('name');
+                }
+            }
+        }
+        if ( $limits != "" ) {
+            $rpt_info[] = array("Limited By: " . $limits);
+        }
+        $out_file .= "_" . $report->name . "_";
+        $out_file .= self::$input_filters['fromYM'] . "_" . self::$input_filters['toYM'] . ".csv";
+
+    // Check for ACTIVE alerts  and add a summary row linked to the alerts page/dashboard.
+    //
+    // if ( $alert_counts['Active'] > 0 ) {
+    //   $warning  = "Warning! - At least one active alert is set for data in this report";
+    //   $warning .= " details are here: /alerts\n\n";
+    //   $rpt_info .= array($warning);
+    // }
+
+        // Setup header row(s)
+        $left_head = array();
+        $upper_right_head = array();
+        $lower_right_head = array();
+        $year_mons = self::createYMarray();
+        $num_months = sizeof($year_mons);
+
+        // Get non-metric columns first (these are same across yearmons)
+        // (this assumes that the caller ordered the $fields as: basics->metrics)
+        foreach ($fields as $key => $data) {
+            // "basic" column
+            if (!preg_match('/^(searches_|total_|unique_|limit_|no_lic)/',$key)) {
+                // $left_head[] = $key;
+                $left_head[] = $data['legend'];
+                if ($num_months > 1) {
+                    $upper_right_head[] = '';
+                }
+            // "metric" column?
+            } else {
+                $upper_right_head[] = $data['legend'];
+                if ($num_months > 1) {
+                    foreach ($year_mons as $ym) {
+                        $lower_right_head[] = $ym;
+                    }
+                    for ($m=1; $m<$num_months; $m++) {
+                        $upper_right_head[] = '';
+                    }
+                } else {
+                    $lower_right_head[] = $data['legend'];
+                }
+            }
+        }
+
+        // Send info and header records to the stream
+        foreach ($rpt_info as $arr) {
+            $writer->insertOne($arr);
+        }
+        if ($num_months > 1) {
+            $writer->insertOne($upper_right_head);
+        }
+        $writer->insertOne(array_merge($left_head,$lower_right_head));
+
+        // Return the handle
+        return array('writer' => $writer, 'filename' => $out_file);
     }
 
     /**
@@ -264,12 +381,12 @@ class ReportController extends Controller
          global $joins, $raw_fields, $group_by, $global_db, $conso_db;
 
          // Validate and deal w/ inputs
-         $this->validate($request, ['report_id' => 'required', 'columns' => 'required', 'filters' => 'required']);
+         $this->validate($request, ['report_id' => 'required', 'fields' => 'required', 'filters' => 'required']);
          $report_id = $request->report_id;
-         $columns = json_decode($request->columns, true);
+         $selected_fields = json_decode($request->fields, true);
          $_filters = json_decode($request->filters, true);
-         $rows = (isset($request->itemsPerPage)) ? $request->itemsPerPage : 20;
-         $preview = (isset($request->preview)) ? $request->preview : 0;
+         $runtype = (isset($request->runtype)) ? $request->runtype : 'preview';
+         $preview = (isset($request->preview) && $runtype == 'preview') ? $request->preview : 0;
 
          // Get/set global things
          self::$input_filters = $_filters;
@@ -291,8 +408,38 @@ class ReportController extends Controller
         }
         $report_table = $conso_db . '.' . strtolower($master_name) . '_report_data';
 
+        // If we're running an export
+        if ($runtype == 'export') {
+
+            // Build an organized field list and separate the "basic" fields from the "metric" ones
+            $basic_fields = array();
+            $metric_fields = array();
+            foreach ($selected_fields as $key => $data) {
+                if (!$data['active']) {
+                    continue;
+                }
+                $data = $report_fields->where('qry_as','=',$key)->first();
+                $legend = ($data) ? $data->legend : $key;
+
+                // If metric field...
+                if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/',$key)) {
+                    $metric_fields[$key] = $data;
+                    $metric_fields[$key]['legend'] = $legend;
+                // treat as basic
+                } else {
+                    $basic_fields[$key] = $data;
+                    $basic_fields[$key]['legend'] = $legend;
+                }
+            }
+
+            // Call prepareExport tp setup the output stream with headers
+            $export_settings = self::prepareExport($report, array_merge($basic_fields,$metric_fields));
+            $csv_file = $export_settings['filename'];
+            $writer = $export_settings['writer'];
+        }
+
         // Setup joins, fields to select, and group_by based on active columns
-        self::setupQueryFields($report_fields, $columns);
+        self::setupQueryFields($report_fields, $selected_fields);
 
         // Setup institution limiter array for whereIn clause later
         $limit_to_insts = self::limitToInstitutions();
@@ -340,7 +487,8 @@ class ReportController extends Controller
                       ->when($preview, function ($query, $preview) {
                           return $query->limit($preview)->get();
                       }, function ($query) {
-                          return $query->get()->paginate($rows);
+                          // return $query->get()->paginate($rows);
+                          return $query->get();
                       });
         } elseif ($master_name == "DR") {
             $sortBy = ($request->sortBy != '') ? $request->sortBy : 'Dbase';
@@ -374,7 +522,8 @@ class ReportController extends Controller
                       ->when($preview, function ($query, $preview) {
                           return $query->limit($preview)->get();
                       }, function ($query) {
-                          return $query->get()->paginate($rows);
+                          return $query->get();
+                          // return $query->get()->paginate($rows);
                       });
         } elseif ($master_name == "IR") {
             $sortBy = ($request->sortBy != '') ? $request->sortBy : 'Title';
@@ -409,7 +558,8 @@ class ReportController extends Controller
                       ->when($preview, function ($query, $preview) {
                           return $query->limit($preview)->get();
                       }, function ($query) {
-                          return $query->get()->paginate($rows);
+                          return $query->get();
+                          // return $query->get()->paginate($rows);
                       });
         } else {    // Run PR
             $sortBy = ($request->sortBy != '') ? $request->sortBy : 'Platform';
@@ -439,20 +589,32 @@ class ReportController extends Controller
                       ->when($preview, function ($query, $preview) {
                           return $query->limit($preview)->get();
                       }, function ($query) {
-                          return $query->get()->paginate($rows);
+                          return $query->get();
+                          // return $query->get()->paginate($rows);
                       });
         }
-        return response()->json(['usage' => $records], 200);
+
+        // If not exporting, return the records as JSON
+        if ($runtype != 'export') {
+            return response()->json(['usage' => $records], 200);
+        }
+
+        // Export the records
+        foreach ($records as $rec) {
+            $values = array_values((array) $rec);
+            $writer->insertOne($values);
+        }
+        $writer->output($csv_file);
     }
 
     /**
-     * Update usage report filter options based on Vue state date-range and/or active columns/filters
+     * Update usage report preview settings and options
      *
      * @param  \Illuminate\Http\Request  $request
      *         Expects $request to be a JSON object holding the Vue state.filter_by object and report_id
      * @return \Illuminate\Http\Response
      */
-    public function updateFilters(Request $request)
+    public function updateSettings(Request $request)
     {
         global $conso_db;
         $conso_db = config('database.connections.consodb.database');
@@ -506,8 +668,31 @@ class ReportController extends Controller
             }
         }
 
+        // Build columns array based on fields and date-range
+        $columns = array();
+        $input_fields = $input['fields'];
+        $year_mons = self::createYMarray();
+        foreach ($input_fields as $fld) {
+
+            $col = array('active' => $fld['active'], 'field' => $fld['id']);
+
+            // If this is a summing-metric field, add a column for each month
+            if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/',$fld['id'])) {
+                foreach ($year_mons as $ym) {
+                    $col['value'] = $fld['id'] . '_' . self::prettydate($ym);
+                    $col['text'] = $fld['text'] . ' - ' . self::prettydate($ym);
+                    $columns[] = $col;
+                }
+            // Otherwise add a single column to the map
+            } else {
+                $col['value'] = $fld['id'];
+                $col['text'] = $fld['text'];
+                $columns[] = $col;
+            }
+        }
+
+        // Setup institution limiter array
         $filter_data = array();
-        // Setup institution limiter array for whereIn clause later
         $limit_to_insts = self::limitToInstitutions();
         if (isset(self::$input_filters['institutiongroup_id'])) {
             $filter_data['institutiongroup'] = InstitutionGroup::get(['id','name'])->toArray();
@@ -538,7 +723,7 @@ class ReportController extends Controller
         $conditions = self::filterOnConditions();
 
         foreach ($all_filters as $filt) {
-            if (!isset(self::$input_filters[$filt->report_column])) {
+            if (!isset(self::$input_filters[$filt->report_column]) || !isset($filt->model)) {
                 continue;
             }
             if (self::$input_filters[$filt->report_column] < 0) { // Don't query if column is inactive
@@ -568,64 +753,81 @@ class ReportController extends Controller
                 // Get all of them instead of trying to build a list of "possibles" based on the data-in-table
                 ${$filt->table_name} = InstitutionGroup::get(['id', 'name'])->toArray();
             } else {
-                $_db = ($filt->is_global) ? config('database.connections.globaldb.database') . "."
-                                          : config('database.connections.consodb.database') . ".";
-                ${$filt->table_name} = DB::table($_db . $filt->table_name)
-                                         ->whereIn('id', $_ids)
-                                         ->get(['id','name'])
-                                         ->toArray();
+                ${$filt->table_name} = $filt->model::whereIn('id', $_ids)->get(['id','name'])->toArray();
                 array_unshift(${$filt->table_name}, ['id' => 0, 'name' => 'ALL']);
             }
             $_key = rtrim($filt->table_name, "s");
             $filter_data[$_key] = ${$filt->table_name};
         }
 
-        return response()->json(['result' => true, 'filters' => $filter_data, 'bounds' => $bounds]);
+        return response()->json(['result' => true, 'columns' => $columns,
+                                 'filters' => $filter_data, 'bounds' => $bounds]);
     }
 
     /**
      * Set joins, the raw-select string, and group_by array based on fields and Columns
      *
-     * @param  ReportField $fields, $columns
+     * @param  ReportField $all_fields
+     * @param  Array $selected_fields
      * @return
      */
-    private function setupQueryFields($fields, $columns)
+    private function setupQueryFields($all_fields, $selected_fields)
     {
         global $joins, $raw_fields, $group_by, $global_db, $conso_db;
-        // $raw_fields = 'yearmon,';
-        // $group_by = ['yearmon'];
+        $year_mons = self::createYMarray();
 
-        foreach ($fields as $field) {
-            if (!isset($field->qry)) {
-                continue;
-            }
-            $joins[$field->qry_as] = "";
+        foreach ($selected_fields as $key => $field) {
+            if ($field['active']) {
+                $data = $all_fields->where('qry_as','=',$key)->first();
+                if (!$data) {
+                    continue;
+                }
 
-            // If the column is active
-            if (isset($columns[$field->qry_as])) {
-                if ($columns[$field->qry_as]['active']) {
-                    // set join if needed
-                    if (!is_null($field->joins)) {
-                        if (preg_match('/_conso_/', $field->joins)) {
-                            $_join = preg_replace('/_conso_/', $conso_db, $field->joins);
-                        }
-                        if (preg_match('/_global_/', $field->joins)) {
-                            $_join = preg_replace('/_global_/', $global_db, $field->joins);
-                        }
-                        $joins[$field->qry_as] = $_join;
+                // set join if needed
+                if (!is_null($data->joins)) {
+                    if (preg_match('/_conso_/', $data->joins)) {
+                        $_join = preg_replace('/_conso_/', $conso_db, $data->joins);
                     }
-                    // Add column to raw-list and update filter to column setting
-                    $raw_fields .= $field->qry . ' as ' . $field->qry_as . ',';
-                    if (isset($columns[$field->qry_as]['filter'])) {
-                        $input_filters[$field->qry_as] = $columns[$field->qry_as]['filter'];
+                    if (preg_match('/_global_/', $data->joins)) {
+                        $_join = preg_replace('/_global_/', $global_db, $data->joins);
                     }
+                    $joins[$key] = $_join;
+                }
+
+                // Add column to the raw-list
+                // If the field is a metric that sums-by-yearmon, assign metric-by-year as query fields
+                if (preg_match('/^sum/',$data->qry)) {
+                    foreach ($year_mons as $ym) {
+                        $raw_fields .= preg_replace('/@YM@/', $ym, $data->qry) . ' as ';
+                        $raw_fields .= $data->qry_as . '_' . self::prettydate($ym) . ',';
+                    }
+                } else {
+                    if ($data->qry != $data->qry_as) {
+                        $raw_fields .= $data->qry . ' as ' . $data->qry_as . ',';
+                    } else {
+                        $raw_fields .= $data->qry_as . ',';
+                    }
+
+                    // update filter based on column setting
+                    if (isset($field['limit'])) {
+                        $input_filters[$key] = $field['limit'];
+                    }
+
                     // Add column to group-by
-                    if ($field->group_it) {
-                        $group_by[] = $field->qry;
+                    if ($data->group_it) {
+                        $group_by[] = $data->qry;
                     }
                 }
             }
         }
+
+        // Make sure all the joins exist, even if the field is inactive
+        foreach ($all_fields as $field) {
+            if (!is_null($field->joins) && !isset($joins[$field->qry_as])) {
+                $joins[$field->qry_as] = "";
+            }
+        }
+
         $raw_fields = rtrim($raw_fields, ',');
         return;
     }
@@ -701,4 +903,26 @@ class ReportController extends Controller
         }
         return $return_values;
     }
+
+    // Turn a fromYM/toYM range into an array of yearmon strings
+    private function createYMarray() {
+        $range = array();
+        $start = strtotime(self::$input_filters['fromYM']);
+        $end = strtotime(self::$input_filters['toYM']);
+        if ($start > $end) {
+            return $range;
+        }
+        while($start <= $end) {
+          $range[] = date('Y-m', $start);
+          $start = strtotime("+1 month", $start);
+        }
+        return $range;
+    }
+
+    // Reformat a date string
+    private function prettydate($date) {
+      list($yyyy, $mm) = explode("-", $date);
+      return date("M_Y", mktime(0, 0, 0, $mm, 1, $yyyy));
+    }
+
 }

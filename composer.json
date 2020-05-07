@@ -22,6 +22,7 @@
         "laravel/helpers": "^1.1",
         "laravel/tinker": "^1.0",
         "laravelcollective/html": "^6.0",
+        "league/csv": "^9.0",
         "ubfr/c5tools": "1.0.*"
     },
     "require-dev": {

@@ -17,7 +17,7 @@ class ReportFilter extends Model
    *
    * @var array
    */
-    protected $fillable = ['is_global', 'table_name', 'report_column'];
+    protected $fillable = ['model', 'table_name', 'report_column'];
 
     public function reportField()
     {

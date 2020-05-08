@@ -40,8 +40,7 @@ Vue.component('date-range', require('./components/DateRange.vue').default);
 Vue.component('create-report', require('./components/CreateReport.vue').default);
 Vue.component('report-preview', require('./components/ReportPreview.vue').default);
 Vue.component('saved-report-form', require('./components/SavedReportForm.vue').default);
-// Vue.component('title-report-view', require('./components/TitleReportView.vue').default);
-// Vue.component('title-report-export', require('./components/TitleReportExport.vue').default);
+Vue.component('home-saved-reports', require('./components/HomeSavedReports.vue').default);
 
 /**
  * Create a fresh Vue application instance with Vuetify.

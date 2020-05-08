@@ -6,7 +6,10 @@ use DB;
 use App\SavedReport;
 use App\Report;
 use App\ReportFilter;
+use App\Provider;
+use App\Institution;
 use App\InstitutionGroup;
+use App\HarvestLog;
 use Illuminate\Http\Request;
 
 class SavedReportController extends Controller
@@ -14,6 +17,90 @@ class SavedReportController extends Controller
     public function __construct()
     {
         $this->middleware(['auth']);
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        //
+    }
+
+    /**
+     * Return a listing of the resource with detail for the home-dashboard
+     *
+     * @return JSON
+     */
+    public function home()
+    {
+        // Get list of saved reports for this user
+        $saved_reports = SavedReport::where('user_id', auth()->id())->get();
+
+        // Setup raw fields for what we need from the harvestlog
+        $count_fields  = "sushisettings.inst_id, ";
+        $count_fields .= "count(*) as total, sum(case when status='Success' then 1 else 0 end) as success";
+
+        // Build the output data array
+        $report_data = array();
+        foreach ($saved_reports as $report) {
+            $filters = $report->parsedFilters();
+            $last_harvest = HarvestLog::where('report_id', '=', $report->master->id)->max('yearmon');
+            $data = array('id' => $report->id, 'title' => $report->title, 'last_harvest' => $last_harvest,
+                          'master_id' => $report->master_id);
+
+            // Build institution list
+            $limit_to_insts = array();  // empty array means no limit
+            if (isset($filters['institution'])) {
+                if ($filters['institution_id'] > 0) {
+                    $limit_to_insts = array($filters['institution_id']);
+                }
+            } else if (isset($filters['institutiongroup'])) {
+                if ($filters['institutiongroup_id'] > 0) {
+                    $group = InstitutionGroup::find($filters['institutiongroup_id']);
+                    $limit_to_insts = $group->institutions->pluck('id')->toArray();
+                }
+            }
+
+            // Pull by-institution harvest/error counts, add to report_data
+            $inst_harv = HarvestLog::join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
+                                  ->when($limit_to_insts, function ($query, $limit_to_insts) {
+                                        return $query->whereIn('sushisettings.inst_id',$limit_to_insts);
+                                    })
+                                  ->where('report_id', '=', $report->master->id)
+                                  ->where('yearmon', '=', $last_harvest)
+                                  ->selectRaw($count_fields)
+                                  ->groupBy('sushisettings.inst_id')
+                                  ->get(['inst_id','total','success'])
+                                  ->toArray();
+
+            $data['successful'] = 0;
+            $data['inst_count'] = sizeof($inst_harv);
+            foreach ($inst_harv as $inst) {
+                $data['successful'] += ($inst['total'] == $inst['success']) ? 1 : 0;
+            }
+            $report_data[] = $data;
+        }
+
+        // Set summary data values and counts
+        $inst_count = 1;
+        if (auth()->user()->hasAnyRole('Admin','Viewer')) {
+            $inst_count = Institution::where('is_active', true)->count() - 1;   // inst_id=1 doesn't count...
+        }
+
+        if (auth()->user()->hasRole("Admin")) {
+            $prov_count = Provider::where('is_active', true)->count();
+        } else {
+            $prov_count = Provider::where('is_active', true)
+                                  ->where(function($q) {
+                                      return $q->where('inst_id', 1)
+                                               ->orWhere('inst_id', auth()->user()->inst_id);
+                                    })
+                                  ->count();
+        }
+        return view('savedreports.home', compact('inst_count', 'prov_count', 'report_data'));
     }
 
     /**

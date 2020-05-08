@@ -10,9 +10,12 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-Route::get('/', function () {
-    return view('reports.create');
-})->middleware('auth');
+// Route::get('/', function () {
+//     return view('reports.create');
+// })->middleware('auth');
+//
+Route::get('/', 'SavedReportController@home')->name('home')->middleware(['auth']);
+Route::get('/home', 'SavedReportController@home')->name('home')->middleware(['auth']);
 
 Route::resource('/consortia','ConsortiumController')->middleware('can:update,consortium');
 Route::resource('/roles', 'RoleController');
@@ -31,7 +34,7 @@ Route::post('/save-report-config', 'SavedReportController@saveReportConfig')->mi
 Auth::routes();
 Route::get('logout', 'Auth\LoginController@logout');
 // Route::get('/globaladmin', 'GlobalAdminController@index')->middleware('auth','role:GlobalAdmin');
-Route::get('/', 'ReportController@index')->name('reports')->middleware('auth');
+// Route::get('/', 'ReportController@index')->name('reports')->middleware('auth');
 Route::get('/admin', 'AdminController@index')->name('admin')->middleware(['auth','role:Admin,Manager']);
 Route::get('/alerts', 'AlertController@index')->name('alerts')->middleware('auth');
 Route::get('/reports', 'ReportController@index')->name('reports.index')->middleware('auth');

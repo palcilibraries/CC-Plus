@@ -137,6 +137,7 @@
                 var self = this;
                 if (self.form.password!=self.form.confirm_pass) {
                     self.failure = 'Passwords do not match! Please re-enter';
+                    return;
                 }
                 this.form.patch('/users/'+self.user['id'])
                     .then( function(response) {

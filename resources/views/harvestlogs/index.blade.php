@@ -8,6 +8,9 @@
     <div class="col-lg-12 margin-tb">
         <div class="pull-left">
             <h2>Harvest Log Summary</h2>
+            @if ($lower_head != "")
+            <h3>{{ $lower_head}}</h3>
+            @endif
         </div>
     </div>
 </div>

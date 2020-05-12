@@ -21,7 +21,7 @@ class HarvestLog extends Model
         'status', 'sushisettings_id', 'report_id', 'yearmon', 'attempts'
     ];
 
-    public function failedharvests()
+    public function failedHarvests()
     {
         return $this->hasMany('App\FailedHarvest', 'harvest_id');
     }

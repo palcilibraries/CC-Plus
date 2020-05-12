@@ -72,15 +72,10 @@ class SushiSettingController extends Controller
      */
     public function store(Request $request)
     {
-        if (!auth()->user()->hasAnyRole(['Admin','Staff','Manager'])) {
-            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
-        }
+        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
 
         $input = $request->all();
-        if (
-            !auth()->user()->hasAnyRole(['Admin','Staff']) &&
-            $input['inst_id'] != auth()->user()->inst_id
-        ) {
+        if (!auth()->user()->hasAnyRole(['Admin']) && $input['inst_id']!=auth()->user()->inst_id) {
             return response()->json(['result' => false, 'msg' => 'You can only assign settings for your institution']);
         }
         $setting = SushiSetting::create($input);

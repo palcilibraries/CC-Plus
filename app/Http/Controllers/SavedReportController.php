@@ -84,11 +84,9 @@ class SavedReportController extends Controller
             $report_data[] = $data;
         }
 
-        // Set summary data values and counts
-        $inst_count = 1;
-        if (auth()->user()->hasAnyRole('Admin','Viewer')) {
-            $inst_count = Institution::where('is_active', true)->count() - 1;   // inst_id=1 doesn't count...
-        }
+        // Summarize harvest data values and counts
+        $total_insts = Institution::where('is_active', true)->count() - 1;   // inst_id=1 doesn't count...
+        $inst_count = (auth()->user()->hasAnyRole('Admin','Viewer')) ? $total_insts : 1;
 
         if (auth()->user()->hasRole("Admin")) {
             $prov_count = Provider::where('is_active', true)->count();
@@ -100,7 +98,25 @@ class SavedReportController extends Controller
                                     })
                                   ->count();
         }
-        return view('savedreports.home', compact('inst_count', 'prov_count', 'report_data'));
+
+        // Get data on recent failed harvests
+        $conso_db = config('database.connections.consodb.database');
+        $global_db = config('database.connections.globaldb.database');
+        $rawQuery  = "date_format(harvestlogs.created_at,'%Y-%b-%d') as harvest_date,PR.name as provider,";
+        $rawQuery .= "RPT.name as report,count(distinct(SS.inst_id)) as failed_insts";
+        $failed_data = HarvestLog::join($conso_db . '.sushisettings as SS', 'harvestlogs.sushisettings_id', 'SS.id')
+                                 ->join($conso_db . '.providers as PR', 'SS.prov_id', 'PR.id')
+                                 ->join($conso_db . '.failedharvests as FH', 'FH.harvest_id', 'harvestlogs.id')
+                                 ->join($global_db . '.reports as RPT', 'harvestlogs.report_id', 'RPT.id')
+                                 ->whereNotNull('FH.id')
+                                 ->selectRaw($rawQuery)
+                                 ->groupBy(['harvest_date','provider','report','SS.prov_id','report_id','yearmon'])
+                                 ->orderBy('harvestlogs.created_at', 'DESC')
+                                 ->limit(10)
+                                 ->get();
+                                 // ->toArray();
+
+        return view('savedreports.home', compact('inst_count','prov_count','report_data','failed_data','total_insts'));
     }
 
     /**

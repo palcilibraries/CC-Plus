@@ -44,7 +44,7 @@
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12">
         <div class="form-group">
-            @if ($record->failedharvests()->count() > 0)
+            @if ($record->failedHarvests()->count() > 0)
             <strong>Failed attempts: </strong>
             <table class="table table-bordered">
               <tr>
@@ -55,7 +55,7 @@
                  <th>Message</th>
                  <th>Details</th>
               </tr>
-              @foreach ($record->failedharvests as $fail)
+              @foreach ($record->failedHarvests as $fail)
               <tr>
                   <td>{{ $fail->created_at }}</td>
                   <td>{{ $fail->process_step }}</td>

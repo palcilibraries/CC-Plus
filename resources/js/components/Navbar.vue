@@ -84,6 +84,11 @@ export default {
                     name: "Create",
                     role: "All",
                   },
+                  {
+                    url: "/harvestlogs/create",
+                    name: "Manual Harvest",
+                    role: "All",
+                  },
                 ]
               },
               {

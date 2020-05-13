@@ -111,9 +111,11 @@ class SushiQLoader extends Command
 
        // Get active provider data
         if ($prov_id == 0) {
-            $providers = Provider::where('is_active', '=', true)->get();
+            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active','reports')
+                                 ->where('is_active', '=', true)->get();
         } else {
-            $providers = Provider::where('is_active', '=', true)->where('id', '=', $prov_id)->get();
+            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active','reports')
+                                 ->where('is_active', '=', true)->where('id', '=', $prov_id)->get();
         }
 
        // Part I : Load any new harvests (based on today's date) into the HarvestLog table
@@ -156,6 +158,9 @@ class SushiQLoader extends Command
                                                         ['report_id', '=', $report->id],
                                                         ['yearmon', '=', $yearmon]
                                                        ])->first();
+                            if ($harvest->status == 'New') { // if existing harvest is "New", don't modify status
+                                continue;                    // since Part II will requeue it anyway
+                            }
                             $this->line('Harvest ' . '(ID:' . $harvest->id . ') already defined. Updating to retry (' .
                                         'setting: ' . $setting->id . ', ' . $report->name . ':' . $yearmon . ').');
                             $harvest->status = 'Retrying';

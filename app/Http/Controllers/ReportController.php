@@ -358,7 +358,7 @@ class ReportController extends Controller
         foreach ($models as $key => $model) {
             $result = $model::when($limit_to_insts, function ($query, $limit_to_insts) {
                                 return $query->whereIn('inst_id', $limit_to_insts);
-            })
+                            })
                             ->when($conditions, function ($query, $conditions) {
                                 return $query->where($conditions);
                             })

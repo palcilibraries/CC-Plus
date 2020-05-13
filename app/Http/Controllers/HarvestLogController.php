@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use DB;
 use App\HarvestLog;
+use App\Consortium;
 use App\FailedHarvest;
 use App\Report;
 use App\Provider;
 use App\Institution;
 use App\SushiSetting;
+use App\SushiQueueJob;
 
 class HarvestLogController extends Controller
 {
@@ -143,55 +146,127 @@ class HarvestLogController extends Controller
     public function store(Request $request)
     {
         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
-
-        $input = $request->all();
+        $is_admin = auth()->user()->hasRole('Admin');
+        $user_inst = auth()->user()->inst_id;
 
         // Get args from the $input
+        $this->validate($request,
+            ['inst_id' => 'required', 'prov_id' => 'required', 'reports' => 'required',
+             'fromYM' => 'required', 'toYM' => 'required', 'when' => 'required']);
+        $input = $request->all();
 
-        // Check From/To - chop off at current month if in future
+        // Set inst_id (force to user's inst if not an admin)
+        $inst_id = ($is_admin) ? $input["inst_id"] : $user_inst;
 
-        // Pull all sushi settings, but inst and prov
+        // Get provider info
+        $prov_id = $input["prov_id"];
+        if ($prov_id!=0) {
+            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active','reports')
+                                 ->where('id', $prov_id)->get();
 
-        // Loop over sushi settings, add the harvests for-each report in $input->reports
-        //   --> if the already exist, reset the attempt counter to zero and
-        //       set the overwrite flag to trash existing date
+            // Non-admin disallowed from harvesting non-consortium providers owned by other institutions
+            if (!$is_admin && $providers[0]->inst_id!=$user_inst && $providers[0]->inst_id!= 1) {
+                return response()->json(['result' => false, 'msg' => 'Requested provider is not authorized.']);
+            }
+        } else {
+            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active','reports')
+                                 ->where('is_active', '=', true)
+                                 ->when(!$is_admin, function ($query, $user_inst) {
+                                     return $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
+                                 })->get();
+        }
 
-// --database-structure
-//
-    $table->Increments('id');
-    // Status should be: 'Success', 'Fail', 'New', 'Queued', 'Active', 'Pending', 'Stopped', or 'Retrying'
-    $table->string('status', 8);
-    $table->unsignedInteger('sushisettings_id');
-    $table->unsignedInteger('report_id');
-    $table->string('yearmon', 7);
-    $table->unsignedInteger('attempts')->default(0);
+        // Set the status for the harvests we're creating based on "when"
+        $state = "New";
+        if ($input["when"] == 'now') {
+            $state = "Queued";
+            $con = Consortium::where('ccp_key', '=', session('ccp_con_key'))->first();
+            if (!$con) {
+                return response()->json(['result' => false, 'msg' => 'Error: Corrupt session or consortium settings.']);
+            }
+        }
 
-//--code from QLoader...
-//
-    // Insert new HarvestLog record; catch and prevent duplicates
-     try {
-         HarvestLog::insert(['status' => 'New', 'sushisettings_id' => $setting->id,
-                            'report_id' => $report->id, 'yearmon' => $yearmon,
-                            'attempts' => 0, 'created_at' => $ts]);
-     } catch (QueryException $e) {
-         $errorCode = $e->errorInfo[1];
-         if ($errorCode == '1062') {
-             $harvest = HarvestLog::where([['sushisettings_id', '=', $setting->id],
-                                         ['report_id', '=', $report->id],
-                                         ['yearmon', '=', $yearmon]
-                                        ])->first();
-             $this->line('Harvest ' . '(ID:' . $harvest->id . ') already defined. Updating to retry (' .
-                         'setting: ' . $setting->id . ', ' . $report->name . ':' . $yearmon . ').');
-             $harvest->status = 'Retrying';
-             $harvest->save();
-         } else {
-             $this->line('Failed adding to HarvestLog! Error code:' . $errorCode);
-             exit;
-         }
-     }
+        // Check From/To - truncate to current month if in future and ensure from <= to ,
+        // then turn them into an array of yearmon strings
+        $this_month = date("Y-m", mktime(0, 0, 0, date("m"), date("d"), date("Y")));
+        $to = ($input["toYM"] > $this_month) ? $this_month : $input["toYM"];
+        $from = ($input["fromYM"] > $to) ? $to : $input["fromYM"];
+        $year_mons = self::createYMarray($from, $to);
 
-// may want the confirmation message to show how many new and how many re-queued...
-        return response()->json(['result' => true, 'msg' => 'Successfully queued' . $count . ' harvests.']);
+        // Loop for all months requested
+        $num_queued = 0;
+        $num_created = 0;
+        $num_updated = 0;
+        foreach ($year_mons as $yearmon) {
+            // Loop for all providers
+            foreach ($providers as $provider) {
+               // Loop through all sushisettings for this provider
+                foreach ($provider->sushiSettings as $setting) {
+                   // If institution is inactive, -or- only processing a single instituution and this isn't it,
+                   // skip to next setting.
+                    if ((!$setting->institution->is_active) || ($inst_id!=0 && $setting->inst_id!=$inst_id)) {
+                        continue;
+                    }
+
+                   // Loop through all reports defined as available for this provider
+                    foreach ($provider->reports as $report) {
+
+                       // if this report isn't in $inputs['reports'], skip it
+                        if (!in_array($report->name, $input['reports'])) {
+                            continue;
+                        }
+
+                       // Insert new HarvestLog record; catch and prevent duplicates
+                        try {
+                            $harvest = HarvestLog::create(['status' => $state, 'sushisettings_id' => $setting->id,
+                                                'report_id' => $report->id, 'yearmon' => $yearmon,
+                                                'attempts' => 0]);
+                            $num_created++;
+                        } catch (QueryException $e) {
+                            $errorCode = $e->errorInfo[1];
+                            // Harvest already exists, reset it quietly
+                            if ($errorCode == '1062') {
+                                $harvest = HarvestLog::where([['sushisettings_id', '=', $setting->id],
+                                                              ['report_id', '=', $report->id],
+                                                              ['yearmon', '=', $yearmon]
+                                                             ])->first();
+                                $harvest->attempts = 0;
+                                $harvest->status = $state;
+                                $harvest->save();
+                                $num_updated++;
+                            } else {
+                                return response()->json(['result' => false,
+                                    'msg' => 'Failure adding to HarvestLog! Error code:' . $errorCode]);
+                            }
+                        }
+
+                        // If user wants it added now create the queue entry - set replace_data to overwrite
+                        if ($input["when"] == 'now') {
+                            try {
+                                $newjob = SushiQueueJob::create(['consortium_id' => $con->id,
+                                                                 'harvest_id' => $harvest->id,
+                                                                 'replace_data' => 1
+                                                               ]);
+                                $num_queued++;
+                            } catch (QueryException $e) {
+                                $code = $e->errorInfo[1];
+                                if ($code == '1062') {     // If already in queue, continue silently
+                                    continue;
+                                } else {
+                                    $msg = 'Failure adding Harvest ID: ' . $harvest->id .' to Queue! Error ' . $code;
+                                    return response()->json(['result' => false, 'msg' => $msg]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Send back confirmation with counts of what happened
+        $msg  = "Success : " . $num_created . " new harvests added, " . $num_updated . " harvests updated";
+        $msg .= ($num_queued > 0) ? ", and " . $num_queued . " queue jobs created." : ".";
+        return response()->json(['result' => true, 'msg' => $msg]);
     }
 
    /**
@@ -221,4 +296,20 @@ class HarvestLogController extends Controller
         return redirect()->route('harvestlogs.index')
                       ->with('success', 'Log record deleted successfully');
     }
+
+    // Turn a fromYM/toYM range into an array of yearmon strings
+    private function createYMarray($from, $to) {
+        $range = array();
+        $start = strtotime($from);
+        $end = strtotime($to);
+        if ($start > $end) {
+            return $range;
+        }
+        while($start <= $end) {
+          $range[] = date('Y-m', $start);
+          $start = strtotime("+1 month", $start);
+        }
+        return $range;
+    }
+
 }

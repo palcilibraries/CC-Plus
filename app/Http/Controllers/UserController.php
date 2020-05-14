@@ -29,9 +29,9 @@ class UserController extends Controller
         // Admins see all, managers see only their inst, eveyone else gets an error
         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
         if (auth()->user()->hasRole("Admin")) {
-            $users = User::with('roles', 'institution')->orderBy('id', 'ASC')->get();
+            $users = User::with('roles', 'institution:id,name')->orderBy('id', 'ASC')->get();
         } else {    // is manager
-            $users = User::with('roles', 'institution')->orderBy('ID', 'ASC')
+            $users = User::with('roles', 'institution:id,name')->orderBy('ID', 'ASC')
                          ->where('inst_id', '=', auth()->user()->inst_id)->get();
         }
 
@@ -44,11 +44,22 @@ class UserController extends Controller
                 $_roles .= $role->name . ", ";
             }
             $_roles = rtrim(trim($_roles), ',');
-            $new_u['roles'] = $_roles;
+            $new_u['role_string'] = $_roles;
             array_push($data, $new_u);
         }
 
-        return view('users.index', compact('data'));
+        // Admin gets a select-box of institutions, otherwise just the users' inst
+        if (auth()->user()->hasRole('Admin')) {
+            $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
+        } else {
+            $institutions = Institution::where('id', '=', auth()->user()->inst_id)
+                                       ->get(['id','name'])->toArray();
+        }
+
+        // Set choices for roles; disallow choosing roles higher current user's max role
+        $all_roles = Role::where('id', '<=', auth()->user()->maxRole())->get(['name', 'id'])->toArray();
+
+        return view('users.index', compact('data', 'institutions', 'all_roles'));
     }
 
     /**
@@ -85,23 +96,44 @@ class UserController extends Controller
         $this->validate($request, [
             'name' => 'required',
             'email' => 'required|email|unique:consodb.users,email',
-            'password' => 'required|same:confirm-password',
-            'inst_id' => 'required',
-            'roles' => 'required'
+            'password' => 'required|same:confirm_pass',
+            'inst_id' => 'required'
         ]);
 
         $input = $request->all();
-        $input['password'] = Hash::make($input['password']);
         if (!auth()->user()->hasRole("Admin")) {     // managers only store to their institution
             $input['inst_id'] = auth()->user()->inst_id;
         }
-
-        $user = User::create($input);
-        foreach ($request->input('roles') as $r) {
-            $user->roles()->attach($r);
+        if (!isset($input['is_active'])) {
+            $input['is_active'] = 0;
         }
 
-        return response()->json(['result' => true, 'msg' => 'User successfully created']);
+        // Make sure roles include "User"
+        $user_role_id = Role::where('name', '=', 'User')->value('id');
+        $new_roles = isset($input['roles']) ? $input['roles'] : array();
+        if (!in_array($user_role_id,$new_roles)) {
+            array_unshift($new_roles, $user_role_id);
+        }
+
+        // Create the user and attach roles (limited to current user maxRole)
+        $user = User::create($input);
+        foreach ($new_roles as $r) {
+            if (auth()->user()->maxRole() >= $r) {
+                $user->roles()->attach($r);
+            }
+        }
+        $user->load(['roles','institution:id,name']);
+
+        // Set role_string for table-view
+        $_roles = "";
+        $new_user = $user->toArray();
+        foreach ($user->roles as $role) {
+            $_roles .= $role->name . ", ";
+        }
+        $_roles = rtrim(trim($_roles), ',');
+        $new_user['role_string'] = $_roles;
+
+        return response()->json(['result' => true, 'msg' => 'User successfully created', 'user' => $new_user]);
     }
 
     /**
@@ -178,19 +210,40 @@ class UserController extends Controller
             $input['inst_id'] = auth()->user()->inst_id;
         }
 
+        // Make sure roles include "User"
+        $user_role_id = Role::where('name', '=', 'User')->value('id');
+        $new_roles = isset($input['roles']) ? $input['roles'] : array();
+        if (!in_array($user_role_id,$new_roles)) {
+            array_unshift($new_roles, $user_role_id);
+        }
+
         // Update the user record
+        $input = array_except($input, array('roles'));
         $user->update($input);
 
         // Update roles (silently ignore roles if user saving their own record)
         if (auth()->id() != $id) {
             $user->roles()->detach();
-            foreach ($request->input('roles') as $r) {
+            foreach ($new_roles as $r) {
+                // ignore roles higher than current user's max
                 if (auth()->user()->maxRole() >= $r) {
                     $user->roles()->attach($r);
                 }
             }
         }
-        return response()->json(['result' => true, 'msg' => 'User settings successfully updated']);
+        $user->load(['roles','institution:id,name']);
+
+        // Setup array to hold updated user record
+        $_roles = "";
+        $updated_user = $user->toArray();
+        foreach ($user->roles as $role) {
+            $_roles .= $role->name . ", ";
+        }
+        $_roles = rtrim(trim($_roles), ',');
+        $updated_user['role_string'] = $_roles;
+
+        return response()->json(['result' => true, 'msg' => 'User settings successfully updated',
+                                 'user' => $updated_user]);
     }
 
     /**

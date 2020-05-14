@@ -24,13 +24,13 @@ class RolesTableSeeder extends Seeder
         if (DB::table($table)->get()->count() == 0) {
             DB::table($table)->insert([
             ['id' =>  1, 'name' => 'User'],
-            ['id' => 25, 'name' => 'Viewer'],
-            ['id' => 50, 'name' => 'Manager'],
+            ['id' => 25, 'name' => 'Manager'],
+            ['id' => 50, 'name' => 'Viewer'],
             ['id' => 99, 'name' => 'Admin']
+            // For if/when there's a need for a global admin
+            //
+            // ['id' => 999, 'name' => 'GlobalAdmin']
             ]);
-          // For if/when there's a need for a global admin
-          //
-          // Role::create(['id' => 999, 'name' => 'GlobalAdmin']);
         }
     }
 }

@@ -89,6 +89,7 @@
 </template>
 
 <script>
+ 	import Swal from 'sweetalert2';
     import { mapGetters } from 'vuex'
     import Form from '@/js/plugins/Form';
     window.Form = Form;

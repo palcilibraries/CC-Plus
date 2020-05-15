@@ -10,14 +10,12 @@
       <h2>Providers</h2>
       @endif
     </div>
-    @if (auth()->user()->hasAnyRole(['Admin','Manager']))
-    <div class="pull-right">
-      <a class="btn btn-success" href="{{ route('providers.create') }}"> Create New Provider</a>
-    </div>
-    @endif
   </div>
 </div>
 <v-app>
-  <provider-data-table :providers="{{ json_encode($data) }}"></provider-data-table>
+  <provider-data-table :providers="{{ json_encode($data) }}"
+                       :institutions="{{ json_encode($institutions) }}"
+                       :master_reports="{{ json_encode($master_reports) }}"
+  ></provider-data-table>
 </v-app>
 @endsection

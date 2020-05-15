@@ -14,9 +14,9 @@
           @endif
           <p align='center'>
             This dashboard is linked to the topnav for admins and managers.<br />
-            <strong><font color='red' size=+1> ... DANGER ... </font><br />
             No distinction is being made about whether a manager has use for or should
-            see or have access to the content/resources linked to below!</strong>
+            see or have access to the content/resources linked to below. This is just a
+            temporary holding place that still needs work.
           </p>
           <p>
             The source file is kept in .../views/admin/dashboard, and is a place for
@@ -27,9 +27,8 @@
           <ul>
             <li><a href="/institutiontypes">Types</a></li>
             <li><a href="/institutiongroups">Groups</a></li>
-            <li><a href="/failedharvests">Failed Harvests</a>  (build this into the Harvests view)</li>
-            <li><a href="/alertsettings">Alert Settings</a>  (build this into the Alerts view)</li>
-            <li><a href="/reports">Reports & Fields</a></li>
+            <li><a href="/failedharvests">Failed Harvests</a>  (this belongs in the Harvests view)</li>
+            <li><a href="/alertsettings">Alert Settings</a>  (this belongs with the Alerts view)</li>
           </ul>
         </div>
       </div>

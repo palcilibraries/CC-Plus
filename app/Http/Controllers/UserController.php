@@ -69,17 +69,17 @@ class UserController extends Controller
      */
     public function create()
     {
-        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
-        $roles = Role::where('id', '<=', auth()->user()->maxRole())->pluck('name', 'id');
-
-        if (auth()->user()->hasRole("Admin")) {
-            $institutions = Institution::pluck('name', 'id')->all();
-        } else {    // is manager
-            $institutions = Institution::where('id', '=', auth()->user()->inst_id)
-                                         ->pluck('name', 'id');
-        }
-
-        return view('users.create', compact('institutions', 'roles'));
+        // abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+        // $roles = Role::where('id', '<=', auth()->user()->maxRole())->pluck('name', 'id');
+        //
+        // if (auth()->user()->hasRole("Admin")) {
+        //     $institutions = Institution::pluck('name', 'id')->all();
+        // } else {    // is manager
+        //     $institutions = Institution::where('id', '=', auth()->user()->inst_id)
+        //                                  ->pluck('name', 'id');
+        // }
+        //
+        // return view('users.create', compact('institutions', 'roles'));
     }
 
     /**

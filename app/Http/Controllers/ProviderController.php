@@ -42,7 +42,18 @@ class ProviderController extends Controller
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
                              'prv.inst_id','inst.name as inst_name','day_of_month']);
         }
-        return view('providers.index', compact('data'));
+
+       // $institutions depends on whether current user is admin or Manager
+        if (auth()->user()->hasRole("Admin")) {
+            $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
+            $institutions[0]['name'] = 'Entire Consortium';
+        } else {  // Managers and Users limited their own inst
+            $institutions = Institution::where('id', '=', auth()->user()->inst_id)->get(['id','name'])->toArray();
+        }
+        $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
+                                 ->get(['id','name'])->toArray();
+
+        return view('providers.index', compact('data','institutions','master_reports'));
     }
 
     /**
@@ -52,11 +63,11 @@ class ProviderController extends Controller
      */
     public function create()
     {
-        abort_unless(auth()->user()->hasRole("Admin"), 403);
-        $institutions = Institution::pluck('name', 'id')->all();
-        $institutions[1] = 'Entire Consortium';
-
-        return view('providers.create', compact('institutions'));
+        // abort_unless(auth()->user()->hasRole("Admin"), 403);
+        // $institutions = Institution::pluck('name', 'id')->all();
+        // $institutions[1] = 'Entire Consortium';
+        //
+        // return view('providers.create', compact('institutions'));
     }
 
     /**
@@ -68,15 +79,27 @@ class ProviderController extends Controller
     public function store(Request $request)
     {
         if (!auth()->user()->hasRole("Admin")) {
-            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+            return response()->json(['result' => false, 'msg' => 'Create failed (403) - Forbidden']);
         }
         $this->validate($request, [
-          'name' => 'required'
+          'name' => 'required',
+          'inst_id' => 'required'
         ]);
         $input = $request->all();
         $provider = Provider::create($input);
 
-        return response()->json(['result' => true, 'msg' => 'Provider successfully created']);
+        // Build return object that matches what index does (above)
+        $p_table = config('database.connections.consodb.database') . ".providers";
+        $i_table = config('database.connections.consodb.database') . ".institutions";
+        $data = DB::table($p_table . ' as prv')
+                  ->join($i_table . ' as inst', 'inst.id', '=', 'prv.inst_id')
+                  ->where('prv.id',$provider->id)
+                  ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
+                         'prv.inst_id','inst.name as inst_name','day_of_month'])
+                  ->first();
+
+        return response()->json(['result' => true, 'msg' => 'Provider successfully created',
+                                 'provider' => $data]);
     }
 
     /**

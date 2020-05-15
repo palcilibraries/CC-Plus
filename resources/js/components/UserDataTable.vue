@@ -57,7 +57,7 @@
 		</div>
         <p>&nbsp;</p>
         <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
-          Save User Settings
+          Save New User
         </v-btn>
 		<v-btn small type="button" @click="hideForm">cancel</v-btn>
       </form>
@@ -79,6 +79,7 @@
       return {
         success: '',
         failure: '',
+        inst_name: '',
         mutable_users: this.users,
         current_user: {},
         showForm: '',
@@ -193,7 +194,7 @@
             var _inst = (this.is_admin) ? null : this.institutions[0].id;
             this.current_user = {roles: [], inst_id: _inst};
             this.form.name = '';
-            this.form.inst_id = '';
+            this.form.inst_id = _inst;
             this.form.is_active = '';
             this.form.email = '';
             this.form.password = '';

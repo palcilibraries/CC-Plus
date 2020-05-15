@@ -164,8 +164,7 @@
             if ( this.provider.inst_id==1 ) {
                 this.inst_name="Entire Consortium";
             } else {
-                this.inst_name = this.institutions[this.provider.inst_id];
-                // this.inst_name = this.provider.institution.name;
+                this.inst_name = this.institutions[this.provider.inst_id].name;
             }
             if ( this.is_manager && this.provider.inst_id==this.user_inst_id) {
                 this.can_edit = true;

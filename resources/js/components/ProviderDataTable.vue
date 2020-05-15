@@ -98,7 +98,9 @@
             this.showForm = true;
             this.form.name = '';
             this.form.inst_id = (this.is_admin) ? null : this.institutions[0].id;
-            this.form.is_active = 15;
+            this.form.is_active = 0;
+            this.form.server_url_r5 = '';
+            this.form.day_of_month = 15;
             this.form.master_reports = [];
         },
         hideForm (event) {

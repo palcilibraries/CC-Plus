@@ -6,12 +6,12 @@
     <div class="pull-left">
       <h2>{{ session('ccp_con_key','') }} : Institutions</h2>
     </div>
-    <div class="pull-right">
-      <a class="btn btn-success" href="{{ route('institutions.create') }}">Create New Institution</a>
-    </div>
   </div>
 </div>
 <v-app>
-  <institution-data-table :institutions="{{ json_encode($data) }}"></institution-data-table>
+  <institution-data-table :institutions="{{ json_encode($data) }}"
+                          :types="{{ json_encode($types) }}"
+                          :all_groups="{{ json_encode($all_groups) }}"
+  ></institution-data-table>
 </v-app>
 @endsection

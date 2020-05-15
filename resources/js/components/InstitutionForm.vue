@@ -134,32 +134,29 @@
             formSubmit (event) {
                 this.success = '';
                 this.failure = '';
-                var self = this;
-                this.form.patch('/institutions/'+self.institution['id'])
-                    .then( function(response) {
+                this.form.patch('/institutions/'+this.institution['id'])
+                    .then( (response) => {
                         if (response.result) {
-                            self.success = response.msg;
-                            self.mutable_inst.name = self.form.name;
-                            self.mutable_inst.type_id = self.form.type_id;
-                            self.inst_type = self.types[self.form.type_id].name;
-                            self.mutable_inst.is_active = self.form.is_active;
-                            self.status = self.statusvals[self.form.is_active];
-                            self.mutable_inst.fte = self.form.fte;
-                            self.mutable_inst.notes = self.form.notes;
-                            self.mutable_groups = self.form.institutiongroups;
+                            this.success = response.msg;
+                            this.mutable_inst.name = this.form.name;
+                            this.mutable_inst.type_id = this.form.type_id;
+                            this.inst_type = this.types[this.form.type_id].name;
+                            this.mutable_inst.is_active = this.form.is_active;
+                            this.status = this.statusvals[this.form.is_active];
+                            this.mutable_inst.fte = this.form.fte;
+                            this.mutable_inst.notes = this.form.notes;
+                            this.mutable_groups = this.form.institutiongroups;
                         } else {
-                            self.failure = response.msg;
+                            this.failure = response.msg;
                         }
                     });
-                self.showForm = false;
+                this.showForm = false;
             },
             swapForm (event) {
-                var self = this;
-                self.showForm = true;
+                this.showForm = true;
 			},
             hideForm (event) {
-                var self = this;
-                self.showForm = false;
+                this.showForm = false;
 			},
             destroy (instid) {
                 var self = this;

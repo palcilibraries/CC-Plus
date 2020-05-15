@@ -1,23 +1,59 @@
 <template>
   <div>
-    <v-data-table :headers="headers" :items="mutable_users" item-key="id" class="elevation-1">
-      <template v-slot:item="{ item }" >
-        <tr>
-          <td><a :href="'/users/'+item.id+'/edit'">{{ item.name }}</a></td>
-          <td>{{ item.permission }}&nbsp;</td>
-          <td>{{ item.last_login }}</td>
-		  <td><a class="btn btn-primary v-btn v-btn--contained theme--light v-size--small" :href="'/users/'+item.id+'/edit'">edit user</a></td>
-          <!--<td><v-btn class='btn btn-danger' small type="button" @click="destroy(item.id)">Delete</v-btn></td>-->
-        </tr>
-      </template>
-      <tr>
-        <td colspan="6">
-        </td>
-      </tr>
-    </v-data-table>
     <div>
       <span class="good" role="alert" v-text="success"></span>
       <span class="fail" role="alert" v-text="failure"></span>
+    </div>
+    <div v-if="showForm==''">
+      <v-btn small color="primary" @click="createForm">Add user</v-btn>
+      <v-data-table :headers="headers" :items="mutable_users" item-key="id" class="elevation-1">
+        <template v-slot:item="{ item }" >
+          <tr>
+            <td><a @click="editForm(item.id)">{{ item.name }}</a></td>
+            <td>{{ item.permission }}&nbsp;</td>
+            <td>{{ item.last_login }}</td>
+<!--
+            <td><v-btn class="btn btn-primary v-btn v-btn--contained theme--light v-size--small"
+                       @click="editForm(item.id)">edit user</v-btn></td>
+-->
+            <!--<td><v-btn class='btn btn-danger' small type="button" @click="destroy(item.id)">Delete</v-btn></td>-->
+          </tr>
+        </template>
+        <tr><td colspan="6">&nbsp;</td></tr>
+      </v-data-table>
+    </div>
+    <div v-else>
+      <div v-if="showForm=='edit'">
+          <h4>Edit user settings</h4>
+      </div>
+      <div v-else>
+          <h4>Create new user</h4>
+      </div>
+      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
+        <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+        <v-text-field outlined required name="email" label="Email" type="email"
+                      v-model="form.email" :rules="emailRules">
+        </v-text-field>
+        <v-switch v-model="form.is_active" label="Active?"></v-switch>
+        <v-text-field outlined name="password" label="Password" id="password" type="password"
+                      v-model="form.password" :rules="passwordRules">
+        </v-text-field>
+        <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
+                      type="password" v-model="form.confirm_pass" :rules="passwordRules">
+        </v-text-field>
+  		<div class="field-wrapper">
+	      <v-subheader v-text="'User Roles'"></v-subheader>
+          <v-select :items="all_roles" v-model="form.roles" :value="current_user.roles" item-text="name"
+ 	                item-value="id" label="User Role(s)" multiple chips hint="Define roles for user"
+ 	                persistent-hint
+	      ></v-select>
+		</div>
+        <p>&nbsp;</p>
+        <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
+          Save New User
+        </v-btn>
+		<v-btn small type="button" @click="hideForm">cancel</v-btn>
+      </form>
     </div>
   </div>
 </template>
@@ -28,21 +64,106 @@
     export default {
         props: {
                 users: { type:Array, default: () => [] },
+                inst_id: { type:Number, default: 0 },
+                all_roles: { type:Array, default: () => [] },
                },
         data() {
             return {
                 success: '',
                 failure: '',
+                showForm: '',
                 mutable_users: this.users,
+                current_user: {},
                 headers: [
                   { text: 'Name ', value: 'name' },
                   { text: 'Permission Level', value: '' },
                   { text: 'Last Login', value: 'last_login' },
                   { text: '', value: ''}
                 ],
+                emailRules: [
+                    v => !!v || 'E-mail is required',
+                    v => /.+@.+/.test(v) || 'E-mail must be valid'
+                ],
+                passwordRules: [
+                    v => !!v || 'Password is required',
+                    v => v.length >= 8 || 'Password must be at least 8 characters'
+                ],
+                form: new window.Form({
+                    name: '',
+                    inst_id: this.inst_id,
+                    is_active: 0,
+                    email: '',
+                    password: '',
+                    confirm_pass: '',
+                    roles: []
+                })
             }
         },
         methods: {
+            editForm (userid) {
+                this.failure = '';
+                this.success = '';
+                this.showForm = "edit";
+                this.current_user = this.mutable_users[this.mutable_users.findIndex(u=> u.id == userid)];
+                this.form.name = this.current_user.name;
+                this.form.inst_id = this.inst_id;
+                this.form.is_active = this.current_user.is_active;
+                this.form.email = this.current_user.email;
+                this.form.password = '';
+                this.form.confirm_pass = '';
+                this.form.roles = this.current_user.roles;
+            },
+            createForm () {
+                this.failure = '';
+                this.success = '';
+                this.showForm = 'create';
+                this.form.name = '';
+                this.form.inst_id = this.inst_id;
+                this.form.is_active = 0;
+                this.form.email = '';
+                this.form.password = '';
+                this.form.confirm_pass = '';
+                this.form.roles = [];
+                this.form.notes = '';
+            },
+            formSubmit (event) {
+                this.success = '';
+                this.failure = '';
+                if (this.form.password != this.form.confirm_pass) {
+                    this.failure = 'Passwords do not match! Please re-enter';
+                    return;
+                }
+                if (this.showForm == 'edit') {
+                    this.form.patch('/users/'+this.current_user.id)
+                        .then((response) => {
+                            if (response.result) {
+                                // Update mutable_users record with newly saved values...
+                                var idx = this.mutable_users.findIndex(u => u.id == this.current_user.id);
+                                Object.assign(this.mutable_users[idx], response.user);
+                                this.success = response.msg;
+                            } else {
+                                this.failure = response.msg;
+                            }
+                        });
+                } else if (this.showForm == 'create') {
+                    this.form.post('/users')
+                        .then((response) => {
+                            if (response.result) {
+                                this.failure = '';
+                                this.success = response.msg;
+                                // Add the new user to the mutable array
+                                this.mutable_users.push(response.user);
+                            } else {
+                                this.success = '';
+                                this.failure = response.msg;
+                            }
+                        });
+                }
+                this.showForm = '';
+            },
+            hideForm (event) {
+                this.showForm = '';
+            },
             destroy (userid) {
                 var self = this;
                 Swal.fire({

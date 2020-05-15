@@ -116,8 +116,12 @@ class UserController extends Controller
         }
 
         // Create the user and attach roles (limited to current user maxRole)
+        $viewer_role_id = Role::where('name', '=', 'Viewer')->value('id');
         $user = User::create($input);
         foreach ($new_roles as $r) {
+            if (!auth()->user()->hasRole("Admin") && $r == $viewer_role_id) {
+                continue;   // only allow admin to set Viewer
+            }
             if (auth()->user()->maxRole() >= $r) {
                 $user->roles()->attach($r);
             }
@@ -131,6 +135,7 @@ class UserController extends Controller
             $_roles .= $role->name . ", ";
         }
         $_roles = rtrim(trim($_roles), ',');
+        $new_user['permission'] = $user->maxRoleName();
         $new_user['role_string'] = $_roles;
 
         return response()->json(['result' => true, 'msg' => 'User successfully created', 'user' => $new_user]);
@@ -222,9 +227,14 @@ class UserController extends Controller
         $user->update($input);
 
         // Update roles (silently ignore roles if user saving their own record)
+        $viewer_role_id = Role::where('name', '=', 'Viewer')->value('id');
         if (auth()->id() != $id) {
             $user->roles()->detach();
             foreach ($new_roles as $r) {
+                // Current user must be an admin to set Viewer role
+                if (!auth()->user()->hasRole("Admin") && $r == $viewer_role_id) {
+                    continue;
+                }
                 // ignore roles higher than current user's max
                 if (auth()->user()->maxRole() >= $r) {
                     $user->roles()->attach($r);
@@ -240,6 +250,7 @@ class UserController extends Controller
             $_roles .= $role->name . ", ";
         }
         $_roles = rtrim(trim($_roles), ',');
+        $updated_user['permission'] = $user->maxRoleName();
         $updated_user['role_string'] = $_roles;
 
         return response()->json(['result' => true, 'msg' => 'User settings successfully updated',

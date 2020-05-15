@@ -8,16 +8,18 @@
 	</div>
 
   <institution-form :institution="{{ json_encode($institution) }}"
-                      :types="{{ json_encode($types) }}"
-                      :inst_groups="{{ json_encode($inst_groups) }}"
-                      :all_groups="{{ json_encode($all_groups) }}"
+                    :types="{{ json_encode($types) }}"
+                    :inst_groups="{{ json_encode($inst_groups) }}"
+                    :all_groups="{{ json_encode($all_groups) }}"
   ></institution-form>
 
   @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )
     <div class="users">
 	<h2 class="section-title">Users</h2>
-    <v-btn small color="primary" type="button" href="{{ route('users.create') }}" class="section-action">add new</v-btn>
-    <users-by-inst :users="{{ json_encode($users) }}"></users-by-inst>
+    <users-by-inst :users="{{ json_encode($users) }}"
+				   :inst_id="{{ json_encode($institution->id) }}"
+				   :all_roles="{{ json_encode($all_roles) }}"
+	></users-by-inst>
 	</div>
   @endif
   <div class="related-list">

@@ -1,7 +1,7 @@
 <template>
   <div class="details">
     <h2 class="section-title">Details</h2>
-    <template v-if="is_manager && !showForm">
+    <template v-if="can_edit && !showForm">
   	  <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
       <span class="form-good" role="alert" v-text="success"></span>
       <span class="form-fail" role="alert" v-text="failure"></span>

@@ -110,23 +110,28 @@ class ProviderController extends Controller
      */
     public function show($id)
     {
-        // $provider = Provider::findOrFail($id);
-        $provider = Provider::with(['reports', 'sushiSettings','sushiSettings.institution'])->findOrFail($id);
-
-       // Build $institutions based on whether the user is admin or Manager
+       // Build data to be passed based on whether the user is admin or Manager
         if (auth()->user()->hasRole("Admin")) {
+            $provider = Provider::with(['reports', 'sushiSettings','sushiSettings.institution'])->findOrFail($id);
             $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
             $institutions[0]['name'] = 'Entire Consortium';
-        } else {  // Manager limited their own inst
-            $institutions = Institution::where('id', '=', auth()->user()->inst_id)->get(['id','name'])->toArray();
-        }
 
-        // Get id+name pairs for institutions without settings for this provider. This is used to
-        // set per-inst sushi settings... so keep inst=1 (whole consortium) out of the list.
-        $set_inst_ids = $provider->sushiSettings->pluck('inst_id');
-        $set_inst_ids[] = 1;
-        $unset_institutions = Institution::whereNotIn('id', $set_inst_ids)
-                                         ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
+            // Setup an array of insts without settings for this provider
+            $set_inst_ids = $provider->sushiSettings->pluck('inst_id');
+            $set_inst_ids[] = 1;
+            $unset_institutions = Institution::whereNotIn('id', $set_inst_ids)
+                                             ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
+        } else {  // Managers/Users are limited their own inst
+            $provider = Provider::with(['reports', 'sushiSettings' => function ($query) {
+                                                        $query->where('inst_id', '=', auth()->user()->inst_id);
+                                                    },
+                                        'sushiSettings.institution'])->findOrFail($id);
+            $institutions = Institution::where('id', '=', auth()->user()->inst_id)->get(['id','name'])->toArray();
+            $unset_institutions = array();
+            if (count($provider->sushiSettings) == 0) {
+                $unset_institutions = Institution::where('id', auth()->user()->inst_id)->first()->toArray();
+            }
+        }
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
                                  ->get(['id','name'])->toArray();
 

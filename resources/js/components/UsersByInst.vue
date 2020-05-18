@@ -12,10 +12,6 @@
             <td><a @click="editForm(item.id)">{{ item.name }}</a></td>
             <td>{{ item.permission }}&nbsp;</td>
             <td>{{ item.last_login }}</td>
-<!--
-            <td><v-btn class="btn btn-primary v-btn v-btn--contained theme--light v-size--small"
-                       @click="editForm(item.id)">edit user</v-btn></td>
--->
             <!--<td><v-btn class='btn btn-danger' small type="button" @click="destroy(item.id)">Delete</v-btn></td>-->
           </tr>
         </template>

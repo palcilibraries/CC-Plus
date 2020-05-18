@@ -44,7 +44,7 @@ class InstitutionController extends Controller
 
             return view('institutions.index', compact('data', 'types', 'all_groups'));
         } else {    // not admin, load the edit view for user's inst
-            return redirect()->route('institutions.edit', auth()->user()->inst_id);
+            return redirect()->route('institutions.show', auth()->user()->inst_id);
         }
     }
 
@@ -162,6 +162,9 @@ class InstitutionController extends Controller
         $all_groups = InstitutionGroup::get(['id','name'])->toArray();
         $providers = Provider::orderBy('id', 'ASC')->get(['id','name'])->toArray();
         $inst_groups = $institution->institutionGroups()->pluck('institution_group_id')->all();
+
+        // Roles are limited to current user's max role
+        $all_roles = Role::where('id', '<=', auth()->user()->maxRole())->get(['name', 'id'])->toArray();
 
         return view('institutions.edit', compact(
             'institution',

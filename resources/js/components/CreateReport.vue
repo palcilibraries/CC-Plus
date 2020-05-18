@@ -66,7 +66,10 @@
     <v-row v-if="dialogs.rept">
       <span><h4>Choose a Report Type</h4></span>
       <v-col class="ma-2" cols="12">
-        <div v-if="!haveData">
+        <div v-if="working">
+            <span>...Working... checking available data for requested Institution(s) and Provider(s)</span>
+        </div>
+        <div v-else-if="!haveData">
             <span><strong>There is no saved data for this combination of Institution(s) and Provider(s)</strong></span>
         </div>
         <div v-else>
@@ -165,6 +168,7 @@
 
     data() {
         return {
+            working: true,
             dialogs: { inst: false, prov: false, rept: false, date: false, done:false },
             inst_id: null,
             prov_id: null,
@@ -237,14 +241,12 @@
             let inst = this.institutions.find(obj => obj.id == this.inst_id);
             this.inst_name = inst.name;
             this.dialogs.prov = true;
-            // this.updateAvailable();
         },
         onGroupChange () {
             this.$store.dispatch('updateInstGroupFilter',this.inst_group_id);
             let grp = this.inst_groups.find(obj => obj.id == this.inst_group_id);
             this.inst_name = grp.name;
             this.dialogs.prov = true;
-            // this.updateAvailable();
         },
         onProvChange () {
             this.$store.dispatch('updateProviderFilter',this.prov_id);
@@ -283,9 +285,11 @@
         },
         updateAvailable () {
             let filters = JSON.stringify(this.all_filters);
+            this.working = true;
             axios.get('/reports-available?filters='+filters)
                  .then((response) => {
                      this.report_data = response.data.reports;
+                     this.working = false;
                  })
                  .catch(error => {});
         },

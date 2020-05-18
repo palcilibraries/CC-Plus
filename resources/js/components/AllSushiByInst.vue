@@ -1,6 +1,6 @@
 <template>
   <div>
-  <template v-if="is_manager || is_admin">
+  <template v-if="(is_manager || is_admin) && mutable_unset.length > 0">
 	  <form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
 	        @keydown="form.errors.clear($event.target.name)">
         <input v-model="form.inst_id" id="inst_id" type="hidden">
@@ -50,13 +50,16 @@
           <td>{{ item.customer_id }}</td>
           <td>{{ item.requestor_id }}</td>
           <td>{{ item.API_key }}</td>
-          <td><v-btn class='btn btn-danger' small type="button" @click="destroy(item)">Delete connection</v-btn></td>
-		  <td>
+          <td v-if="is_manager || is_admin">
+            <v-btn class='btn btn-danger' small type="button" @click="destroy(item)">Delete connection</v-btn>
+          </td>
+		  <td v-if="is_manager || is_admin">
             <v-btn class='btn' small type="button" :href="'/sushisettings/'+item.id+'/edit'">Settings & harvests</v-btn>
           </td>
         </tr>
       </template>
-      <tr><td colspan="6">&nbsp;</td></tr>
+      <tr v-if="is_manager || is_admin"><td colspan="6">&nbsp;</td></tr>
+      <tr v-else><td colspan="4">&nbsp;</td></tr>
     </v-data-table>
   </div>
 </template>
@@ -113,6 +116,11 @@
                             // Remove the unset row that just got added
                             let newid = response.setting.prov_id;
                             this.mutable_unset.splice(this.mutable_unset.findIndex(u=> u.id == newid),1);
+                            this.form.inst_id = this.inst_id;
+                            this.form.prov_id = '0';
+                            this.form.customer_id = '';
+                            this.form.requestor_id = '';
+                            this.form.API_key = '';
                             this.showForm = false;
                         } else {
                             this.success = '';

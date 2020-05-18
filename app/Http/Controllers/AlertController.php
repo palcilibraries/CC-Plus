@@ -20,26 +20,40 @@ class AlertController extends Controller
         array_unshift($__options, 'ALL');
         $status_options = array_combine($__options, $__options);
 
-        if (auth()->user()->hasRole("Admin")) { // show them all
-            $data = Alert::orderBy('id', 'ASC')->get();
-        } else {                                // limit to user's inst
-            $data = Alert::orderBy('id', 'ASC')->where('inst_id', auth()->user()->inst_id)->get();
-        }
+        $data = Alert::with('provider','alertSetting','alertSetting.reportField','alertSetting.institution',
+                            'harvest','harvest.sushiSetting','harvest.sushiSetting.institution','user')
+                     ->orderBy('id', 'ASC')->get();
 
-        $records = $data->map(function ($record) {
-            $record['inst_name'] = ($record->inst_id == 1)  ? "Consortia-wide" : $record->institution()->name;
-            $record['stat_id'] = "stat_" . $record->id;
-            $record['mod_by'] = ($record->modified_by == 1) ? 'CC-Plus System' : $record->user->name;
-            if (!is_null($record->harvest_id)) {
-                $record['detail_url'] = "/harvestlogs/" . $record->harvest->id;
+        $records = array();
+        foreach ($data as $alert) {
+            if (is_null($alert->alertsettings_id) && is_null($alert->harvest_id)) {
+                continue;
+            }
+            $record = array('id' => $alert->id);
+            if (!is_null($alert->alertsettings_id)) {
+                $_inst_id = $alert->alertSetting->inst_id;
+                $_inst_name = $alert->alertSetting->institution->name;
+                $record['detail_url'] = "/alertsettings/" . $alert->alertsettings_id;
+                $record['detail_txt'] = $alert->alertSetting->reportField->legend . " is out of bounds!";
+            } else {
+                $_inst_id = $alert->harvest->sushiSetting->inst_id;
+                $_inst_name = $alert->harvest->sushiSetting->institution->name;
+                $record['detail_url'] = "/harvestlogs/" . $alert->harvest_id;
                 $record['detail_txt'] = "details";
             }
-            if (!is_null($record->alertsettings_id)) {
-                $record['detail_url'] = "/alertsettings/" . $record->alertsettings_id;
-                $record['detail_txt'] = $record->alertSetting->reportField->legend . " is out of bounds!";
+            if (!auth()->user()->hasRole("Admin") && $_inst_id != auth()->user()->inst_id) {
+                continue;
             }
-            return $record;
-        });
+            $record['prov_name'] = $alert->provider->name;
+            $record['reportName'] = $alert->reportName();
+            $record['yearmon'] = $alert->yearmon;
+            $record['status'] = $alert->status;
+            $record['stat_id'] = "stat_" . $alert->id;
+            $record['mod_by'] = ($alert->modified_by == 1) ? 'CC-Plus System' : $alert->user->name;
+            $record['inst_name'] = ($_inst_id == 1)  ? "Consortia-wide" : $_inst_name;
+            $record['updated_at'] = $alert->updated_at;
+            $records[] = $record;
+        };
 
        // Providers to display in the dropdown
         $providers = $data->map(function ($item, $key) {

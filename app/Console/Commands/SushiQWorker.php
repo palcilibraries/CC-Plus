@@ -14,6 +14,7 @@ use App\Counter5Processor;
 use App\FailedHarvest;
 use App\HarvestLog;
 use App\CcplusError;
+use App\Alert;
 use \ubfr\c5tools\JsonR5Report;
 use \ubfr\c5tools\CheckResult;
 use \ubfr\c5tools\ParseException;

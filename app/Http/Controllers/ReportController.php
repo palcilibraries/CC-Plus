@@ -323,7 +323,28 @@ class ReportController extends Controller
     public function show($id)
     {
         $report = Report::findOrFail($id);
-        $fields = $report->reportFields;
+
+        // Get report fields
+        if ($report->parent_id == 0) {
+            $fields = $report->reportFields;
+
+        // Build field array from inherited fields; ignore values... for now
+        } else {
+            $master_fields = $report->parent->reportFields;
+
+            // Turn report->inherited_fields into key=>value array
+            $inherited = $report->parsedInherited();
+            $child_fields = array();
+            foreach ($inherited as $key => $value) {
+                $field = $master_fields->find($key);
+                if (!$field) {
+                    continue;
+                }
+                $child_fields[] = $field;
+            }
+            $fields = collect($child_fields);
+        }
+
         return view('reports.show', compact('report', 'fields'));
     }
 

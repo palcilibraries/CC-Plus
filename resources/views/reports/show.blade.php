@@ -7,7 +7,7 @@
             <h2> Show Report</h2>
         </div>
         <div class="pull-right">
-            <a class="btn btn-primary" href="{{ route('reports') }}"> Back</a>
+            <a class="btn btn-primary" href="{{ route('reports.index') }}"> Back</a>
         </div>
     </div>
 </div>

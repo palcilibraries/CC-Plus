@@ -25,8 +25,10 @@
             don't need UI-based access to them.
           </p>
           <ul>
+            @if ( auth()->user()->hasAnyRole(['Admin']) )
             <li><a href="/institutiontypes">Types</a></li>
             <li><a href="/institutiongroups">Groups</a></li>
+            @endif
             <li><a href="/failedharvests">Failed Harvests</a>  (this belongs in the Harvests view)</li>
             <li><a href="/alertsettings">Alert Settings</a>  (this belongs with the Alerts view)</li>
           </ul>

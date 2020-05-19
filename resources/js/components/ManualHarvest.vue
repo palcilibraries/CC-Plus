@@ -161,6 +161,7 @@
       if ( !this.is_admin ) {
           this.form.inst_id = this.institutions[0].id;
           this.inst_name = this.institutions[0].name;
+          this.onInstChange(this.form.inst_id);
       }
       let dt = new Date();
       this.maxYM = dt.getFullYear()+"-"+("0"+(dt.getMonth() + 1));

@@ -1,11 +1,11 @@
 <template>
   <div>
-    <div v-if="is_manager && !showForm">
+    <div v-if="!showForm">
       <v-row>
         <v-col>
     	  <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
         </v-col>
-        <v-col>
+        <v-col v-if="is_manager">
           <v-btn class='btn btn-danger' small type="button" @click="destroy(user.id)">Delete</v-btn>
         </v-col>
       </v-row>
@@ -61,9 +61,9 @@
         <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
                       type="password" v-model="form.confirm_pass" :rules="passwordRules">
         </v-text-field>
-  		<div class="field-wrapper">
+  		<div  v-if="is_manager || is_admin" class="field-wrapper">
 	      <v-subheader v-text="'User Roles'"></v-subheader>
-	      <v-select v-if="is_manager || is_admin"
+	      <v-select
 	               :items="all_roles"
 	               v-model="form.roles"
 	               :value="mutable_roles"

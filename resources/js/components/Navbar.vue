@@ -37,9 +37,11 @@
                         {{ user["name"] }}<span class="caret"></span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+<!--
                         <div v-if="is_manager">
                             <a class="dropdown-item" href="/admin">Dashboard</a>
                         </div>
+-->
                         <a class="dropdown-item" :href="profile_url">Profile</a>
                         <a class="dropdown-item" href="/logout"
                            onclick="event.preventDefault();
@@ -113,9 +115,14 @@ export default {
                   },
                   {
                       url: "/institutiongroups",
-                      name: "Groups",
-                      role: "Manager",
-                  }
+                      name: "Institution Groups",
+                      role: "Admin",
+                  },
+                  {
+                      url: "/institutiontypes",
+                      name: "Institution Types",
+                      role: "Admin",
+                  },
                 ]
               },
               {

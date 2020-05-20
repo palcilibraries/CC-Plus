@@ -83,8 +83,8 @@ class LoginController extends Controller
         $user->save();
         if ($user->hasRole("GlobalAdmin")) {
             return redirect('/globaladmin');
-        } elseif ($user->hasRole("Admin") || $user->hasRole("Manager")) {
-            return redirect('/admin');
+        // } elseif ($user->hasRole("Admin") || $user->hasRole("Manager")) {
+        //     return redirect('/admin');
         } else {
             return redirect("/");
         }

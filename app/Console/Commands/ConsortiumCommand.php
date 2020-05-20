@@ -101,10 +101,13 @@ class ConsortiumCommand extends Command
         ]);
         $this->line('<fg=cyan>New database migration completed with status: ' . $exitCode);
 
-      // Run con_template migrations on the new database
+      // Run seeds on the new database
         $exitCode = $this->call('db:seed');
         $this->line('<fg=cyan>Initial database seeding completed with status: ' . $exitCode);
 
+//-->> THIS...
+//     Probably needs to execute as an exec() by the installer's acccount
+//     under the shell... otherwise, the conso_admin account needs GRANT OPTION?
       // Grants for consortia admin and user access to the MySQL database
         $_grant_Adm  = "GRANT ALL on `" . $conso_db . "`.* TO '" . $admin_user . "'@'" . $_host .
                        "' identified by '" . $admin_pass . "'";
@@ -136,5 +139,8 @@ class ConsortiumCommand extends Command
         DB::table($conso_db . ".role_user")->insert(['role_id' =>  99, 'user_id' => 1]);
 
         $this->line('<fg=cyan>New consortium : ' . $conso_data['name'] . ' Successfully Created.');
+
+        $this->line('<fg=cyan>NOTE: app/Console/Kernel.php needs updating in order to automate harvesting!');
+
     }
 }

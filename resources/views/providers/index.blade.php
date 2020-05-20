@@ -13,7 +13,7 @@
   </div>
 </div>
 <v-app>
-  <provider-data-table :providers="{{ json_encode($data) }}"
+  <provider-data-table :providers="{{ json_encode($providers) }}"
                        :institutions="{{ json_encode($institutions) }}"
                        :master_reports="{{ json_encode($master_reports) }}"
   ></provider-data-table>

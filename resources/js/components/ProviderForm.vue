@@ -36,7 +36,7 @@
   	      <td>Reports to harvest </td>
   	      <td>
   	        <template v-for="report in master_reports">
-  	          <v-chip v-if="mutable_reports.includes(report.id)">
+              <v-chip v-if="mutable_prov.reports.some(r => r.id === report.id)">
   	            {{ report.name }}
   	          </v-chip>
   	        </template>
@@ -115,14 +115,13 @@
                 can_edit: false,
 				showForm: false,
                 mutable_prov: this.provider,
-				mutable_reports: this.provider.reports,
                 form: new window.Form({
                     name: this.provider.name,
                     inst_id: this.provider.inst_id,
                     is_active: this.provider.is_active,
                     server_url_r5: this.provider.server_url_r5,
                     day_of_month: this.provider.day_of_month,
-                    master_reports: this.master_reports,
+                    master_reports: this.provider.reports,
                 })
             }
         },
@@ -134,15 +133,12 @@
                 this.form.patch('/providers/'+self.provider['id'])
                     .then( function(response) {
                         if (response.result) {
+                            self.mutable_prov = response.provider;
+                            if (self.is_admin) {
+                                self.inst_name = self.institutions[response.provider.inst_id-1].name;
+                            }
+							self.status = self.statusvals[response.provider.is_active];
                             self.success = response.msg;
-							self.mutable_prov.name = self.form.name;
-							self.mutable_prov.inst_id = self.form.inst_id;
-							self.inst_name = self.institutions[self.form.inst_id].name;
-							self.mutable_prov.is_active = self.form.is_active;
-							self.status = self.statusvals[self.form.is_active];
-							self.mutable_prov.server_url_r5 = self.form.server_url_r5;
-							self.mutable_prov.day_of_month = self.form.day_of_month;
-							self.mutable_reports = self.form.master_reports;
                         } else {
                             self.failure = response.msg;
                         }
@@ -164,12 +160,14 @@
             if ( this.provider.inst_id==1 ) {
                 this.inst_name="Entire Consortium";
             } else {
-                this.inst_name = this.institutions[this.provider.inst_id].name;
+                if (this.is_admin) {
+                    this.inst_name = this.institutions[this.provider.inst_id-1].name;
+                } else {
+                    this.inst_name = this.institutions[0].name;
+                }
             }
-            if ( this.is_manager && this.provider.inst_id==this.user_inst_id) {
+            if ( this.is_admin || (this.is_manager && this.provider.inst_id==this.user_inst_id)) {
                 this.can_edit = true;
-            } else {
-                this.can_edit = false;
             }
             this.status=this.statusvals[this.provider.is_active];
             console.log('Provider Component mounted.');

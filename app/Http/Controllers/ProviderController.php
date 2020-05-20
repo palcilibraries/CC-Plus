@@ -26,7 +26,7 @@ class ProviderController extends Controller
         $i_table = config('database.connections.consodb.database') . ".institutions";
        // Admins get list of all providers
         if (auth()->user()->hasRole("Admin")) {
-            $data = DB::table($p_table . ' as prv')
+            $providers = DB::table($p_table . ' as prv')
                       ->join($i_table . ' as inst', 'inst.id', '=', 'prv.inst_id')
                       ->orderBy('prov_name', 'ASC')
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
@@ -34,7 +34,7 @@ class ProviderController extends Controller
        // Otherwise, get all consortia-wide providers and those that match user's inst_id
        // (exclude providers assigned to institutions.)
         } else {
-            $data = DB::table($p_table . ' as prv')
+            $providers = DB::table($p_table . ' as prv')
                       ->join($i_table . ' as inst', 'inst.id', '=', 'prv.inst_id')
                       ->where('prv.inst_id', 1)
                       ->orWhere('prv.inst_id', auth()->user()->inst_id)
@@ -53,7 +53,7 @@ class ProviderController extends Controller
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
                                  ->get(['id','name'])->toArray();
 
-        return view('providers.index', compact('data','institutions','master_reports'));
+        return view('providers.index', compact('providers','institutions','master_reports'));
     }
 
     /**
@@ -63,11 +63,7 @@ class ProviderController extends Controller
      */
     public function create()
     {
-        // abort_unless(auth()->user()->hasRole("Admin"), 403);
-        // $institutions = Institution::pluck('name', 'id')->all();
-        // $institutions[1] = 'Entire Consortium';
-        //
-        // return view('providers.create', compact('institutions'));
+        return redirect()->route('providers.index');
     }
 
     /**
@@ -87,6 +83,13 @@ class ProviderController extends Controller
         ]);
         $input = $request->all();
         $provider = Provider::create($input);
+
+        // Attach reports
+        if (!is_null($request->input('master_reports'))) {
+            foreach ($request->input('master_reports') as $r) {
+                $provider->reports()->attach($r);
+            }
+        }
 
         // Build return object that matches what index does (above)
         $p_table = config('database.connections.consodb.database') . ".providers";
@@ -112,7 +115,8 @@ class ProviderController extends Controller
     {
        // Build data to be passed based on whether the user is admin or Manager
         if (auth()->user()->hasRole("Admin")) {
-            $provider = Provider::with(['reports', 'sushiSettings','sushiSettings.institution'])->findOrFail($id);
+            $provider = Provider::with(['reports:reports.id,reports.name','sushiSettings','sushiSettings.institution'])
+                                ->findOrFail($id);
             $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
             $institutions[0]['name'] = 'Entire Consortium';
 
@@ -122,14 +126,15 @@ class ProviderController extends Controller
             $unset_institutions = Institution::whereNotIn('id', $set_inst_ids)
                                              ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
         } else {  // Managers/Users are limited their own inst
-            $provider = Provider::with(['reports', 'sushiSettings' => function ($query) {
-                                                        $query->where('inst_id', '=', auth()->user()->inst_id);
-                                                    },
+            $provider = Provider::with(['reports:reports.id,reports.name',
+                                        'sushiSettings' => function ($query) {
+                                            $query->where('inst_id', '=', auth()->user()->inst_id);
+                                        },
                                         'sushiSettings.institution'])->findOrFail($id);
             $institutions = Institution::where('id', '=', auth()->user()->inst_id)->get(['id','name'])->toArray();
             $unset_institutions = array();
             if (count($provider->sushiSettings) == 0) {
-                $unset_institutions = Institution::where('id', auth()->user()->inst_id)->first()->toArray();
+                $unset_institutions[] = Institution::where('id', auth()->user()->inst_id)->first()->toArray();
             }
         }
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
@@ -146,35 +151,7 @@ class ProviderController extends Controller
      */
     public function edit($id)
     {
-       // Limit edit form access to admins and managers
-        abort_unless(auth()->user()->hasAnyRole(["Admin","Manager"]), 403);
-        $provider = Provider::with(['reports', 'sushiSettings','sushiSettings.institution'])->findOrFail($id);
-        // $provider_reports = $provider->reports()->pluck('report_id')->all();
-
-        $_prov = $provider->toArray();
-
-       // Build $institutions based on whether the user is admin or Manager
-        if (auth()->user()->hasRole("Admin")) {
-            $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
-            $sushi_insts = $institutions;
-            $institutions[0]['name'] = 'Entire Consortium';
-            array_shift($sushi_insts);  // toss off "Entire Consortium" as an option for sushi settings
-        } else {  // Manager limited their own inst
-            $institutions = Institution::where('id', '=', auth()->user()->inst_id)->get(['id','name'])->toArray();
-            $sushi_insts = $institutions;
-        }
-
-       // Get all R5 master reports and which are currently enabled
-        $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
-                                 ->get(['id','name'])->toArray();
-
-        return view('providers.edit', compact(
-            'provider',
-            '_prov',
-            'institutions',
-            'master_reports',
-            'sushi_insts'
-        ));
+        return redirect()->route('providers.show', [$id]);
     }
 
     /**
@@ -207,7 +184,10 @@ class ProviderController extends Controller
                 $provider->reports()->attach($r);
             }
         }
-        return response()->json(['result' => true, 'msg' => 'Provider settings successfully updated']);
+
+        $provider->load('reports:reports.id,reports.name');
+        return response()->json(['result' => true, 'msg' => 'Provider settings successfully updated',
+                                 'provider' => $provider]);
     }
 
     /**

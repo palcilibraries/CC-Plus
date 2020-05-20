@@ -55,11 +55,7 @@ class InstitutionController extends Controller
      */
     public function create()
     {
-        // abort_unless(auth()->user()->hasRole("Admin"), 403);
-        // $types = InstitutionType::pluck('name', 'id')->all();
-        // $groups = InstitutionGroup::pluck('name', 'id')->all();
-        //
-        // return view('institutions.create', compact('types', 'groups'));
+        return redirect()->route('institutions.index');
     }
 
     /**
@@ -116,7 +112,6 @@ class InstitutionController extends Controller
                 ->find($id);
 
         // Add user's highest role as "permission" as a separate array
-        // $u_data = User::where('inst_id',$id)->with('roles')->orderBy('id', 'ASC')->get();
         $users = array();
         foreach ($institution->users as $inst_user) {
             $new_u = $inst_user->toArray();
@@ -153,26 +148,7 @@ class InstitutionController extends Controller
      */
     public function edit($id)
     {
-        if (!auth()->user()->hasRole("Admin")) {
-            abort_unless(auth()->user()->inst_id == $id, 403);
-        }
-        $institution = Institution::with('institutionType')->findOrFail($id);
-
-        $types = InstitutionType::get(['id','name'])->toArray();
-        $all_groups = InstitutionGroup::get(['id','name'])->toArray();
-        $providers = Provider::orderBy('id', 'ASC')->get(['id','name'])->toArray();
-        $inst_groups = $institution->institutionGroups()->pluck('institution_group_id')->all();
-
-        // Roles are limited to current user's max role
-        $all_roles = Role::where('id', '<=', auth()->user()->maxRole())->get(['name', 'id'])->toArray();
-
-        return view('institutions.edit', compact(
-            'institution',
-            'types',
-            'all_groups',
-            'inst_groups',
-            'providers'
-        ));
+        return redirect()->route('institutions.show', [$id]);
     }
 
     /**

@@ -13,6 +13,7 @@ class DatabaseReport extends Model
    */
     protected $connection = 'consodb';
     protected $table = 'dr_report_data';
+    public $timestamps = false;
 
     /**
      * Mass assignable attributes.

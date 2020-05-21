@@ -29,7 +29,7 @@ class CreatePrReportDataTable extends Migration
             $table->unsignedInteger('unique_item_requests');
             $table->unsignedInteger('unique_title_investigations');
             $table->unsignedInteger('unique_title_requests');
-            $table->timestamps();
+            // $table->timestamps();
 
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');
             $table->foreign('prov_id')->references('id')->on('providers');

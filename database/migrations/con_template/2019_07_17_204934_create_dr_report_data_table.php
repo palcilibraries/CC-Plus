@@ -35,7 +35,7 @@ class CreateDrReportDataTable extends Migration
             $table->unsignedInteger('unique_title_requests');
             $table->unsignedInteger('limit_exceeded');
             $table->unsignedInteger('no_license');
-            $table->timestamps();
+            // $table->timestamps();
 
             $table->foreign('db_id')->references('id')->on($global_db . '.databases');
             $table->foreign('prov_id')->references('id')->on('providers');

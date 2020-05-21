@@ -13,6 +13,7 @@ class ItemReport extends Model
    */
     protected $connection = 'consodb';
     protected $table = 'ir_report_data';
+    public $timestamps = false;
 
     /**
      * Mass assignable attributes.

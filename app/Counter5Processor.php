@@ -117,8 +117,8 @@ class Counter5Processor extends Model
                   'unique_item_requests' => $ICounts['Unique_Item_Requests'],
                   'unique_title_investigations' => $ICounts['Unique_Title_Investigations'],
                   'unique_title_requests' => $ICounts['Unique_Title_Requests'],
-                  'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License'],
-                  'created_at' => self::$now]);
+                  'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License']]);
+                  // 'created_at' => self::$now]);
 
            // Reset metric counts
             for ($_m = 0; $_m < $_metric_count; $_m++) {
@@ -208,8 +208,8 @@ class Counter5Processor extends Model
                        'unique_item_requests' => $ICounts['Unique_Item_Requests'],
                        'unique_title_investigations' => $ICounts['Unique_Title_Investigations'],
                        'unique_title_requests' => $ICounts['Unique_Title_Requests'],
-                       'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License'],
-                       'created_at' => self::$now]);
+                       'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License']]);
+                       // 'created_at' => self::$now]);
 
            // Reset metric counts
             for ($_m = 0; $_m < $_metric_count; $_m++) {
@@ -284,7 +284,8 @@ class Counter5Processor extends Model
                     'unique_item_investigations' => $ICounts['Unique_Item_Investigations'],
                     'unique_item_requests' => $ICounts['Unique_Item_Requests'],
                     'unique_title_investigations' => $ICounts['Unique_Title_Investigations'],
-                    'unique_title_requests' => $ICounts['Unique_Title_Requests'], 'created_at' => self::$now]);
+                    'unique_title_requests' => $ICounts['Unique_Title_Requests']]);
+                    // 'created_at' => self::$now]);
 
            // Reset metric counts
             for ($_m = 0; $_m < $_metric_count; $_m++) {
@@ -443,8 +444,8 @@ class Counter5Processor extends Model
                 'total_item_investigations' => $ICounts['Total_Item_Investigations'],
                 'unique_item_requests' => $ICounts['Unique_Item_Requests'],
                 'unique_item_investigations' => $ICounts['Unique_Item_Investigations'],
-                'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License'],
-                'created_at' => self::$now]);
+                'limit_exceeded' => $ICounts['Limit_Exceeded'], 'no_license' => $ICounts['No_License']]);
+                // 'created_at' => self::$now]);
 
            // Reset metric counts
             for ($_m = 0; $_m < $_metric_count; $_m++) {

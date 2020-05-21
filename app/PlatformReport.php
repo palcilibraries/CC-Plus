@@ -13,6 +13,7 @@ class PlatformReport extends Model
    */
     protected $connection = 'consodb';
     protected $table = 'pr_report_data';
+    public $timestamps = false;
 
     /**
      * Mass assignable attributes.

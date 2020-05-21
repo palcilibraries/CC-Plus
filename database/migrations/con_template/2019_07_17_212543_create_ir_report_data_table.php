@@ -32,7 +32,7 @@ class CreateIrReportDataTable extends Migration
             $table->unsignedInteger('unique_item_investigations');
             $table->unsignedInteger('limit_exceeded');
             $table->unsignedInteger('no_license');
-            $table->timestamps();
+            // $table->timestamps();
 
             $table->foreign('item_id')->references('id')->on($global_db . '.items');
             $table->foreign('prov_id')->references('id')->on('providers');

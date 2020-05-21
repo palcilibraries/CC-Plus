@@ -14,6 +14,7 @@ class TitleReport extends Report
    */
     protected $connection = 'consodb';
     protected $table = 'tr_report_data';
+    public $timestamps = false;
 
     /**
      * Mass assignable attributes.

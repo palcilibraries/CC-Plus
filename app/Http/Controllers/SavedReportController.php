@@ -277,7 +277,7 @@ class SavedReportController extends Controller
     public function destroy($id)
     {
         $report = SavedReport::findOrFail($id);
-        if ($report->canManage()) {
+        if (!$report->canManage()) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
         $report->delete();

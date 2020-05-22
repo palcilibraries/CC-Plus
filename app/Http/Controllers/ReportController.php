@@ -129,18 +129,49 @@ class ReportController extends Controller
     public function preview(Request $request)
     {
         // Start by getting a full filter-set (all elements from the datastore)
-        // If saved_id requested, get filters via SavedReport
+        // Saved reports have the active fields and filters built-in
         if (isset($request->saved_id)) {
-            $saved_report = SavedReport::findOrFail($request->saved_id);
+            $saved_report = SavedReport::with('master','master.reportFields')->findOrFail($request->saved_id);
             if (!$saved_report->canManage()) {
                 return response()->json(['result' => false, 'msg' => 'Access Forbidden (403)']);
             }
             $preset_filters = $saved_report->filterBy();
+            $inherited = preg_split('/,/', $saved_report->inherited_fields);
+            $field_data = ReportField::where('report_id', '=', $saved_report->master_id)->get();
+            $field_data->whereIn('id',$inherited)->transform(function ($record) {
+                                                        $record['active'] = 1;
+                                                        return $record;
+                                                   });
+            $rangetype = $saved_report->date_range;
+
+            // update the private global filters and get available data bounds
+            self::$input_filters = $preset_filters;
+            $model = $saved_report->master->name;
+            $data = self::queryAvailable($model);
+
+            // update preset_filters values based on date_range
+            if ($rangetype == 'latestMonth') {
+                $preset_filters['fromYM'] = $data[0]['YM_max'];
+                $preset_filters['toYM'] = $data[0]['YM_max'];
+            } else if ($rangetype == 'latestYear') {
+                $want_min = strtotime('-11 months', strtotime($data[0]['YM_max']));
+                $have_min = strtotime($data[0]['YM_min']);
+                $from = ($have_min>$want_min) ? date("Y-m",$have_min) : date("Y-m",$want_min);
+                $preset_filters['fromYM'] = $from;
+                $preset_filters['toYM'] = $data[0]['YM_max'];
+            } else {    // Custom
+                $preset_filters['fromYM'] = $saved_report->ym_from;
+                $preset_filters['toYM'] = $saved_report->ym_to;
+            }
+
+        // If not previewing a saved report the filters should arrive via $request as Json
         } else {
-            // otherwise, get filters from $request as Json
             $this->validate($request, ['filters' => 'required']);
             $preset_filters = json_decode($request->filters, true);
+            $rangetype = (isset($preset_filters['dateRange'])) ? $preset_filters['dateRange'] : 'Custom';
+
         }
+
         // update the private global
         self::$input_filters = $preset_filters;
 
@@ -151,32 +182,35 @@ class ReportController extends Controller
         }
         $all_filters = ReportFilter::all();
 
-        // Get (master) fields
-        if ($report->parent_id == 0) {   // previewing a master report?
-            $field_data = $report->reportFields;
-        } else {
-            // Build field array from inherited fields
-            $master_fields = $report->parent->reportFields;
-            // Turn report->inherited_fields into key=>value array
-            $inherited = $report->parsedInherited();
-            $child_fields = array();
-            foreach ($inherited as $key => $value) {
-                $field = $master_fields->find($key);
-                if (!$field) {
-                    continue;
-                }
-                $child_fields[] = $field;
+        // Get fields
+        if (!isset($request->saved_id)) {
+            if ($report->parent_id == 0) {   // previewing a master report?
+                $master_id = $report->id;
+                $field_data = $report->reportFields;
+            } else {
+                // Build field array from inherited fields
+                $master_fields = $report->parent->reportFields;
+                // Turn report->inherited_fields into key=>value array
+                $inherited = $report->parsedInherited();
+                $child_fields = array();
+                foreach ($inherited as $key => $value) {
+                    $field = $master_fields->find($key);
+                    if (!$field) {
+                        continue;
+                    }
+                    $child_fields[] = $field;
 
-                // If the field has a filter, update the filters array with any inherited value
-                $filter = $all_filters->find($field->report_filter_id);
-                if ($filter && !is_null($value)) {
-                    $preset_filters[$filter->report_column] = $value;
+                    // If the field has a filter, update the filters array with any inherited value
+                    $filter = $all_filters->find($field->report_filter_id);
+                    if ($filter && !is_null($value)) {
+                        $preset_filters[$filter->report_column] = $value;
+                    }
                 }
+                $field_data = collect($child_fields);
             }
-            $field_data = collect($child_fields);
         }
 
-        // Turn the field-map into a field-map and a columns-map for the component
+        // Turn the field-date into a field-map and a columns-map for the component
         $fields = array();
         $columns = array();
         $year_mons = self::createYMarray();
@@ -206,6 +240,10 @@ class ReportController extends Controller
                 $columns[] = array('text' => $fld->legend, 'field' => $key, 'active' => $fld->active, 'value' => $key);
             }
         }
+// dump($field_data);
+// dump($preset_filters);
+// dump($fields);
+// dd($columns);
 
         // Get list of saved reports for this user
         $saved_reports = SavedReport::where('user_id', auth()->id())->get(['id','title'])->toArray();
@@ -362,20 +400,73 @@ class ReportController extends Controller
         // update the private global
         self::$input_filters = $_filters;
 
+        $data = self::queryAvailable();
+        return response()->json(['reports' => $data], 200);
+
+        // // Setup institution limiter array for whereIn clause later
+        // $limit_to_insts = self::limitToInstitutions();
+        //
+        // // Setup where clause conditions for this report based on $input_filters
+        // $conditions = array();
+        // if (self::$input_filters['prov_id'] > 0) {
+        //     $conditions[] = array('prov_id',self::$input_filters['prov_id']);
+        // }
+        //
+        // // Get counts and min/max yearmon for each master report
+        // $output = array();
+        // $models = ['TR' => '\\App\\TitleReport',    'DR' => '\\App\\DatabaseReport',
+        //            'PR' => '\\App\\PlatformReport', 'IR' => '\\App\\ItemReport'];
+        // $raw_query = "Count(*) as  count, min(yearmon) as YM_min, max(yearmon) as YM_max";
+        // foreach ($models as $key => $model) {
+        //     $result = $model::when($limit_to_insts, function ($query, $limit_to_insts) {
+        //                         return $query->whereIn('inst_id', $limit_to_insts);
+        //                     })
+        //                     ->when($conditions, function ($query, $conditions) {
+        //                         return $query->where($conditions);
+        //                     })
+        //                     ->selectRaw($raw_query)
+        //                     ->get()
+        //                     ->toArray();
+        //     $output[$key] = $result[0];
+        // }
+        // return response()->json(['reports' => $output], 200);
+    }
+
+    /**
+     * Build an an array of institutions we want to limit-by based on the inst and int-group filters
+     *
+     * @return Array $limit_to_insts
+     */
+    private function queryAvailable($model='')
+    {
         // Setup institution limiter array for whereIn clause later
         $limit_to_insts = self::limitToInstitutions();
 
         // Setup where clause conditions for this report based on $input_filters
         $conditions = array();
-        if (self::$input_filters['prov_id'] > 0) {
-            $conditions[] = array('prov_id',self::$input_filters['prov_id']);
+        if (isset(self::$input_filters['prov_id'])) {
+            if (self::$input_filters['prov_id'] > 0) {
+                $conditions[] = array('prov_id',self::$input_filters['prov_id']);
+            }
+        }
+        if (isset(self::$input_filters['inst_id'])) {
+            if (self::$input_filters['inst_id'] > 0) {
+                $conditions[] = array('inst_id',self::$input_filters['inst_id']);
+            }
+        }
+        if (isset(self::$input_filters['plat_id'])) {
+            if (self::$input_filters['plat_id'] > 0) {
+                $conditions[] = array('plat_id',self::$input_filters['plat_id']);
+            }
         }
 
         // Get counts and min/max yearmon for each master report
         $output = array();
-        $models = ['TR' => '\\App\\TitleReport',    'DR' => '\\App\\DatabaseReport',
+        $all_models = ['TR' => '\\App\\TitleReport',    'DR' => '\\App\\DatabaseReport',
                    'PR' => '\\App\\PlatformReport', 'IR' => '\\App\\ItemReport'];
         $raw_query = "Count(*) as  count, min(yearmon) as YM_min, max(yearmon) as YM_max";
+        $models = ($model == '') ? $all_models : array($all_models[$model]);
+
         foreach ($models as $key => $model) {
             $result = $model::when($limit_to_insts, function ($query, $limit_to_insts) {
                                 return $query->whereIn('inst_id', $limit_to_insts);
@@ -388,7 +479,7 @@ class ReportController extends Controller
                             ->toArray();
             $output[$key] = $result[0];
         }
-        return response()->json(['reports' => $output], 200);
+        return $output;
     }
 
     /**

@@ -35,6 +35,11 @@ class HarvestLogController extends Controller
         $rept = ($request->input('rept')) ? $request->input('rept') : null;
         $json = ($request->input('json')) ? true : false;
 
+        // managers and users only see their own insts
+        if (!auth()->user()->hasAnyRole(["Admin","Viewer"])) {
+            $inst = auth()->user()->inst_id;
+        }
+
         // Build a lower header if we're not returning JSON and filtering
         $lower_head = "";
         if (!$json) {
@@ -66,33 +71,35 @@ class HarvestLogController extends Controller
         }
 
         // Get the rows
-        $data = HarvestLog::join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
+        $data = HarvestLog::with('report:id,name', 'sushiSetting')
                           ->orderBy('yearmon', 'DESC')
-                          ->when($inst, function ($qry, $inst) {
-                              return $qry->where('sushisettings.inst_id', $inst);
-                          })
-                          ->when($prov, function ($qry, $prov) {
-                              return $qry->where('sushisettings.prov_id', $prov);
-                          })
+                          // ->when($inst, function ($qry, $inst) {
+                          //     return $qry->where('inst_id', $inst);
+                          // })
+                          // ->when($prov, function ($qry, $prov) {
+                          //     return $qry->where('prov_id', $prov);
+                          // })
                           ->when($rept, function ($qry, $rept) {
                               return $qry->where('report_id', $rept);
                           })
                           ->when($yrmo, function ($qry, $yrmo) {
                               return $qry->where('yearmon', '=', $yrmo);
                           })
-                          ->when($json, function ($query) {
-                              return $query->get();
-                          }, function ($query) {
-                              return $query->paginate(20);
-                              // return $query->get()->paginate(20);
-                          });
+                          ->get();
+        // if ($inst) {
+        //     $data = $data->where('sushiSettings.inst_id', $inst);
+        // }
+        // if ($prov) {
+        //     $data = $data->where('sushiSettings.prov_id', $prov);
+        // }
 
         // Return results
         if ($json) {
             return response()->json(['data' => $data], 200);
         } else {
-            return view('harvestlogs.index', compact('data', 'lower_head'))
-                 ->with('i', ($request->input('page', 1) - 1) * 10);
+            // return view('harvestlogs.index', compact('data', 'lower_head'))
+            //      ->with('i', ($request->input('page', 1) - 1) * 10);
+            return view('harvestlogs.index', compact('data', 'lower_head'));
         }
     }
 

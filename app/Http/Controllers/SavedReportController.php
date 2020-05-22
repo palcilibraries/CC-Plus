@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use DB;
 use App\SavedReport;
 use App\Report;
+use App\ReportField;
 use App\ReportFilter;
 use App\Provider;
 use App\Institution;
@@ -174,9 +175,12 @@ class SavedReportController extends Controller
      */
     public function store(Request $request)
     {
-        $this->validate($request, ['title' => 'required', 'save_id' => 'required', 'months' => 'required',
-                                   'report_id' => 'required', 'fields' => 'required']);
-        $title = $request->title;
+        $this->validate($request, ['months' => 'required', 'report_id' => 'required', 'fields' => 'required']);
+
+        // Need somewhere to save it...
+        if (!isset($request->title) && !isset($request->save_id)) {
+            return response()->json(['result' => false, 'msg' => 'A name or ID of a saved report is required.']);
+        }
         $save_id = $request->save_id;
         $report_id = $request->report_id;
         $input_fields = json_decode($request->fields, true);
@@ -190,6 +194,7 @@ class SavedReportController extends Controller
             $master_id = $_report->parent_id;
             $all_fields = $_report->parent->reportFields;
         }
+        $all_fields = ReportField::where('report_id', '=', $master_id)->get();
 
        // Get the saved report config
         if ($save_id != 0) {
@@ -201,6 +206,7 @@ class SavedReportController extends Controller
        // -or- create a new config
         } else {
             $saved_report = new SavedReport();
+            $saved_report->title = $request->title;
             $saved_report->user_id = auth()->id();
             $saved_report->master_id = $master_id;
         }
@@ -231,7 +237,6 @@ class SavedReportController extends Controller
         }
 
        // Save record with inherited fields, filters and dates
-        $saved_report->title = $title;
         $saved_report->inherited_fields = $inherited_fields;
         $saved_report->filters = $filters;
         $saved_report->months = $request->months;

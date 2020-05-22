@@ -19,7 +19,9 @@ class CreateSavedReportsTable extends Migration
             $table->Increments('id');
             $table->string('title');
             $table->integer('user_id')->unsigned();
-            $table->integer('months')->default(1);
+            $table->string('date_range', 12)->default('Custom');
+            $table->string('ym_from', 7)->nullable();
+            $table->string('ym_to', 7)->nullable();
             $table->unsignedInteger('master_id');
             $table->string('inherited_fields')->nullable();
             $table->string('filters')->nullable();

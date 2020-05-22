@@ -28,7 +28,11 @@ class SushiSettingController extends Controller
     public function edit($id)
     {
         // User must be able to manage the settings
-        $setting = SushiSetting::with('institution', 'provider', 'harvestLogs', 'harvestLogs.report')->findOrFail($id);
+        $setting = SushiSetting::with(['institution', 'provider', 'harvestLogs', 'harvestLogs.report:id,name'])
+                               ->findOrFail($id);
+//         $setting = SushiSetting::with('institution', 'provider', 'harvestLogs')->findOrFail($id);
+// $setting->load('harvestLogs.report:id,name');
+// dd($setting->harvestLogs);
         abort_unless($setting->institution->canManage(), 403);
 
         return view('sushisettings.edit', compact('setting'));

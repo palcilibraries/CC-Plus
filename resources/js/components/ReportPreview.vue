@@ -196,7 +196,6 @@
           accessmethod: { col:'accessmethod_id', act:'updateAccessMethod', value: -1 },
         },
         mutable_fields: this.fields,
-        // headers: this.columns,
         mutable_cols: this.columns,
         success: '',
         failure: '',
@@ -248,7 +247,7 @@
           if (field.active) {
               if (hasFilter) {
                   // Set filter to "all" unless this is for institution and we're filtering by inst-group
-                  if (field.id!='institution' || (field.id!='institution' && this.filterInst)) {
+                  if (field.id!='institution' || (field.id=='institution' && this.filterInst)) {
                       this.filter_data[field.id].value = 0;
                   }
                   this.$store.dispatch(action,0);
@@ -348,13 +347,13 @@
                 this.failure = 'A name is required to save the configuration';
                 return;
             }
-            let _cols = {};
-            this.mutable_cols.forEach(head => {
-              var fval = (typeof(this.filter_data[head.value])=='undefined') ? '' : this.filter_data[head.value].value;
-              _cols[head.value] = {active: head.active, limit: fval};
+            let _flds = {};
+            this.mutable_fields.forEach(fld => {
+              var fval = (typeof(this.filter_data[fld.id])=='undefined') ? '' : this.filter_data[fld.id].value;
+              _flds[fld.id] = {active: fld.active, limit: fval};
             })
             if (!this.filterInst) {   // If filtering by-inst-group, add to the cols array
-                _cols['institutiongroup'] = {active: false, limit: this.filter_data['institutiongroup'].value};
+                _flds['institutiongroup'] = {active: false, limit: this.filter_data['institutiongroup'].value};
             }
             let num_months = 1;     // default to lastMonth
             if (this.preset_filters.dateRange == 'latestYear') {
@@ -372,7 +371,7 @@
                 save_id: this.form.save_id,
                 report_id: this.all_filters.report_id,
                 months: num_months,
-                fields: JSON.stringify(_cols),
+                fields: JSON.stringify(_flds),
             })
             .then((response) => {
                 if (response.data.result) {

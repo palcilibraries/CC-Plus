@@ -79,10 +79,17 @@ class Report extends Model
             $_f = preg_split('/:/', $field);
             $_fields[$_f[0]] = (isset($_f[1])) ? $_f[1] : null;
         }
-       //  $field_ids = array_keys($_decoded);
-       //
-       // // Get and return matching fields
-       //  return ReportField::whereIn('id', $field_ids)->get();
         return $_fields;
     }
+
+    // Return field-count for a master or child report
+    public function fieldCount()
+    {
+        if ($this->parent_id == 0) {
+            return sizeof($this->reportFields());
+        } else {
+            return sizeof(preg_split('/,/', $this->inherited_fields));
+        }
+    }
+
 }

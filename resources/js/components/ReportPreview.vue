@@ -370,7 +370,9 @@
                 title: this.form.title,
                 save_id: this.form.save_id,
                 report_id: this.all_filters.report_id,
-                months: num_months,
+                date_range: this.preset_filters.dateRange,
+                from: this.filter_by_fromYM,
+                to: this.filter_by_toYM,
                 fields: JSON.stringify(_flds),
             })
             .then((response) => {

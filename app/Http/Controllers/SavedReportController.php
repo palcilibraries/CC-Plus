@@ -175,7 +175,7 @@ class SavedReportController extends Controller
      */
     public function store(Request $request)
     {
-        $this->validate($request, ['months' => 'required', 'report_id' => 'required', 'fields' => 'required']);
+        $this->validate($request, ['date_range'  => 'required', 'report_id' => 'required', 'fields' => 'required']);
 
         // Need somewhere to save it...
         if (!isset($request->title) && !isset($request->save_id)) {
@@ -239,7 +239,9 @@ class SavedReportController extends Controller
        // Save record with inherited fields, filters and dates
         $saved_report->inherited_fields = $inherited_fields;
         $saved_report->filters = $filters;
-        $saved_report->months = $request->months;
+        $saved_report->date_range = $request->date_range;
+        $saved_report->ym_from = $request->from;
+        $saved_report->ym_to = $request->to;
         $saved_report->save();
         return response()->json(['result' => true, 'msg' => 'Configuration saved successfully']);
     }

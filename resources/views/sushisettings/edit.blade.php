@@ -13,7 +13,7 @@
 
     <div class="related-list">
   	    <h2 class="section-title">Activity</h2>
-        <harvestlog-data-table :harvests="{{ json_encode($setting->harvestLogs) }}"></harvestlog-data-table>
+        <harvestlog-data-table :harvests="{{ json_encode($harvests) }}"></harvestlog-data-table>
     </div>
 
 </v-app>

@@ -40,45 +40,41 @@ class HarvestLogController extends Controller
             $inst = auth()->user()->inst_id;
         }
 
-        // Build a lower header if we're not returning JSON and filtering
-        $lower_head = "";
+        // Build header text if we're not returning JSON
+        $details = "";
         if (!$json) {
             if (!is_null($inst)) {
                 $inst_name = Institution::where('id','=',$inst)->value('name');
-                $lower_head .= ($inst_name != "") ? "Institution: " . $inst_name : "";
-            } else {
-                $lower_head .= (!is_null($prov) || !is_null($yrmo) || !is_null($rept)) ? "All institutions" : "";
+                $details .= ($inst_name != "") ? $inst_name : "";
             }
             if (!is_null($prov)) {
                 $prov_name = Provider::where('id','=',$prov)->value('name');
                 if ($prov_name != "") {
-                    $lower_head .= ($lower_head=="") ? "Provider: " . $prov_name : " and provider: " . $prov_name;
-                }
-            } else {
-                if (!is_null($inst) || !is_null($yrmo) || !is_null($rept)) {
-                    $lower_head .= ($lower_head=="") ? "All providers" : " and all providers";
+                    $details .= ($details=="") ? $prov_name : ", " . $prov_name;
                 }
             }
             if (!is_null($yrmo)) {
-                $lower_head .= ($lower_head=="") ? "Report month: " . $yrmo : " : " . $yrmo;
+                $details .= ($details=="") ? $yrmo : ", " . $yrmo;
             }
             if (!is_null($rept)) {
                 $_name = Report::where('id','=',$rept)->value('name');
-                $lower_head .= " : " . $_name . " report(s)";
-            } else {
-                $lower_head .= ($lower_head=="") ? "" : " : all reports";
+                $details .= " : " . $_name . " report(s)";
             }
         }
+        $header = ($details == "") ? "Harvest Log" : "Harvests : " . $details;
 
         // Get the rows
-        $data = HarvestLog::with('report:id,name', 'sushiSetting')
-                          ->orderBy('yearmon', 'DESC')
-                          // ->when($inst, function ($qry, $inst) {
-                          //     return $qry->where('inst_id', $inst);
-                          // })
-                          // ->when($prov, function ($qry, $prov) {
-                          //     return $qry->where('prov_id', $prov);
-                          // })
+        $settings = SushiSetting::when($inst, function ($qry, $inst) {
+                                           return $qry->where('inst_id', $inst);
+                                   })
+                                 ->when($prov, function ($qry, $prov) {
+                                       return $qry->where('prov_id', $prov);
+                                   })
+                                 ->pluck('id')->toArray();
+        $data = HarvestLog::with('report:id,name','sushiSetting',
+                                 'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+                          ->whereIn('sushisettings_id', $settings)
+                          ->orderBy('created_at', 'DESC')
                           ->when($rept, function ($qry, $rept) {
                               return $qry->where('report_id', $rept);
                           })
@@ -86,20 +82,12 @@ class HarvestLogController extends Controller
                               return $qry->where('yearmon', '=', $yrmo);
                           })
                           ->get();
-        // if ($inst) {
-        //     $data = $data->where('sushiSettings.inst_id', $inst);
-        // }
-        // if ($prov) {
-        //     $data = $data->where('sushiSettings.prov_id', $prov);
-        // }
 
         // Return results
         if ($json) {
             return response()->json(['data' => $data], 200);
         } else {
-            // return view('harvestlogs.index', compact('data', 'lower_head'))
-            //      ->with('i', ($request->input('page', 1) - 1) * 10);
-            return view('harvestlogs.index', compact('data', 'lower_head'));
+            return view('harvestlogs.index', compact('data', 'header'));
         }
     }
 

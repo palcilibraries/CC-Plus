@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\SushiSetting;
 use App\Institution;
 use App\Provider;
-use App\Sushi;
+use App\HarvestLog;
 use Illuminate\Http\Request;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Client;
@@ -28,14 +28,17 @@ class SushiSettingController extends Controller
     public function edit($id)
     {
         // User must be able to manage the settings
-        $setting = SushiSetting::with(['institution', 'provider', 'harvestLogs', 'harvestLogs.report:id,name'])
-                               ->findOrFail($id);
-//         $setting = SushiSetting::with('institution', 'provider', 'harvestLogs')->findOrFail($id);
-// $setting->load('harvestLogs.report:id,name');
-// dd($setting->harvestLogs);
+        $setting = SushiSetting::with(['institution', 'provider'])->findOrFail($id);
+        // $setting = SushiSetting::with('institution', 'provider', 'harvestLogs')->findOrFail($id);
         abort_unless($setting->institution->canManage(), 403);
 
-        return view('sushisettings.edit', compact('setting'));
+        $harvests = HarvestLog::with('report:id,name','sushiSetting',
+                                     'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+                              ->where('sushisettings_id', $id)
+                              ->orderBy('created_at', 'DESC')
+                              ->get();
+
+        return view('sushisettings.edit', compact('setting', 'harvests'));
     }
 
     /**

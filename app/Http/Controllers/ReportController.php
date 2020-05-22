@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use DB;
+use Storage;
 use Session;
 use App\Consortium;
 use App\Report;
@@ -717,6 +718,8 @@ class ReportController extends Controller
             $writer->insertOne($values);
         }
         $writer->output($csv_file);
+        $logrec = date("Y-m-d H:m") . " : " . auth()->user()->email . " : " . $export_settings['filename'];
+        Storage::append('exports.log',$logrec);
     }
 
     /**

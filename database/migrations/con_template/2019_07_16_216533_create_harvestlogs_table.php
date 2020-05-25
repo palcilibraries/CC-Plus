@@ -23,6 +23,7 @@ class CreateHarvestLogsTable extends Migration
             $table->unsignedInteger('report_id');
             $table->string('yearmon', 7);
             $table->unsignedInteger('attempts')->default(0);
+            $table->string('rawfile')->nullable();
             $table->timestamps();
 
             $table->unique(['sushisettings_id', 'report_id', 'yearmon']);

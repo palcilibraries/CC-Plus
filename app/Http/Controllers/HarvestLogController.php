@@ -13,6 +13,9 @@ use App\Provider;
 use App\Institution;
 use App\SushiSetting;
 use App\SushiQueueJob;
+use Storage;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Crypt;
 
 class HarvestLogController extends Controller
 {
@@ -74,7 +77,7 @@ class HarvestLogController extends Controller
         $data = HarvestLog::with('report:id,name','sushiSetting',
                                  'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
                           ->whereIn('sushisettings_id', $settings)
-                          ->orderBy('created_at', 'DESC')
+                          ->orderBy('updated_at', 'DESC')
                           ->when($rept, function ($qry, $rept) {
                               return $qry->where('report_id', $rept);
                           })
@@ -275,6 +278,43 @@ class HarvestLogController extends Controller
         $record = HarvestLog::with('failedHarvests')->findOrFail($id);
         return view('harvestlogs.show', compact('record'));
     }
+
+    /**
+     * Doenload raw data for a harvest
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+     public function downloadRaw($id)
+     {
+         $harvest = HarvestLog::findOrFail($id);
+         if (!auth()->user()->hasRole(['Admin'])) {
+             if (!auth()->user()->hasRole(['Manager']) || $harvest->sushiSetting->inst_id!=auth()->user()->inst_id) {
+                 return response()->json(['result' => false, 'msg' => 'Error - Not authorized']);
+             }
+         }
+         if (!is_null(config('ccplus.reports_path'))) {
+
+             // Set the path and filename based on config and harvest sushsettings
+             $filename  = config('ccplus.reports_path') . session('ccp_con_key') . '/';
+             $filename .= $harvest->sushiSetting->institution->name . '/';
+             $filename .= $harvest->sushiSetting->provider->name . '/';
+             $filename .= $harvest->rawfile;
+
+             // Confirm the file exists and is readable before trying to bzd and return it
+             if (!is_readable($filename)) {
+                 $msg = 'Raw datafile is not accessible.';
+             }
+
+             return response()->streamDownload(function() use ($filename) {
+                 echo bzdecompress(Crypt::decrypt(File::get($filename), false));
+             }, $harvest->rawfile);
+
+         } else {
+             $msg = 'System not configured to save raw data, check config value of CCP_REPORTS.';
+         }
+         return response()->json(['result' => false, 'msg' => $msg]);
+     }
 
    /**
     * Remove the specified resource from storage.

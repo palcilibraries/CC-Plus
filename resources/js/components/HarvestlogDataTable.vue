@@ -9,13 +9,16 @@
     <v-data-table :headers="headers" :items="harvests" item-key="id" class="elevation-1">
       <template v-slot:item="{ item }">
         <tr>
-          <td>{{ item.created_at.substr(0,10) }}</td>
+          <td>{{ item.updated_at.substr(0,10) }}</td>
           <td>{{ item.sushi_setting.institution.name }}</td>
           <td>{{ item.sushi_setting.provider.name }}</td>
           <td>{{ item.report.name }}</td>
           <td>{{ item.yearmon }}</td>
           <td>{{ item.status }}</td>
           <td v-if="item.attempts>0"><a :href="'/harvestlogs/'+item.id">details</a></td>
+          <td v-else-if="item.rawfile && (is_admin || is_manager)">
+              <a :href="'/harvestlogs/'+item.id+'/raw'">Raw data</a>
+          </td>
         </tr>
       </template>
     </v-data-table>
@@ -23,6 +26,7 @@
 </template>
 
 <script>
+  import { mapGetters } from 'vuex'
   export default {
     props: {
             harvests: { type:Array, default: () => [] },
@@ -41,6 +45,9 @@
           { text: '', value: '' },
         ],
       }
+    },
+    computed: {
+      ...mapGetters(['is_manager','is_admin'])
     },
     mounted() {
       console.log('HarvestLogData Component mounted.');

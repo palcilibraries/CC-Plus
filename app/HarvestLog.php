@@ -18,7 +18,7 @@ class HarvestLog extends Model
    * @var array
    */
     protected $fillable = [
-        'status', 'sushisettings_id', 'report_id', 'yearmon', 'attempts'
+        'status', 'sushisettings_id', 'report_id', 'yearmon', 'attempts', 'rawfile'
     ];
 
     public function failedHarvests()

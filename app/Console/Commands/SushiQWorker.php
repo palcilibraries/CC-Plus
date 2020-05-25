@@ -227,15 +227,12 @@ class SushiQWorker extends Command
                 if (!is_dir($full_path)) {
                     mkdir($full_path, 0755, true);
                 }
-                $sushi->raw_datafile = $full_path . $report->name . '_' . $begin . '_' . $end;
+                $raw_filename = $report->name . '_' . $begin . '_' . $end . '.json';
+                $sushi->raw_datafile = $full_path . $raw_filename;
             }
 
            // Construct URI for the request
             $request_uri = $sushi->buildUri($setting, 'reports', $report);
-// $this->line("Job: " . $job->id . " (harvest_id: " . $job->harvest->id . ")");
-// $this->line("Provider: " . $setting->provider->name . " , Inst: " . $setting->institution->name);
-// $this->line("Request : " . $request_uri);
-// exit;
 
            // Make the request
             $request_status = $sushi->request($request_uri);
@@ -287,6 +284,7 @@ class SushiQWorker extends Command
                                 $report->name . " saved for " . $setting->institution->name);
                 }
                 $job->harvest->status = $_status;
+                $job->harvest->rawfile = $raw_filename;
 
            // No valid report data saved. If we failed, update harvest record
             } else {

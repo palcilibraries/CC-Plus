@@ -333,6 +333,7 @@
               }
               self.minYM = response.data.bounds.YM_min;
               self.maxYM = response.data.bounds.YM_max;
+              self.rangeKey += 1;           // force re-render of the date-range component
           })
           .catch(error => {});
         },

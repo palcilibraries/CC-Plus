@@ -84,14 +84,10 @@ class Sushi extends Model
                 // ... OR ...
                 // throw new \Exception("Failed to save raw data in: ".$this->raw_datafile);
             }
-//  --->>> This needs to be added SOMEPLACE to be able to decrypt and decompress the file... <<<---
-// function get() {
-//     return bzdecompress(Crypt::decrypt(File::get($this->raw_datafile), false));
-// }
         }
        // Decode result body into $json, throw and log error if it fails
-//  This should be much simpler...
-//  Will probably also mean we don't need to do ANY validation if the c5tools are handling it...
+//  This could be much simpler...
+//  Will probably also mean we don't need to do ANY validation if the c5tools handle it...
 //    $this->json = jsonReportFromBuffer($result->getBody());
 //
         $this->json = json_decode($result->getBody());

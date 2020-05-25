@@ -131,11 +131,13 @@ class ReportController extends Controller
     {
         // Start by getting a full filter-set (all elements from the datastore)
         // Saved reports have the active fields and filters built-in
+        $title = "";
         if (isset($request->saved_id)) {
             $saved_report = SavedReport::with('master','master.reportFields')->findOrFail($request->saved_id);
             if (!$saved_report->canManage()) {
                 return response()->json(['result' => false, 'msg' => 'Access Forbidden (403)']);
             }
+            $title = $saved_report->title;
             $preset_filters = $saved_report->filterBy();
             $inherited = preg_split('/,/', $saved_report->inherited_fields);
             $field_data = ReportField::where('report_id', '=', $saved_report->master_id)->get();
@@ -241,14 +243,10 @@ class ReportController extends Controller
                 $columns[] = array('text' => $fld->legend, 'field' => $key, 'active' => $fld->active, 'value' => $key);
             }
         }
-// dump($field_data);
-// dump($preset_filters);
-// dump($fields);
-// dd($columns);
 
         // Get list of saved reports for this user
         $saved_reports = SavedReport::where('user_id', auth()->id())->get(['id','title'])->toArray();
-        return view('reports.preview', compact('preset_filters', 'fields', 'columns', 'saved_reports'));
+        return view('reports.preview', compact('preset_filters', 'fields', 'columns', 'saved_reports', 'title'));
     }
 
     /**
@@ -313,17 +311,19 @@ class ReportController extends Controller
         $lower_right_head = array();
         $year_mons = self::createYMarray();
         $num_months = sizeof($year_mons);
+        $has_metrics = false;
 
         // Get non-metric columns first (these are same across yearmons)
         // (this assumes that the caller ordered the $fields as: basics->metrics)
         foreach ($fields as $key => $data) {
             // "basic" column
             if (!preg_match('/^(searches_|total_|unique_|limit_|no_lic)/',$key)) {
-                // $left_head[] = $key;
+                $has_metrics = true;
                 $left_head[] = $data['legend'];
                 if ($num_months > 1) {
                     $upper_right_head[] = '';
                 }
+
             // "metric" column?
             } else {
                 $upper_right_head[] = $data['legend'];
@@ -336,6 +336,18 @@ class ReportController extends Controller
                     }
                 } else {
                     $lower_right_head[] = $data['legend'];
+                }
+            }
+        }
+
+        // Tack on metric totals as right-most columns
+        if ($num_months > 1) {
+            if ($has_metrics) {
+                $upper_right_head[] = 'Reporting Period Total';
+                foreach ($fields as $key => $data) {
+                    if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/',$key)) {
+                        $lower_right_head[] = $data['legend'];
+                    }
                 }
             }
         }
@@ -403,34 +415,6 @@ class ReportController extends Controller
 
         $data = self::queryAvailable();
         return response()->json(['reports' => $data], 200);
-
-        // // Setup institution limiter array for whereIn clause later
-        // $limit_to_insts = self::limitToInstitutions();
-        //
-        // // Setup where clause conditions for this report based on $input_filters
-        // $conditions = array();
-        // if (self::$input_filters['prov_id'] > 0) {
-        //     $conditions[] = array('prov_id',self::$input_filters['prov_id']);
-        // }
-        //
-        // // Get counts and min/max yearmon for each master report
-        // $output = array();
-        // $models = ['TR' => '\\App\\TitleReport',    'DR' => '\\App\\DatabaseReport',
-        //            'PR' => '\\App\\PlatformReport', 'IR' => '\\App\\ItemReport'];
-        // $raw_query = "Count(*) as  count, min(yearmon) as YM_min, max(yearmon) as YM_max";
-        // foreach ($models as $key => $model) {
-        //     $result = $model::when($limit_to_insts, function ($query, $limit_to_insts) {
-        //                         return $query->whereIn('inst_id', $limit_to_insts);
-        //                     })
-        //                     ->when($conditions, function ($query, $conditions) {
-        //                         return $query->where($conditions);
-        //                     })
-        //                     ->selectRaw($raw_query)
-        //                     ->get()
-        //                     ->toArray();
-        //     $output[$key] = $result[0];
-        // }
-        // return response()->json(['reports' => $output], 200);
     }
 
     /**
@@ -787,6 +771,9 @@ class ReportController extends Controller
         $columns = array();
         $input_fields = $input['fields'];
         $year_mons = self::createYMarray();
+        if (sizeof($year_mons) > 1) {
+            $metric_totals = array();
+        }
         foreach ($input_fields as $fld) {
 
             $col = array('active' => $fld['active'], 'field' => $fld['id']);
@@ -798,12 +785,25 @@ class ReportController extends Controller
                     $col['text'] = $fld['text'] . ' - ' . self::prettydate($ym);
                     $columns[] = $col;
                 }
+
+                // If we're spanning multiple months, put the totals column into a separate array
+                if (sizeof($year_mons)>1) {
+                    $col['value'] = "RP_" . $fld['id'];
+                    $col['text'] = $fld['text'] . " - " . "Reporting Period Total";
+                    $metric_totals[] = $col;
+                }
+
             // Otherwise add a single column to the map
             } else {
                 $col['value'] = $fld['id'];
                 $col['text'] = $fld['text'];
                 $columns[] = $col;
             }
+        }
+
+        // Tack on totals columns
+        if (sizeof($year_mons) > 1) {
+            $columns = array_merge($columns,$metric_totals);
         }
 
         // Setup institution limiter array
@@ -890,7 +890,9 @@ class ReportController extends Controller
     {
         global $joins, $raw_fields, $group_by, $global_db, $conso_db;
         $year_mons = self::createYMarray();
+        $total_fields = "";
 
+        // Loop through all the fields
         foreach ($selected_fields as $key => $field) {
             if ($field['active']) {
                 $data = $all_fields->where('qry_as','=',$key)->first();
@@ -915,6 +917,10 @@ class ReportController extends Controller
                     foreach ($year_mons as $ym) {
                         $raw_fields .= preg_replace('/@YM@/', $ym, $data->qry) . ' as ';
                         $raw_fields .= $data->qry_as . '_' . self::prettydate($ym) . ',';
+                    }
+                    // (if we're spanning multiple months,extend the reporting-period-total string)
+                    if (sizeof($year_mons)>1) {
+                        $total_fields .= "sum(" . $data->qry_as . ") as RP_" . $data->qry_as . ',';
                     }
                 } else {
                     if ($data->qry != $data->qry_as) {
@@ -943,6 +949,7 @@ class ReportController extends Controller
             }
         }
 
+        $raw_fields = $raw_fields . $total_fields;
         $raw_fields = rtrim($raw_fields, ',');
         return;
     }

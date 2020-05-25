@@ -62,35 +62,27 @@ class ReportFieldsTableSeeder extends Seeder
 
            // TR Report summing-by-yearmon fields
             DB::table($table)->insert(['id' => 17,'report_id' => 1, 'legend' => 'Total Item Investigations',
-                // 'qry' => 'sum(total_item_investigations)',
                 'qry' => 'sum(IF (yearmon="@YM@",total_item_investigations,0))',
                 'qry_as' => 'total_item_investigations', 'reload' => 0]);
             DB::table($table)->insert(['id' => 18,'report_id' => 1, 'legend' => 'Total Item Requests',
-                // 'qry' => 'sum(total_item_requests)',
                 'qry' => 'sum(IF (yearmon="@YM@",total_item_requests,0))',
                 'qry_as' => 'total_item_requests', 'active' => 1, 'reload' => 0]);
             DB::table($table)->insert(['id' => 19,'report_id' => 1, 'legend' => 'Unique Item Investigations',
-                // 'qry' => 'sum(unique_item_investigations)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_item_investigations,0))',
                 'qry_as' => 'unique_item_investigations', 'reload' => 0]);
             DB::table($table)->insert(['id' => 20,'report_id' => 1, 'legend' => 'Unique Item Requests',
-                // 'qry' => 'sum(unique_item_requests)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_item_requests,0))',
                 'qry_as' => 'unique_item_requests', 'reload' => 0]);
             DB::table($table)->insert(['id' => 21,'report_id' => 1, 'legend' => 'Unique Title Investigations',
-                // 'qry' => 'sum(unique_title_investigations)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_title_investigations,0))',
                 'qry_as' => 'unique_title_investigations', 'reload' => 0]);
             DB::table($table)->insert(['id' => 22,'report_id' => 1, 'legend' => 'Unique Title Requests',
-                // 'qry' => 'sum(unique_title_requests)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_title_requests,0))',
                 'qry_as' => 'unique_title_requests', 'reload' => 0]);
             DB::table($table)->insert(['id' => 23,'report_id' => 1, 'legend' => 'Limit Exceeded',
-                // 'qry' => 'sum(limit_exceeded)',
                 'qry' => 'sum(IF (yearmon="@YM@",limit_exceeded,0))',
                 'qry_as' => 'limit_exceeded', 'reload' => 0]);
             DB::table($table)->insert(['id' => 24,'report_id' => 1, 'legend' => 'No License',
-                // 'qry' => 'sum(no_license)',
                 'qry' => 'sum(IF (yearmon="@YM@",no_license,0))',
                 'qry_as' => 'no_license', 'reload' => 0]);
             // DB::table($table)->insert(['id' => 25, 'report_id' => 1, 'legend' => 'Reporting Period Total',
@@ -121,47 +113,36 @@ class ReportFieldsTableSeeder extends Seeder
 
            // DR Report summing-by-yearmon fields
             DB::table($table)->insert(['id' => 34,'report_id' => 2, 'legend' => 'Searches Automated',
-                // 'qry' => 'sum(searches_automated)',
                 'qry' => 'sum(IF (yearmon="@YM@",searches_automated,0))',
                 'qry_as' => 'searches_automated', 'reload' => 0]);
             DB::table($table)->insert(['id' => 35,'report_id' => 2, 'legend' => 'Searches Federated',
-                // 'qry' => 'sum(searches_federated)',
                 'qry' => 'sum(IF (yearmon="@YM@",searches_federated,0))',
                 'qry_as' => 'searches_federated', 'reload' => 0]);
             DB::table($table)->insert(['id' => 36,'report_id' => 2, 'legend' => 'Searches Regular',
-                // 'qry' => 'sum(searches_regular)',
                 'qry' => 'sum(IF (yearmon="@YM@",searches_regular,0))',
                 'qry_as' => 'searches_regular', 'active' => 1, 'reload' => 0]);
             DB::table($table)->insert(['id' => 37,'report_id' => 2, 'legend' => 'Total Item Investigations',
-                // 'qry' => 'sum(total_item_investigations)',
                 'qry' => 'sum(IF (yearmon="@YM@",total_item_investigations,0))',
                 'qry_as' => 'total_item_investigations', 'reload' => 0]);
             DB::table($table)->insert(['id' => 38,'report_id' => 2, 'legend' => 'Total Item Requests',
-                // 'qry' => 'sum(total_item_requests)',
                 'qry' => 'sum(IF (yearmon="@YM@",total_item_requests,0))',
                 'qry_as' => 'total_item_requests', 'active' => 1, 'reload' => 0]);
             DB::table($table)->insert(['id' => 39,'report_id' => 2, 'legend' => 'Unique Item Investigations',
-                // 'qry' => 'sum(unique_item_investigations)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_item_investigations,0))',
                 'qry_as' => 'unique_item_investigations', 'reload' => 0]);
             DB::table($table)->insert(['id' => 40,'report_id' => 2, 'legend' => 'Unique Item Requests',
-                // 'qry' => 'sum(unique_item_requests)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_item_requests,0))',
                 'qry_as' => 'unique_item_requests', 'reload' => 0]);
             DB::table($table)->insert(['id' => 41,'report_id' => 2, 'legend' => 'Unique Title Investigations',
-                // 'qry' => 'sum(unique_title_investigations)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_title_investigations,0))',
                 'qry_as' => 'unique_title_investigations', 'reload' => 0]);
             DB::table($table)->insert(['id' => 42,'report_id' => 2, 'legend' => 'Unique Title Requests',
-                // 'qry' => 'sum(unique_title_requests)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_title_requests,0))',
                 'qry_as' => 'unique_title_requests', 'reload' => 0]);
             DB::table($table)->insert(['id' => 43,'report_id' => 2, 'legend' => 'Limit Exceeded',
-                // 'qry' => 'sum(limit_exceeded)',
                 'qry' => 'sum(IF (yearmon="@YM@",limit_exceeded,0))',
                 'qry_as' => 'limit_exceeded', 'reload' => 0]);
             DB::table($table)->insert(['id' => 44,'report_id' => 2, 'legend' => 'No License',
-                // 'qry' => 'sum(no_license)',
                 'qry' => 'sum(IF (yearmon="@YM@",no_license,0))',
                 'qry_as' => 'no_license', 'reload' => 0]);
             // DB::table($table)->insert(['id' => 45, 'report_id' => 2, 'legend' => 'Reporting Period Total',
@@ -186,31 +167,24 @@ class ReportFieldsTableSeeder extends Seeder
 
            // PR Report summing-by-yearmon fields
             DB::table($table)->insert(['id' => 51, 'report_id' => 3, 'legend' => 'Searches Platform',
-                // 'qry' => 'sum(searches_platform)',
                 'qry' => 'sum(IF (yearmon="@YM@",searches_platform,0))',
                 'qry_as' => 'searches_platform', 'active' => 1, 'reload' => 0]);
             DB::table($table)->insert(['id' => 52, 'report_id' => 3, 'legend' => 'Total Item Investigations',
-                // 'qry' => 'sum(total_item_investigations)',
                 'qry' => 'sum(IF (yearmon="@YM@",total_item_investigations,0))',
                 'qry_as' => 'total_item_investigations', 'reload' => 0]);
             DB::table($table)->insert(['id' => 53, 'report_id' => 3, 'legend' => 'Total Item Requests',
-                // 'qry' => 'sum(total_item_requests)',
                 'qry' => 'sum(IF (yearmon="@YM@",total_item_requests,0))',
                 'qry_as' => 'total_item_requests', 'active' => 1, 'reload' => 0]);
             DB::table($table)->insert(['id' => 54, 'report_id' => 3, 'legend' => 'Unique Item Investigations',
-                // 'qry' => 'sum(unique_item_investigations)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_item_investigations,0))',
                 'qry_as' => 'unique_item_investigations', 'reload' => 0]);
             DB::table($table)->insert(['id' => 55, 'report_id' => 3, 'legend' => 'Unique Item Requests',
-                // 'qry' => 'sum(unique_item_requests)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_item_requests,0))',
                 'qry_as' => 'unique_item_requests', 'active' => 1, 'reload' => 0]);
             DB::table($table)->insert(['id' => 56, 'report_id' => 3, 'legend' => 'Unique Title Investigations',
-                // 'qry' => 'sum(unique_title_investigations)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_title_investigations,0))',
                 'qry_as' => 'unique_title_investigations', 'reload' => 0]);
             DB::table($table)->insert(['id' => 57, 'report_id' => 3, 'legend' => 'Unique Title Requests',
-                // 'qry' => 'sum(unique_title_requests)',
                 'qry' => 'sum(IF (yearmon="@YM@",unique_title_requests,0))',
                 'qry_as' => 'unique_title_requests', 'active' => 1, 'reload' => 0]);
             // DB::table($table)->insert(['id' => 58,'report_id' => 3, 'legend' => 'Reporting Period Total',
@@ -282,11 +256,9 @@ class ReportFieldsTableSeeder extends Seeder
 
            // IR Report summing-by-yearmon fields
             DB::table($table)->insert(['id' => 98, 'report_id' => 4, 'legend' => 'Total Item Requests',
-                // 'qry' => 'sum(total_item_requests)',
                 'qry' => 'sum(IF (yearmon=""@YM@"",total_item_requests,0))',
                 'qry_as' => 'total_item_requests', 'active' => 1, 'reload' => 0]);
             DB::table($table)->insert(['id' => 99, 'report_id' => 4, 'legend' => 'Unique Item Requests',
-                // 'qry' => 'sum(unique_item_requests)',
                 'qry' => 'sum(IF (yearmon=""@YM@"",unique_item_requests,0))',
                 'qry_as' => 'unique_item_requests', 'reload' => 0]);
             // DB::table($table)->insert(['id' => 100, 'report_id' => 4, 'legend' => 'Reporting Period Total',

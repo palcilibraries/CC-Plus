@@ -282,6 +282,11 @@ class SushiQWorker extends Command
                 if ($_status == 'Success') {
                     $this->line($ts . " " . $ident . $setting->provider->name . " : " . $yearmon . " : " .
                                 $report->name . " saved for " . $setting->institution->name);
+                    // Keep track last successful for this sushisetting
+                    if ($yearmon != $setting->last_harvest) {
+                        $setting->last_harvest = $yearmon;
+                        $setting->update();
+                    }
                 }
                 $job->harvest->status = $_status;
                 $job->harvest->rawfile = $raw_filename;

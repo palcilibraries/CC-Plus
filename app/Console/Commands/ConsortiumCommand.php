@@ -126,7 +126,9 @@ class ConsortiumCommand extends Command
       // Create the Administrator account in the users table
         $this->info('The initial Administrator acccount for a new consortium is always created with');
         $this->info('an email address set to "Administrator".');
-        $_pass = $this->secret('Enter a password for this Administrator account?');
+        // $_pass = $this->secret('Enter a password for this Administrator account?');
+        // Not sure this should be secret... if they typo it, it's difficult to reset
+        $_pass = $this->ask('Enter a password for this Administrator account?');
         DB::table($conso_db . ".users")->insert([
         ['name' => 'CC-Plus Administrator',
          'password' => Hash::make($_pass),

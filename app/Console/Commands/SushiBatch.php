@@ -168,15 +168,15 @@ class SushiBatchCommand extends Command
                    // Create a new Sushi object
                     $sushi = new Sushi($begin, $end);
                     $request_uri = $sushi->buildUri($setting, 'reports', $report);
-// $this->line($setting->provider->name . "(" . $setting->inst_id . ") : " . $request_uri);
-// continue;
+
                    // Set output filename for raw data. Create the folder path, if necessary
                     if (!is_null(config('ccplus.reports_path'))) {
                         $full_path = $report_path . '/' . $setting->institution->name . '/' . $provider->name . '/';
                         if (!is_dir($full_path)) {
                             mkdir($full_path, 0755, true);
                         }
-                        $sushi->raw_datafile = $full_path . $report->name . '_' . $begin . '_' . $end ;
+                        $raw_filename = $report->name . '_' . $begin . '_' . $end . '.json';
+                        $sushi->raw_datafile = $full_path . $raw_filename;
                     }
 
                    // Create new HarvestLog record; if one already exists, use it instead
@@ -262,7 +262,14 @@ class SushiBatchCommand extends Command
                         if ($_status = 'Saved') {
                             $this->line($report->name . " report data saved for " . $setting->institution->name);
                             $harvest->status = 'Success';
+                            $harvest->rawfile = $raw_filename;
                             $harvest->update();
+
+                            // Keep track last successful for this sushisetting
+                            if ($yearmon != $setting->last_harvest) {
+                                $setting->last_harvest = $yearmon;
+                                $setting->update();
+                            }
                         }
                     }
                     unset($sushi);

@@ -21,6 +21,7 @@ class CreateSushiSettingsTable extends Migration
             $table->text('requestor_id')->nullable();
             $table->text('API_key')->nullable();
             $table->text('support_email')->nullable();
+            $table->string('last_harvest', 7)->nullable();   // YYYY-MM , last successful
             $table->timestamps();
 
             $table->foreign('inst_id')->references('id')->on('institutions')->onDelete('cascade');

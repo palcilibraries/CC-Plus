@@ -163,7 +163,21 @@ class SavedReportController extends Controller
                 $filters[$field->qry_as] = $data;
             }
         }
-        return view('savedreports.edit', compact('report', 'fields', 'filters'));
+
+        // Set bounds for the from/to date selectors
+        $conso_db = config('database.connections.consodb.database');
+        $report_table = $conso_db . "." . strtolower($report->master->name) . '_report_data';
+        $result = DB::table($report_table)
+                    ->selectRaw("Count(*) as count, min(yearmon) as minYM, max(yearmon) as maxYM")
+                    ->get()
+                    ->toArray();
+        $bounds['count'] = $result[0]->count;
+        $bounds['minYM'] = $result[0]->minYM;
+        $bounds['maxYM'] = $result[0]->maxYM;
+        $latest_yr_start = max($bounds['minYM'], date("Y-m", strtotime('-11 months', strtotime($bounds['maxYM']))));
+        $bounds['latestYear'] = $latest_yr_start . ' to ' . $bounds['maxYM'];
+
+        return view('savedreports.edit', compact('report', 'fields', 'filters', 'bounds'));
     }
 
     /**
@@ -261,7 +275,7 @@ class SavedReportController extends Controller
         }
 
        // Validate form inputs
-        $this->validate($request, ['title' => 'required', 'months' => 'required']);
+        $this->validate($request, ['title' => 'required', 'date_range' => 'required']);
         $input = $request->all();
 
        // Update the record and assign groups

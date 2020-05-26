@@ -259,6 +259,7 @@
             if (typeof(this.selectedReport) == 'undefined') {    // got reset?
                 return;
             }
+            // Setting master_id triggers the computed method above, which sets date-bounds
             let parent_id = this.reports[this.selectedReport.id-1].parent_id;
             if (parent_id == 0) {  // choice was a master report?
                 this.masterId = this.selectedReport.id;

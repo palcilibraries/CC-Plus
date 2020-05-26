@@ -5,7 +5,7 @@
 /public/css/app.css
 /storage/*.key
 /vendor
-/app/Console/Kernel.php
+app/Console/Kernel.php
 .env
 .env.backup
 .phpunit.result.cache

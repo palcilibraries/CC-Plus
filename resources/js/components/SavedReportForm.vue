@@ -1,14 +1,12 @@
 <template>
   <v-container fluid>
-    <!-- <v-row no-gutters class="page-header"> -->
     <v-row no-gutters>
       <v-col><h3>{{ report.title }}</h3></v-col>
-      <v-col v-if="is_admin">
+      <v-col>
          <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
       </v-col>
     </v-row>
 
-    <!-- <v-row class="details"> -->
     <v-row>
   	  <v-col><h4>Report Settings</h4></v-col>
       <v-col>
@@ -30,7 +28,15 @@
             <td>Owner : {{ mutable_report.user.name }}</td>
           </tr>
           <tr>
-            <td>Report covers {{ mutable_report.months }} month(s)</td>
+            <td v-if="mutable_report.date_range=='latestMonth'">
+                Report includes the latest month of available data
+            </td>
+            <td v-if="mutable_report.date_range=='latestYear'">
+                Report includes the latest year (up to 12 months) of available data
+            </td>
+            <td v-if="mutable_report.date_range=='Custom'">
+                Report includes data from {{ mutable_report.ym_from }} to {{ mutable_report.ym_to }}
+            </td>
           </tr>
           <tr v-if="typeof(filters['Institution Group']) != 'undefined'">
             <td>Includes all institutions in: {{ filters['Institution Group'].name }}</td>
@@ -54,30 +60,41 @@
         </v-simple-table>
       </v-col>
     </v-row>
-    <!-- display form if manager has activated it. onSubmit function closes and resets showForm -->
+    <!-- display form if requested. onSubmit function closes and resets showForm -->
     <v-row v-else>
       <v-col>
+        <v-container fluid>
         <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)"
               class="in-page-form">
-            <tr v-if="is_admin">
-              <td><h3>Owner : {{ mutable_report.user.name }}</h3></td>
-            </tr>
-            <tr>
-              <td>
+            <v-row v-if="is_admin">
+              <v-col><h4>Owner : {{ mutable_report.user.name }}</h4></v-col>
+            </v-row>
+            <v-row>
+              <v-col>
                 <v-text-field v-model="form.title" label="Title" outlined value="mutable_report.title"></v-text-field>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <v-text-field v-model="form.months" label="#-Months" outlined value="mutable_report.months">
-                </v-text-field>
-              </td>
-            </tr>
+              </v-col>
+            </v-row>
+            <v-row><v-col><h4>Report Dates</h4></v-col></v-row>
+            <v-row>
+              <v-col class="ma-2" cols="12">
+                <v-radio-group v-model="form.date_range">
+                  <v-radio :label="'Latest Month ['+maxYM+']'" value='latestMonth'></v-radio>
+                  <v-radio :label="'Latest Year ['+latestYear+']'" value='latestYear'></v-radio>
+                  <v-radio :label="'Custom Date Range'" value='Custom'></v-radio>
+                </v-radio-group>
+                <div v-if="form.date_range=='Custom'">
+                  <date-range :ymfrom="mutable_report.ym_from" :ymto="mutable_report.ym_to"
+                              :minym="minYM" :maxym="maxYM"
+                  ></date-range>
+                </div>
+              </v-col>
+            </v-row>
             <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
               Save Report Settings
             </v-btn>
             <v-btn small type="button" @click="hideForm">cancel</v-btn>
         </form>
+        </v-container>
       </v-col>
     </v-row>
   </v-container>
@@ -91,9 +108,10 @@
 
     export default {
         props: {
-                report: { type:Object, default: () => {} },
-                fields: { type:Object, default: () => {} },
+                report:  { type:Object, default: () => {} },
+                fields:  { type:Object, default: () => {} },
                 filters: { type:Object, default: () => {} },
+                bounds:  { type:Object, default: () => {} },
                },
 
         data() {
@@ -104,20 +122,36 @@
                 mutable_report: this.report,
                 form: new window.Form({
                     title: this.report.title,
-                    months: this.report.months,
-                })
+                    date_range: this.report.date_range,
+                    ym_from: this.report.ym_from,
+                    ym_to: this.report.ym_to,
+                }),
+                minYM: '',
+                maxYM: '',
+                latestYear: '',
             }
         },
         methods: {
             formSubmit (event) {
                 this.success = '';
                 this.failure = '';
+                // <date-range> component (used by Custom) puts selections in the store...
+                if (this.form.date_range == 'Custom') {
+                    this.form.ym_from = this.filter_by_fromYM;
+                    this.form.ym_to = this.filter_by_toYM;
+                // zap these if not custom
+                } else {
+                    this.form.ym_from = '';
+                    this.form.ym_to = '';
+                }
                 this.form.patch('/savedreports/'+this.report['id'])
                     .then( (response) => {
                         if (response.result) {
-                            this.success = response.msg;
                             this.mutable_report.title = this.form.title;
-                            this.mutable_report.months = this.form.months;
+                            this.mutable_report.date_range = this.form.date_range;
+                            this.mutable_report.ym_from = this.form.ym_from;
+                            this.mutable_report.ym_to = this.form.ym_to;
+                            this.success = response.msg;
                         } else {
                             this.failure = response.msg;
                         }
@@ -158,10 +192,13 @@
             },
         },
         computed: {
-          ...mapGetters(['is_manager', 'is_admin'])
+          ...mapGetters(['is_admin', 'filter_by_fromYM', 'filter_by_toYM'])
         },
         mounted() {
             this.showForm = false;
+            this.minYM =  this.bounds['minYM'];
+            this.maxYM = this.bounds['maxYM'];
+            this.latestYear = this.bounds['latestYear'];
             console.log('SavedReport Component mounted.');
         }
     }

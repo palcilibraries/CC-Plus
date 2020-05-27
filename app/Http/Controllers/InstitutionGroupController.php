@@ -99,11 +99,16 @@ class InstitutionGroupController extends Controller
         $this->validate($request, [
           'name' => 'required',
         ]);
+        // Update group name
         $group->name = $request->input('name');
         $group->save();
 
-        return redirect()->route('institutiongroups.index')
-                      ->with('success', 'Institution Group updated successfully');
+        // Reset membership assignments
+        $group->institutions()->detach();
+        foreach ($request->institutions as $inst) {
+            $group->institutions()->attach($inst['id']);
+        }
+        return response()->json(['result' => true, 'msg' => 'Group updated successfully']);
     }
 
     /**

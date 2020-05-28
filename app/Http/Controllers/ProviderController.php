@@ -117,6 +117,12 @@ class ProviderController extends Controller
         if (auth()->user()->hasRole("Admin")) {
             $provider = Provider::with(['reports:reports.id,reports.name','sushiSettings','sushiSettings.institution'])
                                 ->findOrFail($id);
+
+            // Get last_harvest for the provider (ALL insts) as determinant for whether it can be deleted
+            $last_harvest = $provider->sushiSettings->max('last_harvest');
+            $provider['can_delete'] = (is_null($last_harvest)) ? true : false;
+
+            // Make an institutions list
             $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
             $institutions[0]['name'] = 'Entire Consortium';
 
@@ -131,6 +137,7 @@ class ProviderController extends Controller
                                             $query->where('inst_id', '=', auth()->user()->inst_id);
                                         },
                                         'sushiSettings.institution'])->findOrFail($id);
+            $provider['can_delete'] = false;
             $institutions = Institution::where('id', '=', auth()->user()->inst_id)->get(['id','name'])->toArray();
             $unset_institutions = array();
             if (count($provider->sushiSettings) == 0) {

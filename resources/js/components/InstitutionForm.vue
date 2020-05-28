@@ -1,11 +1,18 @@
 <template>
   <div class="details">
   	  <h2 class="section-title">Details</h2>
-      <template v-if="is_manager && !showForm">
-    	<v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+      <div v-if="is_manager && !showForm">
+        <v-row>
+          <v-col>
+            <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+          </v-col>
+          <v-col v-if="is_admin && mutable_inst.can_delete">
+            <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_inst.id)">Delete</v-btn>
+          </v-col>
+        </v-row>
         <span class="form-good" role="alert" v-text="success"></span>
         <span class="form-fail" role="alert" v-text="failure"></span>
-   	  </template>
+      </div>
       <div>
         <!-- form display control and confirmations  -->
         <!-- Values-only when form not active -->
@@ -163,8 +170,9 @@
                 Swal.fire({
                   title: 'Are you sure?',
                   text: "Deleting an institution cannot be reversed, only manually recreated."+
-                        " Any harvested usage data will remain, but will be disconnected from "+
-                        " any active institution(s).",
+                        " Because this institution has no harvested usage data, it can be safely"+
+                        " deleted. NOTE: All users and SUSHI settings connected to this institution"+
+                        " will also be removed.",
                   icon: 'warning',
                   showCancelButton: true,
                   confirmButtonColor: '#3085d6',

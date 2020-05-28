@@ -107,9 +107,12 @@ class InstitutionController extends Controller
             abort_unless(auth()->user()->inst_id == $id, 403);
         }
 
+        // Get the institution and most recent harvest
         $institution = Institution::
                 with('institutionType', 'sushiSettings', 'sushiSettings.provider', 'users', 'users.roles')
-                ->find($id);
+                ->findOrFail($id);
+        $last_harvest = $institution->sushiSettings->max('last_harvest');
+        $institution['can_delete'] = ($id > 1 && is_null($last_harvest)) ? true : false;
 
         // Add user's highest role as "permission" as a separate array
         $users = array();

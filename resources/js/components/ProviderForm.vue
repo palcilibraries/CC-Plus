@@ -1,12 +1,18 @@
 <template>
   <div class="details">
     <h2 class="section-title">Details</h2>
-    <template v-if="can_edit && !showForm">
-  	  <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+    <div v-if="can_edit && !showForm">
+      <v-row>
+        <v-col>
+          <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+        </v-col>
+        <v-col v-if="is_admin && mutable_prov.can_delete">
+          <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_prov.id)">Delete</v-btn>
+        </v-col>
+      </v-row>
       <span class="form-good" role="alert" v-text="success"></span>
       <span class="form-fail" role="alert" v-text="failure"></span>
-   	</template>
-
+    </div>
 	<div>
     <!-- form display control and confirmations  -->
     <!-- Values-only when form not active -->
@@ -95,6 +101,7 @@
 
 <script>
     import { mapGetters } from 'vuex'
+    import Swal from 'sweetalert2';
     import Form from '@/js/plugins/Form';
     window.Form = Form;
 
@@ -151,6 +158,35 @@
             hideForm (event) {
                 this.showForm = false;
 			},
+            destroy (provid) {
+                var self = this;
+                Swal.fire({
+                  title: 'Are you sure?',
+                  text: "Deleting a provider cannot be reversed, only manually recreated."+
+                        " Because this provider has no harvested usage data, it can be safely"+
+                        " deleted. NOTE: All SUSHI settings connected to this provider"+
+                        " will also be removed.",
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: '#3085d6',
+                  cancelButtonColor: '#d33',
+                  confirmButtonText: 'Yes, proceed'
+                }).then((result) => {
+                  if (result.value) {
+                      axios.delete('/providers/'+provid)
+                           .then( (response) => {
+                               if (response.data.result) {
+                                   window.location.assign("/providers");
+                               } else {
+                                   self.success = '';
+                                   self.failure = response.data.msg;
+                               }
+                           })
+                           .catch({});
+                  }
+                })
+                .catch({});
+            },
         },
         computed: {
           ...mapGetters(['is_manager','is_admin','user_inst_id'])

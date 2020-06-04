@@ -128,7 +128,7 @@
                     is_active: this.provider.is_active,
                     server_url_r5: this.provider.server_url_r5,
                     day_of_month: this.provider.day_of_month,
-                    master_reports: this.provider.reports,
+                    master_reports: [],
                 })
             }
         },
@@ -206,6 +206,10 @@
                 this.can_edit = true;
             }
             this.status=this.statusvals[this.provider.is_active];
+            // Setup form:master_reports
+            for(var i=0;i<this.provider.reports.length;i++){
+               this.form.master_reports.push(this.provider.reports[i].id);
+            }
             console.log('Provider Component mounted.');
         }
     }

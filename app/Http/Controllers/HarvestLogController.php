@@ -315,12 +315,12 @@ class HarvestLogController extends Controller
     }
 
    /**
-    * Display the specified resource.
+    * Display a form for editting the specified resource.
     *
     * @param  int  $id
     * @return \Illuminate\Http\Response
     */
-    public function show($id)
+    public function edit($id)
     {
         //
     }

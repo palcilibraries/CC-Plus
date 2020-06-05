@@ -90,7 +90,6 @@
         methods: {
             formSubmit (event) {
 	            this.form.post('/sushisettings-update')
-	                // .then( function(response) {
                     .then( (response) => {
 	                    this.warning = '';
 	                    this.confirm = 'Settings successfully updated.';

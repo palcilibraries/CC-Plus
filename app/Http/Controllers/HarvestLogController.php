@@ -34,8 +34,10 @@ class HarvestLogController extends Controller
         // Handle some optional inputs
         $inst = ($request->input('inst')) ? $request->input('inst') : null;
         $prov = ($request->input('prov')) ? $request->input('prov') : null;
-        $yrmo = ($request->input('yrmo')) ? $request->input('yrmo') : null;
         $rept = ($request->input('rept')) ? $request->input('rept') : null;
+        $stat = ($request->input('stat')) ? $request->input('stat') : null;
+        $ymfr = ($request->input('ymfr')) ? $request->input('ymfr') : null;
+        $ymto = ($request->input('ymto')) ? $request->input('ymto') : null;
         $json = ($request->input('json')) ? true : false;
 
         // managers and users only see their own insts
@@ -49,6 +51,10 @@ class HarvestLogController extends Controller
             if (!is_null($inst)) {
                 $inst_name = Institution::where('id','=',$inst)->value('name');
                 $details .= ($inst_name != "") ? $inst_name : "";
+                $institutions = Institution::where('id','=',$inst)->get(['id', 'name'])->toArray();
+            } else {
+                $institutions = Institution::where('id','<>',1)->get(['id', 'name'])->toArray();
+                array_unshift($institutions, ['id' => 0, 'name' => 'All Institutions']);
             }
             if (!is_null($prov)) {
                 $prov_name = Provider::where('id','=',$prov)->value('name');
@@ -56,41 +62,82 @@ class HarvestLogController extends Controller
                     $details .= ($details=="") ? $prov_name : ", " . $prov_name;
                 }
             }
-            if (!is_null($yrmo)) {
-                $details .= ($details=="") ? $yrmo : ", " . $yrmo;
-            }
+            $providers = Provider::get(['id', 'name'])->toArray();
+            array_unshift($providers, ['id' => 0, 'name' => 'All Providers']);
+
             if (!is_null($rept)) {
                 $_name = Report::where('id','=',$rept)->value('name');
                 $details .= " : " . $_name . " report(s)";
+            }
+            $reports = Report::where('parent_id','=',0)->get(['id', 'name'])->toArray();
+            array_unshift($reports, ['id' => 0, 'name' => 'All Reports']);
+            if (!is_null($stat)) {
+                $details .= " Status: " . $stat;
+            }
+            if (!is_null($ymfr) || !is_null($ymto)) {
+                if (is_null($ymfr)) {
+                    $ymfr = $ymto;
+                }
+                if (is_null($ymto)) {
+                    $ymto = $ymfr;
+                }
+                if ($ymfr == $ymto) {
+                    $details .= ($details=="") ? $ymfr : ", " . $ymfr;
+                } else {
+                    $range = $ymfr . " to " . $ymto;
+                    $details .= ($details=="") ? $range : ", " . $range;
+                }
+            }
+
+            // Query for min and max yearmon values
+            $bounds = array();
+            $raw_query = "min(yearmon) as YM_min, max(yearmon) as YM_max";
+            $result = HarvestLog::selectRaw($raw_query)->get()->toArray();
+            $bounds[0] = $result[0];
+            foreach($reports as $report) {
+                if ($report['id']>0) {
+                    $result = HarvestLog::where('report_id', $report['id'])
+                                        ->selectRaw($raw_query)
+                                        ->get()
+                                        ->toArray();
+                    $bounds[$report['id']] = $result[0];
+                }
             }
         }
         $header = ($details == "") ? "Harvest Log" : "Harvests : " . $details;
 
         // Get the rows
         $settings = SushiSetting::when($inst, function ($qry, $inst) {
-                                           return $qry->where('inst_id', $inst);
-                                   })
-                                 ->when($prov, function ($qry, $prov) {
-                                       return $qry->where('prov_id', $prov);
-                                   })
-                                 ->pluck('id')->toArray();
-        $data = HarvestLog::with('report:id,name','sushiSetting',
+                                      return $qry->where('inst_id', $inst);
+                                })
+                                ->when($prov, function ($qry, $prov) {
+                                      return $qry->where('prov_id', $prov);
+                                })
+                                ->pluck('id')->toArray();
+        $harvests = HarvestLog::with('report:id,name','sushiSetting',
                                  'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
-                          ->whereIn('sushisettings_id', $settings)
-                          ->orderBy('updated_at', 'DESC')
-                          ->when($rept, function ($qry, $rept) {
-                              return $qry->where('report_id', $rept);
-                          })
-                          ->when($yrmo, function ($qry, $yrmo) {
-                              return $qry->where('yearmon', '=', $yrmo);
-                          })
-                          ->get();
+                              ->whereIn('sushisettings_id', $settings)
+                              ->orderBy('updated_at', 'DESC')
+                              ->when($rept, function ($qry, $rept) {
+                                  return $qry->where('report_id', $rept);
+                              })
+                              ->when($stat, function ($qry, $stat) {
+                                  return $qry->where('status', $stat);
+                              })
+                              ->when($ymfr, function ($qry, $ymfr) {
+                                  return $qry->where('yearmon', '>=', $ymfr);
+                              })
+                              ->when($ymto, function ($qry, $ymto) {
+                                  return $qry->where('yearmon', '<=', $ymto);
+                              })
+                              ->get();
 
         // Return results
         if ($json) {
-            return response()->json(['data' => $data], 200);
+            return response()->json(['harvests' => $harvests], 200);
         } else {
-            return view('harvestlogs.index', compact('data', 'header'));
+            return view('harvestlogs.index', compact('harvests', 'institutions', 'providers', 'reports',
+                                                     'bounds','header'));
         }
     }
 
@@ -275,9 +322,48 @@ class HarvestLogController extends Controller
     */
     public function show($id)
     {
-        $record = HarvestLog::with('failedHarvests')->findOrFail($id);
-        return view('harvestlogs.show', compact('record'));
+        //
     }
+
+
+    /**
+     * Display the resource w/ built-in form (manager/admin) for editting the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+     public function show($id)
+     {
+         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+         $harvest = HarvestLog::with('report:id,name','sushiSetting','sushiSetting.institution:id,name',
+                                     'sushiSetting.provider:id,name')
+                               ->findOrFail($id);
+         $failed = FailedHarvest::with('ccplusError')->where('harvest_id', '=', $id)->get()->toArray();
+         return view('harvestlogs.show', compact('harvest', 'failed'));
+     }
+
+     /**
+      * Update the specified resource in storage.
+      *
+      * @param  \Illuminate\Http\Request $request
+      * @param  int  $id
+      * @return \Illuminate\Http\Response
+      */
+     public function update(Request $request, $id)
+     {
+         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+         $harvest = HarvestLog::findOrFail($id);
+         $this->validate($request, ['status' => 'required']);
+
+         // A failed harvest being updated to Retrying means we also reset attempts back to zero
+         if ($request->input('status') == 'Retrying' && $harvest->status == "Fail") {
+             $harvest->attempts = 0;
+         }
+         $harvest->status = $request->input('status');
+         $harvest->save();
+
+         return response()->json(['result' => true]);
+     }
 
     /**
      * Doenload raw data for a harvest

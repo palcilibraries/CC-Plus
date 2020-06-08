@@ -44,6 +44,7 @@ Vue.component('report-preview', require('./components/ReportPreview.vue').defaul
 Vue.component('saved-report-form', require('./components/SavedReportForm.vue').default);
 Vue.component('home-saved-reports', require('./components/HomeSavedReports.vue').default);
 Vue.component('manual-harvest', require('./components/ManualHarvest.vue').default);
+Vue.component('alert-data-table', require('./components/AlertDataTable.vue').default);
 
 /**
  * Create a fresh Vue application instance with Vuetify.

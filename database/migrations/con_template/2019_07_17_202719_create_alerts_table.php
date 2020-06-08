@@ -20,7 +20,7 @@ class CreateAlertsTable extends Migration
             $table->unsignedInteger('alertsettings_id')->nullable();
             $table->unsignedInteger('harvest_id')->nullable();
             $table->unsignedInteger('modified_by')->default('1');
-            $table->enum('status', array('Active','Silent','Delete'))->nullable();
+            $table->enum('status', array('Active','Silent','Delete'))->default('Active');
             $table->timestamps();
             $table->foreign('prov_id')->references('id')->on('providers')->onDelete('cascade');
             $table->foreign('alertsettings_id')->references('id')->on('alertsettings')->onDelete('cascade');

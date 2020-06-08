@@ -11,6 +11,7 @@ use App\Provider;
 use App\Institution;
 use App\InstitutionGroup;
 use App\HarvestLog;
+use App\SystemAlert;
 use Illuminate\Http\Request;
 
 class SavedReportController extends Controller
@@ -115,9 +116,12 @@ class SavedReportController extends Controller
                                  ->orderBy('harvestlogs.created_at', 'DESC')
                                  ->limit(10)
                                  ->get();
-                                 // ->toArray();
 
-        return view('savedreports.home', compact('inst_count','prov_count','report_data','failed_data','total_insts'));
+        // Get any active system alerts for the hompage
+        $alerts = SystemAlert::where('is_active','=',1)->get();
+
+        return view('savedreports.home', compact('inst_count','prov_count','report_data','failed_data',
+                                                 'total_insts','alerts'));
     }
 
     /**

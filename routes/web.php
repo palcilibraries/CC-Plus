@@ -29,6 +29,7 @@ Route::resource('/failedharvests', 'FailedHarvestController');
 Route::resource('/sushisettings', 'SushiSettingController')->middleware(['auth','role:Admin,Manager']);
 Route::resource('/alertsettings', 'AlertSettingController')->middleware(['auth','role:Admin,Manager']);
 Route::resource('/savedreports', 'SavedReportController')->middleware(['auth']);
+Route::resource('/systemalerts', 'SystemAlertController')->middleware(['auth']);
 
 Auth::routes();
 Route::get('logout', 'Auth\LoginController@logout');
@@ -47,6 +48,7 @@ Route::post('/update-report-settings', 'ReportController@updateSettings')->middl
 Route::post('/save-report-config', 'SavedReportController@saveReportConfig')->middleware(['auth']);
 //
 Route::post('/update-alert-status', 'AlertController@updateStatus')->middleware(['auth','role:Admin,Manager']);
+Route::post('/update-system-alert', 'AlertController@updateSysAlert')->middleware(['auth','role:Admin,Manager']);
 Route::post('/alert-dash-refresh', 'AlertController@dashRefresh')->middleware('auth');
 Route::post('/alertsettings-fields-refresh', 'AlertSettingController@fieldsRefresh')
      ->middleware(['auth','role:Admin,Manager']);

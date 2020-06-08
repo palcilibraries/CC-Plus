@@ -355,8 +355,8 @@ class HarvestLogController extends Controller
          $harvest = HarvestLog::findOrFail($id);
          $this->validate($request, ['status' => 'required']);
 
-         // A failed harvest being updated to Retrying means we also reset attempts back to zero
-         if ($request->input('status') == 'Retrying' && $harvest->status == "Fail") {
+         // A harvest being updated to Retrying means setting attempts to zero
+         if ($request->input('status') == 'Retrying' && $harvest->status != "Retrying") {
              $harvest->attempts = 0;
          }
          $harvest->status = $request->input('status');

@@ -25,9 +25,14 @@
       <tr>
         <td>Status </td>
         <td v-if="(is_admin || is_manager) && statusvals.indexOf(harvest.status) > -1">
+          </thead>
           <v-select :items="statusvals" v-model="mutable_status" value="mutable_status" dense outline
                     @change="updateStatus()"
           ></v-select>
+          <span>
+            <strong>Note: </strong><em>Updating a harvest status to "Retrying" will also set attempts
+            to zero and cause this harvest to run during the next scheduled overnight harvest process.</em>
+          </span>
         </td>
         <td v-else>{{ harvest.status }}</td>
       </tr>
@@ -52,12 +57,6 @@
         },
         methods: {
             updateStatus() {
-                // axios.post('/update-alert-status', {
-                //     id: alert.id,
-                //     status: alert.status
-                // })
-                // .catch(error => {});
-                // axios.post('/harvestlogs/'+this.harvest['id'], {
                 axios.patch('/harvestlogs/'+this.harvest['id'], {
                     status: this.mutable_status
                 })

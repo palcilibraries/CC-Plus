@@ -702,7 +702,12 @@ class ReportController extends Controller
             $writer->insertOne($values);
         }
         $writer->output($csv_file);
-        $logrec = date("Y-m-d H:m") . " : " . auth()->user()->email . " : " . $export_settings['filename'];
+        if (auth()->user()->email == 'Administrator') {
+            $_user =  session('ccp_con_key', '') . "_" . "Administrator";
+        } else {
+            $_user = auth()->user()->email;
+        }
+        $logrec = date("Y-m-d H:m") . " : " . $_user . " : " . $export_settings['filename'];
         Storage::append('exports.log',$logrec);
     }
 

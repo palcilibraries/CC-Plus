@@ -1,6 +1,17 @@
 @extends('layouts.app')
 
 @section('content')
+@if (sizeof($alerts) > 0)
+  <table>
+    @foreach ($alerts as $alert)
+    <tr>
+      <td align="center">
+        <h5>System Alert :: <strong>{{ $alert->severity }}</strong> :: {{ $alert->text }}</h5></span>
+      </td>
+    </tr>
+    @endforeach
+  </table>
+@endif
 <v-app>
   <v-content>
     <table>

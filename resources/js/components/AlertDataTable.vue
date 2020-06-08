@@ -173,6 +173,7 @@
             this.success = '';
             this.failure = '';
             if (this.showForm == 'edit') {
+                this.form.is_active = (this.form.is_active) ? 1 : 0;
                 this.form.patch('/systemalerts/'+this.current_sysalert.id)
                     .then((response) => {
                         if (response.result) {

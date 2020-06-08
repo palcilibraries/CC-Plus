@@ -118,8 +118,7 @@ class SavedReportController extends Controller
                                  ->get();
 
         // Get any active system alerts for the hompage
-        $alerts = SystemAlert::where('is_active','=',1)->get();
-
+        $alerts = SystemAlert::where('is_active',true)->get();
         return view('savedreports.home', compact('inst_count','prov_count','report_data','failed_data',
                                                  'total_insts','alerts'));
     }

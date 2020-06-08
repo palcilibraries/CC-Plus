@@ -76,7 +76,7 @@ class SystemAlertController extends Controller
          $alert = SystemAlert::findOrFail($id);
 
         // Validate form inputs
-         $this->validate($request, ['severity' => 'required', 'text' => 'required']);
+         $this->validate($request, ['is_active' => 'required', 'severity' => 'required', 'text' => 'required']);
          $input = $request->all();
 
         // Update it

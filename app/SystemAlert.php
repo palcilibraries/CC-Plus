@@ -17,6 +17,6 @@ class SystemAlert extends BaseModel
      *
      * @var array
      */
-    protected $fillable = ['severity', 'text', ];
+    protected $fillable = ['is_active', 'severity', 'text', ];
 
 }

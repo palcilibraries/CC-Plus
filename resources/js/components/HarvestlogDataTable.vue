@@ -121,7 +121,6 @@
             axios.get("/harvestlogs?json=1&"+Object.keys(filters).map(key => key+'='+filters[key]).join('&'))
                             .then((response) => {
                 this.harvest_logs = response.data.harvests;
-console.log(this.harvest_logs);
             })
             .catch(err => console.log(err));
         },

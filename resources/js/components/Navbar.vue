@@ -139,6 +139,11 @@ export default {
                     url: "/alerts",
                     name: "Alerts",
                     role: "All",
+                  },
+                  {
+                    url: "/failedharvests",
+                    name: "Failed Harvests",
+                    role: "Manager",
                   }
                 ]
               },

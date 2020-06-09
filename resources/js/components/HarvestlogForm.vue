@@ -4,29 +4,29 @@
     <v-simple-table>
       <tr>
         <td>Institution </td>
-        <td>{{ harvest.sushi_setting.institution.name }}</td>
+        <td>{{ mutable_harvest.sushi_setting.institution.name }}</td>
       </tr>
       <tr>
         <td>Provider </td>
-        <td>{{ harvest.sushi_setting.provider.name }}</td>
+        <td>{{ mutable_harvest.sushi_setting.provider.name }}</td>
       </tr>
       <tr>
         <td>Report </td>
-        <td>{{ harvest.report.name }}</td>
+        <td>{{ mutable_harvest.report.name }}</td>
       </tr>
       <tr>
         <td>Usage Month </td>
-        <td>{{ harvest.yearmon }}</td>
+        <td>{{ mutable_harvest.yearmon }}</td>
       </tr>
       <tr>
         <td>Attempts </td>
-        <td>{{ harvest.attempts }}</td>
+        <td>{{ mutable_harvest.attempts }}</td>
       </tr>
       <tr>
         <td>Status </td>
-        <td v-if="(is_admin || is_manager) && statusvals.indexOf(harvest.status) > -1">
+        <td v-if="(is_admin || is_manager) && statusvals.indexOf(mutable_harvest.status) > -1">
           </thead>
-          <v-select :items="statusvals" v-model="mutable_status" value="mutable_status" dense outline
+          <v-select :items="statusvals" v-model="mutable_harvest.status" value="mutable_harvest.status" dense outline
                     @change="updateStatus()"
           ></v-select>
           <span>
@@ -34,7 +34,7 @@
             to zero and cause this harvest to run during the next scheduled overnight harvest process.</em>
           </span>
         </td>
-        <td v-else>{{ harvest.status }}</td>
+        <td v-else>{{ mutable_harvest.status }}</td>
       </tr>
     </v-simple-table>
   </div>
@@ -52,15 +52,19 @@
         data() {
             return {
                 statusvals: ['Fail', 'Retrying', 'Stopped'],
-                mutable_status: this.harvest.status,
+                mutable_harvest: this.harvest,
             }
         },
         methods: {
             updateStatus() {
                 axios.patch('/harvestlogs/'+this.harvest['id'], {
-                    status: this.mutable_status
+                    status: this.mutable_harvest.status
                 })
-                .then((response) => {})
+                .then((response) => {
+                    if (response.data.result) {
+                        this.mutable_harvest = response.data.harvest;
+                    }
+                })
                 .catch(error => {});
             },
         },

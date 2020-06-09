@@ -361,12 +361,14 @@ class HarvestLogController extends Controller
          }
          $harvest->status = $request->input('status');
          $harvest->save();
+         $harvest->load('report:id,name','sushiSetting','sushiSetting.institution:id,name',
+                        'sushiSetting.provider:id,name');
 
-         return response()->json(['result' => true]);
+         return response()->json(['result' => true, 'harvest' => $harvest]);
      }
 
     /**
-     * Doenload raw data for a harvest
+     * Download raw data for a harvest
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response

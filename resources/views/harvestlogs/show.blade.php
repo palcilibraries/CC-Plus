@@ -6,7 +6,7 @@
     <harvestlog-form :harvest="{{ json_encode($harvest) }}"></harvestlog-form>
     @if (sizeof($failed) > 0)
     <div class="related-list">
-      <failed-harvests :failed_harvests="{{ json_encode($failed) }}"><failed-harvests>
+      <failed-by-harvest :failed_harvests="{{ json_encode($failed) }}"><failed-by-harvest>
     </div>
     @endif
   </v-content>

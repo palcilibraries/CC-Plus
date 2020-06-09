@@ -38,6 +38,7 @@ Vue.component('institution-group-form', require('./components/InstitutionGroupFo
 Vue.component('harvestlog-form', require('./components/HarvestlogForm.vue').default);
 Vue.component('harvestlog-data-table', require('./components/HarvestlogDataTable.vue').default);
 Vue.component('failed-harvests', require('./components/FailedHarvests.vue').default);
+Vue.component('failed-by-harvest', require('./components/FailedByHarvest.vue').default);
 Vue.component('date-range', require('./components/DateRange.vue').default);
 Vue.component('create-report', require('./components/CreateReport.vue').default);
 Vue.component('report-preview', require('./components/ReportPreview.vue').default);

@@ -6,7 +6,11 @@ use Illuminate\Http\Request;
 use App\User;
 use App\Role;
 use App\Institution;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Writer\Xls;
 use Hash;
+
 //Enables us to output flash messaging
 use Session;
 
@@ -40,6 +44,8 @@ class UserController extends Controller
         foreach ($users as $_u) {
             $_roles = "";
             $new_u = $_u->toArray();
+            $new_u['inst_name'] = $_u->institution->name;
+            $new_u['status'] = ($_u->is_active == 1) ? 'Active' : 'Inactive';
             foreach ($_u->roles as $role) {
                 $_roles .= $role->name . ", ";
             }
@@ -69,17 +75,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        // abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
-        // $roles = Role::where('id', '<=', auth()->user()->maxRole())->pluck('name', 'id');
         //
-        // if (auth()->user()->hasRole("Admin")) {
-        //     $institutions = Institution::pluck('name', 'id')->all();
-        // } else {    // is manager
-        //     $institutions = Institution::where('id', '=', auth()->user()->inst_id)
-        //                                  ->pluck('name', 'id');
-        // }
-        //
-        // return view('users.create', compact('institutions', 'roles'));
     }
 
     /**
@@ -128,9 +124,11 @@ class UserController extends Controller
         }
         $user->load(['roles','institution:id,name']);
 
-        // Set role_string for table-view
+        // Setup array to hold new user to match index fields
         $_roles = "";
         $new_user = $user->toArray();
+        $new_user['inst_name'] = $user->institution->name;
+        $new_user['status'] = ($user->is_active == 1) ? 'Active' : 'Inactive';
         foreach ($user->roles as $role) {
             $_roles .= $role->name . ", ";
         }
@@ -246,6 +244,8 @@ class UserController extends Controller
         // Setup array to hold updated user record
         $_roles = "";
         $updated_user = $user->toArray();
+        $updated_user['inst_name'] = $user->institution->name;
+        $updated_user['status'] = ($user->is_active == 1) ? 'Active' : 'Inactive';
         foreach ($user->roles as $role) {
             $_roles .= $role->name . ", ";
         }
@@ -275,5 +275,141 @@ class UserController extends Controller
         }
         $user->delete();
         return response()->json(['result' => true, 'msg' => 'User successfully deleted']);
+    }
+
+    /**
+     * Export user records from the database.
+     *
+     * @param  string  $type    // 'xls' or 'xlsx'
+     * @return \Illuminate\Http\Response
+     */
+    public function export($type)
+    {
+        // Admins access all, managers only access their inst, eveyone else gets an error
+        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+        if (auth()->user()->hasRole("Admin")) {
+            $users = User::with('roles', 'institution:id,name')->orderBy('id', 'ASC')->get();
+        } else {    // is manager
+            $users = User::with('roles', 'institution:id,name')->orderBy('ID', 'ASC')
+                         ->where('inst_id', '=', auth()->user()->inst_id)->get();
+        }
+
+        // Setup styles array for headers
+        $head_style = [
+            'font' => ['bold' => true,],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,],
+        ];
+        // $spreadsheet->getActiveSheet()->getStyle('B3:B7')->applyFromArray($styleArray);
+
+        // Setup the spreadsheet and build the static ReadMe sheet
+        $spreadsheet = new Spreadsheet();
+        $info_sheet = $spreadsheet->getActiveSheet();
+        $info_sheet->setTitle('ReadMe');
+        $info_sheet->mergeCells('A1:D7');
+        $top_txt  = "The Users tab represents a starting place for updating or importing settings. The table below\n";
+        $top_txt .= " describes the datatype and order that the import expects. Any Import rows without an ID value\n";
+        $top_txt .= " in column 1 will be ignored. If values are missing/invalid within a given column, but not\n";
+        $top_txt .= " required, they will be set to the 'Default'. Any columns beyond Institution-ID are ignored.\n\n";
+        $top_txt .= " Once the data sheet contains everything to be updated or inserted, save the sheet as a CSV\n";
+        $top_txt .= " and import it into CC-Plus.";
+        $info_sheet->setCellValue('A1', $top_txt);
+        $info_sheet->getStyle('A9')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A9', "NOTE:");
+        $info_sheet->mergeCells('B9:D12');
+        $note_txt  = "When performing full-replacement imports, be VERY careful about changing or overwriting\n";
+        $note_txt .= " existing ID value(s). The best approach is to add to, or modify, a full export to ensure\n";
+        $note_txt .= " that existing user IDs are not accidently overwritten.";
+        $info_sheet->setCellValue('B9', $note_txt);
+        $info_sheet->getStyle('A14:D14')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A14', 'Column Name');
+        $info_sheet->setCellValue('B14', 'Data Type');
+        $info_sheet->setCellValue('C14', 'Description');
+        $info_sheet->setCellValue('D14', 'Default');
+        $info_sheet->setCellValue('A15','Id');
+        $info_sheet->setCellValue('B15','Integer');
+        $info_sheet->setCellValue('C15','Unique CC-Plus User ID - required');
+        $info_sheet->setCellValue('A16','Email');
+        $info_sheet->setCellValue('B16','String');
+        $info_sheet->setCellValue('C16','Email address - required');
+        $info_sheet->setCellValue('A17','Password');
+        $info_sheet->setCellValue('B17','String');
+        $info_sheet->setCellValue('C17','Password (will be encrypted)');
+        $info_sheet->setCellValue('D17','NULL - no change');
+        $info_sheet->setCellValue('A18','Name');
+        $info_sheet->setCellValue('B18','String');
+        $info_sheet->setCellValue('C18','Full name');
+        $info_sheet->setCellValue('D18','NULL');
+        $info_sheet->setCellValue('A19','Phone');
+        $info_sheet->setCellValue('B19','String');
+        $info_sheet->setCellValue('C19','Phone number');
+        $info_sheet->setCellValue('D19','NULL');
+        $info_sheet->setCellValue('A20','Active');
+        $info_sheet->setCellValue('B20','String (Y or N)');
+        $info_sheet->setCellValue('C20','Make the user active?');
+        $info_sheet->setCellValue('D20','Y');
+        $info_sheet->setCellValue('A21','Role(s)');
+        $info_sheet->setCellValue('B21','Comma-separated strings');
+        $info_sheet->setCellValue('C21','Admin, Manager, User, or Viewer');
+        $info_sheet->setCellValue('D21','User');
+        $info_sheet->setCellValue('A22','PWChangeReq');
+        $info_sheet->setCellValue('B22','String (Y or N)');
+        $info_sheet->setCellValue('C22','Force user to change password');
+        $info_sheet->setCellValue('D22','N');
+        $info_sheet->setCellValue('A23','Institution ID');
+        $info_sheet->setCellValue('B23','Integer');
+        $info_sheet->setCellValue('C23','Unique CC-Plus Institution ID (1=Staff)');
+        $info_sheet->setCellValue('D23','1');
+
+        // Load the user data into a new sheet
+        $users_sheet = $spreadsheet->createSheet();
+        $users_sheet->setTitle('Users');
+        $users_sheet->setCellValue('A1', 'Id');
+        $users_sheet->setCellValue('B1', 'Email');
+        $users_sheet->setCellValue('C1', 'Password');
+        $users_sheet->setCellValue('D1', 'Name');
+        $users_sheet->setCellValue('E1', 'Phone');
+        $users_sheet->setCellValue('F1', 'Active');
+        $users_sheet->setCellValue('G1', 'Role(s)');
+        $users_sheet->setCellValue('H1', 'PWChangeReq');
+        if (auth()->user()->hasRole('Admin')) {
+            $users_sheet->setCellValue('I1', 'Institution ID');
+            $users_sheet->setCellValue('J1', 'Institution');
+        }
+        $row = 2;
+        foreach($users as $user){
+            $users_sheet->setCellValue('A' . $row, $user->id);
+            $users_sheet->setCellValue('B' . $row, $user->email);
+            $users_sheet->setCellValue('D' . $row, $user->name);
+            $users_sheet->setCellValue('E' . $row, $user->phone);
+            $_stat = ($user->is_active) ? "Y" : "N";
+            $users_sheet->setCellValue('F' . $row, $_stat);
+            $_roles = "";
+            foreach ($user->roles as $role) {
+                $_roles .= $role->name . ", ";
+            }
+            $_roles = rtrim(trim($_roles), ',');
+            $users_sheet->setCellValue('G' . $row, $_roles);
+            $_pwcr = ($user->password_change_required) ? "Y" : "N";
+            $users_sheet->setCellValue('H' . $row, $_pwcr);
+            if (auth()->user()->hasRole('Admin')) {
+                $users_sheet->setCellValue('I' . $row, $user->inst_id);
+                $_inst = ($user->inst_id == 1) ? "Staff" : $user->institution->name;
+                $users_sheet->setCellValue('J' . $row, $_inst);
+            }
+            $row++;
+        }
+        $fileName = "CCplus_" . session('ccp_con_key', '') . "_Users." . $type;
+        if ($type == 'xlsx') {
+            $writer = new Xlsx($spreadsheet);
+        } else if ($type == 'xls') {
+            $writer = new Xls($spreadsheet);
+        }
+
+        // redirect output to client browser
+        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Disposition: attachment;filename=' . $fileName);
+        header('Cache-Control: max-age=0');
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
+        $writer->save('php://output');
     }
 }

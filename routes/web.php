@@ -56,3 +56,5 @@ Route::post('/sushisettings-update', 'SushiSettingController@update')->middlewar
 Route::get('/sushisettings-refresh', 'SushiSettingController@refresh')->middleware(['auth']);
 Route::get('/sushisettings-test', 'SushiSettingController@test')->middleware(['auth','role:Admin,Manager']);
 Route::get('/harvestlogs/{id}/raw', 'HarvestLogController@downloadRaw')->middleware(['auth','role:Admin,Manager']);
+//
+Route::get('/users/export/{type}', 'UserController@export');

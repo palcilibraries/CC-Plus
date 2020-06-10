@@ -466,7 +466,7 @@ class Counter5Processor extends Model
      */
     private static function getPlatform($input_platform)
     {
-        $platform_id = null;
+        $platform_id = 1;   //default is blank
         if ($input_platform != "") {
             $platform = Platform::firstOrCreate(['name' => $input_platform]);
             $platform_id = $platform->id;
@@ -484,7 +484,7 @@ class Counter5Processor extends Model
      */
     private static function getPublisher($input_publisher)
     {
-        $publisher_id = null;
+        $publisher_id = 1;  //default is blank
         if ($input_publisher != "") {
             $publisher = Publisher::firstOrCreate(['name' => $input_publisher]);
             $publisher_id = $publisher->id;
@@ -502,7 +502,7 @@ class Counter5Processor extends Model
      */
     private static function getAccessType($input_type)
     {
-        $accesstype_id = null;
+        $accesstype_id = 1;     // Controlled
         if ($input_type != "") {
             $accesstype = AccessType::firstOrCreate(['name' => $input_type]);
             $accesstype_id = $accesstype->id;
@@ -555,7 +555,7 @@ class Counter5Processor extends Model
      */
     private static function getSectionType($input_type)
     {
-        $sectiontype_id = null;
+        $sectiontype_id = 1;    // default is blank
         if ($input_type != "") {
             $sectiontype = SectionType::firstOrCreate(['name' => $input_type]);
             $sectiontype_id = $sectiontype->id;

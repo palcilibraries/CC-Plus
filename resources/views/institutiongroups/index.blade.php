@@ -11,6 +11,13 @@
         </div>
         <div class="pull-right">
             <a class="btn btn-success" href="{{ route('institutiongroups.create') }}">Create New Group</a>
+            <v-row>
+         	  <v-col cols="2"><h5>Export settings to:</h5></v-col>
+        	  <v-col>
+    	 	    <a :href="'/institutiongroups/export/xls'">.xls</a> &nbsp; &nbsp;
+    		    <a :href="'/institutiongroups/export/xlsx'">.xlsx</a>
+    		  </v-col>
+    	    </v-row>
         </div>
     </div>
 </div>

@@ -6,6 +6,13 @@
     </div>
     <div v-if="!showForm">
       <v-btn v-if="is_admin" small color="primary" @click="createForm">Create a Provider</v-btn>
+      <v-row v-if="is_manager || is_admin">
+        <v-col cols="1">Export to:</v-col>
+        <v-col>
+            <a :href="'/providers/export/xls'">.xls</a> &nbsp; &nbsp;
+            <a :href="'/providers/export/xlsx'">.xlsx</a>
+        </v-col>
+      </v-row>
       <v-data-table :headers="headers" :items="mutable_providers" item-key="prov_id" class="elevation-1">
         <template v-slot:item="{ item }">
           <tr>

@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Institution;
 use App\InstitutionType;
 use App\InstitutionGroup;
 use App\Provider;
 use App\Role;
+use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Writer\Xls;
 
 class InstitutionController extends Controller
 {
@@ -208,5 +211,192 @@ class InstitutionController extends Controller
         }
 
         return response()->json(['result' => true, 'msg' => 'Institution successfully deleted']);
+    }
+
+    /**
+     * Export institution records from the database.
+     *
+     * @param  string  $type    // 'xls' or 'xlsx'
+     * @return \Illuminate\Http\Response
+     */
+    public function export($type)
+    {
+        // Only Admins can export institution data
+        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+
+        // Admins get all institutions; eager load type, groups, and sushi settings
+        if (auth()->user()->hasRole("Admin")) {
+            $institutions = Institution::with('institutionType','institutionGroups','sushiSettings',
+                                              'sushiSettings.provider:id,name')
+                                       ->orderBy('id', 'ASC')->get();
+        } else {
+            $institutions = Institution::with('institutionType','institutionGroups','sushiSettings',
+                                              'sushiSettings.provider:id,name')
+                                       ->where('id',auth()->user()->inst_id)
+                                       ->orderBy('id', 'ASC')->get();
+        }
+
+        // Setup styles array for headers
+        $head_style = [
+            'font' => ['bold' => true,],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,],
+        ];
+
+        // Setup the spreadsheet and build the static ReadMe sheet
+        $spreadsheet = new Spreadsheet();
+        $info_sheet = $spreadsheet->getActiveSheet();
+        $info_sheet->setTitle('HowTo Import');
+        $info_sheet->mergeCells('A1:E12');
+        $top_txt  = "The Institutions tab represents a starting place for updating or importing settings. The table\n";
+        $top_txt .= "below describes the datatype and order that the import expects. Any Import rows without an ID\n";
+        $top_txt .= "in column 1 will be ignored. If values are missing/invalid within a given column, but not\n";
+        $top_txt .= "required, they will be set to the 'Default'.\n\n";
+        $top_txt .= "Institution imports can hold multiple rows per-institution to allow for by-provider SUSHI\n";
+        $top_txt .= "settings. The first row for a given institution will be canonical for columns (A-G). If\n";
+        $top_txt .= "Provider-ID is zero or missing, the SUSHI-settings columns (I-L) will be ignored. A full\n";
+        $top_txt .= "export of providers, institution types, and institution groups will supply reference values\n";
+        $top_txt .= "for the Provider-ID, Type-ID, and Institution-Group-IDs columns.\n\n";
+        $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
+        $top_txt .= "Any header row or columns beyond 'L' will be ignored.";
+        $info_sheet->setCellValue('A1', $top_txt);
+        $info_sheet->mergeCells('B14:E14');
+        $info_sheet->getStyle('A14:B14')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A14', "NOTE: ");
+        $info_sheet->setCellValue('B14', "Institution ID=1 is reserved for system use.");
+        $info_sheet->mergeCells('B15:E17');
+        $note_txt  = "When performing full-replacement imports, be VERY careful about changing or overwriting\n";
+        $note_txt .= "existing ID value(s). The best approach is to add to, or modify, a full export to ensure\n";
+        $note_txt .= "that existing institution IDs are not accidently overwritten.";
+        $info_sheet->setCellValue('B15', $note_txt);
+        $info_sheet->getStyle('A19:D19')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A19', 'Column Name');
+        $info_sheet->setCellValue('B19', 'Data Type');
+        $info_sheet->setCellValue('C19', 'Description');
+        $info_sheet->setCellValue('D19', 'Default');
+        $info_sheet->setCellValue('A20','Id');
+        $info_sheet->setCellValue('B20','Integer > 1');
+        $info_sheet->setCellValue('C20','Unique CC-Plus Institution ID - required');
+        $info_sheet->setCellValue('A21','Name');
+        $info_sheet->setCellValue('B21','String');
+        $info_sheet->setCellValue('C21','Institution Name - required');
+        $info_sheet->setCellValue('A22','Active');
+        $info_sheet->setCellValue('B22','String (Y or N)');
+        $info_sheet->setCellValue('C22','Make the institution active?');
+        $info_sheet->setCellValue('D22','Y');
+        $info_sheet->setCellValue('A23','Type ID');
+        $info_sheet->setCellValue('B23','Integer');
+        $info_sheet->setCellValue('C23','Institution Type ID (see above)');
+        $info_sheet->setCellValue('D23','1 (Not classified)');
+        $info_sheet->setCellValue('A24','FTE');
+        $info_sheet->setCellValue('B24','Integer');
+        $info_sheet->setCellValue('C24','FTE count for the institution');
+        $info_sheet->setCellValue('D24','NULL');
+        $info_sheet->setCellValue('A25','Institution Group IDs');
+        $info_sheet->setCellValue('B25','Integer,Integer,...');
+        $info_sheet->setCellValue('C25','CSV list of Institution Group IDs (see above)');
+        $info_sheet->setCellValue('D25','NULL');
+        $info_sheet->setCellValue('A26','Notes');
+        $info_sheet->setCellValue('B26','Text-blob');
+        $info_sheet->setCellValue('C26','Notes or other details');
+        $info_sheet->setCellValue('D26','NULL');
+        $info_sheet->setCellValue('A27','Provider ID');
+        $info_sheet->setCellValue('B27','Integer');
+        $info_sheet->setCellValue('C27','Unique CC-Plus Provider ID (see above)');
+        $info_sheet->setCellValue('D27','NULL');
+        $info_sheet->setCellValue('A28','Customer ID');
+        $info_sheet->setCellValue('B28','String');
+        $info_sheet->setCellValue('C28','SUSHI customer ID , provider-specific');
+        $info_sheet->setCellValue('D28','NULL');
+        $info_sheet->setCellValue('A29','Requestor ID');
+        $info_sheet->setCellValue('B29','String');
+        $info_sheet->setCellValue('C29','SUSHI requestor ID , provider-specific');
+        $info_sheet->setCellValue('D29','NULL');
+        $info_sheet->setCellValue('A30','API Key');
+        $info_sheet->setCellValue('B30','String');
+        $info_sheet->setCellValue('C30','SUSHI API Key , provider-specific');
+        $info_sheet->setCellValue('D30','NULL');
+        $info_sheet->setCellValue('A31','Support Email');
+        $info_sheet->setCellValue('B31','String');
+        $info_sheet->setCellValue('C31','Support email address, per-provider');
+        $info_sheet->setCellValue('D31','NULL');
+
+        // Load the institution data into a new sheet
+        $inst_sheet = $spreadsheet->createSheet();
+        $inst_sheet->setTitle('Institutions');
+        $inst_sheet->setCellValue('A1', 'Id');
+        $inst_sheet->setCellValue('B1', 'Name');
+        $inst_sheet->setCellValue('C1', 'Active');
+        $inst_sheet->setCellValue('D1', 'Type ID');
+        $inst_sheet->setCellValue('E1', 'FTE');
+        $inst_sheet->setCellValue('F1', 'Group IDs');
+        $inst_sheet->setCellValue('G1', 'Notes');
+        $inst_sheet->setCellValue('H1', 'Provider ID');
+        $inst_sheet->setCellValue('I1', 'Customer ID');
+        $inst_sheet->setCellValue('J1', 'Requestor ID');
+        $inst_sheet->setCellValue('K1', 'API Key');
+        $inst_sheet->setCellValue('L1', 'Support Email');
+        $inst_sheet->setCellValue('N1', 'Provider-Name');
+        $inst_sheet->setCellValue('O1', 'Inst-Groups');
+        $inst_sheet->setCellValue('P1', 'Inst-Type');
+        $row = 2;
+        foreach ($institutions as $inst) {
+            $inst_sheet->setCellValue('A' . $row, $inst->id);
+            $inst_sheet->setCellValue('B' . $row, $inst->name);
+            $_stat = ($inst->is_active) ? "Y" : "N";
+            $inst_sheet->setCellValue('C' . $row, $_stat);
+            $inst_sheet->setCellValue('D' . $row, $inst->type_id);
+            $inst_sheet->setCellValue('P' . $row, $inst->institutionType->name);
+            $inst_sheet->setCellValue('E' . $row, $inst->fte);
+            if (isset($inst->InstitutionGroups)) {
+                $_group_ids = "";
+                $_group_names = "";
+                foreach ($inst->InstitutionGroups as $grp) {
+                    $_group_ids .= $grp->id . ", ";
+                    $_group_names .= $grp->name . ", ";
+                }
+                $_group_ids = rtrim(trim($_group_ids), ',');
+                $_group_names = rtrim(trim($_group_names), ',');
+                $inst_sheet->setCellValue('F' . $row, $_group_ids);
+                $inst_sheet->setCellValue('O' . $row, $_group_names);
+            } else {
+                $inst_sheet->setCellValue('F' . $row, 'NULL');
+            }
+            $inst_sheet->setCellValue('G' . $row, $inst->notes);
+            if (isset($inst->sushiSettings)) {
+                foreach ($inst->sushiSettings as $setting) {
+                    $inst_sheet->setCellValue('H' . $row, $setting->prov_id);
+                    $inst_sheet->setCellValue('I' . $row, $setting->customer_id);
+                    $inst_sheet->setCellValue('J' . $row, $setting->requestor_id);
+                    $inst_sheet->setCellValue('K' . $row, $setting->API_key);
+                    $inst_sheet->setCellValue('L' . $row, $setting->support_email);
+                    $inst_sheet->setCellValue('N' . $row, $setting->provider->name);
+                    $row++;
+                }
+            } else {
+                $inst_sheet->setCellValue('H' . $row, '0');
+                $inst_sheet->setCellValue('I' . $row, 'NULL');
+                $inst_sheet->setCellValue('J' . $row, 'NULL');
+                $inst_sheet->setCellValue('K' . $row, 'NULL');
+                $inst_sheet->setCellValue('L' . $row, 'NULL');
+                $row++;
+            }
+        }
+        if (auth()->user()->hasRole('Admin')) {
+            $fileName = "CCplus_" . session('ccp_con_key', '') . "_Institutions." . $type;
+        } else {
+            $fileName = "CCplus_" . preg_replace('/ /','',auth()->user()->institution->name) . "_Settings." . $type;
+        }
+        if ($type == 'xlsx') {
+            $writer = new Xlsx($spreadsheet);
+        } else if ($type == 'xls') {
+            $writer = new Xls($spreadsheet);
+        }
+
+        // redirect output to client browser
+        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Disposition: attachment;filename=' . $fileName);
+        header('Cache-Control: max-age=0');
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
+        $writer->save('php://output');
     }
 }

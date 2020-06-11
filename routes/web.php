@@ -58,3 +58,7 @@ Route::get('/sushisettings-test', 'SushiSettingController@test')->middleware(['a
 Route::get('/harvestlogs/{id}/raw', 'HarvestLogController@downloadRaw')->middleware(['auth','role:Admin,Manager']);
 //
 Route::get('/users/export/{type}', 'UserController@export');
+Route::get('/providers/export/{type}', 'ProviderController@export');
+Route::get('/institutions/export/{type}', 'InstitutionController@export');
+Route::get('/institutiontypes/export/{type}', 'InstitutionTypeController@export');
+Route::get('/institutiongroups/export/{type}', 'InstitutionGroupController@export');

@@ -12,6 +12,13 @@
         <div class="pull-right">
             <a class="btn btn-success" href="{{ route('institutiontypes.create') }}">Create New Type</a>
         </div>
+  		<v-row>
+     	  <v-col cols="2"><h5>Export settings to:</h5></v-col>
+    	  <v-col>
+	 	    <a :href="'/institutiontypes/export/xls'">.xls</a> &nbsp; &nbsp;
+		    <a :href="'/institutiontypes/export/xlsx'">.xlsx</a>
+		  </v-col>
+	    </v-row>
     </div>
 </div>
 

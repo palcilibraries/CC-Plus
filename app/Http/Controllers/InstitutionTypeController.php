@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\InstitutionType;
+use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Writer\Xls;
 
 class InstitutionTypeController extends Controller
 {
@@ -109,5 +112,71 @@ class InstitutionTypeController extends Controller
         $type->delete();
         return redirect()->route('institutiontypes.index')
                       ->with('success', 'Institution Type deleted successfully');
+    }
+
+    /**
+     * Export institution types from the database.
+     *
+     * @param  string  $type    // 'xls' or 'xlsx'
+     * @return \Illuminate\Http\Response
+     */
+    public function export($output_type)
+    {
+        // Get all types
+        $types = InstitutionType::orderBy('id', 'ASC')->get();
+
+        // Setup styles array for headers
+        $head_style = [
+            'font' => ['bold' => true,],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,],
+        ];
+
+        // Setup the spreadsheet and build the static ReadMe sheet
+        $spreadsheet = new Spreadsheet();
+        $info_sheet = $spreadsheet->getActiveSheet();
+        $info_sheet->setTitle('HowTo Import');
+        $info_sheet->mergeCells('A1:E6');
+        $top_txt  = "The Institution Types tab represents a starting place for updating or importing settings.\n";
+        $top_txt .= "The table below describes the field datatypes and order that the import expects. Any Import\n";
+        $top_txt .= "rows without an ID in column A will be ignored. If required values are missing/invalid within\n";
+        $top_txt .= "a given row, the row will be ignored.\n";
+        $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
+        $top_txt .= "Any header row or columns beyond 'B' will be ignored.";
+        $info_sheet->setCellValue('A1', $top_txt);
+        $info_sheet->getStyle('A8:D8')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A9', 'Column Name');
+        $info_sheet->setCellValue('B9', 'Data Type');
+        $info_sheet->setCellValue('C9', 'Description');
+        $info_sheet->setCellValue('A10','Id');
+        $info_sheet->setCellValue('B10','Integer');
+        $info_sheet->setCellValue('C10','Unique CC-Plus InstitutionType ID - required');
+        $info_sheet->setCellValue('A11','Name');
+        $info_sheet->setCellValue('B11','String');
+        $info_sheet->setCellValue('C11','Institution Type Name - required');
+
+        // Load the type data into a new sheet
+        $type_sheet = $spreadsheet->createSheet();
+        $type_sheet->setTitle('Institution Types');
+        $type_sheet->setCellValue('A1', 'Id');
+        $type_sheet->setCellValue('B1', 'Name');
+        $row = 2;
+        foreach ($types as $type) {
+            $type_sheet->setCellValue('A' . $row, $type->id);
+            $type_sheet->setCellValue('B' . $row, $type->name);
+            $row++;
+        }
+        $fileName = "CCplus_" . session('ccp_con_key', '') . "_InstitutionTypes." . $output_type;
+        if ($output_type == 'xlsx') {
+            $writer = new Xlsx($spreadsheet);
+        } else if ($output_type == 'xls') {
+            $writer = new Xls($spreadsheet);
+        }
+
+        // redirect output to client browser
+        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Disposition: attachment;filename=' . $fileName);
+        header('Cache-Control: max-age=0');
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
+        $writer->save('php://output');
     }
 }

@@ -7,6 +7,9 @@ use App\Provider;
 use App\Institution;
 use App\Report;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Writer\Xls;
 
 class ProviderController extends Controller
 {
@@ -217,5 +220,134 @@ class ProviderController extends Controller
         }
 
         return response()->json(['result' => true, 'msg' => 'Provider successfully deleted']);
+    }
+
+    /**
+     * Export provider records from the database.
+     *
+     * @param  string  $type    // 'xls' or 'xlsx'
+     * @return \Illuminate\Http\Response
+     */
+    public function export($type)
+    {
+        // Only admins and managers can export
+        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+        $p_table = config('database.connections.consodb.database') . ".providers";
+        $i_table = config('database.connections.consodb.database') . ".institutions";
+
+       // Admins get all providers
+        if (auth()->user()->hasRole("Admin")) {
+            $providers = DB::table($p_table . ' as prv')
+                      ->join($i_table . ' as inst', 'inst.id', '=', 'prv.inst_id')
+                      ->orderBy('prov_id', 'ASC')
+                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','server_url_r5',
+                             'inst.name as inst_name','day_of_month']);
+       // Managers get all consortia-wide providers and those that match user's inst_id
+       // (excludes providers assigned to institutions.)
+        } else {
+            $providers = DB::table($p_table . ' as prv')
+                      ->join($i_table . ' as inst', 'inst.id', '=', 'prv.inst_id')
+                      ->where('prv.inst_id', 1)
+                      ->orWhere('prv.inst_id', auth()->user()->inst_id)
+                      ->orderBy('prov_id', 'ASC')
+                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','server_url_r5',
+                             'inst.name as inst_name','day_of_month']);
+        }
+
+        // Setup styles array for headers
+        $head_style = [
+            'font' => ['bold' => true,],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,],
+        ];
+
+        // Setup the spreadsheet and build the static ReadMe sheet
+        $spreadsheet = new Spreadsheet();
+        $info_sheet = $spreadsheet->getActiveSheet();
+        $info_sheet->setTitle('HowTo Import');
+        $info_sheet->mergeCells('A1:E8');
+        $top_txt  = "The Providers tab represents a starting place for updating or importing settings. The table\n";
+        $top_txt .= "below describes the datatype and order that the import expects. Any Import rows without an\n";
+        $top_txt .= "ID value in column 1 and a name in column 2 will be ignored. If values are missing/invalid\n";
+        $top_txt .= "within a given column, but not required, they will be set to the 'Default'.\n\n";
+        $top_txt .= "Only CC-Plus Admins can import or update providers assigned to inst_id=1 (whole consortium).\n";
+        $top_txt .= "Any header row or columns beyond 'F' will be ignored. Once the data sheet contains everything\n";
+        $top_txt .= "to be updated or inserted, save the sheet as a CSV and import it into CC-Plus.";
+        $info_sheet->setCellValue('A1', $top_txt);
+        $info_sheet->getStyle('A10')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A10', "NOTE:");
+        $info_sheet->mergeCells('B10:E12');
+        $note_txt  = "When performing full-replacement imports, be VERY careful about modifying\n";
+        $note_txt .= "existing ID value(s). The best approach is to add to, or modify, a full export\n";
+        $note_txt .= "to ensure that existing provider IDs are not accidently overwritten.";
+        $info_sheet->setCellValue('B10', $note_txt);
+        $info_sheet->getStyle('A14:D14')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A14', 'Column Name');
+        $info_sheet->setCellValue('B14', 'Data Type');
+        $info_sheet->setCellValue('C14', 'Description');
+        $info_sheet->setCellValue('D14', 'Default');
+        $info_sheet->setCellValue('A15','Id');
+        $info_sheet->setCellValue('B15','Integer');
+        $info_sheet->setCellValue('C15','Unique CC-Plus Provider ID - required');
+        $info_sheet->setCellValue('A16','Name');
+        $info_sheet->setCellValue('B16','String');
+        $info_sheet->setCellValue('C16','Provider name - required');
+        $info_sheet->setCellValue('A17','Active');
+        $info_sheet->setCellValue('B17','String (Y or N)');
+        $info_sheet->setCellValue('C17','Make the provider active?');
+        $info_sheet->setCellValue('D17','Y');
+        $info_sheet->setCellValue('A18','Server Url');
+        $info_sheet->setCellValue('B18','String');
+        $info_sheet->setCellValue('C18','URL for Provider SUSHI service');
+        $info_sheet->setCellValue('D18','NULL');
+        $info_sheet->setCellValue('A19','harvest_day');
+        $info_sheet->setCellValue('B19','Integer');
+        $info_sheet->setCellValue('C19','Day of the month provider reports are ready (1-28)');
+        $info_sheet->setCellValue('D19','15');
+        $info_sheet->setCellValue('A20','Institution ID');
+        $info_sheet->setCellValue('B20','Integer');
+        $info_sheet->setCellValue('C20','Institution ID (see above)');
+        $info_sheet->setCellValue('D20','1');
+
+        // Load the provider data into a new sheet
+        $providers_sheet = $spreadsheet->createSheet();
+        $providers_sheet->setTitle('Providers');
+        $providers_sheet->setCellValue('A1', 'Id');
+        $providers_sheet->setCellValue('B1', 'Name');
+        $providers_sheet->setCellValue('C1', 'Active');
+        $providers_sheet->setCellValue('D1', 'Server URL');
+        $providers_sheet->setCellValue('E1', 'Harvest Day');
+        $providers_sheet->setCellValue('F1', 'Institution ID');
+        $providers_sheet->setCellValue('H1', 'Institution Name');
+        $row = 2;
+        foreach ($providers as $provider) {
+            $providers_sheet->setCellValue('A' . $row, $provider->prov_id);
+            $providers_sheet->setCellValue('B' . $row, $provider->prov_name);
+            $_stat = ($provider->is_active) ? "Y" : "N";
+            $providers_sheet->setCellValue('C' . $row, $_stat);
+            $providers_sheet->setCellValue('D' . $row, $provider->server_url_r5);
+            $providers_sheet->setCellValue('E' . $row, $provider->day_of_month);
+            $providers_sheet->setCellValue('F' . $row, $provider->inst_id);
+            $_name = ($provider->inst_id == 1) ? "Entire Consortium" : $provider->inst_name;
+            $providers_sheet->setCellValue('H' . $row, $_name);
+            $row++;
+        }
+        if (auth()->user()->hasRole('Admin')) {
+            $fileName = "CCplus_" . session('ccp_con_key', '') . "_Providers." . $type;
+        } else {
+            $fileName = "CCplus_" . preg_replace('/ /','',auth()->user()->institution->name) . "_Providers." . $type;
+        }
+
+        if ($type == 'xlsx') {
+            $writer = new Xlsx($spreadsheet);
+        } else if ($type == 'xls') {
+            $writer = new Xls($spreadsheet);
+        }
+
+        // redirect output to client browser
+        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Disposition: attachment;filename=' . $fileName);
+        header('Cache-Control: max-age=0');
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
+        $writer->save('php://output');
     }
 }

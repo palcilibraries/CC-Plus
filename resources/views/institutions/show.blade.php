@@ -25,8 +25,18 @@
   <div class="related-list">
 	  <hr>
 	  <h2 class="section-title">Providers</h2>
-	  @if ( auth()->user()->hasAnyRole(['Admin']) )
+	  @if ( auth()->user()->hasRole('Admin') )
 	  <v-btn small color="primary" type="button" href="{{ route('providers.create') }}" class="section-action">add new</v-btn>
+	  @else
+	  	@if (auth()->user()->hasRole('Manager'))
+		<v-row>
+      	  <v-col cols="2"><h5>Export settings to:</h5></v-col>
+      	  <v-col>
+  	 	    <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp;
+  		    <a :href="'/institutions/export/xlsx'">.xlsx</a>
+  		  </v-col>
+  	    </v-row>
+		@endif
 	  @endif
 	  <all-sushi-by-inst :settings="{{ json_encode($institution->sushiSettings->toArray()) }}"
 		  				 :inst_id="{{ json_encode($institution->id) }}"

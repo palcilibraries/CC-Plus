@@ -230,6 +230,7 @@ class InstitutionTypeController extends Controller
             return response()->json(['result' => false, 'msg' => 'Import file is empty, no changes applied.']);
         }
         $num_deleted = 0;
+        $num_skipped = 0;
         $num_updated = 0;
         $num_created = 0;
 
@@ -249,7 +250,12 @@ class InstitutionTypeController extends Controller
             // Okay, toss the types
             $num_deleted = InstitutionType::count() - 1;
             InstitutionType::where('id', '<>', 1)->delete();
+
+        } else if ($request->input('type') != 'New Additions') {
+
+            return response()->json(['result' => false, 'msg' => 'Error - unrecognized import type.']);
         }
+        $current_types = InstitutionType::get();
 
         // Process the input rows
         foreach ($rows as $row) {
@@ -257,12 +263,21 @@ class InstitutionTypeController extends Controller
                 // Ignore bad/missing ID
                 if ($row[0] != "" && is_numeric($row[0]) && $row[0] > 1) {
 
-                    // If adding/updating types, check if it already exists
-                    $existing_type = InstitutionType::where("id", "=", $row[0])->first();
+                    // If we're adding and the name already exists, skip it
+                    if ($request->input('type') == 'New Additions') {
+                        $existing_name = $current_types->where("name", "=", $row[1])->first();
+                        if (!is_null($existing_name)) {
+                            $num_skipped++;
+                            continue;
+                        }
+                    }
 
+                    // Check for an existing ID
+                    $existing_type = $current_types->where("id", "=", $row[0])->first();
                     if (!is_null($existing_type)) {
                         if (!is_null($row[1])) {
                             $existing_type->name = $row[1];
+                            $existing_type->save();
                             $num_updated++;
                         }
                     } else {
@@ -279,20 +294,25 @@ class InstitutionTypeController extends Controller
         $types = InstitutionType::orderBy('id', 'ASC')->get();
         $new_ids = $types->pluck('id')->values()->toArray();
 
-        // Reset type for institutions if the type still exists, otherwise leave it as 1 (not classified)
-        foreach ($original_types as $id => $type) {
-            $inst = $institutions->where('id', $id)->first();
-            if (in_array($type, $new_ids)) {
-                $inst->type_id = $type;
-                $inst->save();
-            } else {
+        // If we're replacing, reset type for institutions if the type still exists,
+        // otherwise leave it as 1 (not classified)
+        if ($request->input('type') == 'Full Replacement') {
+            foreach ($original_types as $id => $type) {
+                $inst = $institutions->where('id', $id)->first();
+                if (in_array($type, $new_ids)) {
+                    $inst->type_id = $type;
+                    $inst->save();
+                }
             }
         }
 
         // return the current full list of types with a success message
         $msg  = 'Institution Types imported successfully : ';
         $msg .= ($num_deleted>0) ? $num_deleted . " removed, " : "";
-        $msg .= $num_updated . " updated and " . $num_created . " added.";
+        $msg .= $num_updated . " updated and " . $num_created . " added";
+        if ($num_skipped > 0) {
+            $msg .= ($num_skipped > 0) ? " (" . $num_skipped . " existing names skipped)" : ".";
+        }
         return response()->json(['result' => true, 'msg' => $msg, 'types' => $types->toArray()]);
     }
 }

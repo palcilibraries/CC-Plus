@@ -204,7 +204,6 @@ class ProviderController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  \App\Provider  $provider
-     * @return \Illuminate\Http\Response
      */
     public function destroy($id)
     {

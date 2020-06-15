@@ -217,7 +217,6 @@ class InstitutionController extends Controller
      * Export institution records from the database.
      *
      * @param  string  $type    // 'xls' or 'xlsx'
-     * @return \Illuminate\Http\Response
      */
     public function export($type)
     {

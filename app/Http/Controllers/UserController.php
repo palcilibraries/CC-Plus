@@ -293,17 +293,24 @@ class UserController extends Controller
                          ->where('inst_id', '=', auth()->user()->inst_id)->get();
         }
 
-        // Setup styles array for headers
+        // Setup some styles arrays
         $head_style = [
             'font' => ['bold' => true,],
             'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,],
+        ];
+        $info_style = [
+            'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP,
+                            'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+                           ],
         ];
 
         // Setup the spreadsheet and build the static ReadMe sheet
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:E7');
+        $info_sheet->mergeCells('A1:D7');
+        $info_sheet->getStyle('A1:D7')->applyFromArray($info_style);
+        $info_sheet->getStyle('A1:D7')->getAlignment()->setWrapText(true);
         $top_txt  = "The Users tab represents a starting place for updating or importing settings. The table below\n";
         $top_txt .= "describes the datatype and order that the import expects. Any Import rows without an ID value\n";
         $top_txt .= "in column 'A' will be ignored. If values are missing/invalid for a column, but not required,\n";
@@ -313,7 +320,9 @@ class UserController extends Controller
         $info_sheet->setCellValue('A1', $top_txt);
         $info_sheet->getStyle('A9')->applyFromArray($head_style);
         $info_sheet->setCellValue('A9', "NOTE:");
-        $info_sheet->mergeCells('B9:E11');
+        $info_sheet->mergeCells('B9:D11');
+        $info_sheet->getStyle('B9:D11')->applyFromArray($info_style);
+        $info_sheet->getStyle('B9:D11')->getAlignment()->setWrapText(true);
         $note_txt  = "When performing full-replacement imports, be VERY careful about changing or overwriting\n";
         $note_txt .= "existing ID value(s). The best approach is to add to, or modify, a full export to ensure\n";
         $note_txt .= "that existing user IDs are not accidently overwritten.";
@@ -358,9 +367,19 @@ class UserController extends Controller
         $info_sheet->setCellValue('C22','Unique CC-Plus Institution ID (1=Staff)');
         $info_sheet->setCellValue('D22','1');
 
+        // Set row height and auto-width columns for the sheet
+        for ($r=1; $r<25; $r++) {
+            $info_sheet->getRowDimension($r)->setRowHeight(15);
+        }
+        $info_columns = array('A','B','C','D');
+        foreach ($info_columns as $col) {
+            $info_sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
         // Load the user data into a new sheet
         $users_sheet = $spreadsheet->createSheet();
         $users_sheet->setTitle('Users');
+        $users_sheet->getRowDimension('1')->setRowHeight(15);
         $users_sheet->setCellValue('A1', 'Id');
         $users_sheet->setCellValue('B1', 'Email');
         $users_sheet->setCellValue('C1', 'Password');
@@ -375,6 +394,7 @@ class UserController extends Controller
         }
         $row = 2;
         foreach ($users as $user) {
+            $users_sheet->getRowDimension($row)->setRowHeight(15);
             $users_sheet->setCellValue('A' . $row, $user->id);
             $users_sheet->setCellValue('B' . $row, $user->email);
             $users_sheet->setCellValue('D' . $row, $user->name);
@@ -396,22 +416,29 @@ class UserController extends Controller
             }
             $row++;
         }
+
+        // Auto-size the columns
+        $user_columns = array('A','B','C','D','E','F','G','H','I','J');
+        foreach ($user_columns as $col) {
+            $users_sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Give the file a meaningful filename
         if (auth()->user()->hasRole('Admin')) {
             $fileName = "CCplus_" . session('ccp_con_key', '') . "_Users." . $type;
         } else {
             $fileName = "CCplus_" . preg_replace('/ /','',auth()->user()->institution->name) . "_Users." . $type;
         }
-        if ($type == 'xlsx') {
-            $writer = new Xlsx($spreadsheet);
-        } else if ($type == 'xls') {
-            $writer = new Xls($spreadsheet);
-        }
 
         // redirect output to client browser
+        if ($type == 'xlsx') {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        } else if ($type == 'xls') {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
+        }
         header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');
-        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
         $writer->save('php://output');
     }
 }

@@ -25,7 +25,7 @@ class InstitutionTypeController extends Controller
        */
     public function index(Request $request)
     {
-        $data = InstitutionType::orderBy('id', 'DESC')->get()->toArray();
+        $data = InstitutionType::orderBy('id', 'ASC')->get()->toArray();
         return view('institutiontypes.index', compact('data'));
     }
 
@@ -146,17 +146,24 @@ class InstitutionTypeController extends Controller
         // Get all types
         $types = InstitutionType::orderBy('id', 'ASC')->get();
 
-        // Setup styles array for headers
+        // Setup some styles arrays
         $head_style = [
             'font' => ['bold' => true,],
             'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,],
+        ];
+        $info_style = [
+            'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP,
+                            'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+                           ],
         ];
 
         // Setup the spreadsheet and build the static ReadMe sheet
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:E6');
+        $info_sheet->mergeCells('A1:D6');
+        $info_sheet->getStyle('A1:D6')->applyFromArray($info_style);
+        $info_sheet->getStyle('A1:D6')->getAlignment()->setWrapText(true);
         $top_txt  = "The Institution Types tab represents a starting place for updating or importing settings.\n";
         $top_txt .= "The table below describes the field datatypes and order that the import expects. Any Import\n";
         $top_txt .= "rows without an ID in column A will be ignored. If required values are missing/invalid within\n";
@@ -175,6 +182,15 @@ class InstitutionTypeController extends Controller
         $info_sheet->setCellValue('B11','String');
         $info_sheet->setCellValue('C11','Institution Type Name - required');
 
+        // Set row height and auto-width columns for the sheet
+        for ($r=1; $r<13; $r++) {
+            $info_sheet->getRowDimension($r)->setRowHeight(15);
+        }
+        $info_columns = array('A','B','C','D');
+        foreach ($info_columns as $col) {
+            $info_sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
         // Load the type data into a new sheet
         $type_sheet = $spreadsheet->createSheet();
         $type_sheet->setTitle('Institution Types');
@@ -182,22 +198,28 @@ class InstitutionTypeController extends Controller
         $type_sheet->setCellValue('B1', 'Name');
         $row = 2;
         foreach ($types as $type) {
+            $type_sheet->getRowDimension($row)->setRowHeight(15);
             $type_sheet->setCellValue('A' . $row, $type->id);
             $type_sheet->setCellValue('B' . $row, $type->name);
             $row++;
         }
+
+        // Auto-size the columns
+        $type_sheet->getColumnDimension('A')->setAutoSize(true);
+        $type_sheet->getColumnDimension('B')->setAutoSize(true);
+
+        // Give the file a meaningful filename
         $fileName = "CCplus_" . session('ccp_con_key', '') . "_InstitutionTypes." . $output_type;
-        if ($output_type == 'xlsx') {
-            $writer = new Xlsx($spreadsheet);
-        } else if ($output_type == 'xls') {
-            $writer = new Xls($spreadsheet);
-        }
 
         // redirect output to client browser
+        if ($output_type == 'xlsx') {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        } else if ($output_type == 'xls') {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
+        }
         header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');
-        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
         $writer->save('php://output');
     }
 
@@ -215,9 +237,6 @@ class InstitutionTypeController extends Controller
         if (!$request->hasFile('csvfile')) {
             return response()->json(['result' => false, 'msg' => 'Error accessing CSV import file']);
         }
-
-        // Set database table to be updated
-        $table = config('database.connections.consodb.database') . '.institutiontypes';
 
         // Turn the CSV data into an array
         $file = $request->file("csvfile")->getRealPath();

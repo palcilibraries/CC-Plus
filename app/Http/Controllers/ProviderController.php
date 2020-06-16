@@ -253,17 +253,24 @@ class ProviderController extends Controller
                              'inst.name as inst_name','day_of_month']);
         }
 
-        // Setup styles array for headers
+        // Setup some styles arrays
         $head_style = [
             'font' => ['bold' => true,],
             'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,],
+        ];
+        $info_style = [
+            'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP,
+                            'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+                           ],
         ];
 
         // Setup the spreadsheet and build the static ReadMe sheet
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:E8');
+        $info_sheet->mergeCells('A1:C7');
+        $info_sheet->getStyle('A1:C7')->applyFromArray($info_style);
+        $info_sheet->getStyle('A1:C7')->getAlignment()->setWrapText(true);
         $top_txt  = "The Providers tab represents a starting place for updating or importing settings. The table\n";
         $top_txt .= "below describes the datatype and order that the import expects. Any Import rows without an\n";
         $top_txt .= "ID value in column 1 and a name in column 2 will be ignored. If values are missing/invalid\n";
@@ -274,7 +281,9 @@ class ProviderController extends Controller
         $info_sheet->setCellValue('A1', $top_txt);
         $info_sheet->getStyle('A10')->applyFromArray($head_style);
         $info_sheet->setCellValue('A10', "NOTE:");
-        $info_sheet->mergeCells('B10:E12');
+        $info_sheet->mergeCells('B10:C12');
+        $info_sheet->getStyle('B10:C12')->applyFromArray($info_style);
+        $info_sheet->getStyle('B10:C12')->getAlignment()->setWrapText(true);
         $note_txt  = "When performing full-replacement imports, be VERY careful about modifying\n";
         $note_txt .= "existing ID value(s). The best approach is to add to, or modify, a full export\n";
         $note_txt .= "to ensure that existing provider IDs are not accidently overwritten.";
@@ -307,6 +316,15 @@ class ProviderController extends Controller
         $info_sheet->setCellValue('C20','Institution ID (see above)');
         $info_sheet->setCellValue('D20','1');
 
+        // Set row height and auto-width columns for the sheet
+        for ($r=1; $r<22; $r++) {
+            $info_sheet->getRowDimension($r)->setRowHeight(15);
+        }
+        $info_columns = array('A','B','C','D');
+        foreach ($info_columns as $col) {
+            $info_sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
         // Load the provider data into a new sheet
         $providers_sheet = $spreadsheet->createSheet();
         $providers_sheet->setTitle('Providers');
@@ -319,6 +337,7 @@ class ProviderController extends Controller
         $providers_sheet->setCellValue('H1', 'Institution Name');
         $row = 2;
         foreach ($providers as $provider) {
+            $providers_sheet->getRowDimension($row)->setRowHeight(15);
             $providers_sheet->setCellValue('A' . $row, $provider->prov_id);
             $providers_sheet->setCellValue('B' . $row, $provider->prov_name);
             $_stat = ($provider->is_active) ? "Y" : "N";
@@ -330,23 +349,28 @@ class ProviderController extends Controller
             $providers_sheet->setCellValue('H' . $row, $_name);
             $row++;
         }
+        // Auto-size the columns
+        $columns = array('A','B','C','D','E','F','G','H');
+        foreach ($columns as $col) {
+            $providers_sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Give the file a meaningful filename
         if (auth()->user()->hasRole('Admin')) {
             $fileName = "CCplus_" . session('ccp_con_key', '') . "_Providers." . $type;
         } else {
             $fileName = "CCplus_" . preg_replace('/ /','',auth()->user()->institution->name) . "_Providers." . $type;
         }
 
-        if ($type == 'xlsx') {
-            $writer = new Xlsx($spreadsheet);
-        } else if ($type == 'xls') {
-            $writer = new Xls($spreadsheet);
-        }
-
         // redirect output to client browser
+        if ($type == 'xlsx') {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        } else if ($type == 'xls') {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
+        }
         header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');
-        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
         $writer->save('php://output');
     }
 }

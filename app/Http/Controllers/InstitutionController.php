@@ -235,17 +235,24 @@ class InstitutionController extends Controller
                                        ->orderBy('id', 'ASC')->get();
         }
 
-        // Setup styles array for headers
+        // Setup some styles arrays
         $head_style = [
             'font' => ['bold' => true,],
             'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,],
+        ];
+        $info_style = [
+            'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP,
+                            'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+                           ],
         ];
 
         // Setup the spreadsheet and build the static ReadMe sheet
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:E12');
+        $info_sheet->mergeCells('A1:C12');
+        $info_sheet->getStyle('A1:C12')->applyFromArray($info_style);
+        $info_sheet->getStyle('A1:C12')->getAlignment()->setWrapText(true);
         $top_txt  = "The Institutions tab represents a starting place for updating or importing settings. The table\n";
         $top_txt .= "below describes the datatype and order that the import expects. Any Import rows without an ID\n";
         $top_txt .= "in column 1 will be ignored. If values are missing/invalid within a given column, but not\n";
@@ -258,11 +265,13 @@ class InstitutionController extends Controller
         $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
         $top_txt .= "Any header row or columns beyond 'L' will be ignored.";
         $info_sheet->setCellValue('A1', $top_txt);
-        $info_sheet->mergeCells('B14:E14');
+        $info_sheet->mergeCells('B14:D14');
         $info_sheet->getStyle('A14:B14')->applyFromArray($head_style);
         $info_sheet->setCellValue('A14', "NOTE: ");
         $info_sheet->setCellValue('B14', "Institution ID=1 is reserved for system use.");
-        $info_sheet->mergeCells('B15:E17');
+        $info_sheet->mergeCells('B15:D17');
+        $info_sheet->getStyle('B15:D17')->applyFromArray($info_style);
+        $info_sheet->getStyle('B10:D17')->getAlignment()->setWrapText(true);
         $note_txt  = "When performing full-replacement imports, be VERY careful about changing or overwriting\n";
         $note_txt .= "existing ID value(s). The best approach is to add to, or modify, a full export to ensure\n";
         $note_txt .= "that existing institution IDs are not accidently overwritten.";
@@ -319,6 +328,15 @@ class InstitutionController extends Controller
         $info_sheet->setCellValue('C31','Support email address, per-provider');
         $info_sheet->setCellValue('D31','NULL');
 
+        // Set row height and auto-width columns for the sheet
+        for ($r=1; $r<33; $r++) {
+            $info_sheet->getRowDimension($r)->setRowHeight(15);
+        }
+        $info_columns = array('A','B','C','D');
+        foreach ($info_columns as $col) {
+            $info_sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
         // Load the institution data into a new sheet
         $inst_sheet = $spreadsheet->createSheet();
         $inst_sheet->setTitle('Institutions');
@@ -339,6 +357,7 @@ class InstitutionController extends Controller
         $inst_sheet->setCellValue('P1', 'Inst-Type');
         $row = 2;
         foreach ($institutions as $inst) {
+            $inst_sheet->getRowDimension($row)->setRowHeight(15);
             $inst_sheet->setCellValue('A' . $row, $inst->id);
             $inst_sheet->setCellValue('B' . $row, $inst->name);
             $_stat = ($inst->is_active) ? "Y" : "N";
@@ -380,22 +399,29 @@ class InstitutionController extends Controller
                 $row++;
             }
         }
+
+        // Auto-size the columns
+        $columns = array('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P');
+        foreach ($columns as $col) {
+            $inst_sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Give the file a meaningful filename
         if (auth()->user()->hasRole('Admin')) {
             $fileName = "CCplus_" . session('ccp_con_key', '') . "_Institutions." . $type;
         } else {
             $fileName = "CCplus_" . preg_replace('/ /','',auth()->user()->institution->name) . "_Settings." . $type;
         }
-        if ($type == 'xlsx') {
-            $writer = new Xlsx($spreadsheet);
-        } else if ($type == 'xls') {
-            $writer = new Xls($spreadsheet);
-        }
 
         // redirect output to client browser
+        if ($type == 'xlsx') {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        } else if ($type == 'xls') {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
+        }
         header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');
-        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
         $writer->save('php://output');
     }
 }

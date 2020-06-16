@@ -24,9 +24,8 @@ class InstitutionGroupController extends Controller
      */
     public function index(Request $request)
     {
-        $data = InstitutionGroup::orderBy('id', 'DESC')->paginate(10);
-        return view('institutiongroups.index', compact('data'))
-            ->with('i', ($request->input('page', 1) - 1) * 10);
+        $data = InstitutionGroup::orderBy('id', 'ASC')->get()->toArray();
+        return view('institutiongroups.index', compact('data'));
     }
 
     /**
@@ -132,7 +131,6 @@ class InstitutionGroupController extends Controller
      * Export institution types from the database.
      *
      * @param  string  $type    // 'xls' or 'xlsx'
-     * @return \Illuminate\Http\Response
      */
     public function export($type)
     {
@@ -144,12 +142,19 @@ class InstitutionGroupController extends Controller
             'font' => ['bold' => true,],
             'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,],
         ];
+        $info_style = [
+            'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP,
+                            'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+                           ],
+        ];
 
         // Setup the spreadsheet and build the static ReadMe sheet
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:E6');
+        $info_sheet->mergeCells('A1:D6');
+        $info_sheet->getStyle('A1:D6')->applyFromArray($info_style);
+        $info_sheet->getStyle('A1:D6')->getAlignment()->setWrapText(true);
         $top_txt  = "The Institution Groups tab represents a starting place for updating or importing settings.\n";
         $top_txt .= "The table below describes the field datatypes and order that the import expects. Any Import\n";
         $top_txt .= "rows without an ID in column A will be ignored. If required values are missing/invalid within\n";
@@ -168,6 +173,15 @@ class InstitutionGroupController extends Controller
         $info_sheet->setCellValue('B11','String');
         $info_sheet->setCellValue('C11','Institution Group Name - required');
 
+        // Set row height and auto-width columns for the sheet
+        for ($r=1; $r<13; $r++) {
+            $info_sheet->getRowDimension($r)->setRowHeight(15);
+        }
+        $info_columns = array('A','B','C','D');
+        foreach ($info_columns as $col) {
+            $info_sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
         // Load the type data into a new sheet
         $group_sheet = $spreadsheet->createSheet();
         $group_sheet->setTitle('Institution Groups');
@@ -175,22 +189,143 @@ class InstitutionGroupController extends Controller
         $group_sheet->setCellValue('B1', 'Name');
         $row = 2;
         foreach ($groups as $group) {
+            $group_sheet->getRowDimension($row)->setRowHeight(15);
             $group_sheet->setCellValue('A' . $row, $group->id);
             $group_sheet->setCellValue('B' . $row, $group->name);
             $row++;
         }
+
+        // Auto-size the columns
+        $group_sheet->getColumnDimension('A')->setAutoSize(true);
+        $group_sheet->getColumnDimension('B')->setAutoSize(true);
+
+        // Give the file a meaningful filename
         $fileName = "CCplus_" . session('ccp_con_key', '') . "_InstitutionGroups." . $type;
-        if ($type == 'xlsx') {
-            $writer = new Xlsx($spreadsheet);
-        } else if ($type == 'xls') {
-            $writer = new Xls($spreadsheet);
-        }
 
         // redirect output to client browser
+        if ($type == 'xlsx') {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        } else if ($type == 'xls') {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
+        }
         header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');
-        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
         $writer->save('php://output');
+    }
+
+    /**
+     * Import institution groups from a CSV to the database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function import(Request $request)
+    {
+        // Handle and validate inputs
+        $this->validate($request, ['type' => 'required', 'csvfile' => 'required']);
+        $type = $request->input('type');
+        if (!$request->hasFile('csvfile')) {
+            return response()->json(['result' => false, 'msg' => 'Error accessing CSV import file']);
+        }
+
+        // Turn the CSV data into an array
+        $file = $request->file("csvfile")->getRealPath();
+        $csvData = file_get_contents($file);
+
+        $rows = array_map("str_getcsv", explode("\n", $csvData));
+
+        // If input file is empty, return w/ error string
+        if (sizeof($rows) < 1) {
+            return response()->json(['result' => false, 'msg' => 'Import file is empty, no changes applied.']);
+        }
+        $num_deleted = 0;
+        $num_skipped = 0;
+        $num_updated = 0;
+        $num_created = 0;
+
+        // If user requested full replacement we'll delete all the existing groups.
+        // First, though, keep the current set to be able to restore any duplicates
+        // after we've imported the new set.
+        if ($request->input('type') == 'Full Replacement') {
+
+            // Get all institutions with their groups
+            $original_groups = array();
+            $institutions = Institution::with('institutionGroups')->get();
+            foreach ($institutions as $inst) {
+                $groups = array();
+                // Save the current assigned groups and detach them
+                foreach ($inst->institutionGroups as $group) {
+                    $groups[$group->id] = $group->name;
+                }
+                $original_groups[$inst->id] = $groups;
+                // nuke the groups for this inst
+                $inst->institutionGroups()->sync([]);
+            }
+
+            // Okay, toss the groups themselves
+            $all_groups = InstitutionGroup::get();
+            $num_deleted = $all_groups->count();
+            foreach ($all_groups as $group) {
+                $group->delete();
+            }
+
+        } else if (!$request->input('type') == 'New Additions') {
+            return response()->json(['result' => false, 'msg' => 'Error - unrecognized import type.']);
+        }
+        $current_groups = InstitutionGroup::get();
+
+        // Process the input rows
+        foreach ($rows as $row) {
+            if (isset($row[0])) {
+                // Ignore bad/missing ID
+                if ($row[0] != "" && is_numeric($row[0])) {
+
+                    // If we're adding and the name or id already exists, skip it
+                    if ($request->input('type') == 'New Additions') {
+                        $existing_id = $current_groups->where("id", "=", $row[0])->first();
+                        $existing_name = $current_groups->where("name", "=", $row[1])->first();
+                        if (!is_null($existing_id) || !is_null($existing_name)) {
+                            $num_skipped++;
+                            continue;
+                        }
+                    }
+
+                    // Save the new name
+                    if (!is_null($row[1])) {
+                        $_name = trim($row[1]);
+                        if (strlen($_name) > 0) {
+                            $new_group = InstitutionGroup::create(array('id' => $row[0], 'name' => $_name));
+                            $num_created++;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Get the new full list of group names
+        $new_groups = InstitutionGroup::orderBy('id', 'ASC')->get();
+
+        // If we're replacing, reset any institutions' group-assignment if the group
+        // still exists (exact name-match)
+        if ($request->input('type') == 'Full Replacement') {
+            foreach ($original_groups as $inst_id => $old_groups) {
+                foreach ($old_groups as $_id => $_name) {
+                    $new_group = $new_groups->where('name', '=', $_name)->first();
+                    if ($new_group) {
+                        $new_group->institutions()->attach($inst_id);
+                    }
+                }
+            }
+        }
+
+        // return the current full list of groups with a success message
+        $msg  = 'Institution Groups imported successfully : ';
+        $msg .= ($num_deleted>0) ? $num_deleted . " removed, " : "";
+        $msg .= $num_updated . " updated and " . $num_created . " added";
+        if ($num_skipped > 0) {
+            $msg .= ($num_skipped > 0) ? " (" . $num_skipped . " existing names/ids skipped)" : ".";
+        }
+        return response()->json(['result' => true, 'msg' => $msg, 'groups' => $new_groups->toArray()]);
     }
 }

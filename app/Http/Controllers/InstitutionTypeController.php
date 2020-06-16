@@ -300,9 +300,13 @@ class InstitutionTypeController extends Controller
                             $num_updated++;
                         }
                     } else {
+                        // Save the new name
                         if (!is_null($row[1])) {
-                            $new_type = InstitutionType::create(array('id' => $row[0], 'name' => $row[1]));
-                            $num_created++;
+                            $_name = trim($row[1]);
+                            if (strlen($_name) > 0) {
+                                $new_type = InstitutionType::create(array('id' => $row[0], 'name' => $_name));
+                                $num_created++;
+                            }
                         }
                     }
                 }

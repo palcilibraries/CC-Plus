@@ -171,7 +171,7 @@ class Sushi extends Model
         }
 
        // Construct URI for the request
-        $request_uri .= $report->name . $uri_auth . $uri_dates . $uri_atts;
+        $request_uri .= strtolower($report->name) . $uri_auth . $uri_dates . $uri_atts;
         return $request_uri;
     }
 
@@ -208,6 +208,10 @@ class Sushi extends Model
        // Make sure there are Report_Items to process
         if (!isset($this->json->Report_Items)) {
             throw new \Exception("SUSHI error: no Report_Items included in JSON response.");
+        } else {
+            if (sizeof($this->json->Report_Items) <= 0) {
+                throw new \Exception("SUSHI error: Report_Items in JSON response is empty.");
+            }
         }
 
        // Make sure there are Report_Items to process

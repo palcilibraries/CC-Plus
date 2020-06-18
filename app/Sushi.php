@@ -210,7 +210,7 @@ class Sushi extends Model
             throw new \Exception("SUSHI error: no Report_Items included in JSON response.");
         } else {
             if (sizeof($this->json->Report_Items) <= 0) {
-                throw new \Exception("SUSHI error: no Report_Items included in JSON response.");
+                throw new \Exception("SUSHI error: Report_Items in JSON response is empty.");
             }
         }
 

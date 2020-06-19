@@ -133,7 +133,7 @@ class SushiSettingController extends Controller
          $_uri = rtrim($_url, '/');                           // remove any remaining trailing slashes
 
          // Construct and execute the test request
-         $_uri .= '/status/';
+         $_uri .= '/status';
          $uri_auth = "?customer_id=" . urlencode($request->customer_id);
         if (!is_null($request->requestor_id)) {
             $uri_auth .= "&requestor_id=" . urlencode($request->requestor_id);

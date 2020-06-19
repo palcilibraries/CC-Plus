@@ -82,10 +82,13 @@ class SavedReport extends Model
         }
 
         // Tack on any master field filters not defined in $my_filters
-        foreach ($fields as $field) {
-            if ($field->reportFilter && !isset($return_filters[$rf->report_column])) {
-                $return_filters[$field->reportFilter->report_column] = 0;
-            }
+         foreach ($fields as $field) {
+             $rf = $field->reportFilter;
+             if (!is_null($rf)) {
+                 if (!isset($return_filters[$rf->report_column])) {
+                     $return_filters[$rf->report_column] = 0;
+                 }
+             }
         }
         if (!isset($return_filters['institutiongroup_id'])) {   // This isn't a field, just a filter
             $return_filters['institutiongroup_id'] = 0;

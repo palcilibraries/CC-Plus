@@ -125,32 +125,32 @@ class SushiSettingController extends Controller
         $this->validate($request, ['prov_id' => 'required']);
         $provider = Provider::findOrFail($request->prov_id);
 
-        // Begin setting up the URI by cleaning/standardizing the server_url_r5 string in the setting
-         $_url = rtrim($provider->server_url_r5);    // remove trailing whitespace
-         $_url = preg_replace('/\/?reports\/?/i', '', $_url); // take off any methods with any bounding slashes
-         $_url = preg_replace('/\/?status\/?/i', '', $_url);  //   "   "   "     "      "   "     "        "
-         $_url = preg_replace('/\/?members\/?/i', '', $_url); //   "   "   "     "      "   "     "        "
-         $_uri = rtrim($_url, '/');                           // remove any remaining trailing slashes
+       // Begin setting up the URI by cleaning/standardizing the server_url_r5 string in the setting
+        $_url = rtrim($provider->server_url_r5);    // remove trailing whitespace
+        $_url = preg_replace('/\/?reports\/?/i', '', $_url); // take off any methods with any bounding slashes
+        $_url = preg_replace('/\/?status\/?/i', '', $_url);  //   "   "   "     "      "   "     "        "
+        $_url = preg_replace('/\/?members\/?/i', '', $_url); //   "   "   "     "      "   "     "        "
+        $_uri = rtrim($_url, '/');                           // remove any remaining trailing slashes
 
-         // Construct and execute the test request
-         $_uri .= '/status';
-         $uri_auth = "?customer_id=" . urlencode($request->customer_id);
+       // Construct and execute the test request
+        $_uri .= '/status';
+        $uri_auth = "?customer_id=" . urlencode($request->customer_id);
         if (!is_null($request->requestor_id)) {
             $uri_auth .= "&requestor_id=" . urlencode($request->requestor_id);
         }
-        if (!is_null($request->API_key)) {
-            $uri_auth .= "&api_key=" . urlencode($request->API_key);
+        if (!is_null($request->apikey)) {
+            $uri_auth .= "&api_key=" . urlencode($request->apikey);
         }
-         $request_uri = $_uri . $uri_auth;
+        $request_uri = $_uri . $uri_auth;
 
-        // Make the request and convert result into JSON
-         $rows = array();
-         $client = new Client();   //GuzzleHttp\Client
+       // Make the request and convert result into JSON
+        $rows = array();
+        $client = new Client();   //GuzzleHttp\Client
         try {
-             $response = $client->get($request_uri);
-             $rows[] = "JSON Response:";
-             $rows[] = json_decode($response->getBody(), JSON_PRETTY_PRINT);
-             $result = 'Service status successfully received';
+            $response = $client->get($request_uri);
+            $rows[] = "JSON Response:";
+            $rows[] = json_decode($response->getBody(), JSON_PRETTY_PRINT);
+            $result = 'Service status successfully received';
         } catch (\Exception $e) {
             $result = 'Request for service status failed!';
             if ($e->hasResponse()) {

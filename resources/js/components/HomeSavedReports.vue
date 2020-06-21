@@ -1,20 +1,22 @@
 <template>
-  <v-container fluid grid-list-lg>
+  <v-container fluid grid-list-lg saved-report>
     <div v-if="mutable_reports.length>=1">
       <v-layout row wrap>
         <v-flex v-for="report in mutable_reports" :key="report.id">
           <v-card>
-            <v-card-title>{{ report.title }}</v-card-title>
+            <h2 class="v-card-title">{{ report.title }}</h2>
+			<div class="v-card-actions">
+	            <span>
+	              <v-btn class='btn' small type="button" :href="'/savedreports/'+report.id+'/edit'">Edit</v-btn>
+	            </span>
+	            <span>
+	              <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
+	            </span>
+			</div>
             <v-card-text class="headline font-weight-bold">
-              <p>
-                <span>
-                  <v-btn class='btn' small type="button" :href="'/savedreports/'+report.id+'/edit'">Edit</v-btn>
-                </span>
-                <span>
-                  <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
-                </span>
-              </p>
-              <h5>Last Harvest: {{ report.last_harvest }}</h5>
+              <h5>Last Harvest: {{ report.last_harvest }}  <a href="'/harvestlogs?rept='+report.master_id+'&yrmo='+report.last_harvest">
+                    Harvest details
+                </a></h5>
               <div v-if="is_admin || is_viewer">
                 <h5>{{ report.successful }} / {{ report.inst_count }} institutions successful</h5>
               </div>
@@ -23,17 +25,9 @@
                 <h5 v-else>All harvests completed successfully</h5>
               </div>
               <p>
-                <span>
-                  <v-btn class='btn' small type="button"
-                         :href="'/harvestlogs?rept='+report.master_id+'&yrmo='+report.last_harvest">
-                    Harvest details
-                  </v-btn>
-                </span>
-                <span>
-                  <v-btn class='btn' small type="button" :href="'/reports/preview?saved_id='+report.id">
+                <v-btn class='btn primary' small type="button" :href="'/reports/preview?saved_id='+report.id">
                       Preview & Export
-                  </v-btn>
-                </span>
+                </v-btn>
               </p>
             </v-card-text>
           </v-card>

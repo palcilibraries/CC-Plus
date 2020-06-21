@@ -88,3 +88,15 @@ main #app {
     display: inline-block;
     margin-right: 1em;
 }
+.btn.section-action {
+	color: #006699;
+}
+.saved-report .v-card-actions,
+.saved-report .v-card-title {
+	display: inline-block;
+}
+.v-btn.primary {
+	background-color: #006699;
+	border: #006699;
+	color: white;
+}

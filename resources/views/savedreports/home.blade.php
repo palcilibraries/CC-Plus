@@ -23,7 +23,7 @@
         @else
           <td><h5>No Custom Reports<h5></td>
         @endif
-        <td><a class="btn btn-success" href="/reports/create">Create a Report</a></td>
+        <td><a class="btn v-btn v-btn--contained v-size--small section-action" href="/reports/create">Create a Report</a></td>
       </tr>
     </table>
     <home-saved-reports :reports="{{ json_encode($report_data) }}"></home-saved-reports>

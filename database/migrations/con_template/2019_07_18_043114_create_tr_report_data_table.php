@@ -35,7 +35,6 @@ class CreateTrReportDataTable extends Migration
             $table->unsignedInteger('unique_title_requests')->default(0);
             $table->unsignedInteger('limit_exceeded')->default(0);
             $table->unsignedInteger('no_license')->default(0);
-            // $table->timestamps();
 
             $table->foreign('title_id')->references('id')->on($global_db . '.titles');
             $table->foreign('prov_id')->references('id')->on('providers');

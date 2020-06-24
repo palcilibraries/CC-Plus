@@ -133,8 +133,10 @@
     },
     mounted() {
       console.log('HarvestLogData Component mounted.');
-      this.minYM = this.bounds[0].YM_min;
-      this.maxYM = this.bounds[0].YM_max;
+      if (typeof(this.bounds[0]) != 'undefined') {
+        this.minYM = this.bounds[0].YM_min;
+        this.maxYM = this.bounds[0].YM_max;
+      }
     }
   }
 </script>

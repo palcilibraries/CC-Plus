@@ -6,20 +6,20 @@
             <!-- Left Side Of Navbar -->
             <ul class="navbar-nav mr-auto">
               <div v-for="item in navList">
-                <li v-if="item.children && (item.role=='All' || is_manager)" class="nav-item dropdown">
+                <li v-if="item.children && isVisible(item)" class="nav-item dropdown">
                   <a id="navbarDropdown" class="nav-link dropdown-toggle" :href="item.url" :title="item.name"
                      role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                      {{ item.name }}<span class="caret"></span>
                   </a>
                   <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                     <div v-for="child in item.children">
-                      <li v-if="child.role=='All' || is_manager">
+                      <li v-if="isVisible(child)">
                         <a class="dropdown-item":href="child.url" :title="child.name">{{ child.name }}</a>
                       </li>
                     </div>
                   </div>
                 </li>
-                <li v-else-if="item.role=='All' || is_manager" class="nav-item" >
+                <li v-else-if="isVisible(item)" class="nav-item" >
                     <a class="nav-link" :href="item.url" :title="item.name">{{ item.name }}</a>
                 </li>
               </div>
@@ -70,7 +70,6 @@ export default {
             profile_url: '',
             navList: [
               { url: "/", name: "Home", role: "All" },
-              // { url: "/reports", name: "Reports", role: "All" },
               {
                 url: "#",
                 name: "Reports",
@@ -150,8 +149,16 @@ export default {
             ]
         }
     },
+    methods: {
+      isVisible(item) {
+        if (this.is_admin) return true;
+        if (this.is_manager && (item.role != 'Admin')) return true;
+        if (item.role == 'All') return true;
+        return false;
+      }
+    },
     computed: {
-      ...mapGetters(['is_manager'])
+      ...mapGetters(['is_manager','is_admin'])
     },
     mounted() {
         this.$store.dispatch('updateAccess', this.access);

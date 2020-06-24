@@ -4,31 +4,29 @@
       <v-layout row wrap>
         <v-flex v-for="report in mutable_reports" :key="report.id">
           <v-card>
-            <h2 class="v-card-title">{{ report.title }}</h2>
+            <h3 class="v-card-title">{{ report.title }}</h3>
 			<div class="v-card-actions">
-	            <span>
-	              <v-btn class='btn' small type="button" :href="'/savedreports/'+report.id+'/edit'">Edit</v-btn>
-	            </span>
-	            <span>
-	              <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
-	            </span>
+	            <v-btn class='btn' small type="button" :href="'/savedreports/'+report.id+'/edit'">Edit</v-btn>
+                <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
 			</div>
             <v-card-text class="headline font-weight-bold">
-              <h5>Last Harvest: {{ report.last_harvest }}  <a href="'/harvestlogs?rept='+report.master_id+'&yrmo='+report.last_harvest">
-                    Harvest details
-                </a></h5>
+              <p>Last Harvest: {{ report.last_harvest }}</p>
               <div v-if="is_admin || is_viewer">
-                <h5>{{ report.successful }} / {{ report.inst_count }} institutions successful</h5>
+                <p>{{ report.successful }} / {{ report.inst_count }} institutions successful   <a href="'/harvestlogs?rept='+report.master_id+'&yrmo='+report.last_harvest">
+                    Harvest details
+                </a></p>
               </div>
               <div v-else>
-                <h5 v-if="report.successful < report.inst_count">One or more harvests have failed</h5>
-                <h5 v-else>All harvests completed successfully</h5>
+                <p v-if="report.successful < report.inst_count">One or more harvests have failed   <a href="'/harvestlogs?rept='+report.master_id+'&yrmo='+report.last_harvest">
+                    Harvest details
+                </a></p>
+                <p v-else>All harvests completed successfully   <a href="'/harvestlogs?rept='+report.master_id+'&yrmo='+report.last_harvest">
+                    Harvest details
+                </a></p>
               </div>
-              <p>
-                <v-btn class='btn primary' small type="button" :href="'/reports/preview?saved_id='+report.id">
+              <v-btn class='btn primary' small type="button" :href="'/reports/preview?saved_id='+report.id">
                       Preview & Export
-                </v-btn>
-              </p>
+              </v-btn>
             </v-card-text>
           </v-card>
         </v-flex>

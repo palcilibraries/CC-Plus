@@ -6,7 +6,7 @@
           <v-col>
             <v-btn small color="primary" type="button" @click="editForm" class="section-action">edit</v-btn>
           </v-col>
-          <v-col>
+          <v-col v-if="!is_admin">
             <v-btn small color="primary" type="button" @click="importForm" class="section-action">
               Import Settings
             </v-btn>

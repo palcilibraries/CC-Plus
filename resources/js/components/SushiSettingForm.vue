@@ -104,9 +104,12 @@
 			},
             destroy (settingid) {
                 var self = this;
+                let message = "Deleting these settings cannot be reversed, only manually recreated.";
+                message += " NOTE: Harvest Log and Failed Harvest records connected to these settings";
+                message += " will also be deleted!";
                 Swal.fire({
                   title: 'Are you sure?',
-                  text: "Deleting these settings cannot be reversed, only manually recreated.",
+                  text: message,
                   icon: 'warning',
                   showCancelButton: true,
                   confirmButtonColor: '#3085d6',

@@ -1,11 +1,18 @@
 <template>
   <div class="details">
   	  <h2 class="section-title">Details</h2>
-      <div v-if="is_manager && !showForm">
+      <div v-if="is_manager && showForm==''">
         <v-row>
           <v-col>
-            <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+            <v-btn small color="primary" type="button" @click="editForm" class="section-action">edit</v-btn>
           </v-col>
+          <v-col>
+            <v-btn small color="primary" type="button" @click="importForm" class="section-action">
+              Import Settings
+            </v-btn>
+          </v-col>
+        </v-row>
+        <v-row>
           <v-col v-if="is_admin && mutable_inst.can_delete">
             <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_inst.id)">Delete</v-btn>
           </v-col>
@@ -14,9 +21,8 @@
         <span class="form-fail" role="alert" v-text="failure"></span>
       </div>
       <div>
-        <!-- form display control and confirmations  -->
         <!-- Values-only when form not active -->
-        <div v-if="!showForm">
+        <div v-if="showForm==''">
 	      <v-simple-table>
 	        <tr>
 	          <td>Name </td>
@@ -49,7 +55,7 @@
 	      </v-simple-table>
         </div>
         <!-- display form if manager has activated it. onSubmit function closes and resets showForm -->
-        <div v-else>
+        <div v-if="showForm=='edit'">
           <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
               <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
               <v-select
@@ -98,6 +104,35 @@
 			  <v-btn small type="button" @click="hideForm">cancel</v-btn>
           </form>
         </div>
+        <div v-if="showForm=='import'">
+          <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined></v-file-input>
+          <p>
+            <strong>You are restricted to importing settings that affect only your institution.</strong>
+            <br />
+            <strong>Note:</strong> Import Type below refers to the row(s) of Sushi Settings which may, or may not, follow
+            an institution record in the input CSV file. When "Full Replacement" is chosen, the existing settings for any
+            provider not included in the import file will be deleted! This will also remove all associated harvest and
+            failed-harvest records connected to the settings.
+          </p>
+          <p>
+            Regardless of the Import Type, the first record in the import file for any institution (based on ID or name)
+            will be used to update the institution's record (columns B through G). These values, including the group
+            assignments in column-F, will replace whatever is currently defined for the given institution.
+          </p>
+          <p>
+            For these reasons, use caution when using this import function, especially when requesting a Full Replacement
+            import. Generating an institution export FIRST will provide detailed instructions for importing on the "How
+            to Import" tab and help ensure that the desired end-state is achieved.
+          </p>
+          <p>
+            The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings whenever
+            a match for an institution-ID and Provider-ID are found in the import file. If no setting for a given
+            Institution-ID and Provider-ID currently exist, the setting will be added.
+          </p>
+          <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
+          <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+          <v-btn small type="button" @click="hideForm">cancel</v-btn>
+        </div>
       </div>
     </div>
   </div>
@@ -113,7 +148,6 @@
         props: {
                 institution: { type:Object, default: () => {} },
                 types: { type:Array, default: () => [] },
-                inst_groups: { type:Array, default: () => [] },
                 all_groups: { type:Array, default: () => [] },
                },
 
@@ -124,20 +158,28 @@
                 status: '',
                 inst_type: '',
                 statusvals: ['Inactive','Active'],
-				showForm: false,
+				showForm: '',
                 mutable_inst: this.institution,
-                mutable_groups: this.inst_groups,
+                mutable_groups: this.institution.groups,
                 form: new window.Form({
                     name: this.institution.name,
                     is_active: this.institution.is_active,
                     fte: this.institution.fte,
                     type_id: this.institution.type_id,
-                    institutiongroups: this.inst_groups,
+                    institutiongroups: this.institution.groups,
                     notes: this.institution.notes,
-                })
+                }),
+                csv_upload: null,
+                import_type: '',
+                import_types: ['Add or Update', 'Full Replacement']
             }
         },
         methods: {
+            importForm () {
+                this.csv_upload = null;
+                this.import_type = '';
+                this.showForm = 'import';
+            },
             formSubmit (event) {
                 this.success = '';
                 this.failure = '';
@@ -157,13 +199,50 @@
                             this.failure = response.msg;
                         }
                     });
-                this.showForm = false;
+                this.showForm = '';
             },
-            swapForm (event) {
-                this.showForm = true;
+            importSubmit (event) {
+                this.success = '';
+                if (this.import_type == '') {
+                    this.failure = 'An import type is required';
+                    return;
+                }
+                if (this.csv_upload==null) {
+                    this.failure = 'A CSV import file is required';
+                    return;
+                }
+                this.failure = '';
+                let formData = new FormData();
+                formData.append('csvfile', this.csv_upload);
+                formData.append('type', this.import_type);
+                axios.post('/institutions/import', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                      })
+                     .then( (response) => {
+                         if (response.data.result) {
+                             // Replace values in mutable array with response data
+                             this.mutable_inst.name = response.data.inst_data['name'];
+                             this.mutable_inst.type_id = response.data.inst_data['type_id'];
+                             this.inst_type = this.types[this.mutable_inst.type_id].name;
+                             this.mutable_inst.is_active = response.data.inst_data['is_active'];
+                             this.status = this.statusvals[this.mutable_inst.is_active];
+                             this.mutable_inst.fte = response.data.inst_data['fte'];
+                             this.mutable_inst.notes = response.data.inst_data['notes'];
+                             this.mutable_groups = response.data.inst_data['groups'];
+                             this.success = response.data.msg;
+                         } else {
+                             this.failure = response.data.msg;
+                         }
+                     });
+                this.showForm = '';
+            },
+            editForm (event) {
+                this.showForm = 'edit';
 			},
             hideForm (event) {
-                this.showForm = false;
+                this.showForm = '';
 			},
             destroy (instid) {
                 var self = this;
@@ -199,7 +278,7 @@
           ...mapGetters(['is_manager', 'is_admin'])
         },
         mounted() {
-            this.showForm = false;
+            this.showForm = '';
             this.status=this.statusvals[this.institution.is_active];
             this.inst_type = this.types[this.institution.type_id-1].name;
             console.log('Institution Component mounted.');

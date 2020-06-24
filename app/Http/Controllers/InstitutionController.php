@@ -7,6 +7,7 @@ use App\InstitutionType;
 use App\InstitutionGroup;
 use App\Provider;
 use App\Role;
+use App\SushiSetting;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -26,7 +27,6 @@ class InstitutionController extends Controller
      */
     public function index(Request $request)
     {
-        $groups = InstitutionGroup::pluck('name', 'id');
         if (auth()->user()->hasRole("Admin")) { // show them all
             $institutions = Institution::with('institutionType','institutionGroups')->orderBy('name', 'ASC')
                                        ->get(['id','name','type_id','is_active']);
@@ -128,7 +128,8 @@ class InstitutionController extends Controller
         // Related models we'll be passing
         $types = InstitutionType::get(['id','name'])->toArray();
         $all_groups = InstitutionGroup::get(['id','name'])->toArray();
-        $inst_groups = $institution->institutionGroups()->pluck('institution_group_id')->all();
+        $institution['groups'] = $institution->institutionGroups()->pluck('institution_group_id')->all();
+
 
         // Roles are limited to current user's max role
         $all_roles = Role::where('id', '<=', auth()->user()->maxRole())->get(['name', 'id'])->toArray();
@@ -142,7 +143,7 @@ class InstitutionController extends Controller
                            ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
         return view(
             'institutions.show',
-            compact('institution', 'users', 'unset_providers', 'types', 'inst_groups', 'all_groups', 'all_roles')
+            compact('institution', 'users', 'unset_providers', 'types', 'all_groups', 'all_roles')
         );
     }
 
@@ -220,7 +221,7 @@ class InstitutionController extends Controller
      */
     public function export($type)
     {
-        // Only Admins can export institution data
+        // Only Admins and Managers can export institution data
         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
 
         // Admins get all institutions; eager load type, groups, and sushi settings
@@ -250,83 +251,84 @@ class InstitutionController extends Controller
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:C12');
-        $info_sheet->getStyle('A1:C12')->applyFromArray($info_style);
-        $info_sheet->getStyle('A1:C12')->getAlignment()->setWrapText(true);
+        $info_sheet->mergeCells('A1:C13');
+        $info_sheet->getStyle('A1:C13')->applyFromArray($info_style);
+        $info_sheet->getStyle('A1:C13')->getAlignment()->setWrapText(true);
         $top_txt  = "The Institutions tab represents a starting place for updating or importing settings. The table\n";
         $top_txt .= "below describes the datatype and order that the import expects. Any Import rows without an ID\n";
-        $top_txt .= "in column 1 will be ignored. If values are missing/invalid within a given column, but not\n";
+        $top_txt .= "in column 1 will be ignored. If values are missing/invalid within the other columns, but not\n";
         $top_txt .= "required, they will be set to the 'Default'.\n\n";
         $top_txt .= "Institution imports can hold multiple rows per-institution to allow for by-provider SUSHI\n";
-        $top_txt .= "settings. The first row for a given institution will be canonical for columns (A-G). If\n";
-        $top_txt .= "Provider-ID is zero or missing, the SUSHI-settings columns (I-L) will be ignored. A full\n";
+        $top_txt .= "settings. The first row seen for a given ID in column (A) will be canonical for columns (B-G),\n";
+        $top_txt .= "and will replace any existing values or groups currently defined for the institution.\n";
+        $top_txt .= "If Provider-ID is zero or missing, the SUSHI-settings columns (I-L) will be ignored. A full\n";
         $top_txt .= "export of providers, institution types, and institution groups will supply reference values\n";
         $top_txt .= "for the Provider-ID, Type-ID, and Institution-Group-IDs columns.\n\n";
         $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
         $top_txt .= "Any header row or columns beyond 'L' will be ignored.";
         $info_sheet->setCellValue('A1', $top_txt);
-        $info_sheet->mergeCells('B14:D14');
-        $info_sheet->getStyle('A14:B14')->applyFromArray($head_style);
-        $info_sheet->setCellValue('A14', "NOTE: ");
-        $info_sheet->setCellValue('B14', "Institution ID=1 is reserved for system use.");
-        $info_sheet->mergeCells('B15:D17');
-        $info_sheet->getStyle('B15:D17')->applyFromArray($info_style);
-        $info_sheet->getStyle('B10:D17')->getAlignment()->setWrapText(true);
+        $info_sheet->mergeCells('B15:D15');
+        $info_sheet->getStyle('A15:B15')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A15', "NOTE: ");
+        $info_sheet->setCellValue('B15', "Institution ID=1 is reserved for system use.");
+        $info_sheet->mergeCells('B16:D18');
+        $info_sheet->getStyle('B16:D18')->applyFromArray($info_style);
+        $info_sheet->getStyle('B11:D18')->getAlignment()->setWrapText(true);
         $note_txt  = "When performing full-replacement imports, be VERY careful about changing or overwriting\n";
         $note_txt .= "existing ID value(s). The best approach is to add to, or modify, a full export to ensure\n";
         $note_txt .= "that existing institution IDs are not accidently overwritten.";
-        $info_sheet->setCellValue('B15', $note_txt);
-        $info_sheet->getStyle('A19:D19')->applyFromArray($head_style);
-        $info_sheet->setCellValue('A19', 'Column Name');
-        $info_sheet->setCellValue('B19', 'Data Type');
-        $info_sheet->setCellValue('C19', 'Description');
-        $info_sheet->setCellValue('D19', 'Default');
-        $info_sheet->setCellValue('A20','Id');
-        $info_sheet->setCellValue('B20','Integer > 1');
-        $info_sheet->setCellValue('C20','Unique CC-Plus Institution ID - required');
-        $info_sheet->setCellValue('A21','Name');
-        $info_sheet->setCellValue('B21','String');
-        $info_sheet->setCellValue('C21','Institution Name - required');
-        $info_sheet->setCellValue('A22','Active');
-        $info_sheet->setCellValue('B22','String (Y or N)');
-        $info_sheet->setCellValue('C22','Make the institution active?');
-        $info_sheet->setCellValue('D22','Y');
-        $info_sheet->setCellValue('A23','Type ID');
-        $info_sheet->setCellValue('B23','Integer');
-        $info_sheet->setCellValue('C23','Institution Type ID (see above)');
-        $info_sheet->setCellValue('D23','1 (Not classified)');
-        $info_sheet->setCellValue('A24','FTE');
+        $info_sheet->setCellValue('B16', $note_txt);
+        $info_sheet->getStyle('A20:D20')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A20', 'Column Name');
+        $info_sheet->setCellValue('B20', 'Data Type');
+        $info_sheet->setCellValue('C20', 'Description');
+        $info_sheet->setCellValue('D20', 'Default');
+        $info_sheet->setCellValue('A21','Id');
+        $info_sheet->setCellValue('B21','Integer > 1');
+        $info_sheet->setCellValue('C21','Unique CC-Plus Institution ID - required');
+        $info_sheet->setCellValue('A22','Name');
+        $info_sheet->setCellValue('B22','String');
+        $info_sheet->setCellValue('C22','Institution Name - required');
+        $info_sheet->setCellValue('A23','Active');
+        $info_sheet->setCellValue('B23','String (Y or N)');
+        $info_sheet->setCellValue('C23','Make the institution active?');
+        $info_sheet->setCellValue('D23','Y');
+        $info_sheet->setCellValue('A24','Type ID');
         $info_sheet->setCellValue('B24','Integer');
-        $info_sheet->setCellValue('C24','FTE count for the institution');
-        $info_sheet->setCellValue('D24','NULL');
-        $info_sheet->setCellValue('A25','Institution Group IDs');
-        $info_sheet->setCellValue('B25','Integer,Integer,...');
-        $info_sheet->setCellValue('C25','CSV list of Institution Group IDs (see above)');
+        $info_sheet->setCellValue('C24','Institution Type ID (see above)');
+        $info_sheet->setCellValue('D24','1 (Not classified)');
+        $info_sheet->setCellValue('A25','FTE');
+        $info_sheet->setCellValue('B25','Integer');
+        $info_sheet->setCellValue('C25','FTE count for the institution');
         $info_sheet->setCellValue('D25','NULL');
-        $info_sheet->setCellValue('A26','Notes');
-        $info_sheet->setCellValue('B26','Text-blob');
-        $info_sheet->setCellValue('C26','Notes or other details');
+        $info_sheet->setCellValue('A26','Institution Group IDs');
+        $info_sheet->setCellValue('B26','Integer,Integer,...');
+        $info_sheet->setCellValue('C26','CSV list of Institution Group IDs (see above)');
         $info_sheet->setCellValue('D26','NULL');
-        $info_sheet->setCellValue('A27','Provider ID');
-        $info_sheet->setCellValue('B27','Integer');
-        $info_sheet->setCellValue('C27','Unique CC-Plus Provider ID (see above)');
+        $info_sheet->setCellValue('A27','Notes');
+        $info_sheet->setCellValue('B27','Text-blob');
+        $info_sheet->setCellValue('C27','Notes or other details');
         $info_sheet->setCellValue('D27','NULL');
-        $info_sheet->setCellValue('A28','Customer ID');
-        $info_sheet->setCellValue('B28','String');
-        $info_sheet->setCellValue('C28','SUSHI customer ID , provider-specific');
+        $info_sheet->setCellValue('A28','Provider ID');
+        $info_sheet->setCellValue('B28','Integer');
+        $info_sheet->setCellValue('C28','Unique CC-Plus Provider ID (see above)');
         $info_sheet->setCellValue('D28','NULL');
-        $info_sheet->setCellValue('A29','Requestor ID');
+        $info_sheet->setCellValue('A29','Customer ID');
         $info_sheet->setCellValue('B29','String');
-        $info_sheet->setCellValue('C29','SUSHI requestor ID , provider-specific');
+        $info_sheet->setCellValue('C29','SUSHI customer ID , provider-specific');
         $info_sheet->setCellValue('D29','NULL');
-        $info_sheet->setCellValue('A30','API Key');
+        $info_sheet->setCellValue('A30','Requestor ID');
         $info_sheet->setCellValue('B30','String');
-        $info_sheet->setCellValue('C30','SUSHI API Key , provider-specific');
+        $info_sheet->setCellValue('C30','SUSHI requestor ID , provider-specific');
         $info_sheet->setCellValue('D30','NULL');
-        $info_sheet->setCellValue('A31','Support Email');
+        $info_sheet->setCellValue('A31','API Key');
         $info_sheet->setCellValue('B31','String');
-        $info_sheet->setCellValue('C31','Support email address, per-provider');
+        $info_sheet->setCellValue('C31','SUSHI API Key , provider-specific');
         $info_sheet->setCellValue('D31','NULL');
+        $info_sheet->setCellValue('A32','Support Email');
+        $info_sheet->setCellValue('B32','String');
+        $info_sheet->setCellValue('C32','Support email address, per-provider');
+        $info_sheet->setCellValue('D32','NULL');
 
         // Set row height and auto-width columns for the sheet
         for ($r=1; $r<33; $r++) {
@@ -382,6 +384,7 @@ class InstitutionController extends Controller
             $inst_sheet->setCellValue('G' . $row, $inst->notes);
             if (isset($inst->sushiSettings)) {
                 foreach ($inst->sushiSettings as $setting) {
+                    $inst_sheet->setCellValue('A' . $row, $inst->id);
                     $inst_sheet->setCellValue('H' . $row, $setting->prov_id);
                     $inst_sheet->setCellValue('I' . $row, $setting->customer_id);
                     $inst_sheet->setCellValue('J' . $row, $setting->requestor_id);
@@ -400,8 +403,8 @@ class InstitutionController extends Controller
             }
         }
 
-        // Auto-size the columns
-        $columns = array('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P');
+        // Auto-size the columns (skip notes in 'G')
+        $columns = array('A','B','C','D','E','F','H','I','J','K','L','M','N','O','P');
         foreach ($columns as $col) {
             $inst_sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -423,5 +426,236 @@ class InstitutionController extends Controller
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');
         $writer->save('php://output');
+    }
+
+    /**
+     * Import institutions (including sushi-settings) from a CSV file to the database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function import(Request $request)
+    {
+        // Only Admins and Managers can import institution data
+        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+
+        // Handle and validate inputs
+        $this->validate($request, ['type' => 'required', 'csvfile' => 'required']);
+        if (!$request->hasFile('csvfile')) {
+            // return back()->with('error', 'Error accessing CSV import file');
+            return response()->json(['result' => false, 'msg' => 'Error accessing CSV import file']);
+        }
+        $type = $request->input('type');
+        if ($type != 'Full Replacement' && $type != 'Add or Update') {
+            // return back()->with('error','Error - unrecognized import type.');
+            return response()->json(['result' => false, 'msg' => 'Error - unrecognized import type.']);
+        }
+
+        // Get the CSV data
+        $file = $request->file("csvfile")->getRealPath();
+        $csvData = file_get_contents($file);
+        $rows = array_map("str_getcsv", explode("\n", $csvData));
+        if (sizeof($rows) < 1) {
+            // return back()->with('error','Import file is empty, no changes applied.');
+            return response()->json(['result' => false, 'msg' => 'Import file is empty, no changes applied.']);
+        }
+
+        // Get existing institution and inst-groups data
+        if (auth()->user()->hasRole('Admin')) {
+            $limit_inst = 0;
+            $institutions = Institution::with('sushiSettings')->get();
+        } else {
+            $limit_inst = auth()->user()->inst_id;
+            $institutions = Institution::with('sushiSettings')->where('id','=',$limit_inst)->get();
+        }
+        $all_groups = InstitutionGroup::get(['id','name']);
+
+        // Process the input rows
+        $inst_skipped = 0;
+        $inst_updated = 0;
+        $inst_created = 0;
+        $sushi_skipped = 0;
+        $sushi_deleted = 0;
+        $sushi_updated = 0;
+        $cur_inst_id = 0;
+        $seen_insts = array();          // keep track of institutions seen while looping
+        $settings_to_keep = array();    // only used for full-replacements
+        foreach ($rows as $row) {
+            // Ignore bad/missing/invalid IDs and/or headers
+            if (!isset($row[0])) {
+                continue;
+            }
+            if ($row[0] == "" || !is_numeric($row[0])) {
+                continue;
+            }
+            $cur_inst_id = $row[0];
+
+            // Disallow managers from modify settings of other insts
+            if ($limit_inst > 0 && $cur_inst_id != $limit_inst || $cur_inst_id < 2) {
+                $skip_sushi = true;
+                $inst_skipped++;
+                continue;
+            }
+
+            // Update/Add the institution data/settings using the 1st record for an inst_id
+            if (!in_array($cur_inst_id, $seen_insts)) {
+                $skip_sushi = false;
+
+                // Check ID and name columns for silliness or errors
+                $_name = trim($row[1]);
+                $current_inst = $institutions->where("id", "=", $cur_inst_id)->first();
+                if (!is_null($current_inst)) {      // found existing ID
+                    if (strlen($_name) < 1) {       // If import-name empty, use current value
+                        $_name = trim($current_inst->name);
+                    } else {        // trap changing a name to a name that already exists
+                        $existing_inst = $institutions->where("name", "=", $_name)->first();
+                        if (!is_null($existing_inst)) {
+                            $_name = trim($current_inst->name);     // override, use current - no change
+                        }
+                    }
+                } else {
+                    $current_inst = $institutions->where("name", "=", $_name)->first();
+                    if (!is_null($current_inst) && strlen($_name) < 1) {
+                        $_name = trim($current_inst->name);
+                    }
+                }
+
+                // Dont store/create anything if name is still empty
+                if (strlen($_name) < 1) {
+                    $skip_sushi = true;
+                    $inst_skipped++;
+                    continue;
+                }
+
+                // Enforce defaults and put institution data columns into an array
+                $seen_insts[] = $cur_inst_id;
+                $_active = ($row[2] == 'Y') ? 1 : 0;
+                $_type = ($row[3] == '') ? 1 : $row[3];
+                $_fte = ($row[4] == '') ? null : $row[4];
+                $_notes = ($row[6] == '') ? null : $row[6];
+                $_inst = array('id' => $cur_inst_id, 'name' => $_name, 'is_active' => $_active, 'type_id' => $_type,
+                               'fte' => $_fte, 'notes' => $_notes);
+
+                // Update or create the Institution record
+                if (is_null($current_inst)) {      // Create
+                    $current_inst = Institution::create($_inst);
+                    $cur_inst_id = $current_inst->id;
+                    $inst_created++;
+                } else {                            // Update
+                    $current_inst->update($_inst);
+                    $inst_updated++;
+                }
+
+                // Set group membership(s)
+                $_group_ids = preg_split('/,/',$row[5]);
+                $current_inst->institutionGroups()->detach();
+                if (sizeof($_group_ids) > 0) {
+                    foreach ($_group_ids as $g) {
+                        $g_id = trim($g);
+                        if (is_numeric($g_id)) {
+                            $group = $all_groups->where('id',$g_id)->first();
+                            if ($group) {
+                                $current_inst->institutionGroups()->attach($g);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Handle Sushi Settings (as long as there's no issue from above and prov_id has a value)
+            $prov_id = trim($row[7]);
+            if (!$skip_sushi && $prov_id > 0 && is_numeric($prov_id) ) {
+
+                // Put settings into an array
+                $provider = Provider::find($prov_id);
+
+                if (!is_null($provider)) {
+
+                    // Disallow managers assigning credentials for non-consortia providers belonging to another inst
+                    if ($limit_inst > 0 && $provider->inst_id != 1 && $provider->inst_id != auth()->user()->inst_id) {
+                        $sushi_skipped++;
+                        continue;
+                    }
+
+                    // Update or create the settings
+                    $_args = array('customer_id' => $row[8], 'requestor_id' => $row[9],'API_key' => $row[10],
+                                   'support_email' => $row[11]);
+                    $new_setting = SushiSetting::
+                        updateOrCreate(['inst_id' => $cur_inst_id, 'prov_id' => $prov_id], $_args);
+
+                    // Keep track of settings-IDs to be retained
+                    if ($type == 'Full Replacement') {
+                        $settings_to_keep[] = $new_setting->id;
+                    }
+                    $sushi_updated++;
+                } else {
+                    $sushi_skipped++;
+                }
+            }
+        }
+
+        // Cleanup and return-results are different for Admins and Managers
+        // (Admins import from the datatable, managers only from the inst-show component)
+        $inst_data = array();
+        if ($limit_inst > 0) {
+
+            if (!isset($current_inst)) {
+                $msg = "Import failed : No updates to apply - verify IDs in import file.";
+                return response()->json(['result' => false, 'msg' => $msg]);
+            }
+
+            // If we're doing full-replace, delete sushi settings missing from the import
+            if ($type == 'Full Replacement') {
+                $sushi_deleted = SushiSetting::where('inst_id','=',auth()->user()->inst_id)
+                                             ->whereNotIn('id',$settings_to_keep)->delete();
+            }
+
+            // Add on group-settings
+            $inst_data = $current_inst->toArray();
+            $inst_data['groups'] = $current_inst->institutionGroups()->pluck('institution_group_id')->all();
+
+        // Admins...
+        } else {
+            if ($type == 'Full Replacement') {
+                $sushi_deleted = SushiSetting::whereNotIn('id',$settings_to_keep)->delete();
+            }
+
+            // Recreate the institutions list (like index does) to be returned to the caller
+            $institutions = Institution::with('institutionType','institutionGroups')->orderBy('name', 'ASC')
+                                       ->get(['id','name','type_id','is_active']);
+            $inst_data = array();
+            foreach ($institutions as $inst) {
+                $_groups = "";
+                foreach ($inst->institutionGroups as $group) {
+                    $_groups .= $group->name . ", ";
+                }
+                $i_data = $inst->toArray();
+                $i_data['type'] = $inst->institutionType->name;
+                $i_data['groups'] = rtrim(trim($_groups), ',');
+                $inst_data[] = $i_data;
+            }
+        }
+
+        // return the current full list of groups with a success message
+        $i_msg = "";
+        $i_msg .= ($inst_updated > 0) ? $inst_updated . " updated" : "";
+        if ($inst_created > 0) {
+            $i_msg .= ($i_msg != "") ? ", " . $inst_created . " added" : $inst_created . " added";
+        }
+        if ($inst_skipped > 0) {
+            $i_msg .= ($i_msg != "") ? ", " . $inst_skipped . " skipped" : $inst_skipped . " skipped";
+        }
+        $s_msg = "";
+        $s_msg .= ($sushi_updated > 0) ? $sushi_updated . " added or updated" : "";
+        if ($sushi_deleted > 0) {
+            $s_msg .= ($s_msg != "") ? ", " . $sushi_deleted . " deleted" : $sushi_deleted . " deleted";
+        }
+        if ($sushi_skipped > 0) {
+            $s_msg .= ($s_msg != "") ? ", " . $sushi_skipped . " skipped" : $sushi_skipped . " skipped";
+        }
+        $msg  = 'Import successful, Institutions : ' . $i_msg;
+        $msg .= ($s_msg != "") ? '; Sushi settings : ' . $s_msg : ".";
+
+        return response()->json(['result' => true, 'msg' => $msg, 'inst_data' => $inst_data]);
     }
 }

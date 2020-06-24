@@ -224,9 +224,12 @@ class InstitutionGroupController extends Controller
     {
         // Handle and validate inputs
         $this->validate($request, ['type' => 'required', 'csvfile' => 'required']);
-        $type = $request->input('type');
         if (!$request->hasFile('csvfile')) {
             return response()->json(['result' => false, 'msg' => 'Error accessing CSV import file']);
+        }
+        $type = $request->input('type');
+        if ($type != 'New Additions' && $type != 'Full Replacement') {
+            return response()->json(['result' => false, 'msg' => 'Error - unrecognized import type.']);
         }
 
         // Turn the CSV data into an array
@@ -247,7 +250,7 @@ class InstitutionGroupController extends Controller
         // If user requested full replacement we'll delete all the existing groups.
         // First, though, keep the current set to be able to restore any duplicates
         // after we've imported the new set.
-        if ($request->input('type') == 'Full Replacement') {
+        if ($type == 'Full Replacement') {
 
             // Get all institutions with their groups
             $original_groups = array();
@@ -269,9 +272,6 @@ class InstitutionGroupController extends Controller
             foreach ($all_groups as $group) {
                 $group->delete();
             }
-
-        } else if (!$request->input('type') == 'New Additions') {
-            return response()->json(['result' => false, 'msg' => 'Error - unrecognized import type.']);
         }
         $current_groups = InstitutionGroup::get();
 
@@ -308,7 +308,7 @@ class InstitutionGroupController extends Controller
 
         // If we're replacing, reset any institutions' group-assignment if the group
         // still exists (exact name-match)
-        if ($request->input('type') == 'Full Replacement') {
+        if ($type == 'Full Replacement') {
             foreach ($original_groups as $inst_id => $old_groups) {
                 foreach ($old_groups as $_id => $_name) {
                     $new_group = $new_groups->where('name', '=', $_name)->first();

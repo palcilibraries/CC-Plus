@@ -95,8 +95,15 @@ main #app {
 .saved-report .v-card-title {
 	display: inline-block;
 }
-.v-btn.primary {
-	background-color: #006699;
-	border: #006699;
+a.v-btn.primary {
+	background-color: #006699 !important;
+	border: #006699 !important;
 	color: white;
+}
+.v-card-title {
+	font-size: 1.4rem;
+	padding: .75em .5em 0;
+}
+.v-card-actions {
+    vertical-align: 0.2em;
 }

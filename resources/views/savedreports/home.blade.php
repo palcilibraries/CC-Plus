@@ -2,30 +2,20 @@
 
 @section('content')
 @if (sizeof($alerts) > 0)
-  <table>
     @foreach ($alerts as $alert)
-    <tr>
-      <td align="center">
-        <h5>System Alert :: <strong>{{ $alert->severity }}</strong> :: {{ $alert->text }}</h5></span>
-      </td>
-    </tr>
+      <div class="alert">System Alert :: <strong>{{ $alert->severity }}</strong> :: {{ $alert->text }}</div>
     @endforeach
-  </table>
 @endif
 <v-app>
   <v-content>
-    <table>
-      <tr><td><h3>{{ auth()->user()->name }}'s dashboard</h3></td></tr>
-      <tr><td><h4>{{ $inst_count }} institution(s) and {{ $prov_count }} provider(s) connected</h4></td></tr>
-      <tr>
-        @if (sizeof($report_data) >= 1)
-          <td><h5>My Saved Reports<h5></td>
-        @else
-          <td><h5>No Custom Reports<h5></td>
-        @endif
-        <td><a class="btn v-btn v-btn--contained v-size--small section-action" href="/reports/create">Create a Report</a></td>
-      </tr>
-    </table>
+	<h1>{{ auth()->user()->name }}'s dashboard</h1>
+    <h2>{{ $inst_count }} institution(s) and {{ $prov_count }} provider(s) connected</h2>
+      @if (sizeof($report_data) >= 1)
+        <h2>My Saved Reports<h2>
+      @else
+        <p>No Custom Reports</p>
+      @endif
+      <a class="btn v-btn v-btn--contained v-size--small section-action" href="/reports/create">Create a Report</a>
     <home-saved-reports :reports="{{ json_encode($report_data) }}"></home-saved-reports>
 
     <div class="row">

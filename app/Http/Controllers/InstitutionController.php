@@ -442,12 +442,10 @@ class InstitutionController extends Controller
         // Handle and validate inputs
         $this->validate($request, ['type' => 'required', 'csvfile' => 'required']);
         if (!$request->hasFile('csvfile')) {
-            // return back()->with('error', 'Error accessing CSV import file');
             return response()->json(['result' => false, 'msg' => 'Error accessing CSV import file']);
         }
         $type = $request->input('type');
         if ($type != 'Full Replacement' && $type != 'Add or Update') {
-            // return back()->with('error','Error - unrecognized import type.');
             return response()->json(['result' => false, 'msg' => 'Error - unrecognized import type.']);
         }
 
@@ -456,7 +454,6 @@ class InstitutionController extends Controller
         $csvData = file_get_contents($file);
         $rows = array_map("str_getcsv", explode("\n", $csvData));
         if (sizeof($rows) < 1) {
-            // return back()->with('error','Import file is empty, no changes applied.');
             return response()->json(['result' => false, 'msg' => 'Import file is empty, no changes applied.']);
         }
 
@@ -513,9 +510,9 @@ class InstitutionController extends Controller
                             $_name = trim($current_inst->name);     // override, use current - no change
                         }
                     }
-                } else {
+                } else {           // existing ID not found, try to find by name
                     $current_inst = $institutions->where("name", "=", $_name)->first();
-                    if (!is_null($current_inst) && strlen($_name) < 1) {
+                    if (!is_null($current_inst)) {
                         $_name = trim($current_inst->name);
                     }
                 }
@@ -529,7 +526,7 @@ class InstitutionController extends Controller
 
                 // Enforce defaults and put institution data columns into an array
                 $seen_insts[] = $cur_inst_id;
-                $_active = ($row[2] == 'Y') ? 1 : 0;
+                $_active = ($row[2] == 'N') ? 0 : 1;
                 $_type = ($row[3] == '') ? 1 : $row[3];
                 $_fte = ($row[4] == '') ? null : $row[4];
                 $_notes = ($row[6] == '') ? null : $row[6];

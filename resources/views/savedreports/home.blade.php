@@ -9,9 +9,9 @@
 <v-app>
   <v-content>
 	<h1>{{ auth()->user()->name }}'s dashboard</h1>
-    <h2>{{ $inst_count }} institution(s) and {{ $prov_count }} provider(s) connected</h2>
+    <h2 class="component-subhead">{{ $inst_count }} institution(s) and {{ $prov_count }} provider(s) connected</h2>
       @if (sizeof($report_data) >= 1)
-        <h2>My Saved Reports<h2>
+        <h2>My Saved Reports</h2>
       @else
         <p>No Custom Reports</p>
       @endif

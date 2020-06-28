@@ -20,7 +20,7 @@ class Institution extends Model
      * @var array
      */
     protected $fillable = [
-         'name', 'is_active', 'notes', 'type_id', 'password', 'sushiIPRange',
+         'id', 'name', 'is_active', 'notes', 'type_id', 'password', 'sushiIPRange',
          'shibURL', 'fte'
     ];
 

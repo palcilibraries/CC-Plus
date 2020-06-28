@@ -48,7 +48,7 @@ class SushiQLoader extends Command
     /**
      * Execute the console command.
      * ----------------------------
-     *   ccplus:sushiqn is intended to be run primarily as a nightly job.
+     *   ccplus:sushiqloader is intended to be run primarily as a nightly job.
      *      The optional arguments exist to allow the script to be run from the artisan command-line
      *      to add harvests and jobs in a more customized way.
      *   Processing phase-1:

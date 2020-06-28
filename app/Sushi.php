@@ -141,19 +141,19 @@ class Sushi extends Model
         $_url = preg_replace('/\/?status\/?/i', '', $_url);  //   "   "   "     "      "   "     "        "
         $_url = preg_replace('/\/?members\/?/i', '', $_url); //   "   "   "     "      "   "     "        "
         $_uri = rtrim($_url, '/');                           // remove any remaining trailing slashes
-        $request_uri = $_uri . '/' . $method . '/';
+        $request_uri = $_uri . '/' . $method;
 
        // Construct and execute the Request
         $uri_auth = "?customer_id=" . urlencode($setting->customer_id);
         if (!is_null($setting->requestor_id)) {
             $uri_auth .= "&requestor_id=" . urlencode($setting->requestor_id);
         }
-// Needs testing and confirmation:
-// haven't (yet) found a vendor that recognizes api_key .. the value (or the argument-name?)
         if (!is_null($setting->API_key)) {
             $uri_auth .= "&api_key=" . urlencode($setting->API_key);
         }
-        if ($report == "") {
+
+        // Return the URI if we're not building a report request
+        if ($report == "" || $method != "reports") {
             return $request_uri . $uri_auth;
         }
 
@@ -171,7 +171,7 @@ class Sushi extends Model
         }
 
        // Construct URI for the request
-        $request_uri .= strtolower($report->name) . $uri_auth . $uri_dates . $uri_atts;
+        $request_uri .= '/' . strtolower($report->name) . $uri_auth . $uri_dates . $uri_atts;
         return $request_uri;
     }
 

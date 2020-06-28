@@ -23,18 +23,13 @@ class Provider extends Model
    *
    * @var array
    */
-    protected $fillable = [
-      'name', 'is_active', 'inst_id', 'server_url_r5', 'security',
-      'auth_username', 'auth_password', 'day_of_month'
-    ];
+    protected $fillable = [ 'name', 'is_active', 'inst_id', 'server_url_r5', 'day_of_month' ];
 
   /**
    * The attributes that should be encrypted on save (password is already hashed)
    *
    * @var array
    */
-    protected $encrypted = [ 'auth_username', 'auth_password' ];
-
     public function canManage()
     {
       // Admin can manage any provider

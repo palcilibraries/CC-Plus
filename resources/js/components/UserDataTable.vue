@@ -63,7 +63,7 @@
 		</div>
         <p>&nbsp;</p>
         <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
-          Save New User
+          Save User
         </v-btn>
 		<v-btn small type="button" @click="hideForm">cancel</v-btn>
       </form>

@@ -45,7 +45,7 @@
         </v-col>
       </v-row>
     </div>
-    <v-data-table :headers="headers" :items="harvest_logs" item-key="id" class="elevation-1">
+    <v-data-table :headers="headers" :items="mutable_harvests" item-key="id" class="elevation-1">
       <template v-slot:item="{ item }">
         <tr>
           <td>{{ item.updated_at.substr(0,10) }}</td>
@@ -54,10 +54,20 @@
           <td>{{ item.report.name }}</td>
           <td>{{ item.yearmon }}</td>
           <td>{{ item.attempts }}</td>
-          <td>{{ item.status }}</td>
-          <td v-if="item.attempts>0"><a :href="'/harvestlogs/'+item.id">details</a></td>
+          <td width="10%" style="vertical-align:middle">
+            <!-- Some statuses should not be changed by user-->
+            <div v-if="(is_manager || is_admin) && !(status_notset.includes(item.status))">
+              <v-select :items="status_canset" v-model="item.status" value="item.status" dense outlined
+                        @change="updateStatus(item)"
+              ></v-select>
+            </div>
+            <div v-else>{{ item.status }}</div>
+          </td>
+          <td v-if="item.attempts>0">
+            <a :href="'/harvestlogs/'+item.id"><v-btn color="primary" x-small>detail</v-btn></a>
+          </td>
           <td v-else-if="item.rawfile && (is_admin || is_manager)">
-              <a :href="'/harvestlogs/'+item.id+'/raw'">Raw data</a>
+            <a :href="'/harvestlogs/'+item.id+'/raw'"><v-btn color="primary" x-small>Raw data</v-btn></a>
           </td>
         </tr>
       </template>
@@ -66,6 +76,7 @@
 </template>
 
 <script>
+  import Swal from 'sweetalert2';
   import { mapGetters } from 'vuex'
   export default {
     props: {
@@ -89,12 +100,17 @@
           { text: 'Status', value: 'status' },
           { text: '', value: '' },
         ],
-        harvest_logs: this.harvests,
+        mutable_harvests: this.harvests,
+        prior_status: [],
         statuses: ['ALL', 'Success', 'Fail', 'New', 'Queued', 'Active', 'Pending', 'Stopped', 'Retrying'],
+        status_canset: ['Stopped', 'Fail', 'New', 'Queued', 'Retrying', 'Delete'],
+        status_notset: ['Success', 'Active', 'Pending'],
         inst_filter: 0,
         prov_filter: 0,
         rept_filter: 0,
         stat_filter: 'ALL',
+        new_status: '',
+        harv: {},
         minYM: '',
         maxYM: '',
       }
@@ -120,9 +136,83 @@
             if (this.filter_by_fromYM != null) filters['ymfr'] = this.filter_by_fromYM;
             axios.get("/harvestlogs?json=1&"+Object.keys(filters).map(key => key+'='+filters[key]).join('&'))
                             .then((response) => {
-                this.harvest_logs = response.data.harvests;
+                this.mutable_harvests = response.data.harvests;
             })
             .catch(err => console.log(err));
+        },
+        updateStatus(harvest) {
+            let msg = "";
+            if (harvest.status == 'Delete') {
+                var self = this;
+                Swal.fire({
+                  title: 'Are you sure?',
+                  text: "This action is not reversible, and no harvested data will be removed or changed. "+
+                        "Note that all failure/warning records connected to this harvest will also be deleted.",
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: '#3085d6',
+                  cancelButtonColor: '#d33',
+                  confirmButtonText: 'Yes, Proceed!'
+                }).then((result) => {
+                  if (result.value) {
+                      axios.delete('/harvestlogs/'+harvest.id)
+                           .then( (response) => {
+                               if (response.data.result) {
+                                   self.failure = '';
+                                   self.success = response.data.msg;
+                               } else {
+                                   self.success = '';
+                                   self.failure = response.data.msg;
+                               }
+                           })
+                           .catch({});
+                       this.mutable_harvests.splice(this.mutable_harvests.findIndex(a=> a.id == harvest.id),1);
+                  }
+                })
+                .catch({});
+            } else {
+                if (harvest.status == 'New' || harvest.status == 'Retrying') {
+                    msg += "Updating this harvest status will reset the attempts counter to zero and cause the";
+                    msg += " system to include this harvest in the overnight queue-processing cycle.";
+                } else if (harvest.status == 'Queued') {
+                    msg += "Setting this harvest to 'Queued' will reset the attempts counter to zero and immediately";
+                    msg += " append this harvest to the harvesting queue. Any usage data that may have been stored";
+                    msg += " for this harvest will be replaced.";
+                } else {
+                    msg += "Changing this harvest's status will leave the attempts counter intact, and will prevent";
+                    msg += " the system from running this harvest. Any future or queued attempts will be cancelled.";
+                }
+                var self = this;
+                Swal.fire({
+                  title: 'Are you sure?',
+                  text: msg,
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: '#3085d6',
+                  cancelButtonColor: '#d33',
+                  confirmButtonText: 'Yes, Proceed!'
+                }).then((result) => {
+                  if (result.value) {
+                    axios.post('/update-harvest-status', {
+                        id: harvest.id,
+                        status: harvest.status
+                    })
+                    .catch(error => {});
+                    // update prior_status to the new value
+                    this.prior_status[harvest.id] = harvest.status;
+
+                    // reset attempts in mutable_harvest if needed
+                    if (harvest.status == 'New' || harvest.status == 'Retrying' || harvest.status == 'Queued') {
+                        this.mutable_harvests[this.mutable_harvests.findIndex(h=> h.id == harvest.id)].attempts = 0;
+                    }
+                  } else {
+                    // reset mutable_harvest status back to its prior value
+                    this.mutable_harvests[this.mutable_harvests.findIndex(h=> h.id == harvest.id)].status =
+                         this.prior_status[harvest.id];
+                  }
+              })
+              .catch({});
+            }
         },
     },
     computed: {
@@ -132,11 +222,15 @@
       },
     },
     mounted() {
-      console.log('HarvestLogData Component mounted.');
       if (typeof(this.bounds[0]) != 'undefined') {
         this.minYM = this.bounds[0].YM_min;
         this.maxYM = this.bounds[0].YM_max;
       }
+
+      // Save the original status values in an array
+      this.harvests.forEach(harv => { this.prior_status[harv.id] = harv.status });
+
+      console.log('HarvestLogData Component mounted.');
     }
   }
 </script>

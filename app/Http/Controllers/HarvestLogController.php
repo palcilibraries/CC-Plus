@@ -314,6 +314,76 @@ class HarvestLogController extends Controller
         return response()->json(['result' => true, 'msg' => $msg]);
     }
 
+    /**
+     * Update status for a given harvest
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+     public function updateStatus(Request $request)
+     {
+         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+
+         // Get and verify input or bail with error in json response
+         try {
+             $input = json_decode($request->getContent(), true);
+         } catch (\Exception $e) {
+             return response()->json(['result' => false, 'msg' => 'Error decoding input!']);
+         }
+         if (!isset($input['id']) || !isset($input['status'])) {
+             return response()->json(['result' => false, 'msg' => 'Missing expected inputs!']);
+         }
+
+         // Only an actual sushi-harvest should set a harvest log record to 'Success'
+         $new_status_allowed = array('Stopped', 'Fail', 'New', 'Queued', 'Retrying', 'Delete');
+         if (!in_array($input['status'],$new_status_allowed)) {
+             return response()->json(['result' => false,
+                                      'msg' => 'Invalid request: status cannot be set to requested value.']);
+         }
+         $harvest = HarvestLog::findOrFail($input['id']);
+
+         // Setting status to Stopped/Fail means deleting the corresponding job
+         if ($input['status'] == 'Stopped' || $input['status'] == 'Fail') {
+             $existing_job = SushiQueueJob::where('harvest_id', '=', $harvest->id)->first();
+             if ($existing_job) {
+                 $existing_job->delete();
+             }
+
+         // Setting status to something other than Stopped means resetting attempts to zero
+         } else {
+             $harvest->attempts = 0;
+         }
+
+         // Update the harvest record
+         $harvest->status = $input['status'];
+         try {
+             $harvest->save();
+         } catch (\Exception $e) {
+             return response()->json(['result' => false, 'msg' => 'Error updating harvest!']);
+         }
+
+         // Setting to 'Queued' means do it now, so create the Job entry if it doesn't exist
+         if ($input['status'] == 'Queued') {
+             $con = Consortium::where('ccp_key', '=', session('ccp_con_key'))->first();
+             if (!$con) {
+                 return response()->json(['result' => false, 'msg' => 'Error: Corrupt session or consortium settings']);
+             }
+             try {
+                 $newjob = SushiQueueJob::create(['consortium_id' => $con->id,
+                                                  'harvest_id' => $harvest->id,
+                                                  'replace_data' => 1
+                                                ]);
+             } catch (QueryException $e) {
+                 $code = $e->errorInfo[1];
+                 if ($code != '1062') {     // If already in queue, continue silently
+                     $msg = 'Failure adding Harvest ID: ' . $harvest->id .' to Queue! Error ' . $code;
+                     return response()->json(['result' => false, 'msg' => $msg]);
+                 }
+             }
+         }
+         return response()->json(['result' => true]);
+     }
+
    /**
     * Display a form for editting the specified resource.
     *
@@ -338,7 +408,8 @@ class HarvestLogController extends Controller
          $harvest = HarvestLog::with('report:id,name','sushiSetting','sushiSetting.institution:id,name',
                                      'sushiSetting.provider:id,name')
                                ->findOrFail($id);
-         $failed = FailedHarvest::with('ccplusError')->where('harvest_id', '=', $id)->get()->toArray();
+         $failed = FailedHarvest::with('ccplusError', 'ccplusError.severity')
+                                ->where('harvest_id', '=', $id)->get()->toArray();
          return view('harvestlogs.show', compact('harvest', 'failed'));
      }
 
@@ -412,12 +483,13 @@ class HarvestLogController extends Controller
     */
     public function destroy($id)
     {
-        $this->middleware(['role:Admin']);
         $record = HarvestLog::findOrFail($id);
+        abort_unless($record->canManage(), 403);
+        if (!$record->canManage()) {
+            return response()->json(['result' => false, 'msg' => 'Not authorized!']);
+        }
         $record->delete();
-
-        return redirect()->route('harvestlogs.index')
-                      ->with('success', 'Log record deleted successfully');
+        return response()->json(['result' => true, 'msg' => 'Log record deleted successfully']);
     }
 
     // Turn a fromYM/toYM range into an array of yearmon strings

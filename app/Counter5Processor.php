@@ -620,8 +620,14 @@ class Counter5Processor extends Model
         ) {
             return null;
         }
-       // UFT8 Encode any special chars in the title
-        $input_title = utf8_encode($_title);    // in case title has funky chars
+
+       // UFT8 Encode title if it isnt already UTF-8
+        $cur_encoding = mb_detect_encoding($_title);
+        if ($cur_encoding == "UTF-8" && mb_check_encoding($_title,"UTF-8")) {
+            $input_title = $_title;
+        } else {
+            $input_title = utf8_encode($_title);    // force to utf-8
+        }
 
        // Get any potential matches
         $matches = Title::where([['Title', '<>',''],['Title', '=',$input_title]])->

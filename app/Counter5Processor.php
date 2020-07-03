@@ -621,7 +621,7 @@ class Counter5Processor extends Model
             return null;
         }
 
-       // UFT8 Encode title if it isnt already UTF-8
+       // UTF8 Encode title if it isnt already UTF-8
         $cur_encoding = mb_detect_encoding($_title);
         if ($cur_encoding == "UTF-8" && mb_check_encoding($_title,"UTF-8")) {
             $input_title = $_title;
@@ -629,14 +629,45 @@ class Counter5Processor extends Model
             $input_title = utf8_encode($_title);    // force to utf-8
         }
 
-       // Get any potential matches
-        $matches = Title::where([['Title', '<>',''],['Title', '=',$input_title]])->
-                          orWhere([['PropID','<>',''],['PropID','=',$ident['PropID']]])->
-                          orWhere([['eISSN', '<>',''],['eISSN', '=',$ident['eISSN']]])->
-                          orWhere([['ISSN',  '<>',''],['ISSN',  '=',$ident['ISSN']]])->
-                          orWhere([['ISBN',  '<>',''],['ISBN',  '=',$ident['ISBN']]])->
-                          orWhere([['DOI',   '<>',''],['DOI',   '=',$ident['DOI']]])->
-                          orWhere([['URI',   '<>',''],['URI',   '=',$ident['URI']]])->get();
+       // Build the query to find an existing title; start by setting up the where clause
+        $conditions = array();
+        if ($ident['type'] == 'B' && $ident['ISBN'] != '') {
+            $conditions[] = array('ISBN', '=', $ident['ISBN']);
+        }
+        if ($ident['type'] == 'J') {
+            if ($ident['ISSN'] != '') {
+                $conditions[] = array('ISSN', '=', $ident['ISSN']);
+            }
+            if ($ident['eISSN'] != '') {
+                $conditions[] = array('eISSN', '=', $ident['eISSN']);
+            }
+        }
+        if ($ident['type'] == 'I') {
+            if ($ident['ISBN'] != '') {
+                $conditions[] = array('ISBN', '=', $ident['ISBN']);
+            }
+            if ($ident['ISSN'] != '') {
+                $conditions[] = array('ISSN', '=', $ident['ISSN']);
+            }
+            if ($ident['eISSN'] != '') {
+                $conditions[] = array('eISSN', '=', $ident['eISSN']);
+            }
+        }
+        if ($ident['PropID'] != '') {
+            $conditions[] = array('PropID', '=', $ident['PropID']);
+        }
+        if ($ident['DOI'] != '') {
+            $conditions[] = array('DOI', '=', $ident['DOI']);
+        }
+        if ($ident['URI'] != '') {
+            $conditions[] = array('URI', '=', $ident['URI']);
+        }
+
+       // Run the query
+        $matches = Title::where('type', '=', $ident['type'])->where(function($query) use ($conditions,$input_title) {
+                              $query->where('Title', '=', $input_title)
+                                    ->orWhere($conditions);
+                          })->get();
 
        // Loop through all the possibles
         $save_it = false;
@@ -660,26 +691,27 @@ class Counter5Processor extends Model
                    )
             ) {
                  $matched = true;
-            }
 
            // If URI matches and other input fields are null, call it a match
-            if (
-                $ident['URI'] != ""
-                && $ident['URI'] == $match->URI
-                && ( ($input_title == ""
-                && $ident['PropID'] == ""
-                && $ident['ISSN'] == ""
-                      && $ident['eISSN'] == ""
-                      && $ident['DOI'] == "")
-                     || ($match->title == ""
-                     && $match->PropID == ""
-                     && $match->ISSN == ""
-                     && $match->ISBN == ""
-                      && $match->eISSN == ""
-                      && $match->DOI == "")
-                   )
-            ) {
-                 $matched = true;
+            } else {
+                if (
+                    $ident['URI'] != ""
+                    && $ident['URI'] == $match->URI
+                    && ( ($input_title == ""
+                    && $ident['PropID'] == ""
+                    && $ident['ISSN'] == ""
+                          && $ident['eISSN'] == ""
+                          && $ident['DOI'] == "")
+                         || ($match->title == ""
+                         && $match->PropID == ""
+                         && $match->ISSN == ""
+                         && $match->ISBN == ""
+                          && $match->eISSN == ""
+                          && $match->DOI == "")
+                       )
+                ) {
+                     $matched = true;
+                }
             }
 
            // Test the remaining identifiers - except URI. If match is found, update fields in the

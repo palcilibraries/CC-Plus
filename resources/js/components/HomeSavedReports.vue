@@ -4,12 +4,12 @@
       <v-layout row wrap>
         <v-flex v-for="report in mutable_reports" :key="report.id">
           <v-card>
-            <h3 class="v-card-title">{{ report.title }}</h3>
+            <h3 class="v-card-title headline font-weight-bold">{{ report.title }}</h3>
 			<div class="v-card-actions">
 	            <v-btn class='btn' small type="button" :href="'/savedreports/'+report.id+'/edit'">Edit</v-btn>
                 <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
 			</div>
-            <v-card-text class="headline font-weight-bold">
+            <v-card-text class="">
               <p>Last Harvest: {{ report.last_harvest }}</p>
               <div v-if="is_admin || is_viewer">
                 <p>{{ report.successful }} / {{ report.inst_count }} institutions successful   <a href="'/harvestlogs?rept='+report.master_id+'&yrmo='+report.last_harvest">

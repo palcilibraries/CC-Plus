@@ -17,6 +17,8 @@ class CreatePlatformsTable extends Migration
             $table->Increments('id');
             $table->string('name');
             $table->timestamps();
+
+            $table->index('name');
         });
     }
 

@@ -21,7 +21,7 @@
     </div>
 
     <div class="dashboard-section">
-      <alert-summary-table :alerts="{{ json_encode($alerts) }}></alert-summary-table>
+      <alert-summary-table :alerts="{{ json_encode($alerts) }}"></alert-summary-table>
     </div>
 
     <div class="row">

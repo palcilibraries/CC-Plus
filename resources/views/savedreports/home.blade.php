@@ -8,22 +8,21 @@
 @endif
 <v-app>
   <v-content>
-	<h1>{{ auth()->user()->name }}'s dashboard</h1>
+    <h1>{{ auth()->user()->name }}'s dashboard</h1>
     <h2 class="component-subhead">{{ $inst_count }} institution(s) and {{ $prov_count }} provider(s) connected</h2>
-	<div class="dashboard-section">
+    <div class="dashboard-section">
       @if (sizeof($report_data) >= 1)
         <h2 class="actionable-subhead">My Saved Reports</h2>
       @else
         <p>No Custom Reports</p>
       @endif
       <a class="btn v-btn v-btn--contained v-size--small section-action" href="/reports/create">Create a Report</a>
-    <home-saved-reports :reports="{{ json_encode($report_data) }}"></home-saved-reports>
-	</div>
+      <home-saved-reports :reports="{{ json_encode($report_data) }}"></home-saved-reports>
+    </div>
 
-	<div class="dashboard-section">
-		<alert-summary-table :alerts="{{ json_encode($records) }}></alert-summary-table>
-	</div>
-
+    <div class="dashboard-section">
+      <alert-summary-table :alerts="{{ json_encode($alerts) }}></alert-summary-table>
+    </div>
 
     <div class="row">
       <div class="col-lg-12 margin-tb">

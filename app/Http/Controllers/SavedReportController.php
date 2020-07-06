@@ -11,6 +11,7 @@ use App\Provider;
 use App\Institution;
 use App\InstitutionGroup;
 use App\HarvestLog;
+use App\Alert;
 use App\SystemAlert;
 use Illuminate\Http\Request;
 
@@ -39,7 +40,10 @@ class SavedReportController extends Controller
     public function home()
     {
         // Get list of saved reports for this user
-        $saved_reports = SavedReport::where('user_id', auth()->id())->get();
+        $user_inst = auth()->user()->inst_id;
+        $user_is_admin = auth()->user()->hasRole("Admin");
+        $user_is_viewer = auth()->user()->hasRole("Viewer");
+        $saved_reports = SavedReport::with('master')->where('user_id', auth()->id())->get();
 
         // Setup raw fields for what we need from the harvestlog
         $count_fields  = "sushisettings.inst_id, ";
@@ -88,15 +92,15 @@ class SavedReportController extends Controller
 
         // Summarize harvest data values and counts
         $total_insts = Institution::where('is_active', true)->count() - 1;   // inst_id=1 doesn't count...
-        $inst_count = (auth()->user()->hasAnyRole('Admin','Viewer')) ? $total_insts : 1;
+        $inst_count = ($user_is_admin || $user_is_viewer) ? $total_insts : 1;
 
-        if (auth()->user()->hasRole("Admin")) {
+        if ($user_is_admin) {
             $prov_count = Provider::where('is_active', true)->count();
         } else {
             $prov_count = Provider::where('is_active', true)
                                   ->where(function($q) {
                                       return $q->where('inst_id', 1)
-                                               ->orWhere('inst_id', auth()->user()->inst_id);
+                                               ->orWhere('inst_id', $user_inst);
                                     })
                                   ->count();
         }
@@ -117,10 +121,46 @@ class SavedReportController extends Controller
                                  ->limit(10)
                                  ->get();
 
-        // Get any active system alerts for the hompage
-        $alerts = SystemAlert::where('is_active',true)->get();
+        // Get any active system alerts
+        $system_alerts = SystemAlert::where('is_active',true)->get();
+
+        // Get and organize up to 5 data/harvest alerts
+        $data = Alert::with('provider:id,name', 'alertSetting', 'alertSetting.reportField', 'user:id,name',
+                            'harvest', 'harvest.sushiSetting')
+                     ->orderBy('alerts.created_at', 'DESC')->limit(5)->get();
+
+        $data_alerts = array();
+        foreach ($data as $alert) {
+            if (is_null($alert->alertsettings_id) && is_null($alert->harvest_id)) { // broken record?
+                continue;
+            }
+
+            // If not admin, skip inst-specific alerts for other institutions
+            $_inst_id = $alert->institution()->id;
+            if ($_inst_id != 1  && $_inst_id != $user_inst && !$user_is_admin) {
+                continue;
+            }
+
+            // Build a record for the view
+            $record = array('id' => $alert->id, 'yearmon' => $alert->yearmon, 'status' => $alert->status,
+                            'updated_at' => $alert->updated_at);
+
+            if (!is_null($alert->alertsettings_id)) {
+                $record['detail_url'] = "/alertsettings/" . $alert->alertsettings_id;
+                $record['detail_txt'] = $alert->alertSetting->reportField->legend . " is out of bounds!";
+            } else {
+                $record['detail_url'] = "/harvestlogs/" . $alert->harvest_id;
+                $record['detail_txt'] = "Harvest failed";
+            }
+            $record['report_name'] = $alert->reportName();
+            $record['mod_by'] = ($alert->modified_by == 1) ? 'CC-Plus System' : $alert->user->name;
+            $record['inst_name'] = ($_inst_id == 1)  ? "Consortia-wide" : $alert->institution()->name;
+            $record['prov_name'] = $alert->provider->name;
+            $data_alerts[] = $record;
+        }
+
         return view('savedreports.home', compact('inst_count','prov_count','report_data','failed_data',
-                                                 'total_insts','alerts'));
+                                                 'total_insts','system_alerts','data_alerts'));
     }
 
     /**

@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-@if (sizeof($alerts) > 0)
-    @foreach ($alerts as $alert)
+@if (sizeof($system_alerts) > 0)
+    @foreach ($system_alerts as $alert)
       <div class="alert alert-{{ $alert->severity }}">System Alert :: <strong>{{ $alert->severity }}</strong> :: {{ $alert->text }}</div>
     @endforeach
 @endif
@@ -20,9 +20,11 @@
       <home-saved-reports :reports="{{ json_encode($report_data) }}"></home-saved-reports>
     </div>
 
+    @if (sizeof($data_alerts) > 0)
     <div class="dashboard-section">
-      <alert-summary-table :alerts="{{ json_encode($alerts) }}"></alert-summary-table>
+      <alert-summary-table :alerts="{{ json_encode($data_alerts) }}"></alert-summary-table>
     </div>
+    @endif
 
     <div class="row">
       <div class="col-lg-12 margin-tb">

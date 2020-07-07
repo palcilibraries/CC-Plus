@@ -7,8 +7,7 @@
                          :providers="{{ json_encode($providers) }}"
                          :reports="{{ json_encode($reports) }}"
                          :bounds="{{ json_encode($bounds) }}"
-                         :header="{{ json_encode($header) }}"
-                         :filterable=1
+                         :filters="{{ json_encode($filters) }}"
   ></harvestlog-data-table>
 </v-app>
 @endsection

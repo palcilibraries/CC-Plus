@@ -1,50 +1,51 @@
 <template>
   <div>
-    <div v-if="filterable">
-      <h3 v-if="header!=''">{{ header }}</h3>
-      <date-range :minym="minYM" :maxym="maxYM"
-                  :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM"
-      ></date-range>
-      <!-- :key="rangeKey" -->
-      <v-row no-gutters>
-        <v-col v-if='institutions.length>1' class="ma-2" cols="2" sm="2">
-          <v-select :items='institutions'
-                      v-model='inst_filter'
-                      @change="updateLogRecords()"
-                      label="Institution"
-                      item-text="name"
-                      item-value="id"
-          ></v-select>
-        </v-col>
-        <v-col class="ma-2" cols="2" sm="2">
-          <v-select :items='providers'
-                    v-model='prov_filter'
-                    @change="updateLogRecords()"
-                    label="Provider"
-                    item-text="name"
-                    item-value="id"
-          ></v-select>
-        </v-col>
-        <v-col class="ma-2" cols="2" sm="2">
-          <v-select :items='reports'
-                      v-model='rept_filter'
-                      @change="updateLogRecords()"
-                      label="Report"
-                      item-text="name"
-                      item-value="id"
-          ></v-select>
-        </v-col>
-        <v-col class="ma-2" cols="2" sm="2">
-          <v-select :items='statuses'
-                    v-model='stat_filter'
-                    @change="updateLogRecords()"
-                    label="Status"
-                    item-text="name"
-                    item-value="name"
-          ></v-select>
-        </v-col>
-      </v-row>
-    </div>
+    <h3>Harvest Logs</h3>
+    <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM"
+                :key="rangeKey"
+    ></date-range>
+    <v-row no-gutters>
+      <v-col v-if='institutions.length>1' class="ma-2" cols="2" sm="2">
+        <v-select :items='institutions'
+                  v-model='filters.inst'
+                  @change="updateLogRecords()"
+                  multiple
+                  label="Institution(s)"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col class="ma-2" cols="2" sm="2">
+        <v-select :items='providers'
+                  v-model='filters.prov'
+                  @change="updateLogRecords()"
+                  multiple
+                  label="Provider(s)"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col class="ma-2" cols="2" sm="2">
+        <v-select :items='reports'
+                  v-model='filters.rept'
+                  @change="updateLogRecords()"
+                  multiple
+                  label="Report(s)"
+                  item-text="name"
+                  item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col class="ma-2" cols="2" sm="2">
+        <v-select :items='statuses'
+                  v-model='filters.stat'
+                  @change="updateLogRecords()"
+                  multiple
+                  label="Status(es)"
+                  item-text="name"
+                  item-value="name"
+        ></v-select>
+      </v-col>
+    </v-row>
     <v-data-table :headers="headers" :items="mutable_harvests" item-key="id" class="elevation-1">
       <template v-slot:item="{ item }">
         <tr>
@@ -85,8 +86,7 @@
             providers: { type:Array, default: () => [] },
             reports: { type:Array, default: () => [] },
             bounds: { type:Array, default: () => [] },
-            filterable: { type:Number, default:0 },
-            header: { type:String, default:'' },
+            filters: { type:Object, default: () => {} },
            },
     data () {
       return {
@@ -102,43 +102,36 @@
         ],
         mutable_harvests: this.harvests,
         prior_status: [],
-        statuses: ['ALL', 'Success', 'Fail', 'New', 'Queued', 'Active', 'Pending', 'Stopped', 'Retrying'],
+        statuses: ['Success', 'Fail', 'New', 'Queued', 'Active', 'Pending', 'Stopped', 'Retrying'],
         status_canset: ['Stopped', 'Fail', 'New', 'Queued', 'Retrying', 'Delete'],
         status_notset: ['Success', 'Active', 'Pending'],
-        inst_filter: 0,
-        prov_filter: 0,
-        rept_filter: 0,
-        stat_filter: 'ALL',
-        new_status: '',
         harv: {},
         minYM: '',
         maxYM: '',
+        rangeKey: 1,
       }
     },
     watch: {
       datesFromTo: {
         handler() {
-          // Changing date-range means we need to reload records
-          this.updateLogRecords();
+          // Changing date-range means we need to reload records, just not the FIRST one
+          if (this.rangeKey > 1) {
+              this.updateLogRecords();
+          }
+          this.rangeKey += 1;           // force re-render of the date-range component
         }
       },
     },
     methods: {
         updateLogRecords() {
-            this.minYM = this.bounds[this.rept_filter].YM_min;
-            this.maxYM = this.bounds[this.rept_filter].YM_max;
-            let filters = {};
-            if (this.inst_filter > 0) filters['inst'] = this.inst_filter;
-            if (this.prov_filter > 0) filters['prov'] = this.prov_filter;
-            if (this.rept_filter > 0) filters['rept'] = this.rept_filter;
-            if (this.stat_filter != 'ALL') filters['stat'] = this.stat_filter;
-            if (this.filter_by_toYM != null) filters['ymto'] = this.filter_by_toYM;
-            if (this.filter_by_fromYM != null) filters['ymfr'] = this.filter_by_fromYM;
-            axios.get("/harvestlogs?json=1&"+Object.keys(filters).map(key => key+'='+filters[key]).join('&'))
-                            .then((response) => {
-                this.mutable_harvests = response.data.harvests;
-            })
-            .catch(err => console.log(err));
+            if (this.filter_by_toYM != null) this.filters['ymto'] = this.filter_by_toYM;
+            if (this.filter_by_fromYM != null) this.filters['ymfr'] = this.filter_by_fromYM;
+            let _filters = JSON.stringify(this.filters);
+            axios.get("/harvestlogs?json=1&filters="+_filters)
+                 .then((response) => {
+                     this.mutable_harvests = response.data.harvests;
+                 })
+                 .catch(err => console.log(err));
         },
         updateStatus(harvest) {
             let msg = "";
@@ -199,8 +192,7 @@
                     })
                     .catch(error => {});
                     // update prior_status to the new value
-                    this.prior_status[harvest.id] = harvest.status;
-
+                    this.prior_status[this.prior_status.findIndex(h=> h.id == harvest.id)].status = harvest.status;
                     // reset attempts in mutable_harvest if needed
                     if (harvest.status == 'New' || harvest.status == 'Retrying' || harvest.status == 'Queued') {
                         this.mutable_harvests[this.mutable_harvests.findIndex(h=> h.id == harvest.id)].attempts = 0;
@@ -208,7 +200,7 @@
                   } else {
                     // reset mutable_harvest status back to its prior value
                     this.mutable_harvests[this.mutable_harvests.findIndex(h=> h.id == harvest.id)].status =
-                         this.prior_status[harvest.id];
+                         this.prior_status[this.prior_status.findIndex(h=> h.id == harvest.id)].status;
                   }
               })
               .catch({});
@@ -226,9 +218,11 @@
         this.minYM = this.bounds[0].YM_min;
         this.maxYM = this.bounds[0].YM_max;
       }
+      if (this.filters['ymfr'] != null) this.$store.dispatch('updateFromYM',this.filters['ymfr']);
+      if (this.filters['ymto'] != null) this.$store.dispatch('updateToYM',this.filters['ymto']);
 
       // Save the original status values in an array
-      this.harvests.forEach(harv => { this.prior_status[harv.id] = harv.status });
+      this.harvests.forEach(harv => { this.prior_status.push({id: harv.id, status: harv.status}) });
 
       console.log('HarvestLogData Component mounted.');
     }

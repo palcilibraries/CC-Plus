@@ -31,104 +31,104 @@ class HarvestLogController extends Controller
     */
     public function index(Request $request)
     {
-        // Handle some optional inputs
-        $inst = ($request->input('inst')) ? $request->input('inst') : null;
-        $prov = ($request->input('prov')) ? $request->input('prov') : null;
-        $rept = ($request->input('rept')) ? $request->input('rept') : null;
-        $stat = ($request->input('stat')) ? $request->input('stat') : null;
-        $ymfr = ($request->input('ymfr')) ? $request->input('ymfr') : null;
-        $ymto = ($request->input('ymto')) ? $request->input('ymto') : null;
         $json = ($request->input('json')) ? true : false;
+        $conso_db = config('database.connections.consodb.database');
 
-        // managers and users only see their own insts
-        if (!auth()->user()->hasAnyRole(["Admin","Viewer"])) {
-            $inst = auth()->user()->inst_id;
-        }
-
-        // Build header text if we're not returning JSON
-        $details = "";
-        if (!$json) {
-            if (!is_null($inst)) {
-                $inst_name = Institution::where('id','=',$inst)->value('name');
-                $details .= ($inst_name != "") ? $inst_name : "";
-                $institutions = Institution::where('id','=',$inst)->get(['id', 'name'])->toArray();
-            } else {
-                $institutions = Institution::where('id','<>',1)->get(['id', 'name'])->toArray();
-                array_unshift($institutions, ['id' => 0, 'name' => 'All Institutions']);
-            }
-            if (!is_null($prov)) {
-                $prov_name = Provider::where('id','=',$prov)->value('name');
-                if ($prov_name != "") {
-                    $details .= ($details=="") ? $prov_name : ", " . $prov_name;
+        // Assign optional inputs to $filters array
+        $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'stat' => [], 'ymfr' => null, 'ymto' => null);
+        if ($request->input('filters')) {
+            $filter_data = json_decode($request->input('filters'));
+            foreach ($filter_data as $key => $val) {
+                if ($val != 0) {
+                    $filters[$key] = $val;
                 }
             }
+        } else {
+            $keys = array_keys($filters);
+            foreach ($keys as $key) {
+                if ($request->input($key)) {
+                    if ($key == 'ymfr' || $key == 'ymto') {
+                        $filters[$key] = $request->input($key);
+                    } else if (is_numeric($request->input($key))) {
+                        $filters[$key] = array(intval($request->input($key)));
+                    }
+                }
+            }
+        }
+
+        // Managers and users only see their own insts
+        $show_all = auth()->user()->hasAnyRole(["Admin","Viewer"]);
+        if (!$show_all) {
+            $filters['inst'] = array(auth()->user()->inst_id);
+        }
+
+        // Setup array of institutions
+        if ($show_all) {
+            $inst_data = Institution::where('id','<>',1)->get(['id', 'name']);
+            $institutions = $inst_data->toArray();
+        } else {
+            $inst_data = Institution::whereIn('id',$filters['inst'])->get(['id', 'name']);
+            $institutions = $inst_data->toArray();
+        }
+
+        // Build an array of $providers
+        if ($show_all) {
             $providers = Provider::get(['id', 'name'])->toArray();
-            array_unshift($providers, ['id' => 0, 'name' => 'All Providers']);
+        } else  {
+            $providers = DB::table($consodb . '.providers as prv')
+                      ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
+                      ->where('prv.inst_id', 1)
+                      ->orWhere('prv.inst_id', auth()->user()->inst_id)
+                      ->orderBy('prov_name', 'ASC')
+                      ->get(['prv.id','prv.name'])
+                      ->toArray();
+        }
 
-            if (!is_null($rept)) {
-                $_name = Report::where('id','=',$rept)->value('name');
-                $details .= " : " . $_name . " report(s)";
+        // Get available reports and make sure dates are set right
+        $reports = Report::where('parent_id','=',0)->get(['id', 'name'])->toArray();
+        if (!is_null($filters['ymfr']) || !is_null($filters['ymto'])) {
+            if (is_null($filters['ymfr'])) {
+                $filters['ymfr'] = $filters['ymto'];
             }
-            $reports = Report::where('parent_id','=',0)->get(['id', 'name'])->toArray();
-            array_unshift($reports, ['id' => 0, 'name' => 'All Reports']);
-            if (!is_null($stat)) {
-                $details .= " Status: " . $stat;
-            }
-            if (!is_null($ymfr) || !is_null($ymto)) {
-                if (is_null($ymfr)) {
-                    $ymfr = $ymto;
-                }
-                if (is_null($ymto)) {
-                    $ymto = $ymfr;
-                }
-                if ($ymfr == $ymto) {
-                    $details .= ($details=="") ? $ymfr : ", " . $ymfr;
-                } else {
-                    $range = $ymfr . " to " . $ymto;
-                    $details .= ($details=="") ? $range : ", " . $range;
-                }
-            }
-
-            // Query for min and max yearmon values
-            $bounds = array();
-            $raw_query = "min(yearmon) as YM_min, max(yearmon) as YM_max";
-            $result = HarvestLog::selectRaw($raw_query)->get()->toArray();
-            $bounds[0] = $result[0];
-            foreach($reports as $report) {
-                if ($report['id']>0) {
-                    $result = HarvestLog::where('report_id', $report['id'])
-                                        ->selectRaw($raw_query)
-                                        ->get()
-                                        ->toArray();
-                    $bounds[$report['id']] = $result[0];
-                }
+            if (is_null($filters['ymto'])) {
+                $filters['ymto'] = $filters['ymfr'];
             }
         }
-        $header = ($details == "") ? "Harvest Log" : "Harvests : " . $details;
+
+        // Query for min and max yearmon values
+        $bounds = array();
+        $raw_query = "min(yearmon) as YM_min, max(yearmon) as YM_max";
+        $result = HarvestLog::selectRaw($raw_query)->get()->toArray();
+        $bounds[0] = $result[0];
+        $raw_query = "report_id, " . $raw_query;
+        $rpt_result = DB::table($conso_db . ".harvestlogs")->select(DB::raw($raw_query))->groupBy('report_id')->get();
+        foreach ($rpt_result as $rpt) {
+            $bounds[$rpt->report_id] = array('YM_min' => $rpt->YM_min, 'YM_max' => $rpt->YM_max);
+        }
 
         // Get the rows
-        $settings = SushiSetting::when($inst, function ($qry, $inst) {
-                                      return $qry->where('inst_id', $inst);
+        $settings = SushiSetting::when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
+                                      return $qry->whereIn('inst_id', $filters['inst']);
                                 })
-                                ->when($prov, function ($qry, $prov) {
-                                      return $qry->where('prov_id', $prov);
+                                ->when(sizeof($filters['prov']) > 0 , function ($qry) use ($filters) {
+                                      return $qry->whereIn('prov_id', $filters['prov']);
                                 })
                                 ->pluck('id')->toArray();
         $harvests = HarvestLog::with('report:id,name','sushiSetting',
                                  'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
                               ->whereIn('sushisettings_id', $settings)
                               ->orderBy('updated_at', 'DESC')
-                              ->when($rept, function ($qry, $rept) {
-                                  return $qry->where('report_id', $rept);
+                              ->when(sizeof($filters['rept']) > 0, function ($qry) use ($filters) {
+                                  return $qry->whereIn('report_id', $filters['rept']);
                               })
-                              ->when($stat, function ($qry, $stat) {
-                                  return $qry->where('status', $stat);
+                              ->when(sizeof($filters['stat']) > 0, function ($qry) use ($filters) {
+                                  return $qry->whereIn('status', $filters['stat']);
                               })
-                              ->when($ymfr, function ($qry, $ymfr) {
-                                  return $qry->where('yearmon', '>=', $ymfr);
+                              ->when($filters['ymfr'], function ($qry) use ($filters) {
+                                  return $qry->where('yearmon', '>=', $filters['ymfr']);
                               })
-                              ->when($ymto, function ($qry, $ymto) {
-                                  return $qry->where('yearmon', '<=', $ymto);
+                              ->when($filters['ymto'], function ($qry) use ($filters) {
+                                  return $qry->where('yearmon', '<=', $filters['ymto']);
                               })
                               ->get();
 
@@ -137,7 +137,7 @@ class HarvestLogController extends Controller
             return response()->json(['harvests' => $harvests], 200);
         } else {
             return view('harvestlogs.index', compact('harvests', 'institutions', 'providers', 'reports',
-                                                     'bounds','header'));
+                                                     'bounds', 'filters'));
         }
     }
 

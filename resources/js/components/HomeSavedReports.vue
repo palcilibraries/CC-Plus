@@ -12,17 +12,18 @@
             <v-card-text class="">
               <p>Last Harvest: {{ report.last_harvest }}</p>
               <div v-if="is_admin || is_viewer">
-                <p>{{ report.successful }} / {{ report.inst_count }} institutions successful   <a href="'/harvestlogs?rept='+report.master_id+'&yrmo='+report.last_harvest">
-                    Harvest details
-                </a></p>
+                <p>{{ report.successful }} / {{ report.inst_count }} institutions successful
+                    <a :href="'/harvestlogs?rept='+report.master_id+'&ymfr='+report.last_harvest">Harvest details</a>
+                </p>
               </div>
               <div v-else>
-                <p v-if="report.successful < report.inst_count">One or more harvests have failed   <a href="'/harvestlogs?rept='+report.master_id+'&yrmo='+report.last_harvest">
-                    Harvest details
-                </a></p>
-                <p v-else>All harvests completed successfully   <a href="'/harvestlogs?rept='+report.master_id+'&yrmo='+report.last_harvest">
-                    Harvest details
-                </a></p>
+                <p v-if="report.successful < report.inst_count">
+                  One or more harvests have failed
+                  <a :href="'/harvestlogs?rept='+report.master_id+'&ymfr='+report.last_harvest">Harvest details</a>
+                </p>
+                <p v-else>All harvests completed successfully
+                  <a :href="'/harvestlogs?rept='+report.master_id+'&ymfr='+report.last_harvest">Harvest details</a>
+                </p>
               </div>
               <v-btn class='btn primary' small type="button" :href="'/reports/preview?saved_id='+report.id">
                       Preview & Export

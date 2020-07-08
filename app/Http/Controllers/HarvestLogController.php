@@ -408,8 +408,7 @@ class HarvestLogController extends Controller
          $harvest = HarvestLog::with('report:id,name','sushiSetting','sushiSetting.institution:id,name',
                                      'sushiSetting.provider:id,name')
                                ->findOrFail($id);
-         $failed = FailedHarvest::with('ccplusError', 'ccplusError.severity')
-                                ->where('harvest_id', '=', $id)->get()->toArray();
+         $failed = FailedHarvest::with('ccplusError')->where('harvest_id', '=', $id)->get()->toArray();
          return view('harvestlogs.show', compact('harvest', 'failed'));
      }
 

@@ -106,20 +106,34 @@ class SavedReportController extends Controller
         }
 
         // Get data on recent failed harvests
-        $conso_db = config('database.connections.consodb.database');
-        $global_db = config('database.connections.globaldb.database');
-        $rawQuery  = "date_format(harvestlogs.created_at,'%Y-%b-%d') as harvest_date,PR.name as provider,";
-        $rawQuery .= "RPT.name as report,count(distinct(SS.inst_id)) as failed_insts";
-        $failed_data = HarvestLog::join($conso_db . '.sushisettings as SS', 'harvestlogs.sushisettings_id', 'SS.id')
-                                 ->join($conso_db . '.providers as PR', 'SS.prov_id', 'PR.id')
-                                 ->join($conso_db . '.failedharvests as FH', 'FH.harvest_id', 'harvestlogs.id')
-                                 ->join($global_db . '.reports as RPT', 'harvestlogs.report_id', 'RPT.id')
-                                 ->whereNotNull('FH.id')
-                                 ->selectRaw($rawQuery)
-                                 ->groupBy(['harvest_date','provider','report','SS.prov_id','report_id','yearmon'])
-                                 ->orderBy('harvestlogs.created_at', 'DESC')
-                                 ->limit(10)
-                                 ->get();
+        // $conso_db = config('database.connections.consodb.database');
+        // $global_db = config('database.connections.globaldb.database');
+        // $rawQuery  = "date_format(harvestlogs.created_at,'%Y-%b-%d') as harvest_date,PR.name as provider,";
+        // $rawQuery .= "RPT.name as report,count(distinct(SS.inst_id)) as failed_insts";
+        // $failed_data = HarvestLog::join($conso_db . '.sushisettings as SS', 'harvestlogs.sushisettings_id', 'SS.id')
+        //                          ->join($conso_db . '.providers as PR', 'SS.prov_id', 'PR.id')
+        //                          ->join($conso_db . '.failedharvests as FH', 'FH.harvest_id', 'harvestlogs.id')
+        //                          ->join($global_db . '.reports as RPT', 'harvestlogs.report_id', 'RPT.id')
+        //                          ->whereNotNull('FH.id')
+        //                          ->selectRaw($rawQuery)
+        //                          ->groupBy(['harvest_date','provider','report','SS.prov_id','report_id','yearmon'])
+        //                          ->orderBy('harvestlogs.created_at', 'DESC')
+        //                          ->limit(10)
+        //                          ->get();
+        //
+
+        // Get some recent harvests
+        $lim = 6;
+        $success_harv = HarvestLog::with('report:id,name','sushiSetting',
+                                         'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+                                  ->where('status','Success')->orderBy('updated_at','ASC')
+                                  ->limit(3)->get()->toArray();
+        $lim = $lim - sizeof($success_harv);
+        $fail_harv = HarvestLog::with('report:id,name','sushiSetting',
+                                      'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+                               ->where('status','<>','Success')->orderBy('updated_at','ASC')
+                               ->limit($lim)->get()->toArray();
+        $harvests = array_merge($success_harv, $fail_harv);
 
         // Get any active system alerts
         $system_alerts = SystemAlert::where('is_active',true)->get();
@@ -159,7 +173,7 @@ class SavedReportController extends Controller
             $data_alerts[] = $record;
         }
 
-        return view('savedreports.home', compact('inst_count','prov_count','report_data','failed_data',
+        return view('savedreports.home', compact('inst_count','prov_count','report_data','harvests',
                                                  'total_insts','system_alerts','data_alerts'));
     }
 

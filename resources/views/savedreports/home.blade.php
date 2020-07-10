@@ -25,50 +25,9 @@
       <alert-summary-table :alerts="{{ json_encode($data_alerts) }}"></alert-summary-table>
     </div>
     @endif
-	
-	<div class="dashboard-section">
-	  <harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"
-	                         :institutions="{{ json_encode($institutions) }}"
-	                         :providers="{{ json_encode($providers) }}"
-	                         :reports="{{ json_encode($reports) }}"
-	                         :bounds="{{ json_encode($bounds) }}"
-	                         :filters="{{ json_encode($filters) }}"
-	  ></harvestlog-summary-table>
-  </div>
 
-<!-->    <div class="row">
-      <div class="col-lg-12 margin-tb">
-          <div class="pull-left">
-              <h2>Recent Failed Harvests</h2>
-          </div>
-      </div>
+	<div class="dashboard-section">
+	  <harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"></harvestlog-summary-table>
     </div>
-    <table width="80%" cellspacing="2">
-      <tr>
-         <th width="15%">Harvest Date</th>
-         <th width="25%">Provider</th>
-         <th width="10%">Report</th>
-         <th width="10%">Institutions affected</th>
-      </tr>
-      @if (sizeof($failed_data) >= 1)
-        @foreach ($failed_data as $record)
-        <tr>
-            <td>{{ $record->harvest_date }}</td>
-            <td>{{ $record->provider }}</td>
-            <td>{{ $record->report }}</td>
-            <td>{{ $record->failed_insts }} / {{ $total_insts }}</td>
-        </tr>
-        @endforeach
-        <tr>
-          <td colspan="4" align="center">
-            <a href="/failedharvests">View all failed harvests</a>
-          </td>
-        </tr>
-      @else
-        <tr>
-            <td colspan="4"><strong>No failed harvests found</strong>
-        </tr>
-      @endif
-    </table>-->
 </v-app>
 @endsection

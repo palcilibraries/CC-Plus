@@ -146,7 +146,7 @@
         </v-col>
     </v-row>
     <v-row v-if="dialogs.done">
-      <v-btn color="green" small @click="goRedirect">Finish</v-btn>
+      <v-btn color="primary" small @click="goRedirect">Finish</v-btn>
     </v-row>
   </v-form>
 </template>

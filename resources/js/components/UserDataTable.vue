@@ -6,13 +6,11 @@
     </div>
     <div v-if="showForm==''">
       <v-btn small color="primary" @click="createForm">Create a User</v-btn>
-      <v-row v-if="is_manager || is_admin">
-        <v-col cols="1">Export to:</v-col>
-        <v-col>
+      <div v-if="is_manager || is_admin">
+        Export to:
             <a :href="'/users/export/xls'">.xls</a> &nbsp; &nbsp;
             <a :href="'/users/export/xlsx'">.xlsx</a>
-        </v-col>
-      </v-row>
+      </div>
       <v-data-table :headers="headers" :items="mutable_users" item-key="id" class="elevation-1">
         <template v-slot:item="{ item }">
           <tr>

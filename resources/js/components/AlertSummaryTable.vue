@@ -17,7 +17,10 @@
         </tr>
       </template>
     </v-data-table>
-	<a href="/harvestlogs?stat=Fail">See all failed harvests</a>
+	<p class="more">
+		<a href="/alerts">See all failed harvests</a>
+		<!--<a href="/harvestlogs?stat=Fail">See all failed harvests</a>-->
+	</p>
   </div>
 </template>
 

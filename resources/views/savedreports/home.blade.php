@@ -25,8 +25,18 @@
       <alert-summary-table :alerts="{{ json_encode($data_alerts) }}"></alert-summary-table>
     </div>
     @endif
+	
+	<div class="dashboard-section">
+	  <harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"
+	                         :institutions="{{ json_encode($institutions) }}"
+	                         :providers="{{ json_encode($providers) }}"
+	                         :reports="{{ json_encode($reports) }}"
+	                         :bounds="{{ json_encode($bounds) }}"
+	                         :filters="{{ json_encode($filters) }}"
+	  ></harvestlog-summary-table>
+  </div>
 
-    <div class="row">
+<!-->    <div class="row">
       <div class="col-lg-12 margin-tb">
           <div class="pull-left">
               <h2>Recent Failed Harvests</h2>
@@ -59,6 +69,6 @@
             <td colspan="4"><strong>No failed harvests found</strong>
         </tr>
       @endif
-    </table>
+    </table>-->
 </v-app>
 @endsection

@@ -95,7 +95,7 @@ main #app {
 .saved-report .v-card-title {
 	display: inline-block;
 }
-a.v-btn.primary {
+.v-application .v-btn.primary {
 	background-color: #006699 !important;
 	border: #006699 !important;
 	color: white;
@@ -132,6 +132,12 @@ a.v-btn.primary {
 .actionable-subhead {
 	display: inline-block;
 }
-.flex {
+/*.flex {
 	display: flex;
+}*/
+.more {
+	margin-top: 1em;
+}
+.dashboard-section {
+	margin-top: 2em;
 }

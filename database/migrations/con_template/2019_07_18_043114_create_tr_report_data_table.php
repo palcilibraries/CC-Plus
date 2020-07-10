@@ -36,6 +36,7 @@ class CreateTrReportDataTable extends Migration
             $table->unsignedInteger('limit_exceeded')->default(0);
             $table->unsignedInteger('no_license')->default(0);
 
+            $table->index(['yearmon']);
             $table->foreign('title_id')->references('id')->on($global_db . '.titles');
             $table->foreign('prov_id')->references('id')->on('providers');
             $table->foreign('publisher_id')->references('id')->on($global_db . '.publishers');
@@ -45,6 +46,7 @@ class CreateTrReportDataTable extends Migration
             $table->foreign('sectiontype_id')->references('id')->on($global_db . '.sectiontypes');
             $table->foreign('accesstype_id')->references('id')->on($global_db . '.accesstypes');
             $table->foreign('accessmethod_id')->references('id')->on($global_db . '.accessmethods');
+
         });
     }
 

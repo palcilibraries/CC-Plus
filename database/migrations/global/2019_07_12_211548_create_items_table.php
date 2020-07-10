@@ -26,6 +26,8 @@ class CreateItemsTable extends Migration
             $table->foreign('title_id')->references('id')->on('titles');
             $table->foreign('parent_datatype_id')->references('id')->on('datatypes');
             $table->foreign('component_datatype_id')->references('id')->on('datatypes');
+
+            $table->index('title_id');
         });
     }
 

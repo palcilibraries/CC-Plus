@@ -154,19 +154,20 @@ class HarvestLogController extends Controller
         // Get IDs of all possible prov_ids from the sushisettings table
         $possible_providers = SushiSetting::distinct('prov_id')->pluck('prov_id')->toArray();
         if (auth()->user()->hasRole("Admin")) {     // Admin view
-            // $inst_data = Institution::with('sushiSettings:prov_id')->orderBy('name', 'ASC')
-            $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')->orderBy('name', 'ASC')
-                                       ->where('id', '<>', 1)->get(['id','name'])->toArray();
+            $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
+                                       ->where('id', '<>', 1)->where('is_active', true)
+                                       ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
             array_unshift($institutions, ['id' => 0, 'name' => 'Entire Consortium']);
-            $providers = Provider::with('reports')->whereIn('id',$possible_providers)
+            $providers = Provider::with('reports')
+                                 ->whereIn('id',$possible_providers)->where('is_active', true)
                                  ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
-
         } else {    // manager view
             $user_inst = auth()->user()->inst_id;
-            // $inst_data = Institution::with('sushiSettings:prov_id')
             $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
-                                       ->where('id', '=', $user_inst)->get(['id','name'])->toArray();
-            $providers = Provider::with('reports')->whereIn('id',$possible_providers)
+                                       ->where('id', '=', $user_inst)
+                                       ->get(['id','name'])->toArray();
+            $providers = Provider::with('reports')
+                                 ->whereIn('id',$possible_providers)->where('is_active', true)
                                  ->where(function ($query) use ($user_inst) {
                                      $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
                                  })

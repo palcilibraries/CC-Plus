@@ -152,8 +152,8 @@
             working: true,
             selections_made: false,
             dialogs: { date: false, done:false },
-            inst: 0,
-            prov: 0,
+            inst: [],
+            prov: [],
             inst_group_id: 0,
             selectedReport: {},
             masterId: 0,
@@ -200,9 +200,9 @@
             this.masterId = 0;
             this.inst_group_id = 0;
             // Reset the data store
-            this.$store.dispatch('updateInstitutionFilter',0);
+            this.$store.dispatch('updateInstitutionFilter',[]);
             this.$store.dispatch('updateInstGroupFilter',0);
-            this.$store.dispatch('updateProviderFilter',0);
+            this.$store.dispatch('updateProviderFilter',[]);
             this.$store.dispatch('updateReportId',1);
         },
         onInstChange () {

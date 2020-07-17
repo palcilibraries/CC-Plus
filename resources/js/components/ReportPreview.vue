@@ -11,8 +11,8 @@
                     @change="onFieldChange(field)"></v-checkbox>
       </v-col>
     </v-row>
-    <span v-if="showFilters"><strong>Filters</strong></span>
-    <v-row v-if="showFilters" no-gutters>
+    <span v-if="active_filter_count > 0"><strong>Filters</strong></span>
+    <v-row v-if="active_filter_count > 0" no-gutters>
       <div v-if='filter_data["provider"].value.constructor === Array' class="d-flex pr-4 align-mid" cols="3" sm="2">
         <v-col v-if='filter_data["provider"].value.length >= 0' class="d-flex align-mid">
           <img v-if='filter_data["provider"].value.length > 0' src="/images/red-x-16.png"
@@ -212,7 +212,6 @@
     data () {
       return {
         showPreview: false,
-        showFilters: false,
         configForm: false,
         filterInst: false,
         filterGroup: false,
@@ -225,6 +224,7 @@
         minYM: '',
         maxYM: '',
         rangeKey: 1,
+        active_filter_count: 0,
         footer_props: {
             'items-per-page-options': [10, 20, 50, 100],
         },
@@ -251,12 +251,6 @@
       }
     },
     watch: {
-      filter_data: {
-        handler() {
-          this.showFilters = this.filtersEnabled;
-        },
-        deep: true
-      },
       datesFromTo: {
         handler() {
           // Changing date-range means we need to update filter options
@@ -278,7 +272,6 @@
         showColumn(col) {
             return this.mutable_cols.find(h => h.value === col).active
         },
-        // onColumnChange(head) {
         onFieldChange(field) {
           if (typeof(this.filter_data[field.id]) != 'undefined') {    // column has a filter?
               var hasFilter=true;
@@ -304,6 +297,7 @@
                       var act2 = this.filter_data['institutiongroup'].act+'Filter';
                       this.filter_data['institutiongroup'].value = 0;
                       this.$store.dispatch(act2,0);
+                      this.active_filter_count += 2;
 
                   // Set filter to "all"
                   } else {
@@ -314,6 +308,7 @@
                           this.filter_data[field.id].value = 0;
                           this.$store.dispatch(action,0);
                       }
+                      this.active_filter_count++;
                   }
 
                   // Update the columns
@@ -330,10 +325,12 @@
                   this.filter_data[field.id].value = -1;
                   this.$store.dispatch(action,-1);
                   this.updateColumns();
+                  this.active_filter_count--;
                   if (field.id == 'institution') {
                       var act2 = this.filter_data['institutiongroup'].act+'Filter';
                       this.filter_data['institutiongroup'].value = -1;
                       this.$store.dispatch(act2,-1);
+                      this.active_filter_count--;
                   }
               }
               // Turn off the column(s)
@@ -477,16 +474,6 @@
     },
     computed: {
       ...mapGetters(['is_admin', 'is_viewer', 'all_filters', 'all_options', 'filter_by_fromYM', 'filter_by_toYM']),
-      filtersEnabled() { // Returns T/F if there are active filters
-          for (let key in this.filter_data) {
-            if (this.filter_data[key].value.constructor === Array) {
-                if (this.filter_data[key].value.length > 0) return true;
-            } else {
-                if (this.filter_data[key].value >= 0) return true;
-            }
-          }
-          return false;
-      },
       datesFromTo() {
         return this.filter_by_fromYM+'|'+this.filter_by_toYM;
       },
@@ -502,7 +489,7 @@
       },
     },
     mounted() {
-      // Set initial filter-state for inactive "filterable" columns
+      // Set initial filter-state for inactive "filterable" columns, and count the active ones
       this.mutable_cols.forEach(head => {
         if (typeof(this.filter_data[head.value]) != 'undefined') {    // filtered column?
             var theFilter = this.filter_data[head.value];
@@ -510,6 +497,7 @@
             if (head.active) {
                 theFilter.value = 0;
                 this.$store.dispatch(action,0);
+                this.active_filter_count++;
             } else {
                 theFilter.value = -1;
                 this.$store.dispatch(action,-1);
@@ -532,8 +520,13 @@
               }
           }
       }
+
+      // Inst-Group is not a column - if the filter is active, bump the counter
       if (this.preset_filters['institutiongroup_id']>0) this.filterGroup = true;
       if (this.preset_filters['inst_id']>0 && !this.filterGroup) this.filterInst = true;
+      if ((this.is_admin || this.is_viewer) && !this.filterInst && this.filter_data["institutiongroup"].value == 0) {
+          this.active_filter_count++;
+      }
 
       // Manually disable platform filtering for platform reports
       if (this.preset_filters['report_id']==3 || this.preset_filters['report_id']==14) {
@@ -546,7 +539,6 @@
       this.$store.dispatch('updateToYM',this.preset_filters['toYM']);
 
       // Set options for all filters and in the datastore
-      this.showFilters = this.filtersEnabled;
       this.rangeKey += 1;           // force re-render of the date-range component
       console.log('TitleReport Component mounted.');
     }

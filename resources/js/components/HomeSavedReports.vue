@@ -10,7 +10,7 @@
                 <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
 			</div>
             <v-card-text class="">
-              <p>Last Harvest: {{ report.last_harvest }}</p>
+              <p>Last Harvest: ({{ report.master_name }}) {{ report.last_harvest }}</p>
               <div v-if="is_admin || is_viewer">
                 <p>{{ report.successful }} / {{ report.inst_count }} institutions successful
                     <a :href="'/harvestlogs?rept='+report.master_id+'&ymfr='+report.last_harvest">Harvest details</a>

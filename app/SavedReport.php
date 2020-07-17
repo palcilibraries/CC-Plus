@@ -52,9 +52,23 @@ class SavedReport extends Model
     public function parsedFilters()
     {
         $return_filters = array();
-        foreach (preg_split('/,/', $this->filters) as $filter) {
+        foreach (preg_split('/\+/', $this->filters) as $filter) {
             $_f = preg_split('/:/', $filter);
-            $return_filters[$_f[0]] = (isset($_f[1])) ? $_f[1] : null;
+            if (!isset($_f[1])) {
+                $return_filters[$_f[0]] = null;
+            } else {
+                // allow for bracketed array of values
+                if (preg_match("/\[(.*)\]/i", $_f[1], $matches)) {
+                    $arr = array();
+                    $values = preg_split("/,/",$matches[1]);
+            	    foreach ($values as $val) {
+                      $arr[] = intval($val);
+                    }
+                    $return_filters[$_f[0]] = $arr;
+                } else {
+                    $return_filters[$_f[0]] = $_f[1];
+                }
+            }
         }
         return $return_filters;
     }
@@ -70,7 +84,6 @@ class SavedReport extends Model
         $fields = $this->master->reportFields->whereIn('id', preg_split('/,/', $this->inherited_fields));
         $fields->load('reportFilter');
         $my_filters = $this->parsedFilters();
-
         // Loop through $my_filters to define the filter presets found in SavedReport
         if (count($my_filters) > 0) {
             foreach ($my_filters as $key => $value) {
@@ -83,10 +96,14 @@ class SavedReport extends Model
 
         // Tack on any master field filters not defined in $my_filters
          foreach ($fields as $field) {
-             $rf = $field->reportFilter;
-             if (!is_null($rf)) {
-                 if (!isset($return_filters[$rf->report_column])) {
-                     $return_filters[$rf->report_column] = 0;
+             if ($field->reportFilter) {
+                 $_col = $field->reportFilter->report_column;
+                 if (!isset($return_filters[$_col])) {
+                     if ($_col == 'inst_id' || $_col == 'prov_id' || $_col == 'plat_id') {
+                         $return_filters[$_col] = [];
+                     } else {
+                         $return_filters[$_col] = 0;
+                     }
                  }
              }
         }

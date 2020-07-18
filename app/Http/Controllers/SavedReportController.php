@@ -319,10 +319,10 @@ class SavedReportController extends Controller
                 if ($input_fields[$field->qry_as]['active']) {
                     $inherited_fields .= ($inherited_fields == '') ? '' : ',';
                     $inherited_fields .= $field->id;
-                    // Filters are saved as  ID:VALUE, separated by "+"
-                    // Providers and institutions are stored as arrays like: ID:[VALUE,VALUE,...]
+                    // Filters are saved as ID:VALUE or ID:[VALUE,VALUE,...], separated by "+"
                     if ($field->reportFilter) {
-                        if ($field->qry_as == 'provider' || $field->qry_as == 'institution') {
+                        // Check for an array (i.e. Providers, institutions, and platforms)
+                        if (is_array($input_fields[$field->qry_as]['limit'])) {
                             if (sizeof($input_fields[$field->qry_as]['limit']) > 0) {
                                 $_filt = '';
                                 foreach ($input_fields[$field->qry_as]['limit'] as $val) {

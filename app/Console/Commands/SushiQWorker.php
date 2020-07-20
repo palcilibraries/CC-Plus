@@ -288,6 +288,7 @@ class SushiQWorker extends Command
                         $setting->update();
                     }
                 }
+                $job->harvest->attempts++;
                 $job->harvest->status = $_status;
                 $job->harvest->rawfile = $raw_filename;
 

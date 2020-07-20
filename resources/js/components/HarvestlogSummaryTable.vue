@@ -13,7 +13,7 @@
           <td>{{ item.attempts }}</td>
           <td>{{ item.status }}</td>
           <td v-if="item.attempts>0">
-            <a :href="'/harvestlogs/'+item.id">details</a>
+            <a :href="'/harvestlogs/'+item.id+'/edit'">details</a>
           </td>
         </tr>
       </template>

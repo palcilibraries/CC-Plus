@@ -25,7 +25,7 @@ Route::resource('/institutiontypes', 'InstitutionTypeController');
 Route::resource('/institutiongroups', 'InstitutionGroupController');
 Route::resource('/providers', 'ProviderController');
 Route::resource('/harvestlogs', 'HarvestLogController');
-Route::resource('/failedharvests', 'FailedHarvestController');
+// Route::resource('/failedharvests', 'FailedHarvestController');
 Route::resource('/sushisettings', 'SushiSettingController')->middleware(['auth','role:Admin,Manager']);
 Route::resource('/alertsettings', 'AlertSettingController')->middleware(['auth','role:Admin,Manager']);
 Route::resource('/savedreports', 'SavedReportController')->middleware(['auth']);

@@ -27,7 +27,8 @@ class HarvestLogController extends Controller
    /**
     * Display a listing of the resource.
     *
-    * @return \Illuminate\Http\Response
+    * @param  \Illuminate\Http\Request  $request
+    * @return \Illuminate\Http\Response or JSON
     */
     public function index(Request $request)
     {
@@ -62,30 +63,7 @@ class HarvestLogController extends Controller
             $filters['inst'] = array(auth()->user()->inst_id);
         }
 
-        // Setup array of institutions
-        if ($show_all) {
-            $inst_data = Institution::where('id','<>',1)->get(['id', 'name']);
-            $institutions = $inst_data->toArray();
-        } else {
-            $inst_data = Institution::whereIn('id',$filters['inst'])->get(['id', 'name']);
-            $institutions = $inst_data->toArray();
-        }
-
-        // Build an array of $providers
-        if ($show_all) {
-            $providers = Provider::get(['id', 'name'])->toArray();
-        } else  {
-            $providers = DB::table($consodb . '.providers as prv')
-                      ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
-                      ->where('prv.inst_id', 1)
-                      ->orWhere('prv.inst_id', auth()->user()->inst_id)
-                      ->orderBy('prov_name', 'ASC')
-                      ->get(['prv.id','prv.name'])
-                      ->toArray();
-        }
-
-        // Get available reports and make sure dates are set right
-        $reports = Report::where('parent_id','=',0)->get(['id', 'name'])->toArray();
+        // Make sure dates are sensible
         if (!is_null($filters['ymfr']) || !is_null($filters['ymto'])) {
             if (is_null($filters['ymfr'])) {
                 $filters['ymfr'] = $filters['ymto'];
@@ -95,18 +73,45 @@ class HarvestLogController extends Controller
             }
         }
 
-        // Query for min and max yearmon values
-        $bounds = array();
-        $raw_query = "min(yearmon) as YM_min, max(yearmon) as YM_max";
-        $result = HarvestLog::selectRaw($raw_query)->get()->toArray();
-        $bounds[0] = $result[0];
-        $raw_query = "report_id, " . $raw_query;
-        $rpt_result = DB::table($conso_db . ".harvestlogs")->select(DB::raw($raw_query))->groupBy('report_id')->get();
-        foreach ($rpt_result as $rpt) {
-            $bounds[$rpt->report_id] = array('YM_min' => $rpt->YM_min, 'YM_max' => $rpt->YM_max);
+        // Build arrays for the filter-options. Skip if returning JSON
+        if (!$json) {
+            // Setup array of institutions
+            if ($show_all) {
+                $inst_data = Institution::where('id','<>',1)->get(['id', 'name']);
+                $institutions = $inst_data->toArray();
+            } else {
+                $inst_data = Institution::whereIn('id',$filters['inst'])->get(['id', 'name']);
+                $institutions = $inst_data->toArray();
+            }
+
+            // Build an array of $providers
+            if ($show_all) {
+                $providers = Provider::get(['id', 'name'])->toArray();
+            } else  {
+                $providers = DB::table($consodb . '.providers as prv')
+                          ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
+                          ->where('prv.inst_id', 1)
+                          ->orWhere('prv.inst_id', auth()->user()->inst_id)
+                          ->orderBy('prov_name', 'ASC')
+                          ->get(['prv.id','prv.name'])
+                          ->toArray();
+            }
+            // Get available reports and make sure dates are set right
+            $reports = Report::where('parent_id','=',0)->get(['id', 'name'])->toArray();
+
+            // Query for min and max yearmon values
+            $bounds = array();
+            $raw_query = "min(yearmon) as YM_min, max(yearmon) as YM_max";
+            $result = HarvestLog::selectRaw($raw_query)->get()->toArray();
+            $bounds[0] = $result[0];
+            $raw_query = "report_id, " . $raw_query;
+            $rpt_result = DB::table($conso_db . ".harvestlogs")->select(DB::raw($raw_query))->groupBy('report_id')->get();
+            foreach ($rpt_result as $rpt) {
+                $bounds[$rpt->report_id] = array('YM_min' => $rpt->YM_min, 'YM_max' => $rpt->YM_max);
+            }
         }
 
-        // Get the rows
+        // Get the harvest rows based on sushisettings
         $settings = SushiSetting::when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('inst_id', $filters['inst']);
                                 })
@@ -335,36 +340,46 @@ class HarvestLogController extends Controller
              return response()->json(['result' => false, 'msg' => 'Missing expected inputs!']);
          }
 
-         // Only an actual sushi-harvest should set a harvest log record to 'Success'
-         $new_status_allowed = array('Stopped', 'Fail', 'New', 'Queued', 'Retrying', 'Delete');
+         // The new status will be based on one of 2 possible values:
+         //   Reset: resets attempts to zero and requeues the harvest for immediate retrying
+         //   Stop: Sets harvest to "Stopped", regardless of what it was before.
+         $new_status_allowed = array('Reset', 'Stop');
          if (!in_array($input['status'],$new_status_allowed)) {
              return response()->json(['result' => false,
                                       'msg' => 'Invalid request: status cannot be set to requested value.']);
          }
-         $harvest = HarvestLog::findOrFail($input['id']);
 
-         // Setting status to Stopped/Fail means deleting the corresponding job
-         if ($input['status'] == 'Stopped' || $input['status'] == 'Fail') {
+         // Harvests w/ status= 'Success', 'Active', or 'Pending' are NOT changed
+         $fixed_status = array('Success', 'Active', 'Pending');
+         $harvest = HarvestLog::findOrFail($input['id']);
+         if (in_array($harvest->status, $fixed_status)) {
+             return response()->json(['result' => false,
+                                      'msg' => 'Invalid request: harvest status cannot be changed.']);
+         }
+
+         // Stopping a harvest also means deleting any corresponding job thats in the queue
+         if ($input['status'] == 'Stop') {
+             $harvest->status = 'Stopped';
              $existing_job = SushiQueueJob::where('harvest_id', '=', $harvest->id)->first();
              if ($existing_job) {
                  $existing_job->delete();
              }
 
-         // Setting status to something other than Stopped means resetting attempts to zero
+         // Resetting means attempts get set to zero
          } else {
              $harvest->attempts = 0;
+             $harvest->status = 'Queued';
          }
 
          // Update the harvest record
-         $harvest->status = $input['status'];
          try {
              $harvest->save();
          } catch (\Exception $e) {
              return response()->json(['result' => false, 'msg' => 'Error updating harvest!']);
          }
 
-         // Setting to 'Queued' means do it now, so create the Job entry if it doesn't exist
-         if ($input['status'] == 'Queued') {
+         // If we're resetting, so create a Job entry if it doesn't exist
+         if ($harvest->status == 'Queued') {
              $con = Consortium::where('ccp_key', '=', session('ccp_con_key'))->first();
              if (!$con) {
                  return response()->json(['result' => false, 'msg' => 'Error: Corrupt session or consortium settings']);
@@ -382,7 +397,7 @@ class HarvestLogController extends Controller
                  }
              }
          }
-         return response()->json(['result' => true]);
+         return response()->json(['result' => true, 'harvest' => $harvest]);
      }
 
    /**
@@ -393,7 +408,12 @@ class HarvestLogController extends Controller
     */
     public function edit($id)
     {
-        //
+        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+        $harvest = HarvestLog::with('report:id,name','sushiSetting','sushiSetting.institution:id,name',
+                                    'sushiSetting.provider:id,name')
+                              ->findOrFail($id);
+        $failed = FailedHarvest::with('ccplusError')->where('harvest_id', '=', $id)->get()->toArray();
+        return view('harvestlogs.show', compact('harvest', 'failed'));
     }
 
 
@@ -405,12 +425,13 @@ class HarvestLogController extends Controller
      */
      public function show($id)
      {
-         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
-         $harvest = HarvestLog::with('report:id,name','sushiSetting','sushiSetting.institution:id,name',
-                                     'sushiSetting.provider:id,name')
-                               ->findOrFail($id);
-         $failed = FailedHarvest::with('ccplusError')->where('harvest_id', '=', $id)->get()->toArray();
-         return view('harvestlogs.show', compact('harvest', 'failed'));
+         // abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+         // $harvest = HarvestLog::with('report:id,name','sushiSetting','sushiSetting.institution:id,name',
+         //                             'sushiSetting.provider:id,name')
+         //                       ->findOrFail($id);
+         // $failed = FailedHarvest::with('ccplusError', 'ccplusError.severity')
+         //                        ->where('harvest_id', '=', $id)->get()->toArray();
+         // return view('harvestlogs.show', compact('harvest', 'failed'));
      }
 
      /**

@@ -139,11 +139,11 @@ export default {
                     name: "Alerts",
                     role: "All",
                   },
-                  {
-                    url: "/failedharvests",
-                    name: "Failed Harvests",
-                    role: "Manager",
-                  }
+                  // {
+                  //   url: "/failedharvests",
+                  //   name: "Failed Harvests",
+                  //   role: "Manager",
+                  // }
                 ]
               },
             ]

@@ -58,22 +58,14 @@
       <template v-slot:item="{ item }">
         <tr>
           <td>{{ item.updated_at.substr(0,10) }}</td>
-          <td>{{ item.sushi_setting.institution.name }}</td>
-          <td>{{ item.sushi_setting.provider.name }}</td>
-          <td>{{ item.report.name }}</td>
+          <td>{{ item.institution }}</td>
+          <td>{{ item.provider }}</td>
+          <td>{{ item.report }}</td>
           <td>{{ item.yearmon }}</td>
           <td>{{ item.attempts }}</td>
           <td>{{ item.status }}</td>
-          <!-- Some statuses should not be changed -->
-          <td v-if="is_manager || is_admin">
-            <v-btn v-if="status_changeable.includes(item.status)" class='btn' x-small type="button"
-                   :href="'/harvestlogs/'+item.id+'/edit'">Edit</v-btn>
-            <a v-if="item.rawfile" :href="'/harvestlogs/'+item.id+'/raw'">
-              <v-btn color="primary" x-small>Raw data</v-btn>
-            </a>
-          </td>
-          <td v-else-if="item.attempts>0">
-            <v-btn class='btn' x-small type="button" :href="'/harvestlogs/'+item.id+'/edit'">Detail</v-btn>
+          <td>
+            <v-btn class='btn' x-small type="button" :href="'/harvestlogs/'+item.id+'/edit'">Details</v-btn>
           </td>
         </tr>
       </template>
@@ -96,10 +88,10 @@
     data () {
       return {
         headers: [
-          { text: 'Harvested', value: 'created_at' },
-          { text: 'Institution', value: 'inst_name' },
-          { text: 'Provider', value: 'prov_name' },
-          { text: 'Report', value: 'report_name' },
+          { text: 'Last Update', value: 'updated_at' },
+          { text: 'Institution', value: 'institution' },
+          { text: 'Provider', value: 'provider' },
+          { text: 'Report', value: 'report' },
           { text: 'Usage Date', value: 'yearmon' },
           { text: 'Attempts', value: 'attempts' },
           { text: 'Status', value: 'status' },
@@ -107,8 +99,8 @@
         ],
         mutable_harvests: this.harvests,
         mutable_filters: this.filters,
-        statuses: ['Success', 'Fail', 'New', 'Queued', 'Active', 'Pending', 'Stopped', 'Retrying'],
-        status_changeable: ['Stopped', 'Fail', 'New', 'Queued', 'Retrying'],
+        statuses: ['Success', 'Fail', 'New', 'Queued', 'Active', 'Pending', 'Stopped', 'ReQueued'],
+        status_changeable: ['Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
         harv: {},
         minYM: '',
         maxYM: '',

@@ -31,6 +31,12 @@
       <v-col cols="2" sm="1">Status</v-col>
       <v-col cols="2" sm="1">{{ mutable_harvest.status }}</v-col>
     </v-row>
+    <v-row v-if="mutable_harvest.rawfile" no-gutters class="d-flex align-mid">
+      <v-col cols="2" sm="1">Raw Data</v-col>
+      <v-col cols="2" sm="1">
+        <a :href="'/harvestlogs/'+mutable_harvest.id+'/raw'"><v-btn color="primary" x-small>download</v-btn></a>
+      </v-col>
+    </v-row>
     <div v-if="(is_manager || is_admin)" class="d-flex ma-2 pa-0">
       <!-- Some statuses cannot be changed -->
       <v-row v-if="!(status_fixed.includes(mutable_harvest.status))" no-gutters class="d-flex align-mid">

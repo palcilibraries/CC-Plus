@@ -36,9 +36,16 @@ class SystemAlertController extends Controller
     public function store(Request $request)
     {
         abort_unless(auth()->user()->hasRole('Admin'), 403);
+
+       // Validate form inputs
+        $this->validate($request, ['is_active' => 'required', 'severity_id' => 'required', 'text' => 'required']);
+
         $input = $request->all();
         $alert = SystemAlert::create($input);
-        return response()->json(['result' => true, 'alert' => $alert]);
+
+        // return all via JSON as a sorted object
+        $alerts = SystemAlert::with('severity')->orderBy('severity_id', 'DESC')->orderBy('updated_at','DESC')->get();
+        return response()->json(['result' => true, 'alerts' => $alerts]);
     }
 
     /**
@@ -76,12 +83,15 @@ class SystemAlertController extends Controller
          $alert = SystemAlert::findOrFail($id);
 
         // Validate form inputs
-         $this->validate($request, ['is_active' => 'required', 'severity' => 'required', 'text' => 'required']);
+         $this->validate($request, ['is_active' => 'required', 'severity_id' => 'required', 'text' => 'required']);
          $input = $request->all();
 
         // Update it
          $alert->update($input);
-         return response()->json(['result' => true, 'alert' => $alert]);
+
+        // return all via JSON as a sorted object
+         $alerts = SystemAlert::with('severity')->orderBy('severity_id', 'DESC')->orderBy('updated_at','DESC')->get();
+         return response()->json(['result' => true, 'alert' => $alerts]);
     }
 
     /**

@@ -3,7 +3,7 @@
 @section('content')
 @if (sizeof($system_alerts) > 0)
     @foreach ($system_alerts as $alert)
-      <div class="alert alert-{{ $alert->severity }}">System Alert :: <strong>{{ $alert->severity }}</strong> :: {{ $alert->text }}</div>
+      <div class="alert alert-{{ $alert->severity->name }}">System Alert :: <strong>{{ $alert->severity->name }}</strong> :: {{ $alert->text }}</div>
     @endforeach
 @endif
 <v-app>

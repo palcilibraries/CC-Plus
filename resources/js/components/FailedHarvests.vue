@@ -43,7 +43,7 @@
           <td>{{ item.harvest.report.name }}</td>
           <td>{{ item.harvest.yearmon }}</td>
           <td>{{ item.process_step }}</td>
-          <td>{{ item.ccplus_error.severity }}</td>
+          <td>{{ item.ccplus_error.severity.name }}</td>
           <td>{{ item.created_at.substr(0,10) }}</td>
           <td>
             <v-btn v-if="item.detail.length>0" color="primary" x-small @click="detailModal(item.detail)">detail</v-btn>

@@ -16,8 +16,10 @@ class CreateCCplusErrorsTable extends Migration
         Schema::create('ccplus_errors', function (Blueprint $table) {
             $table->integer('id')->unsigned()->unique();
             $table->string('message',60);
-            $table->enum('severity', array('Info', 'Debug', 'Warning', 'Error', 'Fatal'))->default('Warning');
+            $table->unsignedInteger('severity_id')->default(0);     // default is Info
             $table->timestamps();
+
+            $table->foreign('severity_id')->references('id')->on('severities');
         });
     }
 

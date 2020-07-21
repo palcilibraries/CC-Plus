@@ -193,7 +193,7 @@ class SushiBatchCommand extends Command
                                                        ])->first();
                             $this->line('Harvest ' . '(ID:' . $harvest->id . ') already defined for setting: ' .
                                         $setting->id . ', ' . $report->name . ':' . $yearmon . ').');
-                            $harvest->status = 'Retrying';
+                            $harvest->status = 'ReQueued';
                             $harvest->save();
                         } else {
                             $this->line('Failed adding to HarvestLog! Error code:' . $errorCode);

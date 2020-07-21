@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
           AccessTypesTableSeeder::class,
           DataTypesTableSeeder::class,
           SectionTypesTableSeeder::class,
+          SeveritiesTableSeeder::class,
           CcplusErrorsTableSeeder::class,
         ]);
     }

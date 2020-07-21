@@ -163,7 +163,7 @@ class SushiQLoader extends Command
                             }
                             $this->line('Harvest ' . '(ID:' . $harvest->id . ') already defined. Updating to retry (' .
                                         'setting: ' . $setting->id . ', ' . $report->name . ':' . $yearmon . ').');
-                            $harvest->status = 'Retrying';
+                            $harvest->status = 'ReQueued';
                             $harvest->save();
                         } else {
                             $this->line('Failed adding to HarvestLog! Error code:' . $errorCode);
@@ -176,7 +176,7 @@ class SushiQLoader extends Command
 
        // Part II : Create queue jobs based on HarvestLogs
        // -----------------------------------------------
-        $harvests = HarvestLog::where('status', '=', 'New')->orWhere('status', '=', 'Retrying')->get();
+        $harvests = HarvestLog::where('status', '=', 'New')->orWhere('status', '=', 'ReQueued')->get();
         foreach ($harvests as $harvest) {
             try {
                 $newjob = SushiQueueJob::create(['consortium_id' => $consortium->id,

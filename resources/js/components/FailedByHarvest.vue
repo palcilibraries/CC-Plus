@@ -18,7 +18,7 @@
             <td>{{ fail.created_at }}</td>
             <td>{{ fail.process_step }}</td>
             <td>{{ fail.error_id }}</td>
-            <td>{{ fail.ccplus_error.severity }}</td>
+            <td>{{ fail.ccplus_error.severity.name }}</td>
             <td>{{ fail.ccplus_error.message }}</td>
             <td>{{ fail.detail }}</td>
           </tr>

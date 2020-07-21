@@ -14,11 +14,15 @@ class CreateSystemAlertsTable extends Migration
     public function up()
     {
         Schema::create('system_alerts', function (Blueprint $table) {
+            $global_db = DB::connection('globaldb')->getDatabaseName();
+
             $table->bigIncrements('id');
-            $table->enum('severity', array('High','Medium','Low','Info'))->default('Info');
             $table->string('text')->nullable();
+            $table->unsignedInteger('severity_id')->default(0);     // default is Info
             $table->boolean('is_active')->default(1);
             $table->timestamps();
+
+            $table->foreign('severity_id')->references('id')->on($global_db . '.severities');
         });
     }
 

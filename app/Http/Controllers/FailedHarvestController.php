@@ -17,18 +17,6 @@ class FailedHarvestController extends Controller
         $this->middleware('auth');
     }
 
-   // /**
-   //  * Display a listing of the resource.
-   //  *
-   //  * @return \Illuminate\Http\Response
-   //  */
-   //  public function index(Request $request)
-   //  {
-   //      $data = FailedHarvest::orderBy('id', 'DESC')->paginate(10);
-   //      return view('failedharvests.index', compact('data'))
-   //        ->with('i', ($request->input('page', 1) - 1) * 10);
-   //  }
-   //
     /**
      * Display a listing of the resource.
      *
@@ -132,7 +120,8 @@ class FailedHarvestController extends Controller
 
          // Get the failedharvest records
          $failed = FailedHarvest::with('harvest','harvest.sushiSetting','harvest.sushiSetting.institution:id,name',
-                                       'harvest.sushiSetting.provider:id,name','harvest.report:id,name','ccplusError')
+                                       'harvest.sushiSetting.provider:id,name','harvest.report:id,name',
+                                       'ccplusError', 'ccplusError.severity')
                                 ->whereIn('harvest_id', $harvest_ids)
                                 ->orderBy('created_at', 'DESC')
                                 ->get();

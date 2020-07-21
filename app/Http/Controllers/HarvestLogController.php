@@ -119,23 +119,33 @@ class HarvestLogController extends Controller
                                       return $qry->whereIn('prov_id', $filters['prov']);
                                 })
                                 ->pluck('id')->toArray();
-        $harvests = HarvestLog::with('report:id,name','sushiSetting',
-                                 'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
-                              ->whereIn('sushisettings_id', $settings)
-                              ->orderBy('updated_at', 'DESC')
-                              ->when(sizeof($filters['rept']) > 0, function ($qry) use ($filters) {
-                                  return $qry->whereIn('report_id', $filters['rept']);
-                              })
-                              ->when(sizeof($filters['stat']) > 0, function ($qry) use ($filters) {
-                                  return $qry->whereIn('status', $filters['stat']);
-                              })
-                              ->when($filters['ymfr'], function ($qry) use ($filters) {
-                                  return $qry->where('yearmon', '>=', $filters['ymfr']);
-                              })
-                              ->when($filters['ymto'], function ($qry) use ($filters) {
-                                  return $qry->where('yearmon', '<=', $filters['ymto']);
-                              })
-                              ->get();
+
+        $harvest_data = HarvestLog::with('report:id,name','sushiSetting',
+                                         'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+                                  ->whereIn('sushisettings_id', $settings)
+                                  ->orderBy('updated_at', 'DESC')
+                                  ->when(sizeof($filters['rept']) > 0, function ($qry) use ($filters) {
+                                      return $qry->whereIn('report_id', $filters['rept']);
+                                  })
+                                  ->when(sizeof($filters['stat']) > 0, function ($qry) use ($filters) {
+                                      return $qry->whereIn('status', $filters['stat']);
+                                  })
+                                  ->when($filters['ymfr'], function ($qry) use ($filters) {
+                                      return $qry->where('yearmon', '>=', $filters['ymfr']);
+                                  })
+                                  ->when($filters['ymto'], function ($qry) use ($filters) {
+                                      return $qry->where('yearmon', '<=', $filters['ymto']);
+                                  })
+                                  ->get();
+
+        $harvests = $harvest_data->map(function($harvest) {
+            $rec = array('id' => $harvest->id, 'updated_at' => $harvest->updated_at, 'yearmon' => $harvest->yearmon,
+                         'attempts' => $harvest->attempts, 'status' => $harvest->status);
+            $rec['institution'] = $harvest->sushiSetting->institution->name;
+            $rec['provider'] = $harvest->sushiSetting->provider->name;
+            $rec['report'] = $harvest->report->name;
+            return $rec;
+        });
 
         // Return results
         if ($json) {
@@ -412,8 +422,9 @@ class HarvestLogController extends Controller
         $harvest = HarvestLog::with('report:id,name','sushiSetting','sushiSetting.institution:id,name',
                                     'sushiSetting.provider:id,name')
                               ->findOrFail($id);
-        $failed = FailedHarvest::with('ccplusError')->where('harvest_id', '=', $id)->get()->toArray();
-        return view('harvestlogs.show', compact('harvest', 'failed'));
+        $failed = FailedHarvest::with('ccplusError', 'ccplusError.severity')
+                               ->where('harvest_id', '=', $id)->get()->toArray();
+        return view('harvestlogs.edit', compact('harvest', 'failed'));
     }
 
 
@@ -425,13 +436,7 @@ class HarvestLogController extends Controller
      */
      public function show($id)
      {
-         // abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
-         // $harvest = HarvestLog::with('report:id,name','sushiSetting','sushiSetting.institution:id,name',
-         //                             'sushiSetting.provider:id,name')
-         //                       ->findOrFail($id);
-         // $failed = FailedHarvest::with('ccplusError', 'ccplusError.severity')
-         //                        ->where('harvest_id', '=', $id)->get()->toArray();
-         // return view('harvestlogs.show', compact('harvest', 'failed'));
+         //
      }
 
      /**
@@ -447,8 +452,8 @@ class HarvestLogController extends Controller
          $harvest = HarvestLog::findOrFail($id);
          $this->validate($request, ['status' => 'required']);
 
-         // A harvest being updated to Retrying means setting attempts to zero
-         if ($request->input('status') == 'Retrying' && $harvest->status != "Retrying") {
+         // A harvest being updated to ReQueued means setting attempts to zero
+         if ($request->input('status') == 'ReQueued' && $harvest->status != "ReQueued") {
              $harvest->attempts = 0;
          }
          $harvest->status = $request->input('status');

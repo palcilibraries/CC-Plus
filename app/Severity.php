@@ -4,7 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class CcplusError extends Model
+class Severity extends Model
 {
     /**
      * The database table used by the model.
@@ -12,22 +12,25 @@ class CcplusError extends Model
      * @var string
      */
     protected $connection = 'globaldb';
-    protected $table = 'ccplus_errors';
+    protected $table = 'severities';
 
      /**
       * The attributes that are mass assignable.
       *
       * @var array
       */
-    protected $fillable = [ 'id', 'message', 'severity_id'];
 
-    public function severity()
-    {
-        return $this->belongsTo('App\Severity', 'severity_id');
-    }
+    // Check the migration ant the SeveritiesTableSeeder.
+    // The ID is not auto-incemented and is assigned in ranges to either Alerts or Sushi calls
+    protected $fillable = [ 'id', 'name'];
 
     public function failedHarvests()
     {
         return $this->hasMany('App\FailedHarvest');
+    }
+
+    public function systemAlerts()
+    {
+        return $this->hasMany('App\SystemAlert');
     }
 }

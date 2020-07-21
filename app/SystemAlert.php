@@ -17,6 +17,10 @@ class SystemAlert extends BaseModel
      *
      * @var array
      */
-    protected $fillable = ['is_active', 'severity', 'text', ];
+    protected $fillable = ['is_active', 'severity_id', 'text', ];
 
+    public function severity()
+    {
+        return $this->belongsTo('App\Severity', 'severity_id');
+    }
 }

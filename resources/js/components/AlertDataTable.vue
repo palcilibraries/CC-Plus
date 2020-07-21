@@ -20,7 +20,8 @@
             <v-switch v-model="form.is_active" label="Active?"></v-switch>
           </v-col>
           <v-col cols="2">
-            <v-select :items="severities" v-model="form.severity" value="form.severity" label="Severity" outlined>
+            <v-select :items="severities" v-model="form.severity_id" value="form.severity_id" label="Severity"
+                      item-value="id" item-text="name" outlined>
             </v-select>
           </v-col>
           <v-col cols="8">
@@ -57,7 +58,7 @@
               <td>{{ alert.created_at.substr(0,10) }}</td>
               <td v-if="alert.is_active">Active</td>
               <td v-else>Inactive</td>
-              <td>{{ alert.severity }}</td>
+              <td>{{ alert.severity.name }}</td>
               <td>{{ alert.text }}</td>
               <td><v-btn small color="primary" @click="editSys(alert.id)">edit</v-btn></td>
               <td><v-btn small class='btn btn-danger' type="button" @click="deleteSys(alert.id)">delete</v-btn></td>
@@ -117,7 +118,7 @@
           { text: 'Modified By ', value: 'mod_by' },
         ],
         form: new window.Form({
-            severity: '',
+            severity_id: 0,
             is_active: '',
             text: '',
         }),
@@ -135,7 +136,7 @@
             this.failure = '';
             this.success = '';
             this.showForm = "create";
-            this.form.severity = 'Info';
+            this.form.severity_id = 0;
             this.form.is_active = 1;
             this.form.text = '';
         },
@@ -144,7 +145,7 @@
             this.success = '';
             this.showForm = "edit";
             this.current_sysalert= this.mutable_sysalerts[this.mutable_sysalerts.findIndex(a=> a.id == alertid)];
-            this.form.severity = this.current_sysalert.severity;
+            this.form.severity_id = this.current_sysalert.severity_id;
             this.form.is_active = this.current_sysalert.is_active;
             this.form.text = this.current_sysalert.text;
         },
@@ -164,7 +165,7 @@
               if (result.value) {
                   axios.delete('/systemalerts/'+alertid)
                        .catch(error => {});
-                  this.mutable_sysalerts.splice(this.mutable_sysalerts.findIndex(a=> a.id == alert.id),1);
+                  this.mutable_sysalerts.splice(this.mutable_sysalerts.findIndex(a=> a.id == alertid),1);
               }
             })
             .catch({});
@@ -177,9 +178,8 @@
                 this.form.patch('/systemalerts/'+this.current_sysalert.id)
                     .then((response) => {
                         if (response.result) {
-                            // Update mutable_sysalerts record with newly saved values...
-                            var idx = this.mutable_sysalerts.findIndex(a => a.id == this.current_sysalert.id);
-                            Object.assign(this.mutable_sysalerts[idx], response.alert);
+                            // Update mutable_sysalerts record with newly saved and sorted values...
+                            this.mutable_sysalerts = response.alerts;
                         } else {
                             this.failure = response.msg;
                         }
@@ -189,7 +189,7 @@
                     .then( (response) => {
                         if (response.result) {
                             self.failure = '';
-                            this.mutable_sysalerts.push(response.alert);
+                            this.mutable_sysalerts = response.alerts;
                         } else {
                             self.success = '';
                             self.failure = response.data.msg;
@@ -206,7 +206,7 @@
                 var self = this;
                 Swal.fire({
                   title: 'Are you sure?',
-                  text: "This action is no reversible and underlying causes may cause the alert to be recreated.",
+                  text: "This action is not reversible and underlying causes may cause the alert to be recreated.",
                   icon: 'warning',
                   showCancelButton: true,
                   confirmButtonColor: '#3085d6',

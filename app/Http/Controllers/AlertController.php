@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Alert;
 use App\Provider;
+use App\Severity;
 use App\SystemAlert;
 use Illuminate\Http\Request;
 
@@ -19,7 +20,9 @@ class AlertController extends Controller
     {
         $statuses = Alert::getEnumValues('status');
         array_unshift($statuses, 'ALL');
-        $severities = SystemAlert::getEnumValues('severity');
+
+        // Grab error-severities that apply to alerts
+        $severities = Severity::where('id','<',10)->get(['id','name'])->toArray();
 
         $data = Alert::with('provider:id,name', 'alertSetting', 'alertSetting.reportField', 'user:id,name')
                      ->orderBy('alerts.created_at', 'DESC')->get();
@@ -61,7 +64,8 @@ class AlertController extends Controller
         array_unshift($providers, 'ALL');
 
         // Get all system alerts
-        $sysalerts = SystemAlert::get()->toArray();
+        $sysalerts = SystemAlert::with('severity')
+                                ->orderBy('severity_id', 'DESC')->orderBy('updated_at','DESC')->get()->toArray();
 
         return view('alerts.dashboard', compact('records', 'sysalerts', 'providers', 'statuses', 'severities'));
     }

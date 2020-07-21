@@ -204,6 +204,7 @@
             this.$store.dispatch('updateInstGroupFilter',0);
             this.$store.dispatch('updateProviderFilter',[]);
             this.$store.dispatch('updateReportId',1);
+            this.updateAvailable();
         },
         onInstChange () {
             this.$store.dispatch('updateInstitutionFilter',this.inst);

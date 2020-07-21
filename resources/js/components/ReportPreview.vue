@@ -528,11 +528,6 @@
           this.active_filter_count++;
       }
 
-      // Manually disable platform filtering for platform reports
-      if (this.preset_filters['report_id']==3 || this.preset_filters['report_id']==14) {
-          this.filter_data.platform.value = -1
-      }
-
       // Assign preset report_id, and from/to date fields to the store variables
       this.$store.dispatch('updateReportId',this.preset_filters['report_id']);
       this.$store.dispatch('updateFromYM',this.preset_filters['fromYM']);

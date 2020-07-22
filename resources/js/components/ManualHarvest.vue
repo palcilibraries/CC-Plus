@@ -81,6 +81,7 @@
             institutions: { type:Array, default: () => [] },
             providers: { type:Array, default: () => [] },
             all_reports: { type:Array, default: () => [] },
+            presets: { type:Array, default: () => [] },
     },
     data() {
         return {
@@ -108,15 +109,29 @@
             } else {
                 this.available_providers = [];
                 let inst = this.institutions.find(obj => obj.id == instid);
-                inst.sushi_settings.map(s => s.prov_id).forEach(prov => {
-                    this.available_providers.push(this.providers.find(obj => obj.id == prov));
+                this.providers.forEach(prov => {
+                    let setting = inst.sushi_settings.find(ss => ss.prov_id == prov.id);
+                    if (setting) this.available_providers.push(prov);
                 });
                 if (this.available_providers.length > 1) {
                     this.available_providers.unshift({id: 0, name: 'All Providers'});
                 }
             }
+            if (this.presets['prov_id']) {
+                let preset_id = Number(this.presets['prov_id']);
+                let prov = this.available_providers.find(p => p.id == preset_id);
+                if (prov) {
+                    this.onProvChange(preset_id);
+                    this.form.prov_id = preset_id;
+                } else {
+                    this.failure = 'The preset provider is not available - verify sushi settings';
+                    this.form.prov_id = null;
+                    this.presets['prov_id'] = null;
+                }
+            }
         },
         onProvChange(provid) {
+            this.failure = '';
             // Update available reports based on provider-change
             if (provid == 0) {
                 this.available_reports = this.all_reports;
@@ -165,6 +180,14 @@
       }
       let dt = new Date();
       this.maxYM = dt.getFullYear()+"-"+("0"+(dt.getMonth() + 1));
+
+      // Apply inbound institution preset (provider handled in the InstChange function)
+      if (this.presets['inst_id']) {
+          let instid = Number(this.presets['inst_id']);
+          this.onInstChange(instid);
+          this.form.inst_id = instid;
+      }
+
       console.log('ManualHarvest Component mounted.');
     }
   }

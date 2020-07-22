@@ -165,10 +165,24 @@ class HarvestLogController extends Controller
     public function create(Request $request)
     {
         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+        if (auth()->user()->hasRole('Admin')) {
+            $is_admin = true;
+        } else {
+            $user_inst = auth()->user()->inst_id;
+            $is_admin = false;
+        }
+
+        // Allow for inbound provider and institution arguments
+        $input = $request->all();
+        $presets = array('inst_id' => null);
+        $presets['prov_id'] = (isset($input['prov'])) ? $input['prov'] : null;
+        if (isset($input['inst'])) {
+            $presets['inst_id'] = ($is_admin) ? $input['inst'] : $user_inst;
+        }
 
         // Get IDs of all possible prov_ids from the sushisettings table
         $possible_providers = SushiSetting::distinct('prov_id')->pluck('prov_id')->toArray();
-        if (auth()->user()->hasRole("Admin")) {     // Admin view
+        if ($is_admin) {     // Admin view
             $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
                                        ->where('id', '<>', 1)->where('is_active', true)
                                        ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
@@ -177,7 +191,6 @@ class HarvestLogController extends Controller
                                  ->whereIn('id',$possible_providers)->where('is_active', true)
                                  ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
         } else {    // manager view
-            $user_inst = auth()->user()->inst_id;
             $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
                                        ->where('id', '=', $user_inst)
                                        ->get(['id','name'])->toArray();
@@ -195,7 +208,7 @@ class HarvestLogController extends Controller
         $report_ids = DB::table($table)->distinct('report_id')->pluck('report_id')->toArray();
         $all_reports = Report::whereIn('id',$report_ids)->orderBy('id', 'asc')->get()->toArray();
 
-        return view('harvestlogs.create',compact('institutions', 'providers', 'all_reports'));
+        return view('harvestlogs.create',compact('institutions', 'providers', 'all_reports', 'presets'));
     }
 
     /**

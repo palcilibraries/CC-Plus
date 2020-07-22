@@ -29,14 +29,14 @@ class SushiSettingController extends Controller
     {
         // User must be able to manage the settings
         $setting = SushiSetting::with(['institution', 'provider'])->findOrFail($id);
-        // $setting = SushiSetting::with('institution', 'provider', 'harvestLogs')->findOrFail($id);
         abort_unless($setting->institution->canManage(), 403);
 
+        // Get 10 most recent harvests
         $harvests = HarvestLog::with('report:id,name','sushiSetting',
                                      'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
-                              ->where('sushisettings_id', $id)
-                              ->orderBy('created_at', 'DESC')
-                              ->get();
+                              ->where('sushisettings_id',$id)
+                              ->orderBy('updated_at','DESC')->limit(10)
+                              ->get()->toArray();
 
         return view('sushisettings.edit', compact('setting', 'harvests'));
     }

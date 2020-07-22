@@ -6,6 +6,7 @@ use DB;
 use App\Provider;
 use App\Institution;
 use App\Report;
+use App\HarvestLog;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -132,23 +133,38 @@ class ProviderController extends Controller
             $set_inst_ids[] = 1;
             $unset_institutions = Institution::whereNotIn('id', $set_inst_ids)
                                              ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
+            $limit_to_insts = array();
         } else {  // Managers/Users are limited their own inst
+            $user_inst = auth()->user()->inst_id;
+            $limit_to_insts = array($user_inst);
             $provider = Provider::with(['reports:reports.id,reports.name',
-                                        'sushiSettings' => function ($query) {
-                                            $query->where('inst_id', '=', auth()->user()->inst_id);
+                                        'sushiSettings' => function ($query) use ($user_inst){
+                                            $query->where('inst_id', '=', $user_inst);
                                         },
                                         'sushiSettings.institution'])->findOrFail($id);
             $provider['can_delete'] = false;
-            $institutions = Institution::where('id', '=', auth()->user()->inst_id)->get(['id','name'])->toArray();
+            $institutions = Institution::where('id', '=', $user_inst)->get(['id','name'])->toArray();
             $unset_institutions = array();
             if (count($provider->sushiSettings) == 0) {
-                $unset_institutions[] = Institution::where('id', auth()->user()->inst_id)->first()->toArray();
+                $unset_institutions[] = Institution::where('id', $user_inst)->first()->toArray();
             }
         }
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
                                  ->get(['id','name'])->toArray();
 
-        return view('providers.show', compact('provider', 'institutions', 'unset_institutions', 'master_reports'));
+        // Get 10 most recent harvests
+        $harvests = HarvestLog::with('report:id,name','sushiSetting',
+                                     'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+                              ->join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
+                              ->when($limit_to_insts, function ($query, $limit_to_insts) {
+                                    return $query->whereIn('sushisettings.inst_id',$limit_to_insts);
+                                })
+                              ->where('sushisettings.prov_id',$id)
+                              ->orderBy('harvestlogs.updated_at','DESC')->limit(10)
+                              ->get('harvestlogs.*')->toArray();
+
+        return view('providers.show', compact('provider', 'institutions', 'unset_institutions', 'master_reports',
+                                              'harvests'));
     }
 
     /**

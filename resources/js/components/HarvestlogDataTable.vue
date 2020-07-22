@@ -83,7 +83,7 @@
             providers: { type:Array, default: () => [] },
             reports: { type:Array, default: () => [] },
             bounds: { type:Array, default: () => [] },
-            filters: { type:Object, default: () => {} },
+            filters: { type:Object, default: () => ({ymfr:null,ymto:null,inst:[],prov:[],rept:[],stat:[]}) },
            },
     data () {
       return {

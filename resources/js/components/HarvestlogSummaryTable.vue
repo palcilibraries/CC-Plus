@@ -18,7 +18,7 @@
       </template>
     </v-data-table>
 	<p class="more">
-		<a href="/harvestlogs">See all recent harvests</a>
+		<a :href="seemore_url">See all harvests</a>
 	</p>
   </div>
 </template>
@@ -27,11 +27,13 @@
   export default {
     props: {
             harvests: { type:Array, default: () => [] },
+            inst_id: { type:Number, default: 0 },
+            prov_id: { type:Number, default: 0 },
            },
     data () {
       return {
         headers: [
-          { text: 'Harvested', value: 'created_at' },
+          { text: 'Updated', value: 'updated_at' },
           { text: 'Institution', value: 'inst_name' },
           { text: 'Provider', value: 'prov_name' },
           { text: 'Report', value: 'report_name' },
@@ -41,9 +43,18 @@
           { text: '', value: '' },
         ],
         mutable_harvests: this.harvests,
+        seemore_url: "/harvestlogs",
       }
     },
     mounted() {
+      if (this.inst_id>0 || this.prov_id>0) {
+          this.seemore_url+='?';
+          if (this.inst_id>0) this.seemore_url += 'inst='+this.inst_id;
+          if (this.prov_id>0) {
+              if (this.inst_id>0) this.seemore_url+='&';
+              this.seemore_url += 'prov='+this.prov_id;
+          }
+      }
       console.log('HarvestLogSummary Component mounted.');
     }
   }

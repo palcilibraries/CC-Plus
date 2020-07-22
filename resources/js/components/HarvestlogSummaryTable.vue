@@ -1,8 +1,7 @@
 <template>
   <div>
-    <h2>Recent Activity</h2>
     <v-data-table :headers="headers" :items="mutable_harvests" item-key="id" class="elevation-1"
-                  :hide-default-footer="true" :server-items-length="10" dense>
+                  :hide-default-footer="true" :server-items-length="10" dense disable-sort>
       <template v-slot:item="{ item }">
         <tr>
           <td>{{ item.updated_at.substr(0,10) }}</td>

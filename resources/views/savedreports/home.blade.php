@@ -27,6 +27,7 @@
     @endif
 
 	<div class="dashboard-section">
+      <h2>Recent Activity</h2>
 	  <harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"></harvestlog-summary-table>
     </div>
 </v-app>

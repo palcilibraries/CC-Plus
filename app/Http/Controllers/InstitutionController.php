@@ -8,6 +8,7 @@ use App\InstitutionGroup;
 use App\Provider;
 use App\Role;
 use App\SushiSetting;
+use App\HarvestLog;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -141,9 +142,18 @@ class InstitutionController extends Controller
                                $query->where('inst_id', 1)->orWhere('inst_id', $id);
                            })
                            ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
+
+        // Get 10 most recent harvests
+        $harvests = HarvestLog::with('report:id,name','sushiSetting',
+                                     'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+                              ->join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
+                              ->where('sushisettings.inst_id',$id)
+                              ->orderBy('harvestlogs.updated_at','DESC')->limit(10)
+                              ->get('harvestlogs.*')->toArray();
+
         return view(
             'institutions.show',
-            compact('institution', 'users', 'unset_providers', 'types', 'all_groups', 'all_roles')
+            compact('institution', 'users', 'unset_providers', 'types', 'all_groups', 'all_roles', 'harvests')
         );
     }
 

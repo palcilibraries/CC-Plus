@@ -18,7 +18,9 @@
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
   	      @if (sizeof($harvests) > 0)
-    	    <harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"></harvestlog-summary-table>
+    	    <harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"
+									  :prov_id="{{ $provider->id }}"
+			></harvestlog-summary-table>
   	      @else
 	      <p>No harvest records found for this provider</p>
 	      @endif

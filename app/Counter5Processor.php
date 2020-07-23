@@ -623,7 +623,7 @@ class Counter5Processor extends Model
 
        // UTF8 Encode title if it isnt already UTF-8
         $cur_encoding = mb_detect_encoding($_title);
-        if ($cur_encoding == "UTF-8" && mb_check_encoding($_title,"UTF-8")) {
+        if ($cur_encoding == "UTF-8" && mb_check_encoding($_title, "UTF-8")) {
             $input_title = $_title;
         } else {
             $input_title = utf8_encode($_title);    // force to utf-8
@@ -664,10 +664,10 @@ class Counter5Processor extends Model
         }
 
        // Run the query
-        $matches = Title::where('type', '=', $ident['type'])->where(function($query) use ($conditions,$input_title) {
+        $matches = Title::where('type', '=', $ident['type'])->where(function ($query) use ($conditions, $input_title) {
                               $query->where('Title', '=', $input_title)
                                     ->orWhere($conditions);
-                          })->get();
+        })->get();
 
        // Loop through all the possibles
         $save_it = false;

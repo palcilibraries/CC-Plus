@@ -60,9 +60,9 @@ class SavedReport extends Model
                 // allow for bracketed array of values
                 if (preg_match("/\[(.*)\]/i", $_f[1], $matches)) {
                     $arr = array();
-                    $values = preg_split("/,/",$matches[1]);
-            	    foreach ($values as $val) {
-                      $arr[] = intval($val);
+                    $values = preg_split("/,/", $matches[1]);
+                    foreach ($values as $val) {
+                        $arr[] = intval($val);
                     }
                     $return_filters[$_f[0]] = $arr;
                 } else {
@@ -95,17 +95,17 @@ class SavedReport extends Model
         }
 
         // Tack on any master field filters not defined in $my_filters
-         foreach ($fields as $field) {
-             if ($field->reportFilter) {
-                 $_col = $field->reportFilter->report_column;
-                 if (!isset($return_filters[$_col])) {
-                     if ($_col == 'inst_id' || $_col == 'prov_id' || $_col == 'plat_id') {
-                         $return_filters[$_col] = [];
-                     } else {
-                         $return_filters[$_col] = 0;
-                     }
-                 }
-             }
+        foreach ($fields as $field) {
+            if ($field->reportFilter) {
+                $_col = $field->reportFilter->report_column;
+                if (!isset($return_filters[$_col])) {
+                    if ($_col == 'inst_id' || $_col == 'prov_id' || $_col == 'plat_id') {
+                        $return_filters[$_col] = [];
+                    } else {
+                        $return_filters[$_col] = 0;
+                    }
+                }
+            }
         }
         if (!isset($return_filters['institutiongroup_id'])) {   // This isn't a field, just a filter
             $return_filters['institutiongroup_id'] = 0;

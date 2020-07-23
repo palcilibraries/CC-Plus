@@ -49,5 +49,4 @@ class HarvestLog extends Model
       // Otherwise, return false
         return false;
     }
-
 }

@@ -57,24 +57,41 @@ class ReportController extends Controller
      */
     public function index(Request $request)
     {
+        // Get and map the standard Counter reports
         $master_reports = Report::with('reportFields', 'children')
-                                ->orderBy('name', 'asc')
+                                ->orderBy('id', 'asc')
                                 ->where('parent_id', '=', 0)
                                 ->get();
+        $counter_reports = array();
+        foreach ($master_reports as $master) {
+            $counter_reports[] = array('id' => $master->id, 'name' => $master->name, 'legend' => $master->legend,
+                                       'master' => "--Master--", 'field_count' => $master->reportFields->count());
+            foreach ($master->children as $child) {
+                $counter_reports[] = array('id' => $child->id, 'name' => $child->name, 'legend' => $child->legend,
+                                           'master' => $master->name, 'field_count' => $child->fieldCount());
+            }
+        }
+
+        // Get and map the user-defined reports
         $user_report_data = SavedReport::with('master')->orderBy('title', 'asc')
                                        ->where('user_id', '=', auth()->id())
                                        ->get();
-
-        // Map the data to get a count fields in the inherited_fields string
         if ($user_report_data) {
             $user_reports = $user_report_data->map(function ($record) {
                                 $record['field_count'] = sizeof(preg_split('/,/', $record->inherited_fields));
+                                if ($record->date_range == 'latestMonth') {
+                                    $record['months'] = 'Most recent one';
+                                } else if ($record->date_range == 'latestYear') {
+                                    $record['months'] = 'Most recent 12';
+                                } else {
+                                    $record['months'] = 'Custom: ' . $record->ym_from . ' to ' . $record->ym_to;
+                                }
                                 return $record;
             });
         } else {
             $user_reports = null;
         }
-        return view('reports.view', compact('master_reports', 'user_reports'));
+        return view('reports.view', compact('counter_reports', 'user_reports'));
     }
 
     /**

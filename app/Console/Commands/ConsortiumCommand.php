@@ -143,6 +143,5 @@ class ConsortiumCommand extends Command
         $this->line('<fg=cyan>New consortium : ' . $conso_data['name'] . ' Successfully Created.');
 
         $this->line('<fg=cyan>NOTE: app/Console/Kernel.php needs updating in order to automate harvesting!');
-
     }
 }

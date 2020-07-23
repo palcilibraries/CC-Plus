@@ -114,7 +114,7 @@ class SushiQWorker extends Command
         $this->all_consortia = Consortium::where('is_active', true)->get();
 
        // Grab all the error-severities so we only have to query for it once
-       $severities = Severity::get(['id','name']);
+        $severities = Severity::get(['id','name']);
 
        // Keep looping as long as there are jobs we can do
        // ($job_ids is updated @ bottom of loop)
@@ -268,11 +268,11 @@ class SushiQWorker extends Command
             } else {    // Fail
                 $error_msg = '';
                 // Turn severity string into an ID
-                 $severity_id = $severities::where('name','LIKE',$sushi->severity.'%')->value('id');
-                 if ($severity_id === null) {  // if not found, set to 'Error' and prepend it to the message
-                     $severity_id = $severities::where('name','=','Error')->value('id');
-                     $error_msg .= $sushi->severity . " : ";
-                 }
+                 $severity_id = $severities::where('name', 'LIKE', $sushi->severity . '%')->value('id');
+                if ($severity_id === null) {  // if not found, set to 'Error' and prepend it to the message
+                    $severity_id = $severities::where('name', '=', 'Error')->value('id');
+                    $error_msg .= $sushi->severity . " : ";
+                }
 
                // Clean up the message in case this is a new code for the errors table
                 $error_msg .= substr(preg_replace('/(.*)(https?:\/\/.*)$/', '$1', $sushi->message), 0, 60);

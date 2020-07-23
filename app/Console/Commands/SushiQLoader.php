@@ -111,10 +111,10 @@ class SushiQLoader extends Command
 
        // Get active provider data
         if ($prov_id == 0) {
-            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active','reports')
+            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
                                  ->where('is_active', '=', true)->get();
         } else {
-            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active','reports')
+            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
                                  ->where('is_active', '=', true)->where('id', '=', $prov_id)->get();
         }
 

@@ -23,7 +23,7 @@
       <div>
         <!-- Values-only when form not active -->
         <div v-if="showForm==''">
-	      <v-simple-table>
+	      <v-simple-table dense>
 	        <tr>
 	          <td>Name </td>
 	          <td>{{ mutable_inst.name }}</td>
@@ -48,7 +48,7 @@
     	        </template>
 	          </td>
 	        </tr>
-	        <tr>
+	        <tr v-if="mutable_inst.notes">
 	          <td>Notes </td>
 	          <td>{{ mutable_inst.notes }}</td>
 	        </tr>

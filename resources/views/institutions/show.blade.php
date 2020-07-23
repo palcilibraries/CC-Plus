@@ -13,13 +13,10 @@
     ></institution-form>
 
     @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )
-    <div class="users">
-	<h2 class="section-title">Users</h2>
-    <users-by-inst :users="{{ json_encode($users) }}"
+	<users-by-inst :users="{{ json_encode($users) }}"
 				   :inst_id="{{ json_encode($institution->id) }}"
 				   :all_roles="{{ json_encode($all_roles) }}"
 	></users-by-inst>
-	</div>
     @endif
 	<div class="related-list">
       <v-expansion-panels><v-expansion-panel>

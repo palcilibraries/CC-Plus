@@ -85,7 +85,7 @@ class InstitutionGroupController extends Controller
                            })
                            ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
 
-        return view('institutiongroups.edit', compact('group','not_members'));
+        return view('institutiongroups.edit', compact('group', 'not_members'));
     }
 
     /**
@@ -166,15 +166,15 @@ class InstitutionGroupController extends Controller
         $info_sheet->setCellValue('A9', 'Column Name');
         $info_sheet->setCellValue('B9', 'Data Type');
         $info_sheet->setCellValue('C9', 'Description');
-        $info_sheet->setCellValue('A10','Id');
-        $info_sheet->setCellValue('B10','Integer');
-        $info_sheet->setCellValue('C10','Unique CC-Plus InstitutionGroup ID - required');
-        $info_sheet->setCellValue('A11','Name');
-        $info_sheet->setCellValue('B11','String');
-        $info_sheet->setCellValue('C11','Institution Group Name - required');
+        $info_sheet->setCellValue('A10', 'Id');
+        $info_sheet->setCellValue('B10', 'Integer');
+        $info_sheet->setCellValue('C10', 'Unique CC-Plus InstitutionGroup ID - required');
+        $info_sheet->setCellValue('A11', 'Name');
+        $info_sheet->setCellValue('B11', 'String');
+        $info_sheet->setCellValue('C11', 'Institution Group Name - required');
 
         // Set row height and auto-width columns for the sheet
-        for ($r=1; $r<13; $r++) {
+        for ($r = 1; $r < 13; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
         $info_columns = array('A','B','C','D');
@@ -205,7 +205,7 @@ class InstitutionGroupController extends Controller
         // redirect output to client browser
         if ($type == 'xlsx') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        } else if ($type == 'xls') {
+        } elseif ($type == 'xls') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
         }
         header('Content-Type: application/vnd.ms-excel');
@@ -251,7 +251,6 @@ class InstitutionGroupController extends Controller
         // First, though, keep the current set to be able to restore any duplicates
         // after we've imported the new set.
         if ($type == 'Full Replacement') {
-
             // Get all institutions with their groups
             $original_groups = array();
             $institutions = Institution::with('institutionGroups')->get();
@@ -280,7 +279,6 @@ class InstitutionGroupController extends Controller
             if (isset($row[0])) {
                 // Ignore bad/missing ID
                 if ($row[0] != "" && is_numeric($row[0])) {
-
                     // If we're adding and the name or id already exists, skip it
                     if ($request->input('type') == 'New Additions') {
                         $existing_id = $current_groups->where("id", "=", $row[0])->first();
@@ -321,7 +319,7 @@ class InstitutionGroupController extends Controller
 
         // return the current full list of groups with a success message
         $msg  = 'Institution Groups imported successfully : ';
-        $msg .= ($num_deleted>0) ? $num_deleted . " removed, " : "";
+        $msg .= ($num_deleted > 0) ? $num_deleted . " removed, " : "";
         $msg .= $num_updated . " updated and " . $num_created . " added";
         if ($num_skipped > 0) {
             $msg .= ($num_skipped > 0) ? " (" . $num_skipped . " existing names/ids skipped)" : ".";

@@ -44,7 +44,7 @@ class SystemAlertController extends Controller
         $alert = SystemAlert::create($input);
 
         // return all via JSON as a sorted object
-        $alerts = SystemAlert::with('severity')->orderBy('severity_id', 'DESC')->orderBy('updated_at','DESC')->get();
+        $alerts = SystemAlert::with('severity')->orderBy('severity_id', 'DESC')->orderBy('updated_at', 'DESC')->get();
         return response()->json(['result' => true, 'alerts' => $alerts]);
     }
 
@@ -90,7 +90,7 @@ class SystemAlertController extends Controller
          $alert->update($input);
 
         // return all via JSON as a sorted object
-         $alerts = SystemAlert::with('severity')->orderBy('severity_id', 'DESC')->orderBy('updated_at','DESC')->get();
+         $alerts = SystemAlert::with('severity')->orderBy('severity_id', 'DESC')->orderBy('updated_at', 'DESC')->get();
          return response()->json(['result' => true, 'alert' => $alerts]);
     }
 

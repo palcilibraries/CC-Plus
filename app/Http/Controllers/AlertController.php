@@ -22,7 +22,7 @@ class AlertController extends Controller
         array_unshift($statuses, 'ALL');
 
         // Grab error-severities that apply to alerts
-        $severities = Severity::where('id','<',10)->get(['id','name'])->toArray();
+        $severities = Severity::where('id', '<', 10)->get(['id','name'])->toArray();
 
         $data = Alert::with('provider:id,name', 'alertSetting', 'alertSetting.reportField', 'user:id,name')
                      ->orderBy('alerts.created_at', 'DESC')->get();
@@ -65,7 +65,7 @@ class AlertController extends Controller
 
         // Get all system alerts
         $sysalerts = SystemAlert::with('severity')
-                                ->orderBy('severity_id', 'DESC')->orderBy('updated_at','DESC')->get()->toArray();
+                                ->orderBy('severity_id', 'DESC')->orderBy('updated_at', 'DESC')->get()->toArray();
 
         return view('alerts.dashboard', compact('records', 'sysalerts', 'providers', 'statuses', 'severities'));
     }

@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Writer\Xls;
-
 //Enables us to output flash messaging
 use Session;
 
@@ -107,7 +106,7 @@ class UserController extends Controller
         // Make sure roles include "User"
         $user_role_id = Role::where('name', '=', 'User')->value('id');
         $new_roles = isset($input['roles']) ? $input['roles'] : array();
-        if (!in_array($user_role_id,$new_roles)) {
+        if (!in_array($user_role_id, $new_roles)) {
             array_unshift($new_roles, $user_role_id);
         }
 
@@ -216,7 +215,7 @@ class UserController extends Controller
         // Make sure roles include "User"
         $user_role_id = Role::where('name', '=', 'User')->value('id');
         $new_roles = isset($input['roles']) ? $input['roles'] : array();
-        if (!in_array($user_role_id,$new_roles)) {
+        if (!in_array($user_role_id, $new_roles)) {
             array_unshift($new_roles, $user_role_id);
         }
 
@@ -332,43 +331,43 @@ class UserController extends Controller
         $info_sheet->setCellValue('B13', 'Data Type');
         $info_sheet->setCellValue('C13', 'Description');
         $info_sheet->setCellValue('D13', 'Default');
-        $info_sheet->setCellValue('A14','Id');
-        $info_sheet->setCellValue('B14','Integer');
-        $info_sheet->setCellValue('C14','Unique CC-Plus User ID - required');
-        $info_sheet->setCellValue('A15','Email');
-        $info_sheet->setCellValue('B15','String');
-        $info_sheet->setCellValue('C15','Email address - required');
-        $info_sheet->setCellValue('A16','Password');
-        $info_sheet->setCellValue('B16','String');
-        $info_sheet->setCellValue('C16','Password (will be encrypted)');
-        $info_sheet->setCellValue('D16','NULL - no change');
-        $info_sheet->setCellValue('A17','Name');
-        $info_sheet->setCellValue('B17','String');
-        $info_sheet->setCellValue('C17','Full name');
-        $info_sheet->setCellValue('D17','NULL');
-        $info_sheet->setCellValue('A18','Phone');
-        $info_sheet->setCellValue('B18','String');
-        $info_sheet->setCellValue('C18','Phone number');
-        $info_sheet->setCellValue('D18','NULL');
-        $info_sheet->setCellValue('A19','Active');
-        $info_sheet->setCellValue('B19','String (Y or N)');
-        $info_sheet->setCellValue('C19','Make the user active?');
-        $info_sheet->setCellValue('D19','Y');
-        $info_sheet->setCellValue('A20','Role(s)');
-        $info_sheet->setCellValue('B20','Comma-separated strings');
-        $info_sheet->setCellValue('C20','Admin, Manager, User, or Viewer');
-        $info_sheet->setCellValue('D20','User');
-        $info_sheet->setCellValue('A21','PWChangeReq');
-        $info_sheet->setCellValue('B21','String (Y or N)');
-        $info_sheet->setCellValue('C21','Force user to change password');
-        $info_sheet->setCellValue('D21','N');
-        $info_sheet->setCellValue('A22','Institution ID');
-        $info_sheet->setCellValue('B22','Integer');
-        $info_sheet->setCellValue('C22','Unique CC-Plus Institution ID (1=Staff)');
-        $info_sheet->setCellValue('D22','1');
+        $info_sheet->setCellValue('A14', 'Id');
+        $info_sheet->setCellValue('B14', 'Integer');
+        $info_sheet->setCellValue('C14', 'Unique CC-Plus User ID - required');
+        $info_sheet->setCellValue('A15', 'Email');
+        $info_sheet->setCellValue('B15', 'String');
+        $info_sheet->setCellValue('C15', 'Email address - required');
+        $info_sheet->setCellValue('A16', 'Password');
+        $info_sheet->setCellValue('B16', 'String');
+        $info_sheet->setCellValue('C16', 'Password (will be encrypted)');
+        $info_sheet->setCellValue('D16', 'NULL - no change');
+        $info_sheet->setCellValue('A17', 'Name');
+        $info_sheet->setCellValue('B17', 'String');
+        $info_sheet->setCellValue('C17', 'Full name');
+        $info_sheet->setCellValue('D17', 'NULL');
+        $info_sheet->setCellValue('A18', 'Phone');
+        $info_sheet->setCellValue('B18', 'String');
+        $info_sheet->setCellValue('C18', 'Phone number');
+        $info_sheet->setCellValue('D18', 'NULL');
+        $info_sheet->setCellValue('A19', 'Active');
+        $info_sheet->setCellValue('B19', 'String (Y or N)');
+        $info_sheet->setCellValue('C19', 'Make the user active?');
+        $info_sheet->setCellValue('D19', 'Y');
+        $info_sheet->setCellValue('A20', 'Role(s)');
+        $info_sheet->setCellValue('B20', 'Comma-separated strings');
+        $info_sheet->setCellValue('C20', 'Admin, Manager, User, or Viewer');
+        $info_sheet->setCellValue('D20', 'User');
+        $info_sheet->setCellValue('A21', 'PWChangeReq');
+        $info_sheet->setCellValue('B21', 'String (Y or N)');
+        $info_sheet->setCellValue('C21', 'Force user to change password');
+        $info_sheet->setCellValue('D21', 'N');
+        $info_sheet->setCellValue('A22', 'Institution ID');
+        $info_sheet->setCellValue('B22', 'Integer');
+        $info_sheet->setCellValue('C22', 'Unique CC-Plus Institution ID (1=Staff)');
+        $info_sheet->setCellValue('D22', '1');
 
         // Set row height and auto-width columns for the sheet
-        for ($r=1; $r<25; $r++) {
+        for ($r = 1; $r < 25; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
         $info_columns = array('A','B','C','D');
@@ -427,13 +426,13 @@ class UserController extends Controller
         if (auth()->user()->hasRole('Admin')) {
             $fileName = "CCplus_" . session('ccp_con_key', '') . "_Users." . $type;
         } else {
-            $fileName = "CCplus_" . preg_replace('/ /','',auth()->user()->institution->name) . "_Users." . $type;
+            $fileName = "CCplus_" . preg_replace('/ /', '', auth()->user()->institution->name) . "_Users." . $type;
         }
 
         // redirect output to client browser
         if ($type == 'xlsx') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        } else if ($type == 'xls') {
+        } elseif ($type == 'xls') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
         }
         header('Content-Type: application/vnd.ms-excel');

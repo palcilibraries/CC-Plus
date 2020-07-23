@@ -79,13 +79,13 @@ class ReportController extends Controller
         if ($user_report_data) {
             $user_reports = $user_report_data->map(function ($record) {
                                 $record['field_count'] = sizeof(preg_split('/,/', $record->inherited_fields));
-                                if ($record->date_range == 'latestMonth') {
-                                    $record['months'] = 'Most recent one';
-                                } else if ($record->date_range == 'latestYear') {
-                                    $record['months'] = 'Most recent 12';
-                                } else {
-                                    $record['months'] = 'Custom: ' . $record->ym_from . ' to ' . $record->ym_to;
-                                }
+                if ($record->date_range == 'latestMonth') {
+                    $record['months'] = 'Most recent one';
+                } elseif ($record->date_range == 'latestYear') {
+                    $record['months'] = 'Most recent 12';
+                } else {
+                    $record['months'] = 'Custom: ' . $record->ym_from . ' to ' . $record->ym_to;
+                }
                                 return $record;
             });
         } else {
@@ -108,16 +108,16 @@ class ReportController extends Controller
         // Setup arrays for the report creator
         if (auth()->user()->hasAnyRole(['Admin','Viewer'])) {
             $insts_with_data = self::hasHarvests('inst_id');
-            $institutions = Institution::whereIn('id',$insts_with_data)->orderBy('name', 'ASC')->where('id', '<>', 1)
+            $institutions = Institution::whereIn('id', $insts_with_data)->orderBy('name', 'ASC')->where('id', '<>', 1)
                                        ->get(['id','name'])->toArray();
             $inst_groups = InstitutionGroup::get(['name', 'id'])->toArray();
-            $providers = Provider::with('reports')->whereIn('id',$provs_with_data)->orderBy('name', 'ASC')
+            $providers = Provider::with('reports')->whereIn('id', $provs_with_data)->orderBy('name', 'ASC')
                                  ->get(['id','name'])->toArray();
         } else {    // limited view
             $user_inst = auth()->user()->inst_id;
             $institutions = Institution::where('id', '=', $user_inst)->get(['id','name'])->toArray();
             $inst_groups = array();
-            $providers = Provider::with('reports')->whereIn('id',$provs_with_data)
+            $providers = Provider::with('reports')->whereIn('id', $provs_with_data)
                                  ->where(function ($query) use ($user_inst) {
                                      $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
                                  })
@@ -155,7 +155,7 @@ class ReportController extends Controller
         // Saved reports have the active fields and filters built-in
         $title = "";
         if (isset($request->saved_id)) {
-            $saved_report = SavedReport::with('master','master.reportFields')->findOrFail($request->saved_id);
+            $saved_report = SavedReport::with('master', 'master.reportFields')->findOrFail($request->saved_id);
             if (!$saved_report->canManage()) {
                 return response()->json(['result' => false, 'msg' => 'Access Forbidden (403)']);
             }
@@ -163,10 +163,10 @@ class ReportController extends Controller
             $preset_filters = $saved_report->filterBy();
             $inherited = preg_split('/,/', $saved_report->inherited_fields);
             $field_data = ReportField::with('reportFilter')->where('report_id', '=', $saved_report->master_id)->get();
-            $field_data->whereIn('id',$inherited)->transform(function ($record) {
+            $field_data->whereIn('id', $inherited)->transform(function ($record) {
                                                         $record['active'] = 1;
                                                         return $record;
-                                                   });
+            });
             $rangetype = $saved_report->date_range;
 
             // update the private global filters and get available data bounds
@@ -178,10 +178,10 @@ class ReportController extends Controller
             if ($rangetype == 'latestMonth') {
                 $preset_filters['fromYM'] = $data[0]['YM_max'];
                 $preset_filters['toYM'] = $data[0]['YM_max'];
-            } else if ($rangetype == 'latestYear') {
+            } elseif ($rangetype == 'latestYear') {
                 $want_min = strtotime('-11 months', strtotime($data[0]['YM_max']));
                 $have_min = strtotime($data[0]['YM_min']);
-                $from = ($have_min>$want_min) ? date("Y-m",$have_min) : date("Y-m",$want_min);
+                $from = ($have_min > $want_min) ? date("Y-m", $have_min) : date("Y-m", $want_min);
                 $preset_filters['fromYM'] = $from;
                 $preset_filters['toYM'] = $data[0]['YM_max'];
             } else {    // Custom
@@ -214,15 +214,15 @@ class ReportController extends Controller
         $provs_with_data = self::hasHarvests('prov_id');
         if ($show_all) {
             $insts_with_data = self::hasHarvests('inst_id');
-            $filter_options['institution'] = Institution::whereIn('id',$insts_with_data)->where('id', '>', 1)
+            $filter_options['institution'] = Institution::whereIn('id', $insts_with_data)->where('id', '>', 1)
                                                         ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
-            $filter_options['provider'] = Provider::whereIn('id',$provs_with_data)->orderBy('name', 'ASC')
+            $filter_options['provider'] = Provider::whereIn('id', $provs_with_data)->orderBy('name', 'ASC')
                                                   ->get(['id','name'])->toArray();
         } else {  // Managers and Users are limited their own inst
             $filter_options['institution'] = Institution::where('id', '=', auth()->user()->inst_id)
                                                         ->get(['id','name'])->toArray();
 
-            $filter_options['provider'] = Provider::with('reports')->whereIn('id',$provs_with_data)
+            $filter_options['provider'] = Provider::with('reports')->whereIn('id', $provs_with_data)
                                                   ->where(function ($query) {
                                                       $query->where('inst_id', 1)
                                                             ->orWhere('inst_id', auth()->user()->inst_id);
@@ -231,11 +231,11 @@ class ReportController extends Controller
         }
 
         // Set options for the other filters
-        foreach($all_filters as $filter) {
+        foreach ($all_filters as $filter) {
             $_key = rtrim($filter->table_name, "s");
             // if ($_key != 'institution' && $_key != 'provider' && $_key != 'platform') {
             if ($_key != 'institution' && $_key != 'provider') {
-                $result = $filter->model::orderBy('name','ASC')->get(['id','name'])->toArray();
+                $result = $filter->model::orderBy('name', 'ASC')->get(['id','name'])->toArray();
                 $filter_options[$_key] = $result;
             }
         }
@@ -294,7 +294,7 @@ class ReportController extends Controller
             $fields[] = $field;
 
             // If this is a summing-metric field, add a column for each month
-            if (preg_match('/^sum/',$fld->qry)) {
+            if (preg_match('/^sum/', $fld->qry)) {
                 foreach ($year_mons as $ym) {
                     $columns[] = array('text' => $fld->legend, 'field' => $key, 'active' => $fld->active,
                                        'value' => $fld->qry_as . '_' . self::prettydate($ym));
@@ -308,8 +308,10 @@ class ReportController extends Controller
 
         // Get list of saved reports for this user
         $saved_reports = SavedReport::where('user_id', auth()->id())->get(['id','title'])->toArray();
-        return view('reports.preview',
-                    compact('preset_filters', 'fields', 'columns', 'saved_reports', 'title', 'filter_options'));
+        return view(
+            'reports.preview',
+            compact('preset_filters', 'fields', 'columns', 'saved_reports', 'title', 'filter_options')
+        );
     }
 
     /**
@@ -323,7 +325,7 @@ class ReportController extends Controller
         // Get/set global things
         $filters = self::$input_filters;
         $con_key = Session::get('ccp_con_key');
-        $con_name = Consortium::where('ccp_key','=',$con_key)->value('name');
+        $con_name = Consortium::where('ccp_key', '=', $con_key)->value('name');
 
         // Setup the output stream for sending info and header records
         $writer = Writer::createFromFileObject(new SplTempFileObject());
@@ -339,22 +341,25 @@ class ReportController extends Controller
         $out_file = "CCPLUS";
         $all_filters = ReportFilter::all();
         foreach (self::$input_filters as $key => $value) {
-            $filt = $all_filters->where('report_column','=',$key)->first();
+            $filt = $all_filters->where('report_column', '=', $key)->first();
             if ($filt) {
                 if ($value <= 0) {  // skip if filter is off
                     continue;
                 }
-                if ($filt->report_column == 'inst_id' || $filt->report_column == 'institutiongroup_id' ||
-                    $filt->report_column == 'prov_id') {
-                    $out_file .= "_" . preg_replace('/ /','',$filt->model::where('id', $value)->value('name'));
+                if (
+                    $filt->report_column == 'inst_id'
+                    || $filt->report_column == 'institutiongroup_id'
+                    || $filt->report_column == 'prov_id'
+                ) {
+                    $out_file .= "_" . preg_replace('/ /', '', $filt->model::where('id', $value)->value('name'));
                 } else {
-                    $limits .= ($limits=="") ? '' : ', ';
+                    $limits .= ($limits == "") ? '' : ', ';
                     $limits .= rtrim($filt->table_name, "s") . "=";
                     $limits .= $filt->model::where('id', $value)->value('name');
                 }
             }
         }
-        if ( $limits != "" ) {
+        if ($limits != "") {
             $rpt_info[] = array("Limited By: " . $limits);
         }
         $out_file .= "_" . $report->name . "_";
@@ -380,7 +385,7 @@ class ReportController extends Controller
         // (this assumes that the caller ordered the $fields as: basics->metrics)
         foreach ($fields as $key => $data) {
             // "basic" column
-            if (!preg_match('/^(searches_|total_|unique_|limit_|no_lic)/',$key)) {
+            if (!preg_match('/^(searches_|total_|unique_|limit_|no_lic)/', $key)) {
                 $has_metrics = true;
                 $left_head[] = $data['legend'];
                 if ($num_months > 1) {
@@ -394,7 +399,7 @@ class ReportController extends Controller
                     foreach ($year_mons as $ym) {
                         $lower_right_head[] = $ym;
                     }
-                    for ($m=1; $m<$num_months; $m++) {
+                    for ($m = 1; $m < $num_months; $m++) {
                         $upper_right_head[] = '';
                     }
                 } else {
@@ -408,7 +413,7 @@ class ReportController extends Controller
             if ($has_metrics) {
                 $upper_right_head[] = 'Reporting Period Total';
                 foreach ($fields as $key => $data) {
-                    if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/',$key)) {
+                    if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/', $key)) {
                         $lower_right_head[] = $data['legend'];
                     }
                 }
@@ -422,7 +427,7 @@ class ReportController extends Controller
         if ($num_months > 1) {
             $writer->insertOne($upper_right_head);
         }
-        $writer->insertOne(array_merge($left_head,$lower_right_head));
+        $writer->insertOne(array_merge($left_head, $lower_right_head));
 
         // Return the handle
         return array('writer' => $writer, 'filename' => $out_file);
@@ -475,9 +480,9 @@ class ReportController extends Controller
         $_join = config('database.connections.consodb.database') . '.sushisettings as Set';
 
         //Run it
-        $ids_with_data = HarvestLog::join($_join,'harvestlogs.sushisettings_id','Set.id')
+        $ids_with_data = HarvestLog::join($_join, 'harvestlogs.sushisettings_id', 'Set.id')
                                    ->selectRaw($raw_query)
-                                   ->where('status','Success')
+                                   ->where('status', 'Success')
                                    ->groupBy($column)
                                    ->pluck($column)->toArray();
         // Return the IDs
@@ -507,7 +512,7 @@ class ReportController extends Controller
      *
      * @return Array $limit_to_insts
      */
-    private function queryAvailable($model='')
+    private function queryAvailable($model = '')
     {
         // Setup query limiters based on self::$input_filters
         $limit_to_insts = self::limitToIds('inst_id');
@@ -524,7 +529,7 @@ class ReportController extends Controller
         foreach ($models as $key => $model) {
             $result = $model::when($limit_to_insts, function ($query, $limit_to_insts) {
                                 return $query->whereIn('inst_id', $limit_to_insts);
-                            })
+            })
                             ->when($limit_to_provs, function ($query, $limit_to_provs) {
                                 return $query->whereIn('prov_id', $limit_to_provs);
                             })
@@ -580,7 +585,6 @@ class ReportController extends Controller
 
         // If we're running an export
         if ($runtype == 'export') {
-
             // Build an organized field list and separate the "basic" fields from the "metric" ones
             $basic_fields = array();
             $metric_fields = array();
@@ -588,11 +592,11 @@ class ReportController extends Controller
                 if (!$data['active']) {
                     continue;
                 }
-                $data = $report_fields->where('qry_as','=',$key)->first();
+                $data = $report_fields->where('qry_as', '=', $key)->first();
                 $legend = ($data) ? $data->legend : $key;
 
                 // If metric field...
-                if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/',$key)) {
+                if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/', $key)) {
                     $metric_fields[$key] = $data;
                     $metric_fields[$key]['legend'] = $legend;
                 // treat as basic
@@ -603,7 +607,7 @@ class ReportController extends Controller
             }
 
             // Call prepareExport tp setup the output stream with headers
-            $export_settings = self::prepareExport($report, array_merge($basic_fields,$metric_fields));
+            $export_settings = self::prepareExport($report, array_merge($basic_fields, $metric_fields));
             $csv_file = $export_settings['filename'];
             $writer = $export_settings['writer'];
         }
@@ -624,9 +628,9 @@ class ReportController extends Controller
         $sortDir = ($request->sortDesc) ? 'DESC' : 'ASC';
         if ($master_name == 'TR' || $master_name == 'IR') {
             $sortBy = ($request->sortBy != '') ? $request->sortBy : 'Title';
-        } else if ($master_name == 'DR') {
+        } elseif ($master_name == 'DR') {
             $sortBy = ($request->sortBy != '') ? $request->sortBy : 'Dbase';
-        } else if ($master_name == 'PR') {
+        } elseif ($master_name == 'PR') {
             $sortBy = ($request->sortBy != '') ? $request->sortBy : 'Platform';
         }
 
@@ -703,7 +707,7 @@ class ReportController extends Controller
             $_user = auth()->user()->email;
         }
         $logrec = date("Y-m-d H:m") . " : " . $_user . " : " . $export_settings['filename'];
-        Storage::append('exports.log',$logrec);
+        Storage::append('exports.log', $logrec);
     }
 
     /**
@@ -769,11 +773,10 @@ class ReportController extends Controller
             $metric_totals = array();
         }
         foreach ($input_fields as $fld) {
-
             $col = array('active' => $fld['active'], 'field' => $fld['id']);
 
             // If this is a summing-metric field, add a column for each month
-            if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/',$fld['id'])) {
+            if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/', $fld['id'])) {
                 foreach ($year_mons as $ym) {
                     $col['value'] = $fld['id'] . '_' . self::prettydate($ym);
                     $col['text'] = $fld['text'] . ' - ' . self::prettydate($ym);
@@ -781,7 +784,7 @@ class ReportController extends Controller
                 }
 
                 // If we're spanning multiple months, put the totals column into a separate array
-                if (sizeof($year_mons)>1) {
+                if (sizeof($year_mons) > 1) {
                     $col['value'] = "RP_" . $fld['id'];
                     $col['text'] = $fld['text'] . " - " . "Reporting Period Total";
                     $metric_totals[] = $col;
@@ -797,7 +800,7 @@ class ReportController extends Controller
 
         // Tack on totals columns
         if (sizeof($year_mons) > 1) {
-            $columns = array_merge($columns,$metric_totals);
+            $columns = array_merge($columns, $metric_totals);
         }
 
         return response()->json(['result' => true, 'columns' => $columns]);
@@ -819,7 +822,7 @@ class ReportController extends Controller
         // Loop through all the fields
         foreach ($selected_fields as $key => $field) {
             if ($field['active']) {
-                $data = $all_fields->where('qry_as','=',$key)->first();
+                $data = $all_fields->where('qry_as', '=', $key)->first();
                 if (!$data) {
                     continue;
                 }
@@ -837,13 +840,13 @@ class ReportController extends Controller
 
                 // Add column to the raw-list
                 // If the field is a metric that sums-by-yearmon, assign metric-by-year as query fields
-                if (preg_match('/^sum/',$data->qry)) {
+                if (preg_match('/^sum/', $data->qry)) {
                     foreach ($year_mons as $ym) {
                         $raw_fields .= preg_replace('/@YM@/', $ym, $data->qry) . ' as ';
                         $raw_fields .= $data->qry_as . '_' . self::prettydate($ym) . ',';
                     }
                     // (if we're spanning multiple months,extend the reporting-period-total string)
-                    if (sizeof($year_mons)>1) {
+                    if (sizeof($year_mons) > 1) {
                         $total_fields .= "sum(" . $data->qry_as . ") as RP_" . $data->qry_as . ',';
                     }
                 } else {
@@ -926,14 +929,13 @@ class ReportController extends Controller
 
         // Handle institution cases first
         if ($column == 'inst_id') {
-
             // If user is not an "admin" or "viewer", return only their own inst.
             if (!auth()->user()->hasAnyRole(['Admin','Viewer'])) {
                 array_push($return_values, auth()->user()->inst_id);
                 return $return_values;
 
             // If both inst_id and group_id are set, return all inst_ids from the group
-            } else if (isset(self::$input_filters['institutiongroup_id'])) {
+            } elseif (isset(self::$input_filters['institutiongroup_id'])) {
                 if (self::$input_filters['institutiongroup_id'] > 0) {
                     $group = InstitutionGroup::find(self::$input_filters['institutiongroup_id']);
                     $return_values = $group->institutions->pluck('id')->toArray();
@@ -950,24 +952,25 @@ class ReportController extends Controller
     }
 
     // Turn a fromYM/toYM range into an array of yearmon strings
-    private function createYMarray() {
+    private function createYMarray()
+    {
         $range = array();
         $start = strtotime(self::$input_filters['fromYM']);
         $end = strtotime(self::$input_filters['toYM']);
         if ($start > $end) {
             return $range;
         }
-        while($start <= $end) {
-          $range[] = date('Y-m', $start);
-          $start = strtotime("+1 month", $start);
+        while ($start <= $end) {
+            $range[] = date('Y-m', $start);
+            $start = strtotime("+1 month", $start);
         }
         return $range;
     }
 
     // Reformat a date string
-    private function prettydate($date) {
-      list($yyyy, $mm) = explode("-", $date);
-      return date("M_Y", mktime(0, 0, 0, $mm, 1, $yyyy));
+    private function prettydate($date)
+    {
+        list($yyyy, $mm) = explode("-", $date);
+        return date("M_Y", mktime(0, 0, 0, $mm, 1, $yyyy));
     }
-
 }

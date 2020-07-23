@@ -56,7 +56,7 @@ class ProviderController extends Controller
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
                                  ->get(['id','name'])->toArray();
 
-        return view('providers.index', compact('providers','institutions','master_reports'));
+        return view('providers.index', compact('providers', 'institutions', 'master_reports'));
     }
 
     /**
@@ -98,7 +98,7 @@ class ProviderController extends Controller
         $consodb = config('database.connections.consodb.database');
         $data = DB::table($consodb . '.providers as prv')
                   ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
-                  ->where('prv.id',$provider->id)
+                  ->where('prv.id', $provider->id)
                   ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
                          'prv.inst_id','inst.name as inst_name','day_of_month'])
                   ->first();
@@ -138,7 +138,7 @@ class ProviderController extends Controller
             $user_inst = auth()->user()->inst_id;
             $limit_to_insts = array($user_inst);
             $provider = Provider::with(['reports:reports.id,reports.name',
-                                        'sushiSettings' => function ($query) use ($user_inst){
+                                        'sushiSettings' => function ($query) use ($user_inst) {
                                             $query->where('inst_id', '=', $user_inst);
                                         },
                                         'sushiSettings.institution'])->findOrFail($id);
@@ -153,18 +153,27 @@ class ProviderController extends Controller
                                  ->get(['id','name'])->toArray();
 
         // Get 10 most recent harvests
-        $harvests = HarvestLog::with('report:id,name','sushiSetting',
-                                     'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+        $harvests = HarvestLog::with(
+            'report:id,name',
+            'sushiSetting',
+            'sushiSetting.institution:id,name',
+            'sushiSetting.provider:id,name'
+        )
                               ->join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
                               ->when($limit_to_insts, function ($query, $limit_to_insts) {
-                                    return $query->whereIn('sushisettings.inst_id',$limit_to_insts);
-                                })
-                              ->where('sushisettings.prov_id',$id)
-                              ->orderBy('harvestlogs.updated_at','DESC')->limit(10)
+                                    return $query->whereIn('sushisettings.inst_id', $limit_to_insts);
+                              })
+                              ->where('sushisettings.prov_id', $id)
+                              ->orderBy('harvestlogs.updated_at', 'DESC')->limit(10)
                               ->get('harvestlogs.*')->toArray();
 
-        return view('providers.show', compact('provider', 'institutions', 'unset_institutions', 'master_reports',
-                                              'harvests'));
+        return view('providers.show', compact(
+            'provider',
+            'institutions',
+            'unset_institutions',
+            'master_reports',
+            'harvests'
+        ));
     }
 
     /**
@@ -309,35 +318,35 @@ class ProviderController extends Controller
         $info_sheet->setCellValue('B14', 'Data Type');
         $info_sheet->setCellValue('C14', 'Description');
         $info_sheet->setCellValue('D14', 'Default');
-        $info_sheet->setCellValue('A15','Id');
-        $info_sheet->setCellValue('B15','Integer');
-        $info_sheet->setCellValue('C15','Unique CC-Plus Provider ID - required');
-        $info_sheet->setCellValue('A16','Name');
-        $info_sheet->setCellValue('B16','String');
-        $info_sheet->setCellValue('C16','Provider name - required');
-        $info_sheet->setCellValue('A17','Active');
-        $info_sheet->setCellValue('B17','String (Y or N)');
-        $info_sheet->setCellValue('C17','Make the provider active?');
-        $info_sheet->setCellValue('D17','Y');
-        $info_sheet->setCellValue('A18','Server Url');
-        $info_sheet->setCellValue('B18','String');
-        $info_sheet->setCellValue('C18','URL for Provider SUSHI service');
-        $info_sheet->setCellValue('D18','NULL');
-        $info_sheet->setCellValue('A19','harvest_day');
-        $info_sheet->setCellValue('B19','Integer');
-        $info_sheet->setCellValue('C19','Day of the month provider reports are ready (1-28)');
-        $info_sheet->setCellValue('D19','15');
-        $info_sheet->setCellValue('A20','Institution ID');
-        $info_sheet->setCellValue('B20','Integer');
-        $info_sheet->setCellValue('C20','Institution ID (see above)');
-        $info_sheet->setCellValue('D20','1');
-        $info_sheet->setCellValue('A21','Master Reports');
-        $info_sheet->setCellValue('B21','Integer');
-        $info_sheet->setCellValue('C21','CSV list of Master Report IDs (see above)');
-        $info_sheet->setCellValue('D21','NULL');
+        $info_sheet->setCellValue('A15', 'Id');
+        $info_sheet->setCellValue('B15', 'Integer');
+        $info_sheet->setCellValue('C15', 'Unique CC-Plus Provider ID - required');
+        $info_sheet->setCellValue('A16', 'Name');
+        $info_sheet->setCellValue('B16', 'String');
+        $info_sheet->setCellValue('C16', 'Provider name - required');
+        $info_sheet->setCellValue('A17', 'Active');
+        $info_sheet->setCellValue('B17', 'String (Y or N)');
+        $info_sheet->setCellValue('C17', 'Make the provider active?');
+        $info_sheet->setCellValue('D17', 'Y');
+        $info_sheet->setCellValue('A18', 'Server Url');
+        $info_sheet->setCellValue('B18', 'String');
+        $info_sheet->setCellValue('C18', 'URL for Provider SUSHI service');
+        $info_sheet->setCellValue('D18', 'NULL');
+        $info_sheet->setCellValue('A19', 'harvest_day');
+        $info_sheet->setCellValue('B19', 'Integer');
+        $info_sheet->setCellValue('C19', 'Day of the month provider reports are ready (1-28)');
+        $info_sheet->setCellValue('D19', '15');
+        $info_sheet->setCellValue('A20', 'Institution ID');
+        $info_sheet->setCellValue('B20', 'Integer');
+        $info_sheet->setCellValue('C20', 'Institution ID (see above)');
+        $info_sheet->setCellValue('D20', '1');
+        $info_sheet->setCellValue('A21', 'Master Reports');
+        $info_sheet->setCellValue('B21', 'Integer');
+        $info_sheet->setCellValue('C21', 'CSV list of Master Report IDs (see above)');
+        $info_sheet->setCellValue('D21', 'NULL');
 
         // Set row height and auto-width columns for the sheet
-        for ($r=1; $r<22; $r++) {
+        for ($r = 1; $r < 22; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
         $info_columns = array('A','B','C','D');
@@ -368,7 +377,7 @@ class ProviderController extends Controller
             $providers_sheet->setCellValue('E' . $row, $provider->day_of_month);
             $providers_sheet->setCellValue('F' . $row, $provider->inst_id);
             $_name = ($provider->inst_id == 1) ? "Entire Consortium" : $provider->inst_name;
-            $this_prov = $all_providers->where('id','=',$provider->prov_id)->first();
+            $this_prov = $all_providers->where('id', '=', $provider->prov_id)->first();
             if (isset($this_prov->reports)) {
                 $_report_ids = "";
                 $_report_names = "";
@@ -397,13 +406,13 @@ class ProviderController extends Controller
         if (auth()->user()->hasRole('Admin')) {
             $fileName = "CCplus_" . session('ccp_con_key', '') . "_Providers." . $type;
         } else {
-            $fileName = "CCplus_" . preg_replace('/ /','',auth()->user()->institution->name) . "_Providers." . $type;
+            $fileName = "CCplus_" . preg_replace('/ /', '', auth()->user()->institution->name) . "_Providers." . $type;
         }
 
         // redirect output to client browser
         if ($type == 'xlsx') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        } else if ($type == 'xls') {
+        } elseif ($type == 'xls') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
         }
         header('Content-Type: application/vnd.ms-excel');
@@ -501,7 +510,7 @@ class ProviderController extends Controller
             $_active = ($row[2] == 'N') ? 0 : 1;
             $_url = ($row[3] == '') ? null : $row[3];
             $_day = ($row[4] == '') ? 15 : $row[4];
-            if (!is_numeric($_day) || $_day<1 || $_day>28) {
+            if (!is_numeric($_day) || $_day < 1 || $_day > 28) {
                 $_day = 15;
             }
 
@@ -521,12 +530,12 @@ class ProviderController extends Controller
 
             // Set reports
             $current_prov->reports()->detach();
-            $_report_ids = preg_split('/,/',$row[6]);
+            $_report_ids = preg_split('/,/', $row[6]);
             if (sizeof($_report_ids) > 0) {
                 foreach ($_report_ids as $r) {
                     $r_id = trim($r);
                     if (is_numeric($r_id)) {
-                        $report = $master_reports->where('id','=',$r_id)->first();
+                        $report = $master_reports->where('id', '=', $r_id)->first();
                         if ($report) {
                             $current_prov->reports()->attach($r_id);
                         }

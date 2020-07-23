@@ -64,14 +64,14 @@ class SavedReportController extends Controller
             $limit_to_insts = array();  // default to no limit
             $filter_vals = $report->parsedFilters();
             foreach ($filter_vals as $key => $val) {
-                $filt = $all_filters->where('id',$key)->first();
+                $filt = $all_filters->where('id', $key)->first();
                 if (!$filt) {
                     continue;
                 }
                 if ($filt->table_name == 'institutions') {
                     $limit_to_insts = $val; // $val should be an array....
                     break;
-                } else if ($filt->table_name == 'institutiongroups') {
+                } elseif ($filt->table_name == 'institutiongroups') {
                     if ($val > 0) {
                         $group = InstitutionGroup::find($val);
                         $limit_to_insts = $group->institutions->pluck('id')->toArray();
@@ -83,8 +83,8 @@ class SavedReportController extends Controller
             // Pull by-institution harvest/error counts, add to report_data
             $inst_harv = HarvestLog::join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
                                   ->when($limit_to_insts, function ($query, $limit_to_insts) {
-                                        return $query->whereIn('sushisettings.inst_id',$limit_to_insts);
-                                    })
+                                        return $query->whereIn('sushisettings.inst_id', $limit_to_insts);
+                                  })
                                   ->where('report_id', '=', $report->master->id)
                                   ->where('yearmon', '=', $last_harvest)
                                   ->selectRaw($count_fields)
@@ -108,29 +108,39 @@ class SavedReportController extends Controller
             $prov_count = Provider::where('is_active', true)->count();
         } else {
             $prov_count = Provider::where('is_active', true)
-                                  ->where(function($q) {
+                                  ->where(function ($q) {
                                       return $q->where('inst_id', 1)
                                                ->orWhere('inst_id', $user_inst);
-                                    })
+                                  })
                                   ->count();
         }
 
         // Get 10 most recent harvests
-        $harvests = HarvestLog::with('report:id,name','sushiSetting',
-                                         'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+        $harvests = HarvestLog::with(
+            'report:id,name',
+            'sushiSetting',
+            'sushiSetting.institution:id,name',
+            'sushiSetting.provider:id,name'
+        )
                               ->join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
                               ->when($limit_to_insts, function ($query, $limit_to_insts) {
-                                    return $query->whereIn('sushisettings.inst_id',$limit_to_insts);
-                                })
-                              ->orderBy('harvestlogs.created_at','DESC')->limit(10)
+                                    return $query->whereIn('sushisettings.inst_id', $limit_to_insts);
+                              })
+                              ->orderBy('harvestlogs.created_at', 'DESC')->limit(10)
                               ->get('harvestlogs.*')->toArray();
 
         // Get any active system alerts
-        $system_alerts = SystemAlert::where('is_active',true)->get();
+        $system_alerts = SystemAlert::where('is_active', true)->get();
 
         // Get and organize up to 5 data/harvest alerts
-        $data = Alert::with('provider:id,name', 'alertSetting', 'alertSetting.reportField', 'user:id,name',
-                            'harvest', 'harvest.sushiSetting')
+        $data = Alert::with(
+            'provider:id,name',
+            'alertSetting',
+            'alertSetting.reportField',
+            'user:id,name',
+            'harvest',
+            'harvest.sushiSetting'
+        )
                      ->latest()->limit(5)->get();
 
         $data_alerts = array();
@@ -163,8 +173,15 @@ class SavedReportController extends Controller
             $data_alerts[] = $record;
         }
 
-        return view('savedreports.home', compact('inst_count','prov_count','report_data','harvests',
-                                                 'total_insts','system_alerts','data_alerts'));
+        return view('savedreports.home', compact(
+            'inst_count',
+            'prov_count',
+            'report_data',
+            'harvests',
+            'total_insts',
+            'system_alerts',
+            'data_alerts'
+        ));
     }
 
     /**
@@ -192,7 +209,7 @@ class SavedReportController extends Controller
 
         // If not filtering by instutiongroup, get names and IDs all institutions
         if ($filter_data['institutiongroup_id'] <= 0) {
-            $all_institutions = Institution::where('id','>',1)->get(['id','name']);
+            $all_institutions = Institution::where('id', '>', 1)->get(['id','name']);
         }
         $all_providers = Provider::get(['id','name']);
         $all_platforms = Platform::get(['id','name']);
@@ -208,29 +225,29 @@ class SavedReportController extends Controller
                     } else {
                         $data['name'] = '';
                         foreach ($filter_data['inst_id'] as $val) {
-                            $_inst = $all_institutions->where('id',$val)->first();
+                            $_inst = $all_institutions->where('id', $val)->first();
                             $data['name'] .= $_inst->name . ', ';
                         }
                         $data['name'] = rtrim(trim($data['name']), ',');
                     }
-                } else if ($field->qry_as == 'provider') {
+                } elseif ($field->qry_as == 'provider') {
                     if (sizeof($filter_data['prov_id']) == 0) {
                         $data['name'] = 'All';
                     } else {
                         $data['name'] = '';
                         foreach ($filter_data['prov_id'] as $val) {
-                            $_prov = $all_providers->where('id',$val)->first();
+                            $_prov = $all_providers->where('id', $val)->first();
                             $data['name'] .= $_prov->name . ', ';
                         }
                         $data['name'] = rtrim(trim($data['name']), ',');
                     }
-                } else if ($field->qry_as == 'platform') {
+                } elseif ($field->qry_as == 'platform') {
                     if (sizeof($filter_data['plat_id']) == 0) {
                         $data['name'] = 'All';
                     } else {
                         $data['name'] = '';
                         foreach ($filter_data['plat_id'] as $val) {
-                            $_prov = $all_providers->where('id',$val)->first();
+                            $_prov = $all_providers->where('id', $val)->first();
                             $data['name'] .= $_prov->name . ', ';
                         }
                         $data['name'] = rtrim(trim($data['name']), ',');

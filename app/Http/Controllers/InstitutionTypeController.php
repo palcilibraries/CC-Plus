@@ -175,15 +175,15 @@ class InstitutionTypeController extends Controller
         $info_sheet->setCellValue('A9', 'Column Name');
         $info_sheet->setCellValue('B9', 'Data Type');
         $info_sheet->setCellValue('C9', 'Description');
-        $info_sheet->setCellValue('A10','Id');
-        $info_sheet->setCellValue('B10','Integer');
-        $info_sheet->setCellValue('C10','Unique CC-Plus InstitutionType ID - required');
-        $info_sheet->setCellValue('A11','Name');
-        $info_sheet->setCellValue('B11','String');
-        $info_sheet->setCellValue('C11','Institution Type Name - required');
+        $info_sheet->setCellValue('A10', 'Id');
+        $info_sheet->setCellValue('B10', 'Integer');
+        $info_sheet->setCellValue('C10', 'Unique CC-Plus InstitutionType ID - required');
+        $info_sheet->setCellValue('A11', 'Name');
+        $info_sheet->setCellValue('B11', 'String');
+        $info_sheet->setCellValue('C11', 'Institution Type Name - required');
 
         // Set row height and auto-width columns for the sheet
-        for ($r=1; $r<13; $r++) {
+        for ($r = 1; $r < 13; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
         $info_columns = array('A','B','C','D');
@@ -214,7 +214,7 @@ class InstitutionTypeController extends Controller
         // redirect output to client browser
         if ($output_type == 'xlsx') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        } else if ($output_type == 'xls') {
+        } elseif ($output_type == 'xls') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
         }
         header('Content-Type: application/vnd.ms-excel');
@@ -256,7 +256,6 @@ class InstitutionTypeController extends Controller
         // If user requested full replacement, we want to delete the existing types (except id:1)
         // BUT - since Instiution Type is a foreign key for Institution... we can't just trash it.
         if ($request->input('type') == 'Full Replacement') {
-
             // Get all institutions, and save the current ID => type as a separate array
             $institutions = Institution::get();
             $original_types = array();
@@ -269,9 +268,7 @@ class InstitutionTypeController extends Controller
             // Okay, toss the types
             $num_deleted = InstitutionType::count() - 1;
             InstitutionType::where('id', '<>', 1)->delete();
-
-        } else if ($request->input('type') != 'New Additions') {
-
+        } elseif ($request->input('type') != 'New Additions') {
             return response()->json(['result' => false, 'msg' => 'Error - unrecognized import type.']);
         }
         $current_types = InstitutionType::get();
@@ -281,7 +278,6 @@ class InstitutionTypeController extends Controller
             if (isset($row[0])) {
                 // Ignore bad/missing ID
                 if ($row[0] != "" && is_numeric($row[0]) && $row[0] > 1) {
-
                     // If we're adding and the name already exists, skip it
                     if ($request->input('type') == 'New Additions') {
                         $existing_name = $current_types->where("name", "=", $row[1])->first();
@@ -331,7 +327,7 @@ class InstitutionTypeController extends Controller
 
         // return the current full list of types with a success message
         $msg  = 'Institution Types imported successfully : ';
-        $msg .= ($num_deleted>0) ? $num_deleted . " removed, " : "";
+        $msg .= ($num_deleted > 0) ? $num_deleted . " removed, " : "";
         $msg .= $num_updated . " updated and " . $num_created . " added";
         if ($num_skipped > 0) {
             $msg .= ($num_skipped > 0) ? " (" . $num_skipped . " existing names skipped)" : ".";

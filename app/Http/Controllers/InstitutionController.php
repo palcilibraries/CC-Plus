@@ -29,7 +29,7 @@ class InstitutionController extends Controller
     public function index(Request $request)
     {
         if (auth()->user()->hasRole("Admin")) { // show them all
-            $institutions = Institution::with('institutionType','institutionGroups')->orderBy('name', 'ASC')
+            $institutions = Institution::with('institutionType', 'institutionGroups')->orderBy('name', 'ASC')
                                        ->get(['id','name','type_id','is_active']);
 
             $data = array();
@@ -85,13 +85,13 @@ class InstitutionController extends Controller
         if (isset($input['institutiongroups'])) {
             foreach ($request->input('institutiongroups') as $g) {
                 $institution->institutionGroups()->attach($g);
-                $group = InstitutionGroup::where('id',$g)->first();
+                $group = InstitutionGroup::where('id', $g)->first();
                 $_groups .= ($group) ? $group->name . ", " : "";
             }
         }
 
         // Setup a return object that matches what index does (above)
-        $data = Institution::where('id',$new_id)->get(['id','name','type_id','is_active'])->first()->toArray();
+        $data = Institution::where('id', $new_id)->get(['id','name','type_id','is_active'])->first()->toArray();
         $data['type'] = $institution->institutionType->name;
         $data['groups'] = rtrim(trim($_groups), ',');
 
@@ -144,11 +144,15 @@ class InstitutionController extends Controller
                            ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
 
         // Get 10 most recent harvests
-        $harvests = HarvestLog::with('report:id,name','sushiSetting',
-                                     'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+        $harvests = HarvestLog::with(
+            'report:id,name',
+            'sushiSetting',
+            'sushiSetting.institution:id,name',
+            'sushiSetting.provider:id,name'
+        )
                               ->join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
-                              ->where('sushisettings.inst_id',$id)
-                              ->orderBy('harvestlogs.updated_at','DESC')->limit(10)
+                              ->where('sushisettings.inst_id', $id)
+                              ->orderBy('harvestlogs.updated_at', 'DESC')->limit(10)
                               ->get('harvestlogs.*')->toArray();
 
         return view(
@@ -236,13 +240,21 @@ class InstitutionController extends Controller
 
         // Admins get all institutions; eager load type, groups, and sushi settings
         if (auth()->user()->hasRole("Admin")) {
-            $institutions = Institution::with('institutionType','institutionGroups','sushiSettings',
-                                              'sushiSettings.provider:id,name')
+            $institutions = Institution::with(
+                'institutionType',
+                'institutionGroups',
+                'sushiSettings',
+                'sushiSettings.provider:id,name'
+            )
                                        ->orderBy('id', 'ASC')->get();
         } else {
-            $institutions = Institution::with('institutionType','institutionGroups','sushiSettings',
-                                              'sushiSettings.provider:id,name')
-                                       ->where('id',auth()->user()->inst_id)
+            $institutions = Institution::with(
+                'institutionType',
+                'institutionGroups',
+                'sushiSettings',
+                'sushiSettings.provider:id,name'
+            )
+                                       ->where('id', auth()->user()->inst_id)
                                        ->orderBy('id', 'ASC')->get();
         }
 
@@ -293,55 +305,55 @@ class InstitutionController extends Controller
         $info_sheet->setCellValue('B21', 'Data Type');
         $info_sheet->setCellValue('C21', 'Description');
         $info_sheet->setCellValue('D21', 'Default');
-        $info_sheet->setCellValue('A22','Id');
-        $info_sheet->setCellValue('B22','Integer > 1');
-        $info_sheet->setCellValue('C22','Unique CC-Plus Institution ID - required');
-        $info_sheet->setCellValue('A23','Name');
-        $info_sheet->setCellValue('B23','String');
-        $info_sheet->setCellValue('C23','Institution Name - required');
-        $info_sheet->setCellValue('A24','Active');
-        $info_sheet->setCellValue('B24','String (Y or N)');
-        $info_sheet->setCellValue('C24','Make the institution active?');
-        $info_sheet->setCellValue('D24','Y');
-        $info_sheet->setCellValue('A25','Type ID');
-        $info_sheet->setCellValue('B25','Integer');
-        $info_sheet->setCellValue('C25','Institution Type ID (see above)');
-        $info_sheet->setCellValue('D25','1 (Not classified)');
-        $info_sheet->setCellValue('A26','FTE');
-        $info_sheet->setCellValue('B26','Integer');
-        $info_sheet->setCellValue('C26','FTE count for the institution');
-        $info_sheet->setCellValue('D26','NULL');
-        $info_sheet->setCellValue('A27','Institution Group IDs');
-        $info_sheet->setCellValue('B27','Integer,Integer,...');
-        $info_sheet->setCellValue('C27','CSV list of Institution Group IDs (see above)');
-        $info_sheet->setCellValue('D27','NULL');
-        $info_sheet->setCellValue('A28','Notes');
-        $info_sheet->setCellValue('B28','Text-blob');
-        $info_sheet->setCellValue('C28','Notes or other details');
-        $info_sheet->setCellValue('D28','NULL');
-        $info_sheet->setCellValue('A29','Provider ID');
-        $info_sheet->setCellValue('B29','Integer');
-        $info_sheet->setCellValue('C29','Unique CC-Plus Provider ID (see above)');
-        $info_sheet->setCellValue('D29','NULL');
-        $info_sheet->setCellValue('A30','Customer ID');
-        $info_sheet->setCellValue('B30','String');
-        $info_sheet->setCellValue('C30','SUSHI customer ID , provider-specific');
-        $info_sheet->setCellValue('D30','NULL');
-        $info_sheet->setCellValue('A31','Requestor ID');
-        $info_sheet->setCellValue('B31','String');
-        $info_sheet->setCellValue('C31','SUSHI requestor ID , provider-specific');
-        $info_sheet->setCellValue('D31','NULL');
-        $info_sheet->setCellValue('A32','API Key');
-        $info_sheet->setCellValue('B32','String');
-        $info_sheet->setCellValue('C32','SUSHI API Key , provider-specific');
-        $info_sheet->setCellValue('D32','NULL');
-        $info_sheet->setCellValue('A33','Support Email');
-        $info_sheet->setCellValue('B33','String');
-        $info_sheet->setCellValue('C33','Support email address, per-provider');
-        $info_sheet->setCellValue('D33','NULL');
+        $info_sheet->setCellValue('A22', 'Id');
+        $info_sheet->setCellValue('B22', 'Integer > 1');
+        $info_sheet->setCellValue('C22', 'Unique CC-Plus Institution ID - required');
+        $info_sheet->setCellValue('A23', 'Name');
+        $info_sheet->setCellValue('B23', 'String');
+        $info_sheet->setCellValue('C23', 'Institution Name - required');
+        $info_sheet->setCellValue('A24', 'Active');
+        $info_sheet->setCellValue('B24', 'String (Y or N)');
+        $info_sheet->setCellValue('C24', 'Make the institution active?');
+        $info_sheet->setCellValue('D24', 'Y');
+        $info_sheet->setCellValue('A25', 'Type ID');
+        $info_sheet->setCellValue('B25', 'Integer');
+        $info_sheet->setCellValue('C25', 'Institution Type ID (see above)');
+        $info_sheet->setCellValue('D25', '1 (Not classified)');
+        $info_sheet->setCellValue('A26', 'FTE');
+        $info_sheet->setCellValue('B26', 'Integer');
+        $info_sheet->setCellValue('C26', 'FTE count for the institution');
+        $info_sheet->setCellValue('D26', 'NULL');
+        $info_sheet->setCellValue('A27', 'Institution Group IDs');
+        $info_sheet->setCellValue('B27', 'Integer,Integer,...');
+        $info_sheet->setCellValue('C27', 'CSV list of Institution Group IDs (see above)');
+        $info_sheet->setCellValue('D27', 'NULL');
+        $info_sheet->setCellValue('A28', 'Notes');
+        $info_sheet->setCellValue('B28', 'Text-blob');
+        $info_sheet->setCellValue('C28', 'Notes or other details');
+        $info_sheet->setCellValue('D28', 'NULL');
+        $info_sheet->setCellValue('A29', 'Provider ID');
+        $info_sheet->setCellValue('B29', 'Integer');
+        $info_sheet->setCellValue('C29', 'Unique CC-Plus Provider ID (see above)');
+        $info_sheet->setCellValue('D29', 'NULL');
+        $info_sheet->setCellValue('A30', 'Customer ID');
+        $info_sheet->setCellValue('B30', 'String');
+        $info_sheet->setCellValue('C30', 'SUSHI customer ID , provider-specific');
+        $info_sheet->setCellValue('D30', 'NULL');
+        $info_sheet->setCellValue('A31', 'Requestor ID');
+        $info_sheet->setCellValue('B31', 'String');
+        $info_sheet->setCellValue('C31', 'SUSHI requestor ID , provider-specific');
+        $info_sheet->setCellValue('D31', 'NULL');
+        $info_sheet->setCellValue('A32', 'API Key');
+        $info_sheet->setCellValue('B32', 'String');
+        $info_sheet->setCellValue('C32', 'SUSHI API Key , provider-specific');
+        $info_sheet->setCellValue('D32', 'NULL');
+        $info_sheet->setCellValue('A33', 'Support Email');
+        $info_sheet->setCellValue('B33', 'String');
+        $info_sheet->setCellValue('C33', 'Support email address, per-provider');
+        $info_sheet->setCellValue('D33', 'NULL');
 
         // Set row height and auto-width columns for the sheet
-        for ($r=1; $r<35; $r++) {
+        for ($r = 1; $r < 35; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
         $info_columns = array('A','B','C','D');
@@ -423,13 +435,13 @@ class InstitutionController extends Controller
         if (auth()->user()->hasRole('Admin')) {
             $fileName = "CCplus_" . session('ccp_con_key', '') . "_Institutions." . $type;
         } else {
-            $fileName = "CCplus_" . preg_replace('/ /','',auth()->user()->institution->name) . "_Settings." . $type;
+            $fileName = "CCplus_" . preg_replace('/ /', '', auth()->user()->institution->name) . "_Settings." . $type;
         }
 
         // redirect output to client browser
         if ($type == 'xlsx') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        } else if ($type == 'xls') {
+        } elseif ($type == 'xls') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
         }
         header('Content-Type: application/vnd.ms-excel');
@@ -473,7 +485,7 @@ class InstitutionController extends Controller
             $institutions = Institution::with('sushiSettings')->get();
         } else {
             $limit_inst = auth()->user()->inst_id;
-            $institutions = Institution::with('sushiSettings')->where('id','=',$limit_inst)->get();
+            $institutions = Institution::with('sushiSettings')->where('id', '=', $limit_inst)->get();
         }
         $all_groups = InstitutionGroup::get(['id','name']);
 
@@ -554,13 +566,13 @@ class InstitutionController extends Controller
                 }
 
                 // Set group membership(s)
-                $_group_ids = preg_split('/,/',$row[5]);
+                $_group_ids = preg_split('/,/', $row[5]);
                 $current_inst->institutionGroups()->detach();
                 if (sizeof($_group_ids) > 0) {
                     foreach ($_group_ids as $g) {
                         $g_id = trim($g);
                         if (is_numeric($g_id)) {
-                            $group = $all_groups->where('id',$g_id)->first();
+                            $group = $all_groups->where('id', $g_id)->first();
                             if ($group) {
                                 $current_inst->institutionGroups()->attach($g);
                             }
@@ -571,13 +583,11 @@ class InstitutionController extends Controller
 
             // Handle Sushi Settings (as long as there's no issue from above and prov_id has a value)
             $prov_id = trim($row[7]);
-            if (!$skip_sushi && $prov_id > 0 && is_numeric($prov_id) ) {
-
+            if (!$skip_sushi && $prov_id > 0 && is_numeric($prov_id)) {
                 // Put settings into an array
                 $provider = Provider::find($prov_id);
 
                 if (!is_null($provider)) {
-
                     // Disallow managers assigning credentials for non-consortia providers belonging to another inst
                     if ($limit_inst > 0 && $provider->inst_id != 1 && $provider->inst_id != auth()->user()->inst_id) {
                         $sushi_skipped++;
@@ -605,7 +615,6 @@ class InstitutionController extends Controller
         // (Admins import from the datatable, managers only from the inst-show component)
         $inst_data = array();
         if ($limit_inst > 0) {
-
             if (!isset($current_inst)) {
                 $msg = "Import failed : No updates to apply - verify IDs in import file.";
                 return response()->json(['result' => false, 'msg' => $msg]);
@@ -613,8 +622,8 @@ class InstitutionController extends Controller
 
             // If we're doing full-replace, delete sushi settings missing from the import
             if ($type == 'Full Replacement') {
-                $sushi_deleted = SushiSetting::where('inst_id','=',auth()->user()->inst_id)
-                                             ->whereNotIn('id',$settings_to_keep)->delete();
+                $sushi_deleted = SushiSetting::where('inst_id', '=', auth()->user()->inst_id)
+                                             ->whereNotIn('id', $settings_to_keep)->delete();
             }
 
             // Add on group-settings
@@ -624,11 +633,11 @@ class InstitutionController extends Controller
         // Admins...
         } else {
             if ($type == 'Full Replacement') {
-                $sushi_deleted = SushiSetting::whereNotIn('id',$settings_to_keep)->delete();
+                $sushi_deleted = SushiSetting::whereNotIn('id', $settings_to_keep)->delete();
             }
 
             // Recreate the institutions list (like index does) to be returned to the caller
-            $institutions = Institution::with('institutionType','institutionGroups')->orderBy('name', 'ASC')
+            $institutions = Institution::with('institutionType', 'institutionGroups')->orderBy('name', 'ASC')
                                        ->get(['id','name','type_id','is_active']);
             $inst_data = array();
             foreach ($institutions as $inst) {

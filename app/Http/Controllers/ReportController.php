@@ -29,6 +29,7 @@ class ReportController extends Controller
     private static $input_filters;
     private $group_by;
     private $raw_fields;
+    private $raw_where;
     private $joins;
     private $global_db;
     private $conso_db;
@@ -40,10 +41,11 @@ class ReportController extends Controller
      */
     public function __construct()
     {
-        global $raw_fields, $group_by, $joins;
+        global $raw_fields, $group_by, $joins, $raw_where;
 
         self::$input_filters = [];
         $raw_fields = '';
+        $raw_where = '';
         $group_by = [];
         $joins = ['institution' => "", 'provider' => "", 'platform' => "", 'publisher' => "",
                   'datatype' => "", 'accesstype' => "", 'accessmethod' => "", 'sectiontype' => ""];
@@ -552,7 +554,7 @@ class ReportController extends Controller
      */
     public function getReportData(Request $request)
     {
-         global $joins, $raw_fields, $group_by, $global_db, $conso_db;
+         global $joins, $raw_fields, $group_by, $global_db, $conso_db, $raw_where;
 
          // Validate and deal w/ inputs
          $this->validate($request, ['report_id' => 'required', 'fields' => 'required', 'filters' => 'required']);
@@ -561,6 +563,7 @@ class ReportController extends Controller
          $_filters = json_decode($request->filters, true);
          $runtype = (isset($request->runtype)) ? $request->runtype : 'preview';
          $preview = (isset($request->preview) && $runtype == 'preview') ? $request->preview : 0;
+         $ignore_zeros = json_decode($request->zeros, true);
 
          // Get/set global things
          self::$input_filters = $_filters;
@@ -581,7 +584,6 @@ class ReportController extends Controller
             $report_fields = $report->parent->reportFields;
         }
         $report_table = $conso_db . '.' . strtolower($master_name) . '_report_data as ' . $master_name;
-    // $report_table = $conso_db . '.' . strtolower($master_name) . '_report_data';
 
         // If we're running an export
         if ($runtype == 'export') {
@@ -612,7 +614,7 @@ class ReportController extends Controller
             $writer = $export_settings['writer'];
         }
 
-        // Setup joins, fields to select, and group_by based on active columns
+        // Setup joins, fields to select, raw_where, and group_by based on active columns
         self::setupQueryFields($report_fields, $selected_fields);
 
         // Setup arrays for institution, provider, and platform whereIn clauses
@@ -679,6 +681,9 @@ class ReportController extends Controller
                   })
                   ->when($limit_to_plats, function ($query, $limit_to_plats) use ($master_name) {
                       return $query->whereIn($master_name . '.plat_id', $limit_to_plats);
+                  })
+                  ->when($ignore_zeros, function ($query) use ($raw_where) {
+                      return $query->whereRaw($raw_where);
                   })
                   ->where($conditions)
                   ->groupBy($group_by)
@@ -815,7 +820,7 @@ class ReportController extends Controller
      */
     private function setupQueryFields($all_fields, $selected_fields)
     {
-        global $joins, $raw_fields, $group_by, $global_db, $conso_db;
+        global $joins, $raw_fields, $group_by, $global_db, $conso_db, $raw_where;
         $year_mons = self::createYMarray();
         $total_fields = "";
 
@@ -838,9 +843,11 @@ class ReportController extends Controller
                     $joins[$key] = $_join;
                 }
 
-                // Add column to the raw-list
+                // Add column to the raw-list and the raw_where string (for ignoring zero-records)
                 // If the field is a metric that sums-by-yearmon, assign metric-by-year as query fields
                 if (preg_match('/^sum/', $data->qry)) {
+                    $raw_where .= ($raw_where != "") ? " or " : "";
+                    $raw_where .= $data->qry_as . ">0";
                     foreach ($year_mons as $ym) {
                         $raw_fields .= preg_replace('/@YM@/', $ym, $data->qry) . ' as ';
                         $raw_fields .= $data->qry_as . '_' . self::prettydate($ym) . ',';

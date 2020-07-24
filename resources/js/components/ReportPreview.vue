@@ -1,129 +1,144 @@
 <template>
-  <div>
-    <date-range :minym="minYM" :maxym="maxYM"
-                :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM"
-                :key="rangeKey"
-    ></date-range>
-    <span><strong>Show/Hide Columns</strong></span>
-    <v-row class="mb-0 py-0">
-      <v-col class="d-flex align-bot" v-for="field in mutable_fields" :key="field.id">
-        <v-checkbox :label="field.text" v-model="field.active" :value="field.active"
-                    @change="onFieldChange(field)"></v-checkbox>
-      </v-col>
-    </v-row>
-    <span v-if="active_filter_count > 0"><strong>Filters</strong></span>
-    <v-row v-if="active_filter_count > 0" no-gutters>
-      <div v-if='filter_data["provider"].value.constructor === Array' class="d-flex pr-4 align-mid" cols="3" sm="2">
-        <v-col v-if='filter_data["provider"].value.length >= 0' class="d-flex align-mid">
-          <img v-if='filter_data["provider"].value.length > 0' src="/images/red-x-16.png"
-               alt="clear filter" @click="clearFilter('provider')"/>&nbsp;
-          <v-select :items='filter_options.provider'
-                    v-model='filter_data.provider.value'
-                    multiple
-                    @change="setFilter('provider')"
-                    label="Provider"
-                    item-text="name"
-                    item-value="id"
-          ></v-select>
-        </v-col>
+  <div class="ma-0 pa-0">
+    <div class="d-flex flex-row mb-2">
+      <div class="d-flex pa-2">
+        <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM" :key="rangeKey"
+        ></date-range>
       </div>
-      <div v-if='filter_data["platform"].value.constructor === Array' class="d-flex pr-4 align-mid" cols="3" sm="2">
-        <v-col v-if='filter_data["platform"].value.length >= 0' class="d-flex align-mid">
-          <img v-if='filter_data["platform"].value.length > 0' src="/images/red-x-16.png"
-               alt="clear filter" @click="clearFilter('platform')"/>&nbsp;
-          <v-select :items='filter_options.platform'
-                    v-model='filter_data.platform.value'
-                    multiple
-                    @change="setFilter('platform')"
-                    label="Platform"
-                    item-text="name"
-                    item-value="id"
-          ></v-select>
-        </v-col>
+      <div class="d-flex pa-2">
+        <v-switch v-model="zeroRecs" label="Exclude Zero-Use Records?"></v-switch>
       </div>
-      <div v-if='(is_admin || is_viewer) && !filterGroup && filter_data["institution"].value.constructor === Array'
-           class="d-flex pr-4 align-mid" cols="3" sm="2">
-        <v-col v-if='filter_data["institution"].value.length >= 0' class="d-flex align-mid">
-          <img v-if='filter_data["institution"].value.length > 0' src="/images/red-x-16.png"
-               alt="clear filter" @click="clearFilter('institution')"/>&nbsp;
-          <v-select :items='filter_options.institution'
-                    v-model='filter_data.institution.value'
-                    multiple
-                    @change="setFilter('institution')"
-                    label="Institution"
-                    item-text="name"
-                    item-value="id"
-          ></v-select>
-        </v-col>
-      </div>
-      <div v-if='(is_admin || is_viewer) && !filterInst' class="d-flex pr-4 align-mid">
-        <v-col v-if='filter_data["institutiongroup"].value == 0' class="d-flex align-mid">
-          <v-select :items='filter_options.institutiongroup'
-                    v-model='filter_data.institutiongroup.value'
-                    @change="setFilter('institutiongroup')"
-                    label="Institution Group"
-                    item-text="name"
-                    item-value="id"
-          ></v-select>
-        </v-col>
-        <v-col v-if='filter_data["institutiongroup"].value > 0' class="d-flex align-mid">
-          <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('institutiongroup')"/>&nbsp;
-          Inst-Group: {{ filter_data["institutiongroup"].name }}
-        </v-col>
-      </div>
-      <v-col v-if='filter_data["datatype"].value == 0' class="d-flex pr-4 align-mid" cols="3" sm="2">
-        <v-select :items='filter_options.datatype'
-                  v-model='filter_data.datatype.value'
-                  @change="setFilter('datatype')"
-                  label="Data Type"
-                  item-text="name"
-                  item-value="id"
-        ></v-select>
-      </v-col>
-      <v-col v-if='filter_data["datatype"].value > 0' class="d-flex pr-4 align-mid" cols="3" sm="2">
-        <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('datatype')"/>&nbsp;
-        Datatype: {{ filter_data["datatype"].name }}
-      </v-col>
-      <v-col v-if='filter_data["sectiontype"].value > 0' class="d-flex pr-4 align-mid">
-        <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('sectiontype')"/>&nbsp;
-        Section Type: {{ filter_data["sectiontype"].name }}
-      </v-col>
-      <v-col v-if='filter_data["sectiontype"].value == 0' class="d-flex pr-4 align-mid" cols="3" sm="3">
-        <v-select :items='filter_options.sectiontype'
-                  v-model='filter_data.sectiontype.value'
-                  @change="setFilter('sectiontype')"
-                  label="SectionType"
-                  item-text="name"
-                  item-value="id"
-        ></v-select>
-      </v-col>
-      <v-col v-if='filter_data["accesstype"].value > 0' class="d-flex pr-4 align-mid" cols="3" sm="3">
-        <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('accesstype')"/>&nbsp;
-        Access Type: {{ filter_data["accesstype"].name }}
-      </v-col>
-      <v-col v-if='filter_data["accesstype"].value == 0' class="d-flex pr-4 align-mid" cols="3" sm="3">
-        <v-select :items='filter_options.accesstype'
-                  v-model='filter_data.accesstype.value'
-                  @change="setFilter('accesstype')"
-                  label="Access Type"
-                  item-text="name"
-                  item-value="id"
-        ></v-select>
-      </v-col>
-      <v-col v-if='filter_data["accessmethod"].value > 0' class="d-flex align-mid" cols="3" sm="3">
-        <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('accessmethod')"/>&nbsp;
-        Access Method: {{ filter_data["accessmethod"].name }}
-      </v-col>
-      <v-col v-if='filter_data["accessmethod"].value == 0' class="d-flex align-mid" cols="3" sm="3">
-        <v-select :items='filter_options.accessmethod'
-                  v-model='filter_data.accessmethod.value'
-                  @change="setFilter('accessmethod')"
-                  label="Access Method"
-                  item-text="name"
-                  item-value="id"
-        ></v-select>
-      </v-col>
-    </v-row>
+    </div>
+    <v-expansion-panels multiple focusable :value="panels">
+      <v-expansion-panel>
+        <v-expansion-panel-header>Show/Hide Columns</v-expansion-panel-header>
+        <v-expansion-panel-content>
+          <v-row class="d-flex wrap-column-boxes ma-0" no-gutters>
+            <v-col class="d-flex pa-2" cols="2" sm="2" v-for="field in mutable_fields" :key="field.id">
+              <v-checkbox :label="field.text" v-model="field.active" :value="field.active"
+                          @change="onFieldChange(field)"></v-checkbox>
+            </v-col>
+          </v-row>
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+      <v-expansion-panel>
+        <v-expansion-panel-header>Filters</v-expansion-panel-header>
+        <v-expansion-panel-content>
+          <v-row v-if="active_filter_count > 0" class="d-flex ma-1 wrap-filters" no-gutters>
+            <div v-if='filter_data["provider"].value.constructor === Array' cols="3" sm="2">
+              <v-col v-if='filter_data["provider"].value.length >= 0' class="d-flex pa-2 align-center">
+                <img v-if='filter_data["provider"].value.length > 0' src="/images/red-x-16.png"
+                     alt="clear filter" @click="clearFilter('provider')"/>&nbsp;
+                <v-select :items='filter_options.provider'
+                          v-model='filter_data.provider.value'
+                          multiple
+                          @change="setFilter('provider')"
+                          label="Provider"
+                          item-text="name"
+                          item-value="id"
+                ></v-select>
+              </v-col>
+            </div>
+            <div v-if='filter_data["platform"].value.constructor === Array' cols="3" sm="2">
+              <v-col v-if='filter_data["platform"].value.length >= 0' class="d-flex pa-2 align-center">
+                <img v-if='filter_data["platform"].value.length > 0' src="/images/red-x-16.png"
+                     alt="clear filter" @click="clearFilter('platform')"/>&nbsp;
+                <v-select :items='filter_options.platform'
+                          v-model='filter_data.platform.value'
+                          multiple
+                          @change="setFilter('platform')"
+                          label="Platform"
+                          item-text="name"
+                          item-value="id"
+                ></v-select>
+              </v-col>
+            </div>
+            <div v-if='(is_admin || is_viewer) && !filterGroup && filter_data["institution"].value.constructor===Array'
+                 cols="3" sm="2">
+              <v-col v-if='filter_data["institution"].value.length >= 0' class="d-flex pa-2 align-center">
+                <img v-if='filter_data["institution"].value.length > 0' src="/images/red-x-16.png"
+                     alt="clear filter" @click="clearFilter('institution')"/>&nbsp;
+                <v-select :items='filter_options.institution'
+                          v-model='filter_data.institution.value'
+                          multiple
+                          @change="setFilter('institution')"
+                          label="Institution"
+                          item-text="name"
+                          item-value="id"
+                ></v-select>
+              </v-col>
+            </div>
+            <div v-if='(is_admin || is_viewer) && !filterInst' cols="3" sm="2">
+              <v-col v-if='filter_data["institutiongroup"].value == 0' class="d-flex pa-2 align-center">
+                <v-select :items='filter_options.institutiongroup'
+                          v-model='filter_data.institutiongroup.value'
+                          @change="setFilter('institutiongroup')"
+                          label="Institution Group"
+                          item-text="name"
+                          item-value="id"
+                ></v-select>
+              </v-col>
+              <v-col v-if='filter_data["institutiongroup"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
+                <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('institutiongroup')"/>&nbsp;
+                Inst-Group: {{ filter_data["institutiongroup"].name }}
+              </v-col>
+            </div>
+            <v-col v-if='filter_data["datatype"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
+              <v-select :items='filter_options.datatype'
+                        v-model='filter_data.datatype.value'
+                        @change="setFilter('datatype')"
+                        label="Data Type"
+                        item-text="name"
+                        item-value="id"
+              ></v-select>
+            </v-col>
+            <v-col v-if='filter_data["datatype"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
+              <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('datatype')"/>&nbsp;
+              Datatype: {{ filter_data["datatype"].name }}
+            </v-col>
+            <v-col v-if='filter_data["sectiontype"].value > 0' class="d-flex pa-2 align-center">
+              <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('sectiontype')"/>&nbsp;
+              Section Type: {{ filter_data["sectiontype"].name }}
+            </v-col>
+            <v-col v-if='filter_data["sectiontype"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
+              <v-select :items='filter_options.sectiontype'
+                        v-model='filter_data.sectiontype.value'
+                        @change="setFilter('sectiontype')"
+                        label="SectionType"
+                        item-text="name"
+                        item-value="id"
+              ></v-select>
+            </v-col>
+            <v-col v-if='filter_data["accesstype"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
+              <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('accesstype')"/>&nbsp;
+              Access Type: {{ filter_data["accesstype"].name }}
+            </v-col>
+            <v-col v-if='filter_data["accesstype"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
+              <v-select :items='filter_options.accesstype'
+                        v-model='filter_data.accesstype.value'
+                        @change="setFilter('accesstype')"
+                        label="Access Type"
+                        item-text="name"
+                        item-value="id"
+              ></v-select>
+            </v-col>
+            <v-col v-if='filter_data["accessmethod"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
+              <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('accessmethod')"/>&nbsp;
+              Access Method: {{ filter_data["accessmethod"].name }}
+            </v-col>
+            <v-col v-if='filter_data["accessmethod"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
+              <v-select :items='filter_options.accessmethod'
+                        v-model='filter_data.accessmethod.value'
+                        @change="setFilter('accessmethod')"
+                        label="Access Method"
+                        item-text="name"
+                        item-value="id"
+              ></v-select>
+            </v-col>
+          </v-row>
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+    </v-expansion-panels>
     <v-row class="d-flex pt-4">
       <v-col class="d-flex pa-2" cols="4" sm="2">
         <v-btn class='btn' small type="button" color="primary" @click="previewData">{{ preview_text }}</v-btn>
@@ -216,15 +231,14 @@
         filterInst: false,
         filterGroup: false,
         preview_text: 'Display Preview',
-        change_counter: 0,
         totalRecs: 0,
-        filter_drawer: null,
-        column_drawer: null,
         loading: true,
+        panels: [1],
         minYM: '',
         maxYM: '',
         rangeKey: 1,
         active_filter_count: 0,
+        zeroRecs: 1,
         footer_props: {
             'items-per-page-options': [10, 20, 50, 100],
         },
@@ -265,7 +279,7 @@
                 this.showPreview = true;
                 this.preview_text = 'Refresh Preview';
             }
-            this.getData().then(data => {
+            this.getReportData().then(data => {
                   this.report_data = data.items;
             });
         },
@@ -364,7 +378,7 @@
             if (filter == 'institution') this.filterInst = true;
             if (filter == 'institutiongroup') this.filterGroup = true;
         },
-        getData () {
+        getReportData () {
           if (this.runtype != 'export') {
               this.loading = true;
           }
@@ -378,6 +392,7 @@
             _flds[fld.id] = {active: fld.active, limit: fval};
           })
           params['fields'] = JSON.stringify(_flds);
+          params['zeros'] = this.zeroRecs;
 
           if (this.runtype != 'export') {   // currently only other value is 'preview'
               return new Promise((resolve, reject) => {
@@ -467,7 +482,7 @@
         },
         goExport() {
             this.runtype = 'export';
-            this.getData().then(data => {
+            this.getReportData().then(data => {
                 this.runtype = '';
             });
         },
@@ -540,8 +555,14 @@
   }
 </script>
 <style>
-.align-mid { align-items: center; }
-.align-bot { align-items: flex-end; }
+.wrap-column-boxes {
+    flex-flow: row wrap;
+    align-items: flex-end;
+ }
+ .wrap-filters {
+     flex-flow: row wrap;
+     align-items: center;
+  }
 .form-fail {
     position: relative;
     padding: 0.75rem 1.25rem;

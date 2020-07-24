@@ -83,7 +83,7 @@
                   <v-radio :label="'Latest Year ['+latestYear+']'" value='latestYear'></v-radio>
                   <v-radio :label="'Custom Date Range'" value='Custom'></v-radio>
                 </v-radio-group>
-                <div v-if="form.date_range=='Custom'">
+                <div v-if="form.date_range=='Custom'" class="d-flex pa-2">
                   <date-range :ymfrom="mutable_report.ym_from" :ymto="mutable_report.ym_to"
                               :minym="minYM" :maxym="maxYM"
                   ></date-range>

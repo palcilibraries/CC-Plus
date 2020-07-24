@@ -48,9 +48,9 @@
           ></v-select>
         </v-col>
       </v-row>
-      <v-row v-if="form.reports.length>0">
-        <span><h5>Month(s) to Harvest</h5></span>
-        <v-col class="ma-2" cols="12">
+      <v-row v-if="form.reports.length>0" class="d-flex flex-row ma-2 align-center">
+        <v-col class="d-flex pa-2" cols="2" sm="2"><h5>Month(s) to Harvest</h5></v-col>
+        <v-col class="d-flex pa-2">
           <date-range minym="2019-01" :maxym="maxYM" ymfrom="" ymto=""></date-range>
         </v-col>
       </v-row>

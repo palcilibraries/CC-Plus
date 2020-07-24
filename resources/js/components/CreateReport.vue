@@ -69,7 +69,7 @@
                 </p>
                 <v-radio :label="reports[0].legend+' ('+reports[0].name+')'" :value='reports[0]'></v-radio>
                 <v-radio v-for="(value, idx) in tr_reports" :key="idx" :value="value"
-                         :label="value.name+' : '+value.legend">Hello World</v-radio>
+                         :label="value.name+' : '+value.legend"></v-radio>
               </v-expansion-panel-content>
             </v-expansion-panel>
 
@@ -93,7 +93,7 @@
                   <p>Available Views</p>
                   <v-radio :label="reports[2].legend+' ('+reports[2].name+')'" :value='reports[2]'></v-radio>
                   <v-radio v-for="(value, idx) in pr_reports" :key="idx" :value="value"
-                           :label="value.name+' : '+value.legend">Hi Sailor!</v-radio>
+                           :label="value.name+' : '+value.legend"></v-radio>
               </v-expansion-panel-content>
             </v-expansion-panel>
 
@@ -114,7 +114,7 @@
       </v-col>
     </v-row>
 
-    <v-row v-if="dialogs.date" class="mb-0 py-0">
+    <v-row v-if="dialogs.date" class="d-flex ma-0" no-gutters>
         <span><h4>Choose Report Dates</h4></span>
         <v-col class="ma-2" cols="12">
           <v-radio-group v-model="dateRange" @change="onDateRangeChange">
@@ -122,7 +122,7 @@
             <v-radio :label="'Latest Year ['+latestYear+']'" value='latestYear'></v-radio>
             <v-radio :label="'Custom Date Range'" value='Custom'></v-radio>
           </v-radio-group>
-          <div v-if="dateRange=='Custom'">
+          <div v-if="dateRange=='Custom'" class="d-flex pa-2">
               <date-range :minym="minYM" :maxym="maxYM" :ymfrom="minYM" :ymto="maxYM"></date-range>
           </div>
         </v-col>

@@ -1,13 +1,12 @@
 <template>
   <div>
-    <v-row>
-      <v-col cols="2" sm="1">
+    <v-row class="d-flex mb-0 pa-0" no-gutters>
+      <v-col class="d-flex pa-2" cols="8" sm="4">
         <v-menu ref="menuF" v-model="fromMenu" :close-on-content-click="false" :return-value.sync="YMFrom"
                 transition="scale-transition" offset-y max-width="290px" min-width="290px">
           <template v-slot:activator="{ on }">
             <v-text-field v-model="YMFrom" label="From" readonly v-on="on"></v-text-field>
           </template>
-          <!-- <v-date-picker v-model="YMFrom" type="month" no-title scrollable> -->
           <v-date-picker v-model="YMFrom" type="month" :min="minym" :max="YMTo" no-title scrollable>
             <v-spacer></v-spacer>
               <v-btn text color="primary" @click="fromMenu = false">Cancel</v-btn>
@@ -15,13 +14,12 @@
           </v-date-picker>
         </v-menu>
       </v-col>
-      <v-col cols="2" sm="1">
+      <v-col class="d-flex pa-2" cols="8" sm="4">
         <v-menu ref="menuT" v-model="toMenu" :close-on-content-click="false" :return-value.sync="YMTo"
                 transition="scale-transition" offset-y max-width="290px" min-width="290px">
           <template v-slot:activator="{ on }">
             <v-text-field v-model="YMTo" label="To" readonly v-on="on"></v-text-field>
           </template>
-          <!-- <v-date-picker v-model="YMTo" type="month" no-title scrollable> -->
           <v-date-picker v-model="YMTo" type="month" :min="YMFrom" :max="maxym" no-title scrollable>
             <v-spacer></v-spacer>
               <v-btn text color="primary" @click="toMenu = false">Cancel</v-btn>

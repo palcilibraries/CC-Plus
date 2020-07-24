@@ -1,9 +1,10 @@
 <template>
   <div>
     <h3>Harvest Logs</h3>
-    <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM"
-                :key="rangeKey"
-    ></date-range>
+    <div class="d-flex pa-2">
+      <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM" :key="rangeKey"
+      ></date-range>
+    </div>
     <v-row no-gutters>
       <v-col v-if='institutions.length>1' class="ma-2" cols="2" sm="2">
         <img v-if='mutable_filters.inst.length>0' src="/images/red-x-16.png"

@@ -318,7 +318,7 @@ class ReportController extends Controller
         $saved_reports = SavedReport::where('user_id', auth()->id())->get(['id','title'])->toArray();
         return view(
             'reports.preview',
-            compact('preset_filters', 'fields', 'columns', 'saved_reports', 'title', 'filter_options')
+            compact('preset_filters', 'fields', 'columns', 'saved_reports', 'title', 'filter_options', 'rangetype')
         );
     }
 

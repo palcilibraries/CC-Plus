@@ -1,9 +1,13 @@
 <template>
   <div class="ma-0 pa-0">
     <div class="d-flex flex-row mb-2">
-      <div class="d-flex pa-2">
+      <div v-if="mutable_rangetype=='' || mutable_rangetype=='Custom'" class="d-flex pa-2">
         <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM" :key="rangeKey"
         ></date-range>
+      </div>
+      <div v-else class="d-flex pa-2 align-center">
+        <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('dateRange')"/>&nbsp;
+        <strong>Preset Date Range</strong>: {{ mutable_rangetype }}
       </div>
       <div class="d-flex pa-2">
         <v-switch v-model="zeroRecs" label="Exclude Zero-Use Records?"></v-switch>
@@ -199,6 +203,7 @@
         saved_reports: { type:Array, default: () => [] },
         filter_options: { type:Object, default: () => {} },
         input_save_id: { type:Number, default: 0 },
+        rangetype: { type:String, default: '' },
     },
     data () {
       return {
@@ -231,6 +236,7 @@
         },
         mutable_fields: this.fields,
         mutable_cols: this.columns,
+        mutable_rangetype: this.rangetype,
         cur_year: '',
         success: '',
         failure: '',
@@ -341,6 +347,12 @@
           }
         },
         clearFilter(filter) {
+            // Treat preset date range as a filter for UI
+            // inbound: set to whatever was saved; cleared: show date-selectors instead
+            if (filter == 'dateRange') {
+                this.mutable_rangetype = '';
+                return;
+            }
             let method = this.filter_data[filter].act+'Filter';
             if (this.filter_data[filter].value.constructor === Array) {
                 this.$store.dispatch(method, []);
@@ -367,12 +379,11 @@
         },
         setYOP() {
             this.failure = "";
-            for (var i=0; i<2; i++) {
-                if (!isNaN(this.filter_data.yop.value[i])) continue;
+            this.filter_data.yop.value.forEach((val, idx) => {
+                if (!isNaN(val)) return;
                 this.failure = "Only numbers allowed for YOP From-To values.";
-                this.filter_data.yop.value[i] = '';
-            }
-            // When From empty, empty To also. If both empty, store and return
+                this.filter_data.yop.value[idx] = '';
+            });
             if (this.filter_data.yop.value[0] == '') this.filter_data.yop.value[1] == '';
             if (this.filter_data.yop.value[0] == '' && this.filter_data.yop.value[1] == '') {
                 this.filter_data['yop'].value = [0];
@@ -385,7 +396,7 @@
             if (this.filter_data.yop.value[0] == '') this.filter_data.yop.value[0] = this.filter_data.yop.value[1];
             // From>To throws error, To resets to current year
             if (this.filter_data.yop.value[0] > this.filter_data.yop.value[1]) {
-                this.failure = "YOP To automatically reset to: "+this.cur_year;
+                this.failure = "YOP:To automatically reset to "+this.cur_year;
                 this.filter_data.yop.value[1] = this.cur_year;
             }
             this.$store.dispatch('updateYopFilter', this.filter_data.yop.value);
@@ -574,6 +585,8 @@
       this.$store.dispatch('updateReportId',this.preset_filters['report_id']);
       this.$store.dispatch('updateFromYM',this.preset_filters['fromYM']);
       this.$store.dispatch('updateToYM',this.preset_filters['toYM']);
+      if (this.mutable_rangetype == 'latestYear') this.mutable_rangetype = "Up to latest 12 months";
+      if (this.mutable_rangetype == 'latestMonth') this.mutable_rangetype = "Most recent available month";
 
       // Set options for all filters and in the datastore
       this.rangeKey += 1;           // force re-render of the date-range component

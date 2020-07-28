@@ -78,7 +78,7 @@ class Counter5Processor extends Model
             $Item_ID = self::itemIDValues($_item_id);
 
            // Pick up the optional attributes
-            $_YOP = (isset($reportitem->YOP)) ? $reportitem->YOP : "";
+            $_yop = (isset($reportitem->yop)) ? $reportitem->yop : "";
             $accesstype_id = (isset($reportitem->Access_Type)) ? self::getAccessType($reportitem->Access_Type)
                                                                  : 1;
             $accessmethod_id = (isset($reportitem->Access_Method)) ? self::getAccessMethod($reportitem->Access_Method)
@@ -109,7 +109,7 @@ class Counter5Processor extends Model
            // Insert the record
             TitleReport::insert(['title_id' => $title->id, 'prov_id' => self::$prov, 'publisher_id' => $publisher_id,
                   'plat_id' => $platform_id, 'inst_id' => self::$inst, 'yearmon' => self::$yearmon,
-                  'datatype_id' => $datatype->id, 'sectiontype_id' => $sectiontype_id, 'YOP' => $_YOP,
+                  'datatype_id' => $datatype->id, 'sectiontype_id' => $sectiontype_id, 'yop' => $_yop,
                   'accesstype_id' => $accesstype_id, 'accessmethod_id' => $accessmethod_id,
                   'total_item_investigations' => $ICounts['Total_Item_Investigations'],
                   'total_item_requests' => $ICounts['Total_Item_Requests'],
@@ -347,7 +347,7 @@ class Counter5Processor extends Model
             $Item_ID = self::itemIDValues($_item_id);
 
            // Pick up the optional attributes
-            $YOP = (isset($reportitem->YOP)) ? $reportitem->YOP : "";
+            $yop = (isset($reportitem->yop)) ? $reportitem->yop : "";
             $accesstype_id = (isset($reportitem->Access_Type)) ? self::getAccessType($reportitem->Access_Type)
                                                                : 1;
             $accessmethod_id = (isset($reportitem->Access_Method)) ? self::getAccessMethod($reportitem->Access_Method)
@@ -438,7 +438,7 @@ class Counter5Processor extends Model
 
            // Insert the record
             ItemReport::insert(['item_id' => $_item->id, 'prov_id' => self::$prov, 'publisher_id' => $publisher_id,
-                'plat_id' => $platform_id, 'inst_id' => self::$inst, 'yearmon' => self::$yearmon, 'YOP' => $YOP,
+                'plat_id' => $platform_id, 'inst_id' => self::$inst, 'yearmon' => self::$yearmon, 'yop' => $yop,
                 'datatype_id' => $datatype->id, 'accesstype_id' => $accesstype_id,'accessmethod_id' => $accessmethod_id,
                 'total_item_requests' => $ICounts['Total_Item_Requests'],
                 'total_item_investigations' => $ICounts['Total_Item_Investigations'],

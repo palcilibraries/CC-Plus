@@ -16,7 +16,7 @@ class CreateReportFiltersTable extends Migration
         Schema::create('reportfilters', function (Blueprint $table) {
             $table->Increments('id');
             $table->string('model')->nullable();
-            $table->string('table_name');
+            $table->string('table_name')->nullable();
             $table->string('report_column');
             $table->timestamps();
         });

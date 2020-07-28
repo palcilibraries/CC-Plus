@@ -20,7 +20,8 @@ export const store = new Vuex.Store({
           institutiongroup_id: 0,
           plat_id: [],
           prov_id: [],
-          sectiontype_id: 0
+          sectiontype_id: 0,
+          yop: [],
       },
       options: {
           accessmethods: [],
@@ -92,6 +93,9 @@ export const store = new Vuex.Store({
     SET_SECTIONTYPE_FILTER(state, type_id) {
         state.filter_by.sectiontype_id = type_id;
     },
+    SET_YOP(state, fromto) {
+        state.filter_by.yop = fromto;
+    },
     SET_ACCESSMETHOD_OPTIONS(state, options) {
         state.options.accessmethods = options;
     },
@@ -162,6 +166,9 @@ export const store = new Vuex.Store({
     },
     updateSectionTypeFilter({ commit }, type_id) {
       commit('SET_SECTIONTYPE_FILTER', type_id);
+    },
+    updateYopFilter({ commit }, fromto) {
+      commit('SET_YOP', fromto);
     },
     updateAccessMethodOptions({ commit }, methods) {
       commit('SET_ACCESSMETHOD_OPTIONS', methods);
@@ -236,6 +243,9 @@ export const store = new Vuex.Store({
     },
     filter_by_sectiontype_id: state => {
       return state.filter_by.sectiontype_id
+    },
+    filter_by_yop: state => {
+        return state.filter_by.yop
     },
     all_options: state => {
         return state.options

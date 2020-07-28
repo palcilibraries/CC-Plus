@@ -99,7 +99,7 @@ class SavedReport extends Model
             if ($field->reportFilter) {
                 $_col = $field->reportFilter->report_column;
                 if (!isset($return_filters[$_col])) {
-                    if ($_col == 'inst_id' || $_col == 'prov_id' || $_col == 'plat_id') {
+                    if ($_col == 'inst_id' || $_col == 'prov_id' || $_col == 'plat_id' || $_col == 'yop') {
                         $return_filters[$_col] = [];
                     } else {
                         $return_filters[$_col] = 0;

@@ -25,57 +25,39 @@
         <v-expansion-panel-header>Filters</v-expansion-panel-header>
         <v-expansion-panel-content>
           <v-row v-if="active_filter_count > 0" class="d-flex ma-1 wrap-filters" no-gutters>
-            <div v-if='filter_data["provider"].value.constructor === Array' cols="3" sm="2">
+            <div v-if='filter_data["provider"].active' cols="3" sm="2">
               <v-col v-if='filter_data["provider"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["provider"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('provider')"/>&nbsp;
-                <v-select :items='filter_options.provider'
-                          v-model='filter_data.provider.value'
-                          multiple
-                          @change="setFilter('provider')"
-                          label="Provider"
-                          item-text="name"
-                          item-value="id"
+                <v-select :items='filter_options.provider' v-model='filter_data.provider.value' multiple
+                          @change="setFilter('provider')" label="Provider" item-text="name" item-value="id"
                 ></v-select>
               </v-col>
             </div>
-            <div v-if='filter_data["platform"].value.constructor === Array' cols="3" sm="2">
+            <div v-if='filter_data["platform"].active' cols="3" sm="2">
               <v-col v-if='filter_data["platform"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["platform"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('platform')"/>&nbsp;
-                <v-select :items='filter_options.platform'
-                          v-model='filter_data.platform.value'
-                          multiple
-                          @change="setFilter('platform')"
-                          label="Platform"
-                          item-text="name"
-                          item-value="id"
+                <v-select :items='filter_options.platform' v-model='filter_data.platform.value' multiple
+                          @change="setFilter('platform')" label="Platform" item-text="name" item-value="id"
                 ></v-select>
               </v-col>
             </div>
-            <div v-if='(is_admin || is_viewer) && !filterGroup && filter_data["institution"].value.constructor===Array'
+            <div v-if='!filterGroup && filter_data["institution"].active'
                  cols="3" sm="2">
               <v-col v-if='filter_data["institution"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["institution"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('institution')"/>&nbsp;
-                <v-select :items='filter_options.institution'
-                          v-model='filter_data.institution.value'
-                          multiple
-                          @change="setFilter('institution')"
-                          label="Institution"
-                          item-text="name"
-                          item-value="id"
+                <v-select :items='filter_options.institution' v-model='filter_data.institution.value' multiple
+                          @change="setFilter('institution')" label="Institution" item-text="name" item-value="id"
                 ></v-select>
               </v-col>
             </div>
-            <div v-if='(is_admin || is_viewer) && !filterInst' cols="3" sm="2">
+            <div v-if='!filterInst && filter_data["institutiongroup"].active' cols="3" sm="2">
               <v-col v-if='filter_data["institutiongroup"].value == 0' class="d-flex pa-2 align-center">
-                <v-select :items='filter_options.institutiongroup'
-                          v-model='filter_data.institutiongroup.value'
-                          @change="setFilter('institutiongroup')"
-                          label="Institution Group"
-                          item-text="name"
-                          item-value="id"
+                <v-select :items='filter_options.institutiongroup' v-model='filter_data.institutiongroup.value'
+                          @change="setFilter('institutiongroup')" label="Institution Group"
+                          item-text="name" item-value="id"
                 ></v-select>
               </v-col>
               <v-col v-if='filter_data["institutiongroup"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
@@ -84,12 +66,8 @@
               </v-col>
             </div>
             <v-col v-if='filter_data["datatype"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-              <v-select :items='filter_options.datatype'
-                        v-model='filter_data.datatype.value'
-                        @change="setFilter('datatype')"
-                        label="Data Type"
-                        item-text="name"
-                        item-value="id"
+              <v-select :items='filter_options.datatype' v-model='filter_data.datatype.value' label="Data Type"
+                        @change="setFilter('datatype')" item-text="name" item-value="id"
               ></v-select>
             </v-col>
             <v-col v-if='filter_data["datatype"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
@@ -101,12 +79,8 @@
               Section Type: {{ filter_data["sectiontype"].name }}
             </v-col>
             <v-col v-if='filter_data["sectiontype"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-              <v-select :items='filter_options.sectiontype'
-                        v-model='filter_data.sectiontype.value'
-                        @change="setFilter('sectiontype')"
-                        label="SectionType"
-                        item-text="name"
-                        item-value="id"
+              <v-select :items='filter_options.sectiontype' v-model='filter_data.sectiontype.value' label="SectionType"
+                        @change="setFilter('sectiontype')" item-text="name" item-value="id"
               ></v-select>
             </v-col>
             <v-col v-if='filter_data["accesstype"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
@@ -114,12 +88,8 @@
               Access Type: {{ filter_data["accesstype"].name }}
             </v-col>
             <v-col v-if='filter_data["accesstype"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-              <v-select :items='filter_options.accesstype'
-                        v-model='filter_data.accesstype.value'
-                        @change="setFilter('accesstype')"
-                        label="Access Type"
-                        item-text="name"
-                        item-value="id"
+              <v-select :items='filter_options.accesstype' v-model='filter_data.accesstype.value' label="Access Type"
+                        @change="setFilter('accesstype')" item-text="name" item-value="id"
               ></v-select>
             </v-col>
             <v-col v-if='filter_data["accessmethod"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
@@ -127,14 +97,20 @@
               Access Method: {{ filter_data["accessmethod"].name }}
             </v-col>
             <v-col v-if='filter_data["accessmethod"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-              <v-select :items='filter_options.accessmethod'
-                        v-model='filter_data.accessmethod.value'
-                        @change="setFilter('accessmethod')"
-                        label="Access Method"
-                        item-text="name"
-                        item-value="id"
+              <v-select :items='filter_options.accessmethod' v-model='filter_data.accessmethod.value'
+                        label="Access Method" @change="setFilter('accessmethod')" item-text="name" item-value="id"
               ></v-select>
             </v-col>
+            <div v-if='filter_data["yop"].active' cols="3" sm="2">
+              <v-col v-if='filter_data["yop"].value.length >= 0' class="d-flex pa-2 align-center">
+                <img v-if='filter_data["yop"].value.length > 0' src="/images/red-x-16.png"
+                     alt="clear filter" @click="clearFilter('yop')"/>&nbsp;
+                     <v-text-field label="YOP from" v-model="filter_data['yop'].value[0]" @change="setYOP()">
+                     </v-text-field>&nbsp;
+                     <v-text-field label="YOP to" v-model="filter_data['yop'].value[1]" @change="setYOP()">
+                     </v-text-field>
+              </v-col>
+            </div>
           </v-row>
         </v-expansion-panel-content>
       </v-expansion-panel>
@@ -231,7 +207,6 @@
         filterInst: false,
         filterGroup: false,
         preview_text: 'Display Preview',
-        totalRecs: 0,
         loading: true,
         panels: [1],
         minYM: '',
@@ -244,17 +219,19 @@
         },
         report_data: [],
         filter_data: {
-          provider: { col:'prov_id', act:'updateProvider', value:[], name:'' },
-          platform: { col:'plat_id', act:'updatePlatform', value:[], name:'' },
-          institution: { col:'inst_id', act:'updateInstitution', value:[], name:'' },
-          institutiongroup: { col:'institutiongroup_id', act:'updateInstGroup', value:0, name:'' },
-          datatype: { col:'datatype_id', act:'updateDataType', value: -1, name:'' },
-          sectiontype: { col:'sectiontype_id', act:'updateSectionType', value: -1, name:'' },
-          accesstype: { col:'accesstype_id', act:'updateAccessType', value: -1, name:'' },
-          accessmethod: { col:'accessmethod_id', act:'updateAccessMethod', value: -1, name:'' },
+          provider: { col:'prov_id', act:'updateProvider', value:[], name:'', active: false },
+          platform: { col:'plat_id', act:'updatePlatform', value:[], name:'', active: false },
+          institution: { col:'inst_id', act:'updateInstitution', value:[], name:'', active: false },
+          institutiongroup: { col:'institutiongroup_id', act:'updateInstGroup', value: -1, name:'', active: false },
+          datatype: { col:'datatype_id', act:'updateDataType', value: -1, name:'', active: false },
+          sectiontype: { col:'sectiontype_id', act:'updateSectionType', value: -1, name:'', active: false },
+          accesstype: { col:'accesstype_id', act:'updateAccessType', value: -1, name:'', active: false },
+          accessmethod: { col:'accessmethod_id', act:'updateAccessMethod', value: -1, name:'', active: false },
+          yop: { col:'yop', act:'updateYop', value:[], name:'', active: false },
         },
         mutable_fields: this.fields,
         mutable_cols: this.columns,
+        cur_year: '',
         success: '',
         failure: '',
         runtype: '',
@@ -283,19 +260,15 @@
                   this.report_data = data.items;
             });
         },
-        showColumn(col) {
-            return this.mutable_cols.find(h => h.value === col).active
-        },
         onFieldChange(field) {
           if (typeof(this.filter_data[field.id]) != 'undefined') {    // column has a filter?
               var hasFilter=true;
-              var theFilter = this.filter_data[field.id];
-              var action = theFilter.act+'Filter';
+              var action = this.filter_data[field.id].act+'Filter';
           } else {
               var hasFilter=false;
           }
 
-          // If field is institution, we need to reset flags regardless of enable.vs.disable
+          // If field is institution, reset flags regardless of enable.vs.disable
           if (field.id == 'institution') {
               this.filterInst = false;
               this.filterGroup = false;
@@ -303,19 +276,25 @@
 
           // Turning on a field...
           if (field.active) {
+              // If the field has filter, set it up
               if (hasFilter) {
-                  // Turning on FIELD institution means enabling institution AND inst-group filters
+                  // Turning on FIELD institution means enabling institution AND inst-group filters,
+                  // but only for admins and managers...
                   if (field.id == 'institution') {
-                      this.filter_data['institution'].value = [];
-                      this.$store.dispatch(action,[]);
-                      var act2 = this.filter_data['institutiongroup'].act+'Filter';
-                      this.filter_data['institutiongroup'].value = 0;
-                      this.$store.dispatch(act2,0);
-                      this.active_filter_count += 2;
-
-                  // Set filter to "all"
+                      if (this.is_admin || this.is_viewer) {
+                          this.filter_data.institution.active = true;
+                          this.filter_data.institutiongroup.active = true;
+                          this.filter_data.institution.value = [];
+                          this.filter_data.institutiongroup.value = 0;
+                          this.$store.dispatch(action,[]);
+                          var act2 = this.filter_data.institutiongroup.act+'Filter';
+                          this.$store.dispatch(act2,0);
+                          this.active_filter_count += 2;
+                      }
+                  // Initialize filter values
                   } else {
-                      if (field.id == 'provider' || field.id == 'platform') {
+                      this.filter_data[field.id].active = true;
+                      if (this.filter_data[field.id].value.constructor === Array) {
                           this.filter_data[field.id].value = [];
                           this.$store.dispatch(action,[]);
                       } else {
@@ -334,17 +313,25 @@
               }
           // Turning off a field...
           } else {
+              // If the field has filter, clean it up
               if (hasFilter) {
+                  this.filter_data[field.id].active = false;
+                  if (this.filter_data[field.id].value.constructor === Array) {
+                      this.filter_data[field.id].value = [];
+                  } else {
+                      this.filter_data[field.id].value = -1;
+                  }
+
                   // Remove the filter from the list and suppress the column
-                  this.filter_data[field.id].value = -1;
-                  this.$store.dispatch(action,-1);
+                  this.$store.dispatch(action,this.filter_data[field.id].value);
                   this.updateColumns();
                   this.active_filter_count--;
                   if (field.id == 'institution') {
-                      var act2 = this.filter_data['institutiongroup'].act+'Filter';
-                      this.filter_data['institutiongroup'].value = -1;
+                      var act2 = this.filter_data.institutiongroup.act+'Filter';
+                      this.filter_data.institutiongroup.value = -1;
                       this.$store.dispatch(act2,-1);
                       this.active_filter_count--;
+                      this.filter_data.institutiongroup.active = false;
                   }
               }
               // Turn off the column(s)
@@ -378,6 +365,31 @@
             if (filter == 'institution') this.filterInst = true;
             if (filter == 'institutiongroup') this.filterGroup = true;
         },
+        setYOP() {
+            this.failure = "";
+            for (var i=0; i<2; i++) {
+                if (!isNaN(this.filter_data.yop.value[i])) continue;
+                this.failure = "Only numbers allowed for YOP From-To values.";
+                this.filter_data.yop.value[i] = '';
+            }
+            // When From empty, empty To also. If both empty, store and return
+            if (this.filter_data.yop.value[0] == '') this.filter_data.yop.value[1] == '';
+            if (this.filter_data.yop.value[0] == '' && this.filter_data.yop.value[1] == '') {
+                this.filter_data['yop'].value = [0];
+                this.$store.dispatch('updateYopFilter', [0]);
+                return;
+            }
+            // Set Empty To to cur_year
+            if (this.filter_data.yop.value[1] == '') this.filter_data.yop.value[1] = this.cur_year;
+            // Empty From gets To
+            if (this.filter_data.yop.value[0] == '') this.filter_data.yop.value[0] = this.filter_data.yop.value[1];
+            // From>To throws error, To resets to current year
+            if (this.filter_data.yop.value[0] > this.filter_data.yop.value[1]) {
+                this.failure = "YOP To automatically reset to: "+this.cur_year;
+                this.filter_data.yop.value[1] = this.cur_year;
+            }
+            this.$store.dispatch('updateYopFilter', this.filter_data.yop.value);
+        },
         getReportData () {
           if (this.runtype != 'export') {
               this.loading = true;
@@ -399,7 +411,6 @@
                 axios.get("/usage-report-data?"+Object.keys(params).map(key => key+'='+params[key]).join('&'))
                                 .then((response) => {
                     let items = response.data.usage;
-                    this.totalRecs = response.data.usage.length;
                     resolve({items});
                     this.loading = false;
                     this.runtype = '';
@@ -448,7 +459,7 @@
               _flds[fld.id] = {active: fld.active, limit: fval};
             })
             if (!this.filterInst) {   // If filtering by-inst-group, add to the cols array
-                _flds['institutiongroup'] = {active: false, limit: this.filter_data['institutiongroup'].value};
+                _flds['institutiongroup'] = {active: false, limit: this.filter_data.institutiongroup.value};
             }
             let num_months = 1;     // default to lastMonth
             if (this.preset_filters.dateRange == 'latestYear') {
@@ -505,16 +516,25 @@
     },
     mounted() {
       // Set initial filter-state for inactive "filterable" columns, and count the active ones
-      this.mutable_cols.forEach(head => {
-        if (typeof(this.filter_data[head.value]) != 'undefined') {    // filtered column?
-            var theFilter = this.filter_data[head.value];
-            var action = theFilter.act+'Filter';
-            if (head.active) {
-                theFilter.value = 0;
-                this.$store.dispatch(action,0);
+      this.mutable_cols.forEach(col => {
+        let idx = col.value;
+        if (typeof(this.filter_data[idx]) != 'undefined') {    // filtered column?
+            var action = this.filter_data[idx].act+'Filter';
+            if (col.active) {
+                if (this.filter_data[idx].value.constructor === Array) {
+                    this.filter_data[idx].value = [];
+                } else {
+                    this.filter_data[idx].value = 0;
+                }
+                this.$store.dispatch(action,this.filter_data[idx].value);
+                this.filter_data[idx].active = true;
                 this.active_filter_count++;
             } else {
-                theFilter.value = -1;
+                if (this.filter_data[idx].value.constructor === Array) {
+                    this.filter_data[idx].value = [];
+                } else {
+                    this.filter_data[idx].value = -1;
+                }
                 this.$store.dispatch(action,-1);
             }
         }
@@ -536,11 +556,18 @@
           }
       }
 
-      // Inst-Group is not a column - if the filter is active, bump the counter
-      if (this.preset_filters['institutiongroup_id']>0) this.filterGroup = true;
-      if (this.preset_filters['inst_id']>0 && !this.filterGroup) this.filterInst = true;
-      if ((this.is_admin || this.is_viewer) && !this.filterInst && this.filter_data["institutiongroup"].value == 0) {
-          this.active_filter_count++;
+      if (this.is_admin || this.is_viewer) {
+          if (this.preset_filters['institutiongroup_id']>0) {
+              this.filterGroup = true;
+          }
+          // filter by inst if preset defined - BUT only if group filtering is inactive (group > inst)
+          if (this.preset_filters['inst_id'].length>0 && !this.filterGroup) {
+              this.filterInst = true;
+          }
+          // Since group is not a column (was skipped above), bump the counter if the filter is on
+          if (!this.filterInst && this.filter_data.institutiongroup.value == 0) {
+              this.active_filter_count++;
+          }
       }
 
       // Assign preset report_id, and from/to date fields to the store variables
@@ -550,7 +577,10 @@
 
       // Set options for all filters and in the datastore
       this.rangeKey += 1;           // force re-render of the date-range component
-      console.log('TitleReport Component mounted.');
+
+      // Get current year
+      this.cur_year = (new Date()).getFullYear();
+      console.log('ReportPreview Component mounted.');
     }
   }
 </script>

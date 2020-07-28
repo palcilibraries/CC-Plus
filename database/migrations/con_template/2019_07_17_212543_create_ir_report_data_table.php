@@ -22,7 +22,7 @@ class CreateIrReportDataTable extends Migration
             $table->unsignedInteger('plat_id')->nullable();
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
-            $table->string('YOP', 9)->nullable();
+            $table->string('yop', 9)->nullable();
             $table->unsignedInteger('datatype_id')->nullable();
             $table->unsignedInteger('accesstype_id')->nullable();
             $table->unsignedInteger('accessmethod_id')->default(1);

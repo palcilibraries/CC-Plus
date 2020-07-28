@@ -23,7 +23,7 @@ class TitleReport extends Report
      */
     protected $fillable = [
         'title_id', 'prov_id', 'publisher_id', 'plat_id', 'inst_id', 'yearmon', 'datatype_id',
-        'sectiontype_id', 'YOP', 'accesstype_id', 'accessmethod_id', 'total_item_investigations', 'total_item_requests',
+        'sectiontype_id', 'yop', 'accesstype_id', 'accessmethod_id', 'total_item_investigations', 'total_item_requests',
         'unique_item_investigations', 'unique_item_requests', 'unique_title_investigations', 'unique_title_requests',
         'limit_exceeded', 'not_license'
     ];

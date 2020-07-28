@@ -24,7 +24,7 @@ class CreateTrReportDataTable extends Migration
             $table->string('yearmon', 7);                           // Required
             $table->unsignedInteger('datatype_id')->default(8);     // Unknown
             $table->unsignedInteger('sectiontype_id')->default(1);  // _blank_
-            $table->string('YOP', 9)->default('');
+            $table->string('yop', 9)->default('');
             $table->unsignedInteger('accesstype_id')->default(1);   // Controlled
             $table->unsignedInteger('accessmethod_id')->default(1); // Regular
             $table->unsignedInteger('total_item_investigations')->default(0);

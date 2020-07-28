@@ -29,6 +29,7 @@ class ReportFiltersTableSeeder extends Seeder
                       'report_column' => 'sectiontype_id'],
           ['id' => 8, 'model' => '\App\InstitutionGroup', 'table_name' => 'institutiongroups',
                       'report_column' => 'institutiongroup_id'],
+          ['id' => 9, 'model' => null, 'table_name' => null, 'report_column' => 'yop'],
           ]);
       }
     }

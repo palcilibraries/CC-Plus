@@ -234,9 +234,11 @@ class ReportController extends Controller
 
         // Set options for the other filters
         foreach ($all_filters as $filter) {
+            if (is_null($filter->table_name)) { // yop
+                continue;
+            }
             $_key = rtrim($filter->table_name, "s");
-            // if ($_key != 'institution' && $_key != 'provider' && $_key != 'platform') {
-            if ($_key != 'institution' && $_key != 'provider') {
+            if ($_key != 'institution' && $_key != 'provider' && $_key != 'platform') {
                 $result = $filter->model::orderBy('name', 'ASC')->get(['id','name'])->toArray();
                 $filter_options[$_key] = $result;
             }
@@ -282,9 +284,13 @@ class ReportController extends Controller
             if (!$fld->active && $fld->reportFilter) {
                 if (isset($preset_filters[$fld->reportFilter->report_column])) {
                     $report_column = $fld->reportFilter->report_column;
-                    if ($fld->qry_as == 'institution' || $fld->qry_as == 'provider' || $fld->qry_as == 'platform') {
-                        if (sizeof($preset_filters[$report_column]) > 1 || $preset_filters[$report_column][0] > 0) {
-                            $field['active'] = 1;
+                    if ($fld->qry_as == 'institution' || $fld->qry_as == 'provider' || $fld->qry_as == 'platform' ||
+                        $fld->qry_as == 'yop') {
+                        $_count = sizeof($preset_filters[$report_column]);
+                        if ($_count >= 1) {
+                            if ($preset_filters[$report_column][0] > 0 || $_count > 1) {
+                               $field['active'] = 1;
+                            }
                         }
                     } else {
                         if ($preset_filters[$report_column] > 0) {
@@ -682,6 +688,9 @@ class ReportController extends Controller
                   ->when($limit_to_plats, function ($query, $limit_to_plats) use ($master_name) {
                       return $query->whereIn($master_name . '.plat_id', $limit_to_plats);
                   })
+                  ->when(self::$input_filters['yop'], function ($query) {
+                      return $query->whereBetween('yop', self::$input_filters['yop']);
+                  })
                   ->when($ignore_zeros, function ($query) use ($raw_where) {
                       return $query->whereRaw($raw_where);
                   })
@@ -751,7 +760,7 @@ class ReportController extends Controller
             $report_fields = $report->parent->reportFields;
         }
 
-        // Update filters to remove filters that don't apply to this report
+        // Assign global filter values with only the filters apply to this report
         $all_filters = ReportFilter::all();
         $active_ids = $report_fields->where('report_filter_id', '<>', null)->pluck('report_filter_id')->toArray();
         $active_filters =  $all_filters->whereIn('id', $active_ids)->pluck('report_column')->toArray();
@@ -900,7 +909,8 @@ class ReportController extends Controller
                 $filt == "plat_id" ||
                 $filt == "institutiongroup_id" ||
                 $filt == 'fromYM' ||
-                $filt == 'toYM'
+                $filt == 'toYM' ||
+                $filt == 'yop'
             ) {
                 continue;
             }

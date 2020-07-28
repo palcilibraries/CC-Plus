@@ -45,8 +45,8 @@ class ReportFieldsTableSeeder extends Seeder
              DB::table($table)->insert(['id' => 9, 'report_id' => 1, 'legend' => 'Access Method', 'group_it' => 1,
                  'joins' => '_global_.accessmethods as AMTH', 'qry' => 'AMTH.name', 'qry_as' => 'accessmethod',
                  'report_filter_id' => 6]);
-             DB::table($table)->insert(['id' => 10, 'report_id' => 1, 'legend' => 'Publication Yr', 'qry' => 'YOP',
-                 'qry_as' => 'YOP', 'group_it' => 1]);
+             DB::table($table)->insert(['id' => 10, 'report_id' => 1, 'legend' => 'Pub.Year', 'group_it' => 1,
+                 'qry' => 'yop', 'qry_as' => 'yop', 'report_filter_id' => 9]);
              DB::table($table)->insert(['id' => 11, 'report_id' => 1, 'legend' => 'ISBN', 'group_it' => 1,
                  'qry' => 'TI.ISBN', 'qry_as' => 'ISBN']);
              DB::table($table)->insert(['id' => 12, 'report_id' => 1, 'legend' => 'Print ISSN', 'group_it' => 1,
@@ -245,8 +245,8 @@ class ReportFieldsTableSeeder extends Seeder
             DB::table($table)->insert(['id' => 93, 'report_id' => 4, 'legend' => 'Component URI']);
             DB::table($table)->insert(['id' => 94, 'report_id' => 4, 'legend' => 'Data Type', 'qry' => 'datatype_id',
                 'qry_as' => 'datatype', 'group_it' => 1, 'report_filter_id' => 4]);
-            DB::table($table)->insert(['id' => 95, 'report_id' => 4, 'legend' => 'YOP', 'qry' => 'YOP',
-                'qry_as' => 'YOP', 'group_it' => 1]);
+            DB::table($table)->insert(['id' => 95, 'report_id' => 4, 'legend' => 'Pub.Year', 'qry' => 'yop',
+                'qry_as' => 'yop', 'group_it' => 1, 'report_filter_id' => 9]);
             DB::table($table)->insert(['id' => 96, 'report_id' => 4, 'legend' => 'Access Type', 'group_it' => 1,
                 'joins' => '_global_.accesstypes as ATYP', 'qry' => 'ATYP.name', 'qry_as' => 'accesstype',
                 'report_filter_id' => 5]);

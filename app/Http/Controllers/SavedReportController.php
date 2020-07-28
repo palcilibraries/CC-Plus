@@ -252,6 +252,12 @@ class SavedReportController extends Controller
                         }
                         $data['name'] = rtrim(trim($data['name']), ',');
                     }
+                } elseif ($field->qry_as == 'yop') {
+                    if (sizeof($filter_data['yop']) == 0) {
+                        $data['name'] = 'All';
+                    } else {
+                        $data['name'] = $filter_data['yop'][0] . ' to ' . $filter_data['yop'][1];
+                    }
                 } else {
                     $data = array('legend' => $field->legend, 'name' => 'All');
                     if (isset($filter_data[$field->reportFilter->report_column])) {

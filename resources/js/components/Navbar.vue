@@ -1,7 +1,8 @@
   <template>
     <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
       <div class="container">
-        <a class="navbar-brand" href="/">CC+</a>
+        <!--<a class="navbar-brand" href="/">CC+</a>-->
+		<a class="navbar-brand" href="/"><img src="/images/CC_Plus_Logo.png" alt="CC plus" height="50px" width="103px" /></a>
         <div id="navbarSupportedContent" class="collapse navbar-collapse">
             <!-- Left Side Of Navbar -->
             <ul class="navbar-nav mr-auto">

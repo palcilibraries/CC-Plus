@@ -354,12 +354,19 @@ class ReportController extends Controller
                 if ($value <= 0) {  // skip if filter is off
                     continue;
                 }
-                if (
-                    $filt->report_column == 'inst_id'
-                    || $filt->report_column == 'institutiongroup_id'
-                    || $filt->report_column == 'prov_id'
-                ) {
+                if ($key == 'institutiongroup_id') {
                     $out_file .= "_" . preg_replace('/ /', '', $filt->model::where('id', $value)->value('name'));
+                } else if ($key == 'inst_id' || $key == 'prov_id' || $key == 'plat_id') {
+                    if (sizeof($value) > 1) {
+                        $out_file .= "_Multiple_" . $filt->table_name;
+                    } else if (sizeof($value) == 1) {
+                        $out_file .= "_" . preg_replace('/ /', '', $filt->model::where('id', $value[0])->value('name'));
+                    }
+                } else if ($key == "yop") {
+                    if (sizeof($value) == 2) {
+                        $limits .= ($limits == "") ? '' : ', ';
+                        $limits .= "YOP=" . $value[0] . ' to ' . $value[1];
+                    }
                 } else {
                     $limits .= ($limits == "") ? '' : ', ';
                     $limits .= rtrim($filt->table_name, "s") . "=";

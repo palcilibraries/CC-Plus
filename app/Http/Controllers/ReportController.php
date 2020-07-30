@@ -238,7 +238,7 @@ class ReportController extends Controller
                 continue;
             }
             $_key = rtrim($filter->table_name, "s");
-            if ($_key != 'institution' && $_key != 'provider' && $_key != 'platform') {
+            if ($_key != 'institution' && $_key != 'provider') {
                 $result = $filter->model::orderBy('name', 'ASC')->get(['id','name'])->toArray();
                 $filter_options[$_key] = $result;
             }

@@ -6,7 +6,7 @@
          <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
       </v-col>
     </v-row>
-    <v-row class="mb-0 py-0">
+    <v-row class="d-flex mb-0 pa-0">
   	  <v-col class="d-flex" cols="2" sm="2"><h4>Report Settings</h4></v-col>
       <v-col class="d-flex px-2" cols="1">
           <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
@@ -23,7 +23,7 @@
         <span class="form-fail" role="alert" v-text="failure"></span>
       </v-col>
     </v-row>
-    <v-row v-if="!showForm">
+    <v-row v-if="!showForm" no-gutters>
       <!-- Values-only when form not active -->
       <v-col>
         <v-simple-table dense>
@@ -31,7 +31,7 @@
             <tr><td>Owner : {{ mutable_report.user.name }}</td></tr>
             <tr><td>Report derived from : {{ mutable_report.master.legend }}</td></tr>
           </div>
-          <tr>
+          <tr class="d-flex mb-5">
             <td v-if="mutable_report.date_range=='latestMonth'">
                 Includes the latest month of available data
             </td>
@@ -42,22 +42,23 @@
                 Includes data from {{ mutable_report.ym_from }} to {{ mutable_report.ym_to }}
             </td>
           </tr>
-          <tr><td>&nbsp;</td></tr>
-          <tr>
-            <td><h5>Includes Fields</h5></td>
+          <tr class="d-flex my-2"><td><h5>Includes Fields</h5></td></tr>
+          <tr v-for="field in fields">
+            <td>
+              {{ field.legend }}
+              <span v-if="typeof(filters[field.qry_as]) != 'undefined'">
+                <span v-if="filters[field.qry_as].name == 'All'"> : <strong>All</strong></span>
+                <span v-else-if="(filters[field.qry_as].name == '' || filters[field.qry_as].name == null)"></span>
+                <span v-else>equal to: <strong>{{ filters[field.qry_as].name }}</strong></span>
+              </span>
+            </td>
           </tr>
-          <template v-for="field in fields">
-            <tr>
-              <td>
-                {{ field.legend }}
-                <span v-if="typeof(filters[field.qry_as]) != 'undefined'">
-                  <span v-if="filters[field.qry_as].name == 'All'"> : <strong>All</strong></span>
-                  <span v-else-if="(filters[field.qry_as].name == '' || filters[field.qry_as].name == null)"></span>
-                  <span v-else>equal to: <strong>{{ filters[field.qry_as].name }}</strong></span>
-                </span>
-              </td>
-            </tr>
-          </template>
+          <tr class="d-flex my-2">
+            <td>
+              (Fields and filter settings can be changed on the
+              <a :href="'/reports/preview?saved_id='+report.id">preview and export page</a>.)
+            </td>
+          </tr>
         </v-simple-table>
       </v-col>
     </v-row>

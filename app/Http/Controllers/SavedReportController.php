@@ -108,7 +108,7 @@ class SavedReportController extends Controller
             $prov_count = Provider::where('is_active', true)->count();
         } else {
             $prov_count = Provider::where('is_active', true)
-                                  ->where(function ($q) {
+                                  ->where(function ($q) use ($user_inst) {
                                       return $q->where('inst_id', 1)
                                                ->orWhere('inst_id', $user_inst);
                                   })

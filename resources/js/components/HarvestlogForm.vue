@@ -37,6 +37,9 @@
         <a :href="'/harvestlogs/'+mutable_harvest.id+'/raw'"><v-btn color="primary" x-small>download</v-btn></a>
       </v-col>
     </v-row>
+    <v-row v-else class="d-flex my-2 align-mid">
+      <v-col cols="8" sm="4"><strong>Raw Data is not available</strong></v-col>
+    </v-row>
     <div v-if="(is_manager || is_admin)" class="d-flex ma-2 pa-0">
       <!-- Some statuses cannot be changed -->
       <v-row v-if="!(status_fixed.includes(mutable_harvest.status))" no-gutters class="d-flex align-mid">

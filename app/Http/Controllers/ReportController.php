@@ -456,30 +456,49 @@ class ReportController extends Controller
      */
     public function show($id)
     {
-        $report = Report::findOrFail($id);
+        $report = Report::with('parent','children')->findOrFail($id);
 
-        // Get report fields
+        // Get report fields and filters for master reports
         if ($report->parent_id == 0) {
+            $report->load('reportFields', 'reportFields.reportFilter');
             $fields = $report->reportFields;
 
-        // Build field array from inherited fields; ignore values... for now
-        } else {
-            $master_fields = $report->parent->reportFields;
+            // Set any connected filters to 'All'
+            foreach ($fields as $field) {
+                if ($field->reportFilter) {
+                    $filters[$field->qry_as] = array('legend' => $field->legend, 'name' => 'All');;
+                }
+            }
 
-            // Turn report->inherited_fields into key=>value array
+        // Build fields for report-views based on inherited fields
+        } else {
+            // Turn report->inherited_fields into key=>value array and get full master-data
             $inherited = $report->parsedInherited();
+            $master_report = Report::with('reportFields', 'reportFields.reportFilter')->find($report->parent_id);
+
+            // Pull master-field data for each inherited field, including filters
             $child_fields = array();
             foreach ($inherited as $key => $value) {
-                $field = $master_fields->find($key);
-                if (!$field) {
-                    continue;
+                $field = $master_report->reportFields->find($key);
+                if ($field) {
+                    $child_fields[] = $field;
                 }
-                $child_fields[] = $field;
+
+                // Get filter preset if present
+                if ($field->reportFilter) {
+                    $data = array('legend' => $field->legend, 'name' => 'All');
+                    if ($value > 0) {
+                        if ($field->reportFilter->model) {
+                            $data['name'] = $field->reportFilter->model::where('id', $value)->value('name');
+                        }
+                    }
+                    $filters[$field->qry_as] = $data;
+                }
             }
+            // Make the child_fields a collection
             $fields = collect($child_fields);
         }
-
-        return view('reports.show', compact('report', 'fields'));
+        return view('reports.show', compact('report', 'fields', 'filters'));
     }
 
     /**

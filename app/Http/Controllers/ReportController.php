@@ -459,9 +459,10 @@ class ReportController extends Controller
         $report = Report::with('parent','children')->findOrFail($id);
 
         // Get report fields and filters for master reports
+        $filters = array();
         if ($report->parent_id == 0) {
             $report->load('reportFields', 'reportFields.reportFilter');
-            $fields = $report->reportFields;
+            $fields = $report->reportFields->where('active', true)->values();
 
             // Set any connected filters to 'All'
             foreach ($fields as $field) {

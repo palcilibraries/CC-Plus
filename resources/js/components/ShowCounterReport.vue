@@ -1,7 +1,7 @@
 <template>
   <v-container fluid>
     <v-row no-gutters>
-      <v-col><h3>{{ report.legend }}</h3></v-col>
+      <v-col><h3>{{ report.legend }} ({{ report.name }})</h3></v-col>
     </v-row>
     <v-row no-gutters>
       <v-col>

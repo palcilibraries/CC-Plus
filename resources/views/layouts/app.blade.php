@@ -21,9 +21,8 @@
     <div id="app">
         <!-- Skip <topnav> if auth()->user() is undefined... -->
         @if ( auth()->check() )
-        <topnav :user="{{ json_encode(auth()->user()->toArray()) }}"
-                :access="{{ json_encode(auth()->user()->maxRoleName()) }}"
-                :viewer="{{ json_encode(auth()->user()->hasRole('Viewer')) }}"></topnav>
+        <topnav :user="{{ json_encode(App\User::with('roles')->where('id',auth()->id())->first()->toArray()) }}"
+        ></topnav>
         @endif
         <main class="py-4">
             @yield('content')

@@ -62,9 +62,7 @@
 import { mapGetters } from 'vuex'
 export default {
     props: {
-            user: { type:Object, default: () => {} },
-            access: { type:String, default: '' },
-            viewer: { type:Number, default: 0 },
+        user: { type:Object, default: () => {} },
     },
     data() {
         return {
@@ -162,13 +160,21 @@ export default {
       ...mapGetters(['is_manager','is_admin'])
     },
     mounted() {
-        this.$store.dispatch('updateAccess', this.access);
+        // Get user's max role
+        var max_id = 0;
+        var max_role = '';
+        this.user.roles.forEach((role) => {
+            if (role.id > max_id) {
+                max_id = role.id;
+                max_role = role.name;
+            }
+            // Set this explicitly since Viewer_ID > Manager_ID (otherwise when exiting loop and
+            // setting access to max, would miss this if manager.AND.viewer)
+            if (role.name == "Manager") this.$store.dispatch('updateAccess', "Manager");
+        });
+        this.$store.dispatch('updateAccess', max_role);
         this.$store.dispatch('updateUserInst', this.user["inst_id"]);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
-        if (this.viewer) {
-            this.$store.dispatch('updateAccess', "Viewer");
-        }
-        this.$store.dispatch('updateAccess', this.access);
 
         console.log('Navbar Component mounted.');
     }

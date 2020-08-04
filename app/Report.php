@@ -91,5 +91,4 @@ class Report extends Model
             return sizeof(preg_split('/,/', $this->inherited_fields));
         }
     }
-
 }

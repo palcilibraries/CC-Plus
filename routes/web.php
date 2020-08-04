@@ -25,10 +25,11 @@ Route::resource('/institutiontypes', 'InstitutionTypeController');
 Route::resource('/institutiongroups', 'InstitutionGroupController');
 Route::resource('/providers', 'ProviderController');
 Route::resource('/harvestlogs', 'HarvestLogController');
-Route::resource('/failedharvests', 'FailedHarvestController');
+// Route::resource('/failedharvests', 'FailedHarvestController');
 Route::resource('/sushisettings', 'SushiSettingController')->middleware(['auth','role:Admin,Manager']);
 Route::resource('/alertsettings', 'AlertSettingController')->middleware(['auth','role:Admin,Manager']);
 Route::resource('/savedreports', 'SavedReportController')->middleware(['auth']);
+Route::resource('/systemalerts', 'SystemAlertController')->middleware(['auth']);
 
 Auth::routes();
 Route::get('logout', 'Auth\LoginController@logout');
@@ -43,10 +44,11 @@ Route::get('/reports/{id}', 'ReportController@show')->name('reports.show')->midd
 Route::get('/reports-available', 'ReportController@getAvailable')->middleware(['auth']);
 Route::get('/usage-report-data', 'ReportController@getReportData')->middleware(['auth']);
 Route::post('/export-report-data', 'ReportController@exportReportData')->middleware(['auth']);
-Route::post('/update-report-settings', 'ReportController@updateSettings')->middleware(['auth']);
+Route::post('/update-report-columns', 'ReportController@updateReportColumns')->middleware(['auth']);
 Route::post('/save-report-config', 'SavedReportController@saveReportConfig')->middleware(['auth']);
 //
 Route::post('/update-alert-status', 'AlertController@updateStatus')->middleware(['auth','role:Admin,Manager']);
+Route::post('/update-system-alert', 'AlertController@updateSysAlert')->middleware(['auth','role:Admin,Manager']);
 Route::post('/alert-dash-refresh', 'AlertController@dashRefresh')->middleware('auth');
 Route::post('/alertsettings-fields-refresh', 'AlertSettingController@fieldsRefresh')
      ->middleware(['auth','role:Admin,Manager']);
@@ -54,3 +56,16 @@ Route::post('/sushisettings-update', 'SushiSettingController@update')->middlewar
 Route::get('/sushisettings-refresh', 'SushiSettingController@refresh')->middleware(['auth']);
 Route::get('/sushisettings-test', 'SushiSettingController@test')->middleware(['auth','role:Admin,Manager']);
 Route::get('/harvestlogs/{id}/raw', 'HarvestLogController@downloadRaw')->middleware(['auth','role:Admin,Manager']);
+Route::post('/update-harvest-status', 'HarvestLogController@updateStatus')->middleware(['auth','role:Admin,Manager']);
+//
+Route::get('/users/export/{type}', 'UserController@export');
+Route::get('/providers/export/{type}', 'ProviderController@export');
+Route::get('/institutions/export/{type}', 'InstitutionController@export');
+Route::get('/institutiontypes/export/{type}', 'InstitutionTypeController@export');
+Route::get('/institutiongroups/export/{type}', 'InstitutionGroupController@export');
+//
+Route::post('/users/import', 'UserController@import');
+Route::post('/providers/import', 'ProviderController@import');
+Route::post('/institutions/import', 'InstitutionController@import');
+Route::post('/institutiontypes/import', 'InstitutionTypeController@import');
+Route::post('/institutiongroups/import', 'InstitutionGroupController@import');

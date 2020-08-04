@@ -29,14 +29,18 @@ class SushiSettingController extends Controller
     {
         // User must be able to manage the settings
         $setting = SushiSetting::with(['institution', 'provider'])->findOrFail($id);
-        // $setting = SushiSetting::with('institution', 'provider', 'harvestLogs')->findOrFail($id);
         abort_unless($setting->institution->canManage(), 403);
 
-        $harvests = HarvestLog::with('report:id,name','sushiSetting',
-                                     'sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+        // Get 10 most recent harvests
+        $harvests = HarvestLog::with(
+            'report:id,name',
+            'sushiSetting',
+            'sushiSetting.institution:id,name',
+            'sushiSetting.provider:id,name'
+        )
                               ->where('sushisettings_id', $id)
-                              ->orderBy('created_at', 'DESC')
-                              ->get();
+                              ->orderBy('updated_at', 'DESC')->limit(10)
+                              ->get()->toArray();
 
         return view('sushisettings.edit', compact('setting', 'harvests'));
     }
@@ -82,7 +86,7 @@ class SushiSettingController extends Controller
         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
 
         $input = $request->all();
-        if (!auth()->user()->hasAnyRole(['Admin']) && $input['inst_id']!=auth()->user()->inst_id) {
+        if (!auth()->user()->hasAnyRole(['Admin']) && $input['inst_id'] != auth()->user()->inst_id) {
             return response()->json(['result' => false, 'msg' => 'You can only assign settings for your institution']);
         }
         $setting = SushiSetting::create($input);

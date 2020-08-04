@@ -16,13 +16,10 @@ class CreateProvidersTable extends Migration
         Schema::create('providers', function (Blueprint $table) {
 
             $table->Increments('id');
-            $table->string('name');
+            $table->string('name')->unique();
             $table->boolean('is_active')->default(1);
             $table->unsignedInteger('inst_id')->default(1); // inst_id=1 is consorta-wide
             $table->string('server_url_r5')->nullable();
-            $table->string('security', 4)->default('None');
-            $table->text('auth_username')->nullable();
-            $table->text('auth_password')->nullable();
             $table->unsignedInteger('day_of_month')->default(15);
             $table->timestamps();
 

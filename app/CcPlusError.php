@@ -19,7 +19,12 @@ class CcplusError extends Model
       *
       * @var array
       */
-    protected $fillable = [ 'id', 'message', 'severity'];
+    protected $fillable = [ 'id', 'message', 'severity_id'];
+
+    public function severity()
+    {
+        return $this->belongsTo('App\Severity', 'severity_id');
+    }
 
     public function failedHarvests()
     {

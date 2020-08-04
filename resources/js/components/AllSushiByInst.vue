@@ -1,6 +1,22 @@
 <template>
   <div>
-  <template v-if="(is_manager || is_admin) && mutable_unset.length > 0">
+    <div v-if="is_admin">
+      <v-row>
+        <v-col v-if="is_admin">
+          <v-btn small color="primary" type="button" :href="'/providers/create'" class="section-action">add new</v-btn>
+        </v-col>
+      </v-row>
+    </div>
+    <div v-else-if="is_manager">
+      <v-row>
+        <v-col cols="2"><h5>Export settings to:</h5></v-col>
+        <v-col>
+          <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp;
+          <a :href="'/institutions/export/xlsx'">.xlsx</a>
+        </v-col>
+      </v-row>
+    </div>
+    <template v-if="(is_manager || is_admin) && mutable_unset.length > 0">
 	  <form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
 	        @keydown="form.errors.clear($event.target.name)">
         <input v-model="form.inst_id" id="inst_id" type="hidden">

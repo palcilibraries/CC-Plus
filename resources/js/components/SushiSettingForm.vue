@@ -12,14 +12,19 @@
           <strong>Support Email: </strong><a :href="'mailto:'+form.support_email">{{ form.support_email }}</a>
         </v-col>
       </v-row>
-      <v-row>
-    	<v-col cols="4">
+      <v-row class="d-flex ma-2 pa-0">
+    	<v-col class="d-flex pa-4" cols="3">
            <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
         </v-col>
-        <v-col cols="4">
+        <v-col class="d-flex pa-4" cols="3">
           <v-btn small color="secondary" type="button" @click="testSettings">test</v-btn>
         </v-col>
-        <v-col cols="4">
+        <v-col class="d-flex pa-4" cols="3">
+          <a :href="'/harvestlogs/create?inst='+setting.inst_id+'&prov='+setting.prov_id">
+            <v-btn small color="primary" type="button">harvest</v-btn>
+          </a>
+        </v-col>
+        <v-col class="d-flex pa-4" cols="3">
           <v-btn small class='btn btn-danger' type="button" @click="destroy(setting.id)">Delete</v-btn></td>
         </v-col>
       </v-row>
@@ -90,7 +95,6 @@
         methods: {
             formSubmit (event) {
 	            this.form.post('/sushisettings-update')
-	                // .then( function(response) {
                     .then( (response) => {
 	                    this.warning = '';
 	                    this.confirm = 'Settings successfully updated.';
@@ -105,9 +109,12 @@
 			},
             destroy (settingid) {
                 var self = this;
+                let message = "Deleting these settings cannot be reversed, only manually recreated.";
+                message += " NOTE: Harvest Log and Failed Harvest records connected to these settings";
+                message += " will also be deleted!";
                 Swal.fire({
                   title: 'Are you sure?',
-                  text: "Deleting these settings cannot be reversed, only manually recreated.",
+                  text: message,
                   icon: 'warning',
                   showCancelButton: true,
                   confirmButtonColor: '#3085d6',

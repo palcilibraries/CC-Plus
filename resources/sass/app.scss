@@ -88,3 +88,56 @@ main #app {
     display: inline-block;
     margin-right: 1em;
 }
+.btn.section-action {
+	color: #006699;
+}
+.saved-report .v-card-actions,
+.saved-report .v-card-title {
+	display: inline-block;
+}
+.v-application .v-btn.primary {
+	background-color: #006699 !important;
+	border: #006699 !important;
+	color: white;
+}
+.v-card-title {
+	font-size: 1.4rem;
+	padding: .75em .5em 0;
+}
+.v-card-actions {
+    vertical-align: 0.2em;
+}
+.component-subhead {
+    margin-bottom: 1em;
+}
+.v-application.theme--light a {
+    color: #069;
+}
+.alert-High {
+	background-color: red;
+	color: white;
+}
+.alert-Medium {
+	background-color: #006699;
+	color: white;
+}
+.alert-Low {
+	background-color: #3399CC;
+}
+.saved-report .v-card__text p {
+    font-size: 1.2em;
+    color: black;
+    font-weight: 500;
+}
+.actionable-subhead {
+	display: inline-block;
+}
+/*.flex {
+	display: flex;
+}*/
+.more {
+	margin-top: 1em;
+}
+.dashboard-section {
+	margin-top: 2em;
+}

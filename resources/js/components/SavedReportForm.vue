@@ -6,11 +6,15 @@
          <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
       </v-col>
     </v-row>
-
-    <v-row>
-  	  <v-col><h4>Report Settings</h4></v-col>
-      <v-col>
+    <v-row class="d-flex mb-0 pa-0">
+  	  <v-col class="d-flex" cols="2" sm="2"><h4>Report Settings</h4></v-col>
+      <v-col class="d-flex px-2" cols="1">
           <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+      </v-col>
+      <v-col class="d-flex px-2" cols="1">
+          <v-btn class='btn primary' small type="button" :href="'/reports/preview?saved_id='+report.id">
+                  Preview & Export
+          </v-btn>
       </v-col>
     </v-row>
     <v-row v-if="!showForm">
@@ -19,44 +23,42 @@
         <span class="form-fail" role="alert" v-text="failure"></span>
       </v-col>
     </v-row>
-    <v-row v-if="!showForm">
+    <v-row v-if="!showForm" no-gutters>
+      <!-- Values-only when form not active -->
       <v-col>
         <v-simple-table dense>
-          <!-- form display control and confirmations  -->
-          <!-- Values-only when form not active -->
-          <tr v-if="is_admin">
-            <td>Owner : {{ mutable_report.user.name }}</td>
-          </tr>
-          <tr>
+          <div v-if="is_admin">
+            <tr><td>Owner : {{ mutable_report.user.name }}</td></tr>
+            <tr><td>Report derived from : {{ mutable_report.master.legend }}</td></tr>
+          </div>
+          <tr class="d-flex mb-5">
             <td v-if="mutable_report.date_range=='latestMonth'">
-                Report includes the latest month of available data
+                Includes the latest month of available data
             </td>
             <td v-if="mutable_report.date_range=='latestYear'">
-                Report includes the latest year (up to 12 months) of available data
+                Includes the latest year (up to 12 months) of available data
             </td>
             <td v-if="mutable_report.date_range=='Custom'">
-                Report includes data from {{ mutable_report.ym_from }} to {{ mutable_report.ym_to }}
+                Includes data from {{ mutable_report.ym_from }} to {{ mutable_report.ym_to }}
             </td>
           </tr>
-          <tr v-if="typeof(filters['Institution Group']) != 'undefined'">
-            <td>Includes all institutions in: {{ filters['Institution Group'].name }}</td>
+          <tr class="d-flex my-2"><td><h5>Includes Fields</h5></td></tr>
+          <tr v-for="field in fields">
+            <td>
+              {{ field.legend }}
+              <span v-if="typeof(filters[field.qry_as]) != 'undefined'">
+                <span v-if="filters[field.qry_as].name == 'All'"> : <strong>All</strong></span>
+                <span v-else-if="(filters[field.qry_as].name == '' || filters[field.qry_as].name == null)"></span>
+                <span v-else>equal to: <strong>{{ filters[field.qry_as].name }}</strong></span>
+              </span>
+            </td>
           </tr>
-          <tr><td>&nbsp;</td></tr>
-          <tr>
-            <td><h5>Includes Fields</h5></td>
+          <tr class="d-flex my-2">
+            <td>
+              (Fields and filter settings can be changed on the
+              <a :href="'/reports/preview?saved_id='+report.id">preview and export page</a>.)
+            </td>
           </tr>
-          <template v-for="field in fields">
-            <tr>
-              <td>
-                {{ field.legend }}
-                <span v-if="typeof(filters[field.qry_as]) != 'undefined'">
-                  <span v-if="filters[field.qry_as].name=='All'"> : <strong>All</strong></span>
-                  <span v-else-if="filters[field.qry_as].name==''"></span>
-                  <span v-else>equal to: <strong>{{ filters[field.qry_as].name }}</strong></span>
-                </span>
-              </td>
-            </tr>
-          </template>
         </v-simple-table>
       </v-col>
     </v-row>
@@ -82,7 +84,7 @@
                   <v-radio :label="'Latest Year ['+latestYear+']'" value='latestYear'></v-radio>
                   <v-radio :label="'Custom Date Range'" value='Custom'></v-radio>
                 </v-radio-group>
-                <div v-if="form.date_range=='Custom'">
+                <div v-if="form.date_range=='Custom'" class="d-flex pa-2">
                   <date-range :ymfrom="mutable_report.ym_from" :ymto="mutable_report.ym_to"
                               :minym="minYM" :maxym="maxYM"
                   ></date-range>
@@ -199,6 +201,14 @@
             this.minYM =  this.bounds['minYM'];
             this.maxYM = this.bounds['maxYM'];
             this.latestYear = this.bounds['latestYear'];
+            // For filtering by Group, poke the institution legend
+            if (this.filters['institution'].legend == 'Institution Group') {
+                Object.keys(this.fields).forEach( (key) =>  {
+                    if (this.fields[key].legend == 'Institution') {
+                        this.fields[key].legend = this.filters['institution'].legend;
+                    }
+                });
+            }
             console.log('SavedReport Component mounted.');
         }
     }

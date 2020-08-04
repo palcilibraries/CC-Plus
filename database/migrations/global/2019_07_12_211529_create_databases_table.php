@@ -18,6 +18,8 @@ class CreateDatabasesTable extends Migration
             $table->string('name');
             $table->string('PropID', 128)->nullable();
             $table->timestamps();
+
+            $table->index('name');
         });
     }
 

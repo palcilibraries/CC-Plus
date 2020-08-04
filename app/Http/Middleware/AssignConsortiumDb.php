@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Support\Facades\Auth;
 use DB;
+use Storage;
 
 class AssignConsortiumDb
 {
@@ -31,7 +32,17 @@ class AssignConsortiumDb
 
        // Use the consortium key set the database.
         config(['database.connections.consodb.database' => 'ccplus_' . session('ccp_con_key')]);
-        DB::reconnect();
+
+       // Connect the database and move on the to next request
+        try {
+            DB::reconnect();
+        } catch (\Exception $e) {
+            Storage::append('reconnect_fails.log', date('Y-m-d H:is') . ' : Reconnect attempt failed! Path: ' .
+                            $request->getPathInfo());
+            Auth::logout();
+            return $next($request);
+        }
         return $next($request);
+
     }
 }

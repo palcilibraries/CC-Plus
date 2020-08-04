@@ -4,9 +4,19 @@
       <span class="good" role="alert" v-text="success"></span>
       <span class="fail" role="alert" v-text="failure"></span>
     </div>
-    <div v-if="!showForm">
-      <v-btn v-if="is_admin" small color="primary" @click="createForm">Create an Institution</v-btn>
-      <v-data-table :headers="headers" :items="institutions" item-key="id" class="elevation-1">
+    <div v-if="showForm==''">
+      <v-row>
+        <v-col cols="2"><v-btn small color="primary" @click="importForm">Import Institutions</v-btn></v-col>
+        <v-col><v-btn small color="primary" @click="createForm">Create an Institution</v-btn></v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="1">Export to:</v-col>
+        <v-col>
+            <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp;
+            <a :href="'/institutions/export/xlsx'">.xlsx</a>
+        </v-col>
+      </v-row>
+      <v-data-table :headers="headers" :items="mutable_institutions" item-key="id" class="elevation-1">
         <template v-slot:item="{ item }">
           <tr>
             <td><a :href="'/institutions/'+item.id">{{ item.name }}</a></td>
@@ -18,7 +28,35 @@
         </template>
       </v-data-table>
     </div>
-    <div v-else style="width:50%; display:inline-block;">
+    <div v-if="showForm=='import'" style="width:50%; display:inline-block;">
+      <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined></v-file-input>
+      <p>
+        <strong>Institutions cannot be deleted during an import operation.</strong><br />
+        <strong>Note:</strong> Import Type below refers to the row(s) of Sushi Settings which may, or may not, follow
+        an institution record in the input CSV file. When "Full Replacement" is chosen, the existing settings for any
+        provider not included in the import file will be deleted! This will also remove all associated harvest and
+        failed-harvest records connected to the settings.
+      </p>
+      <p>
+        Regardless of the Import Type, the first record in the import file for any institution (based on ID or name)
+        will be used to update the institution's record (columns B through G). These values, including the group
+        assignments in column-F, will replace whatever is currently defined for the given institution.
+      </p>
+      <p>
+        For these reasons, use caution when using this import function, especially when requesting a Full Replacement
+        import. Generating an institution export FIRST will provide detailed instructions for importing on the "How
+        to Import" tab and help ensure that the desired end-state is achieved.
+      </p>
+      <p>
+        The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings whenever
+        a match for an institution-ID and Provider-ID are found in the import file. If no setting for a given
+        Institution-ID and Provider-ID currently exist, the setting will be added.
+      </p>
+      <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
+      <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+      <v-btn small type="button" @click="hideForm">cancel</v-btn>
+    </div>
+    <div v-if="showForm=='create'" style="width:50%; display:inline-block;">
       <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
         <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
         <v-select :items="types" v-model="form.type_id" item-text="name" item-value="id"
@@ -58,7 +96,7 @@
       return {
         success: '',
         failure: '',
-        showForm: false,
+        showForm: '',
         headers: [
           { text: 'Institution ', value: 'name', align: 'start' },
           { text: 'Type', value: 'type' },
@@ -73,20 +111,60 @@
             type_id: 1,
             institutiongroups: [],
             notes: '',
-        })
+        }),
+        csv_upload: null,
+        import_type: '',
+        import_types: ['Add or Update', 'Full Replacement']
       }
     },
     methods: {
+        importForm () {
+            this.csv_upload = null;
+            this.import_type = '';
+            this.showForm = 'import';
+        },
         createForm () {
             this.failure = '';
             this.success = '';
-            this.showForm = true;
             this.form.name = '';
             this.form.is_active = 0;
             this.form.fte = 0;
             this.form.type_id = 1;
             this.form.institutiongroups = [];
             this.form.notes = '';
+            this.showForm = 'create';
+        },
+        importSubmit (event) {
+            this.success = '';
+            if (this.import_type == '') {
+                this.failure = 'An import type is required';
+                return;
+            }
+            if (this.csv_upload==null) {
+                this.failure = 'A CSV import file is required';
+                return;
+            }
+            this.failure = '';
+            let formData = new FormData();
+            formData.append('csvfile', this.csv_upload);
+            formData.append('type', this.import_type);
+            axios.post('/institutions/import', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                  })
+                 .then( (response) => {
+                     if (response.data.result) {
+                         this.failure = '';
+                         this.success = response.data.msg;
+                         // Replace mutable array with response institutions
+                         this.mutable_institutions = response.data.inst_data;
+                     } else {
+                         this.success = '';
+                         this.failure = response.data.msg;
+                     }
+                 });
+            this.showForm = '';
         },
         formSubmit (event) {
             this.success = '';
@@ -103,14 +181,11 @@
                         this.failure = response.msg;
                     }
                 });
-            this.showForm = false;
+            this.showForm = '';
         },
         hideForm (event) {
-            this.showForm = false;
+            this.showForm = '';
         },
-    },
-    computed: {
-      ...mapGetters(['is_admin'])
     },
     mounted() {
       console.log('InstitutionData Component mounted.');
@@ -118,7 +193,7 @@
   }
 </script>
 <style>
-.form-good {
+.good {
     position: relative;
     padding: 0.75rem 1.25rem;
     margin-bottom: 1rem;
@@ -126,7 +201,7 @@
     border-radius: 0.25rem;
     color: green;
 }
-.form-fail {
+.fail {
     position: relative;
     padding: 0.75rem 1.25rem;
     margin-bottom: 1rem;

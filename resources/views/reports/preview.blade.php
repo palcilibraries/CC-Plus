@@ -9,9 +9,11 @@
   <v-app>
     <v-content>
       <report-preview :preset_filters="{{ json_encode($preset_filters) }}"
-                      :fields="{{ json_encode($fields) }}"
                       :columns="{{ json_encode($columns) }}"
+                      :fields="{{ json_encode($fields) }}"
                       :saved_reports="{{ json_encode($saved_reports) }}"
+                      :filter_options="{{ json_encode($filter_options) }}"
+                      :rangetype="{{ json_encode($rangetype) }}"
       ></report-preview>
     </v-content>
   </v-app>

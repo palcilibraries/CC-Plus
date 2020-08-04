@@ -15,7 +15,7 @@ class CreateInstitutionsTable extends Migration
     {
         Schema::create('institutions', function (Blueprint $table) {
             $table->Increments('id');
-            $table->string('name');
+            $table->string('name')->unique();
             $table->boolean('is_active')->default(1);
             $table->string('notes')->nullable();
             $table->string('sushiIPRange')->nullable();

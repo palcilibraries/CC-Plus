@@ -14,6 +14,7 @@ use App\Counter5Processor;
 use App\FailedHarvest;
 use App\HarvestLog;
 use App\CcplusError;
+use App\Severity;
 use App\Alert;
 use \ubfr\c5tools\JsonR5Report;
 use \ubfr\c5tools\CheckResult;
@@ -97,7 +98,7 @@ class SushiQWorker extends Command
        // Setup strings for job queries
         $jobs_table = config('database.connections.globaldb.database') . ".jobs";
         $harvestlogs_table = config('database.connections.consodb.database') . ".harvestlogs";
-        $runable_status = array('Queued','Pending','Retrying');
+        $runable_status = array('Queued','Pending','ReQueued');
 
        // Get Job ID's for all "runable" queue entries for this consortium; exit if none found
         $job_ids = DB::table($jobs_table . ' as job')
@@ -111,6 +112,9 @@ class SushiQWorker extends Command
 
        // Save all consortia records for detecting active jobs, strings for job queries
         $this->all_consortia = Consortium::where('is_active', true)->get();
+
+       // Grab all the error-severities so we only have to query for it once
+        $severities = Severity::get(['id','name']);
 
        // Keep looping as long as there are jobs we can do
        // ($job_ids is updated @ bottom of loop)
@@ -128,9 +132,9 @@ class SushiQWorker extends Command
             $ten_ago = strtotime("-10 minutes");
             $job_found = false;
             foreach ($jobs as $job) {
-               // Skip any "Retrying" harvest that's been updated today
+               // Skip any "ReQueued" harvest that's been updated today
                 if (
-                    $job->harvest->status == 'Retrying' &&
+                    $job->harvest->status == 'ReQueued' &&
                     (substr($job->harvest->updated_at, 0, 10) == date("Y-m-d"))
                 ) {
                     continue;
@@ -262,12 +266,21 @@ class SushiQWorker extends Command
 
            // If request failed, update the Logs
             } else {    // Fail
-               // Clean up the message in case we're adding the code to the errors table
-                $error_msg = substr(preg_replace('/(.*)(https?:\/\/.*)$/', '$1', $sushi->message), 0, 60);
+                $error_msg = '';
+                // Turn severity string into an ID
+                 $severity_id = $severities::where('name', 'LIKE', $sushi->severity . '%')->value('id');
+                if ($severity_id === null) {  // if not found, set to 'Error' and prepend it to the message
+                    $severity_id = $severities::where('name', '=', 'Error')->value('id');
+                    $error_msg .= $sushi->severity . " : ";
+                }
+
+               // Clean up the message in case this is a new code for the errors table
+                $error_msg .= substr(preg_replace('/(.*)(https?:\/\/.*)$/', '$1', $sushi->message), 0, 60);
+
                // Get/Create entry from the sushi_errors table
                 $error = CcplusError::firstOrCreate(
                     ['id' => $sushi->error_code],
-                    ['id' => $sushi->error_code, 'message' => $error_msg, 'severity' => $sushi->severity]
+                    ['id' => $sushi->error_code, 'message' => $error_msg, 'severity' => $severity_id]
                 );
                 FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => $sushi->step,
                                       'error_id' => $error->id, 'detail' => $sushi->detail, 'created_at' => $ts]);
@@ -288,6 +301,7 @@ class SushiQWorker extends Command
                         $setting->update();
                     }
                 }
+                $job->harvest->attempts++;
                 $job->harvest->status = $_status;
                 $job->harvest->rawfile = $raw_filename;
 
@@ -303,7 +317,7 @@ class SushiQWorker extends Command
                         Alert::insert(['yearmon' => $yearmon, 'prov_id' => $setting->prov_id,
                                        'harvest_id' => $job->harvest->id, 'status' => 'Active', 'created_at' => $ts]);
                     } else {
-                        $job->harvest->status = 'Retrying';
+                        $job->harvest->status = 'ReQueued';
                     }
                 }
             }

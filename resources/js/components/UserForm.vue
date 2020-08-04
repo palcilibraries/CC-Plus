@@ -135,20 +135,19 @@
             formSubmit (event) {
                 this.success = '';
                 this.failure = '';
-                var self = this;
-                if (self.form.password!=self.form.confirm_pass) {
-                    self.failure = 'Passwords do not match! Please re-enter';
+                if (this.form.password!=this.form.confirm_pass) {
+                    this.failure = 'Passwords do not match! Please re-enter';
                     return;
                 }
-                this.form.patch('/users/'+self.user['id'])
-                    .then( function(response) {
+                this.form.patch('/users/'+this.user['id'])
+                    .then( (response) => {
                         if (response.result) {
-                            self.success = response.msg;
+                            this.success = response.msg;
                         } else {
-                            self.failure = response.msg;
+                            this.failure = response.msg;
                         }
                     });
-					self.showForm = false;
+					this.showForm = false;
             },
             destroy (userid) {
                 var self = this;
@@ -177,12 +176,10 @@
                 .catch({});
             },
 	        swapForm (event) {
-	            var self = this;
-	            self.showForm = true;
+	            this.showForm = true;
 			},
 	        hideForm (event) {
-	            var self = this;
-	            self.showForm = false;
+	            this.showForm = false;
 			},
         },
         computed: {

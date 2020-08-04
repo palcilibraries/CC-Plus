@@ -35,13 +35,23 @@ Vue.component('provider-data-table', require('./components/ProviderDataTable.vue
 Vue.component('institution-form', require('./components/InstitutionForm.vue').default);
 Vue.component('institution-data-table', require('./components/InstitutionDataTable.vue').default);
 Vue.component('institution-group-form', require('./components/InstitutionGroupForm.vue').default);
+Vue.component('institution-types', require('./components/InstitutionTypes.vue').default);
+Vue.component('institution-groups', require('./components/InstitutionGroups.vue').default);
 Vue.component('harvestlog-data-table', require('./components/HarvestlogDataTable.vue').default);
+Vue.component('harvestlog-summary-table', require('./components/HarvestlogSummaryTable.vue').default);
+Vue.component('harvestlog-form', require('./components/HarvestlogForm.vue').default);
+Vue.component('failed-harvests', require('./components/FailedHarvests.vue').default);
+Vue.component('failed-by-harvest', require('./components/FailedByHarvest.vue').default);
 Vue.component('date-range', require('./components/DateRange.vue').default);
+Vue.component('show-counter-report', require('./components/ShowCounterReport.vue').default);
+Vue.component('view-reports', require('./components/ViewReports.vue').default);
 Vue.component('create-report', require('./components/CreateReport.vue').default);
 Vue.component('report-preview', require('./components/ReportPreview.vue').default);
 Vue.component('saved-report-form', require('./components/SavedReportForm.vue').default);
 Vue.component('home-saved-reports', require('./components/HomeSavedReports.vue').default);
 Vue.component('manual-harvest', require('./components/ManualHarvest.vue').default);
+Vue.component('alert-data-table', require('./components/AlertDataTable.vue').default);
+Vue.component('alert-summary-table', require('./components/AlertSummaryTable.vue').default);
 
 /**
  * Create a fresh Vue application instance with Vuetify.

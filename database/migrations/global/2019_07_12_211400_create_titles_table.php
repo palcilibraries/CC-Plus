@@ -26,6 +26,8 @@ class CreateTitlesTable extends Migration
             $table->string('pub_date', 10)->nullable();
             $table->string('article_version', 10)->nullable();
             $table->timestamps();
+
+            $table->index(['type','Title']);
         });
     }
 

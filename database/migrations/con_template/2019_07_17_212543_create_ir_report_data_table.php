@@ -22,7 +22,7 @@ class CreateIrReportDataTable extends Migration
             $table->unsignedInteger('plat_id')->nullable();
             $table->unsignedInteger('inst_id');
             $table->string('yearmon', 7);
-            $table->string('YOP', 9)->nullable();
+            $table->string('yop', 9)->nullable();
             $table->unsignedInteger('datatype_id')->nullable();
             $table->unsignedInteger('accesstype_id')->nullable();
             $table->unsignedInteger('accessmethod_id')->default(1);
@@ -32,8 +32,8 @@ class CreateIrReportDataTable extends Migration
             $table->unsignedInteger('unique_item_investigations');
             $table->unsignedInteger('limit_exceeded');
             $table->unsignedInteger('no_license');
-            // $table->timestamps();
 
+            $table->index('yearmon');
             $table->foreign('item_id')->references('id')->on($global_db . '.items');
             $table->foreign('prov_id')->references('id')->on('providers');
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');

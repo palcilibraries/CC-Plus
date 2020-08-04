@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Alert;
 use App\Provider;
+use App\Severity;
+use App\SystemAlert;
 use Illuminate\Http\Request;
 
 class AlertController extends Controller
@@ -16,12 +18,14 @@ class AlertController extends Controller
    // Index method for Alerts Controller
     public function index(Request $request)
     {
-        $__options = Alert::getEnumValues('status');
-        array_unshift($__options, 'ALL');
-        $status_options = array_combine($__options, $__options);
+        $statuses = Alert::getEnumValues('status');
+        array_unshift($statuses, 'ALL');
 
-        $data = Alert::with('provider','alertSetting','alertSetting.reportField','harvest','harvest.sushiSetting',
-                            'user')->orderBy('id', 'ASC')->get();
+        // Grab error-severities that apply to alerts
+        $severities = Severity::where('id', '<', 10)->get(['id','name'])->toArray();
+
+        $data = Alert::with('provider:id,name', 'alertSetting', 'alertSetting.reportField', 'user:id,name')
+                     ->orderBy('alerts.created_at', 'DESC')->get();
 
         $records = array();
         foreach ($data as $alert) {
@@ -36,22 +40,20 @@ class AlertController extends Controller
             }
 
             // Build a record for the view
-            $record = array('id' => $alert->id);
+            $record = array('id' => $alert->id, 'yearmon' => $alert->yearmon, 'status' => $alert->status,
+                            'updated_at' => $alert->updated_at);
+
             if (!is_null($alert->alertsettings_id)) {
                 $record['detail_url'] = "/alertsettings/" . $alert->alertsettings_id;
                 $record['detail_txt'] = $alert->alertSetting->reportField->legend . " is out of bounds!";
             } else {
-                $record['detail_url'] = "/harvestlogs/" . $alert->harvest_id;
-                $record['detail_txt'] = "details";
+                $record['detail_url'] = "/harvestlogs/" . $alert->harvest_id . '/edit';
+                $record['detail_txt'] = "Harvest failed";
             }
-            $record['prov_name'] = $alert->provider->name;
-            $record['reportName'] = $alert->reportName();
-            $record['yearmon'] = $alert->yearmon;
-            $record['status'] = $alert->status;
-            $record['stat_id'] = "stat_" . $alert->id;
+            $record['report_name'] = $alert->reportName();
             $record['mod_by'] = ($alert->modified_by == 1) ? 'CC-Plus System' : $alert->user->name;
             $record['inst_name'] = ($_inst_id == 1)  ? "Consortia-wide" : $alert->institution()->name;
-            $record['updated_at'] = $alert->updated_at;
+            $record['prov_name'] = $alert->provider->name;
             $records[] = $record;
         };
 
@@ -61,30 +63,41 @@ class AlertController extends Controller
         })->unique('id')->pluck('name', 'id')->toArray();
         array_unshift($providers, 'ALL');
 
-        return view('alerts.dashboard', compact('records', 'status_options', 'providers'))
-               ->with('i', ($request->input('page', 1) - 1) * 10);
+        // Get all system alerts
+        $sysalerts = SystemAlert::with('severity')
+                                ->orderBy('severity_id', 'DESC')->orderBy('updated_at', 'DESC')->get()->toArray();
+
+        return view('alerts.dashboard', compact('records', 'sysalerts', 'providers', 'statuses', 'severities'));
     }
 
    /**
-    * Update status for a given alert record
+    * Update status for a given alert
     *
     * @param  \Illuminate\Http\Request  $request
-    * @param  int  $id
     * @return \Illuminate\Http\Response
     */
     public function updateStatus(Request $request)
     {
-       // value of name should be : stat_nnnn, without leading zeros, where nnnn is the alert ID
-        $alert_id = substr($request->name, 5);
-        $record = Alert::findOrFail($alert_id);
-        abort_unless($record->canManage(), 403);
+        abort_unless(auth()->user()->hasRole("Admin"), 403);
+
+        // Get and verify input or bail with error in json response
+        try {
+            $input = json_decode($request->getContent(), true);
+        } catch (\Exception $e) {
+            return response()->json(['result' => false, 'msg' => 'Error decoding input!']);
+        }
+        if (!isset($input['id']) || !isset($input['status'])) {
+            return response()->json(['result' => false, 'msg' => 'Missing expected inputs!']);
+        }
+        $alert = Alert::findOrFail($input['id']);
+
        // Validate form inputs
-        $this->validate($request, ['status' => 'required']);
-        $record->status = $request->status;
-        $record->modified_by = auth()->id();
+        $alert->status = $input['status'];
+        $alert->modified_by = auth()->id();
+
        // Update the record
-        $record->save();
-        return response()->json($record);
+        $alert->save();
+        return response()->json(['result' => true]);
     }
 
    /**

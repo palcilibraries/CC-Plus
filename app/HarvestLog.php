@@ -35,4 +35,18 @@ class HarvestLog extends Model
     {
         return $this->belongsTo('App\SushiSetting', 'sushisettings_id');
     }
+
+    public function canManage()
+    {
+      // Admins can manage any record
+        if (auth()->user()->hasRole("Admin")) {
+            return true;
+        }
+      // Managers can manage harvests for their own inst only
+        if (auth()->user()->hasRole("Manager")) {
+            return auth()->user()->inst_id == $this->sushiSetting->inst_id;
+        }
+      // Otherwise, return false
+        return false;
+    }
 }

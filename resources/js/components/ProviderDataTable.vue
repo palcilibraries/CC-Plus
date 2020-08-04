@@ -4,8 +4,18 @@
       <span class="good" role="alert" v-text="success"></span>
       <span class="fail" role="alert" v-text="failure"></span>
     </div>
-    <div v-if="!showForm">
-      <v-btn v-if="is_admin" small color="primary" @click="createForm">Create a Provider</v-btn>
+    <div v-if="showForm==''">
+      <v-row v-if="is_admin">
+        <v-col cols="2"><v-btn small color="primary" @click="importForm">Import Providers</v-btn></v-col>
+        <v-col><v-btn small color="primary" @click="createForm">Create a Provider</v-btn></v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="1">Export to:</v-col>
+        <v-col>
+            <a :href="'/providers/export/xls'">.xls</a> &nbsp; &nbsp;
+            <a :href="'/providers/export/xlsx'">.xlsx</a>
+        </v-col>
+      </v-row>
       <v-data-table :headers="headers" :items="mutable_providers" item-key="prov_id" class="elevation-1">
         <template v-slot:item="{ item }">
           <tr>
@@ -23,7 +33,33 @@
         </template>
       </v-data-table>
     </div>
-    <div v-else style="width:50%; display:inline-block;">
+    <div v-if="showForm=='import'" style="width:50%; display:inline-block;">
+      <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined></v-file-input>
+      <p>
+        <strong>Providers cannot be deleted during an import operation.</strong><br />
+        <strong>Note: </strong>Provider imports always function as full-replacement updates. Any settings for columns
+        C-G which are NULL, blank, or missing in the import file will cause the import to overwrite the field(s) for
+        the provider with the blank, empty, or NULL value.
+      </p>
+      <p>
+        Provider-IDs (column-A) should be sequential, but this is not required. Importing rows with new, unique ID
+        values will create new providers. Provider names (column-B) must be unique. Attempting to renamed a provider
+        to an existing name will be ignored.
+      </p>
+      <p>
+        Providers can be renamed via import by giving the ID in column-A and the replacement name in column-B. Be
+        aware that the new name takes effect immediately, and will be associated with all harvested usage data that
+        may have been collected using the OLD name (data is stored by the ID, not the name.)
+      </p>
+      <p>
+        For these reasons, use caution when using this import function. Generating a Provider export FIRST will supply
+        detailed instructions for importing on the "How to Import" tab. Generating a new Provider export following an
+        import operation is a good way to confirm that all the settings are as-desired.
+      </p>
+      <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+      <v-btn small type="button" @click="hideForm">cancel</v-btn>
+    </div>
+    <div v-if="showForm=='create'" style="width:50%; display:inline-block;">
       <h4>Create a new Provider</h4>
       <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
         <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
@@ -72,7 +108,7 @@
         success: '',
         failure: '',
         inst_name: '',
-        showForm: false,
+        showForm: '',
         headers: [
           { text: 'Provider ', value: 'prov_name', align: 'start' },
           { text: 'Status', value: 'is_active' },
@@ -83,7 +119,7 @@
         mutable_providers: this.providers,
         form: new window.Form({
             name: '',
-            inst_id: null,
+            inst_id: 1,
             is_active: 0,
             server_url_r5: '',
             day_of_month: 15,
@@ -92,19 +128,51 @@
       }
     },
     methods:{
+        importForm () {
+            this.csv_upload = null;
+            this.import_type = '';
+            this.showForm = 'import';
+        },
         createForm () {
             this.failure = '';
             this.success = '';
-            this.showForm = true;
             this.form.name = '';
-            this.form.inst_id = (this.is_admin) ? null : this.institutions[0].id;
+            this.form.inst_id = (this.is_admin) ? 1 : this.institutions[0].id;
             this.form.is_active = 0;
             this.form.server_url_r5 = '';
             this.form.day_of_month = 15;
             this.form.master_reports = [];
+            this.showForm = 'create';
         },
         hideForm (event) {
-            this.showForm = false;
+            this.showForm = '';
+        },
+        importSubmit (event) {
+            this.success = '';
+            if (this.csv_upload==null) {
+                this.failure = 'A CSV import file is required';
+                return;
+            }
+            this.failure = '';
+            let formData = new FormData();
+            formData.append('csvfile', this.csv_upload);
+            axios.post('/providers/import', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                  })
+                 .then( (response) => {
+                     if (response.data.result) {
+                         this.failure = '';
+                         this.success = response.data.msg;
+                         // Replace mutable array with response institutions
+                         this.mutable_providers = response.data.providers;
+                     } else {
+                         this.success = '';
+                         this.failure = response.data.msg;
+                     }
+                 });
+            this.showForm = '';
         },
         formSubmit (event) {
             this.success = '';
@@ -121,7 +189,7 @@
                         this.failure = response.msg;
                     }
                 });
-            this.showForm = false;
+            this.showForm = '';
         },
     },
     computed: {

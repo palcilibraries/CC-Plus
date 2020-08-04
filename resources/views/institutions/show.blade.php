@@ -7,34 +7,40 @@
 	    <h1>{{ $institution->name }}</h1>
 	</div>
 
-  <institution-form :institution="{{ json_encode($institution) }}"
-                    :types="{{ json_encode($types) }}"
-                    :inst_groups="{{ json_encode($inst_groups) }}"
-                    :all_groups="{{ json_encode($all_groups) }}"
-  ></institution-form>
+    <institution-form :institution="{{ json_encode($institution) }}"
+                      :types="{{ json_encode($types) }}"
+                      :all_groups="{{ json_encode($all_groups) }}"
+    ></institution-form>
 
-  @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )
-    <div class="users">
-	<h2 class="section-title">Users</h2>
-    <users-by-inst :users="{{ json_encode($users) }}"
+    @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )
+	<users-by-inst :users="{{ json_encode($users) }}"
 				   :inst_id="{{ json_encode($institution->id) }}"
 				   :all_roles="{{ json_encode($all_roles) }}"
 	></users-by-inst>
-	</div>
-  @endif
-  <div class="related-list">
-	  <hr>
+    @endif
+	<div class="related-list">
+      <v-expansion-panels><v-expansion-panel>
+  	    <v-expansion-panel-header>
+	      <h3>Recent Harvest Activity</h3>
+  	    </v-expansion-panel-header>
+  	    <v-expansion-panel-content>
+  	      @if (sizeof($harvests) > 0)
+			<harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"
+									  :inst_id="{{ $institution->id }}"
+			></harvestlog-summary-table>
+  	      @else
+	      <p>No harvest records found for this institution</p>
+	      @endif
+  	    </v-expansion-panel-content>
+	  </v-expansion-panel></v-expansion-panels>
+    </div>
+    <div class="related-list">
 	  <h2 class="section-title">Providers</h2>
-	  @if ( auth()->user()->hasAnyRole(['Admin']) )
-	  <v-btn small color="primary" type="button" href="{{ route('providers.create') }}" class="section-action">add new</v-btn>
-	  @endif
 	  <all-sushi-by-inst :settings="{{ json_encode($institution->sushiSettings->toArray()) }}"
 		  				 :inst_id="{{ json_encode($institution->id) }}"
 		  				 :unset="{{ json_encode($unset_providers) }}"
 	  ></all-sushi-by-inst>
-  </div>
+    </div>
 
 </v-app>
-
-
 @endsection

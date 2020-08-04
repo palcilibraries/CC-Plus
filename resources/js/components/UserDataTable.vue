@@ -6,13 +6,17 @@
     </div>
     <div v-if="showForm==''">
       <v-btn small color="primary" @click="createForm">Create a User</v-btn>
+      <div v-if="is_manager || is_admin">
+        Export to:
+            <a :href="'/users/export/xls'">.xls</a> &nbsp; &nbsp;
+            <a :href="'/users/export/xlsx'">.xlsx</a>
+      </div>
       <v-data-table :headers="headers" :items="mutable_users" item-key="id" class="elevation-1">
         <template v-slot:item="{ item }">
           <tr>
             <td><a @click="editForm(item.id)">{{ item.name }}</a></td>
-            <td><a :href="'/institutions/'+item.inst_id+'/edit'">{{ item.institution.name }}</a></td>
-            <td v-if="item.is_active">Active</td>
-            <td v-else>Inactive</td>
+            <td><a :href="'/institutions/'+item.inst_id+'/edit'">{{ item.inst_name }}</a></td>
+            <td v-if="item.status">Active</td>
             <td>{{ item.email }}</td>
             <td>{{ item.role_string }}</td>
             <td>{{ item.last_login }}</td>
@@ -57,7 +61,7 @@
 		</div>
         <p>&nbsp;</p>
         <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
-          Save New User
+          Save User
         </v-btn>
 		<v-btn small type="button" @click="hideForm">cancel</v-btn>
       </form>
@@ -85,10 +89,10 @@
         showForm: '',
         headers: [
           { text: 'User Name ', value: 'name' },
-          { text: 'Institution', value: 'inst' },
-          { text: 'Status', value: 'is_active' },
+          { text: 'Institution', value: 'inst_name' },
+          { text: 'Status', value: 'status' },
           { text: 'Email', value: 'email' },
-          { text: 'Roles', value: 'roles' },
+          { text: 'Roles', value: 'role_string' },
           { text: 'Last Login', value: 'last_login' },
         ],
         emailRules: [

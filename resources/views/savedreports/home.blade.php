@@ -1,55 +1,34 @@
 @extends('layouts.app')
 
 @section('content')
+@if (sizeof($system_alerts) > 0)
+    @foreach ($system_alerts as $alert)
+      <div class="alert alert-{{ $alert->severity->name }}">System Alert :: <strong>{{ $alert->severity->name }}</strong> :: {{ $alert->text }}</div>
+    @endforeach
+@endif
 <v-app>
   <v-content>
-    <table>
-      <tr><td><h3>{{ auth()->user()->name }}'s dashboard</h3></td></tr>
-      <tr><td><h4>{{ $inst_count }} institution(s) and {{ $prov_count }} provider(s) connected</h4></td></tr>
-      <tr>
-        @if (sizeof($report_data) >= 1)
-          <td><h5>My Saved Reports<h5></td>
-        @else
-          <td><h5>No Custom Reports<h5></td>
-        @endif
-        <td><a class="btn btn-success" href="/reports/create">Create a Report</a></td>
-      </tr>
-    </table>
-    <home-saved-reports :reports="{{ json_encode($report_data) }}"></home-saved-reports>
-
-    <div class="row">
-      <div class="col-lg-12 margin-tb">
-          <div class="pull-left">
-              <h2>Recent Failed Harvests</h2>
-          </div>
-      </div>
-    </div>
-    <table width="80%" cellspacing="2">
-      <tr>
-         <th width="15%">Harvest Date</th>
-         <th width="25%">Provider</th>
-         <th width="10%">Report</th>
-         <th width="10%">Institutions affected</th>
-      </tr>
-      @if (sizeof($failed_data) >= 1)
-        @foreach ($failed_data as $record)
-        <tr>
-            <td>{{ $record->harvest_date }}</td>
-            <td>{{ $record->provider }}</td>
-            <td>{{ $record->report }}</td>
-            <td>{{ $record->failed_insts }} / {{ $total_insts }}</td>
-        </tr>
-        @endforeach
-        <tr>
-          <td colspan="4" align="center">
-            <a href="/failedharvests">View all failed harvests</a>
-          </td>
-        </tr>
+    <h1>{{ auth()->user()->name }}'s dashboard</h1>
+    <h2 class="component-subhead">{{ $inst_count }} institution(s) and {{ $prov_count }} provider(s) connected</h2>
+    <div class="dashboard-section">
+      @if (sizeof($report_data) >= 1)
+        <h2 class="actionable-subhead">My Saved Reports</h2>
       @else
-        <tr>
-            <td colspan="4"><strong>No failed harvests found</strong>
-        </tr>
+        <p>No Custom Reports</p>
       @endif
-    </table>
+      <a class="btn v-btn v-btn--contained v-size--small section-action" href="/reports/create">Create a Report</a>
+      <home-saved-reports :reports="{{ json_encode($report_data) }}"></home-saved-reports>
+    </div>
+
+    @if (sizeof($data_alerts) > 0)
+    <div class="dashboard-section">
+      <alert-summary-table :alerts="{{ json_encode($data_alerts) }}"></alert-summary-table>
+    </div>
+    @endif
+
+	<div class="dashboard-section">
+      <h2>Recent Activity</h2>
+	  <harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"></harvestlog-summary-table>
+    </div>
 </v-app>
 @endsection

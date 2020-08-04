@@ -1,70 +1,52 @@
 <template>
   <v-form ref="wizardForm">
-    <div v-if="dialogs.date">
+    <div v-if="selections_made">
       <v-btn color="gray" small @click="resetForm">Reset Selections</v-btn>
     </div>
-    <div v-if="dialogs.inst">
-      <v-row v-if="!dialogs.date">
-        <v-col class="ma-2" cols="2" sm="2">
-          <h4>Choose Institution(s)</h4>
-        </v-col>
-      </v-row>
-      <v-row v-if="!dialogs.date && inst_group_id==0">
-        <v-col class="ma-2" cols="3" sm="3">
+    <div v-if="this.is_admin || this.is_viewer">
+      <v-row class="d-flex align-mid">
+        <v-col v-if="inst_group_id==0" class="d-flex ma-2" cols="3" sm="3">
           <v-select
-            :items="mutable_insts"
-            v-model="inst_id"
+            :items="institutions"
+            v-model="inst"
             @change="onInstChange"
-            label="Institution"
+            multiple
+            label="Limit by Institution"
             item-text="name"
             item-value="id"
             hint="Limit the report by institution"
           ></v-select>
         </v-col>
-      </v-row>
-      <v-row v-if="!dialogs.date && inst_id==null">
-        <v-col class="ma-2" cols="3" sm="3">
+        <v-col v-if="inst==0 && inst_group_id==0 " class="d-flex" cols="1" sm="1"><strong>OR</strong></v-col>
+        <v-col v-if="inst==0" class="d-flex ma-2" cols="3" sm="3">
           <v-select
-              :items="mutable_groups"
+              :items="inst_groups"
               v-model="inst_group_id"
               @change="onGroupChange"
-              label="Institution Group"
+              label="Limit by Institution Group"
               item-text="name"
               item-value="id"
               hint="Limit the report to an institution group"
           ></v-select>
         </v-col>
       </v-row>
-      <v-row v-if="dialogs.date && inst_id!=null">
-        <v-col class="ma-2" cols="6" sm="4">
-          <h5>Institution : {{ inst_name }}</h5>
-        </v-col>
-      </v-row>
-      <v-row v-if="dialogs.date && inst_group_id!=0">
-        <v-col class="ma-2" cols="6" sm="4">
-          <h5>Institution Group : {{ inst_name }}}</h5>
-        </v-col>
-      </v-row>
     </div>
-    <v-row v-if="dialogs.prov">
-      <v-col v-if="!dialogs.date" class="ma-2" cols="3" sm="3">
-        <span><h5>Choose Provider(s)</h5></span>
+    <v-row class="mb-0 py-0">
+      <v-col class="ma-2" cols="3" sm="3">
         <v-select
             :items="providers"
-            v-model="prov_id"
+            v-model="prov"
             @change="onProvChange"
-            label="Provider"
+            multiple
+            label="Limit by Provider"
             item-text="name"
             item-value="id"
             hint="Limit the report by provider"
         ></v-select>
       </v-col>
-      <v-col v-else class="ma-2" cols="6" sm="4">
-          <h5>Provider : {{ prov_name }}</h5>
-      </v-col>
     </v-row>
-    <v-row v-if="dialogs.rept">
-      <span><h4>Choose a Report Type</h4></span>
+    <v-row class="mb-0 py-0">
+      <span><h5>Choose a Report Type</h5></span>
       <v-col class="ma-2" cols="12">
         <div v-if="working">
             <span>...Working... checking available data for requested Institution(s) and Provider(s)</span>
@@ -87,7 +69,7 @@
                 </p>
                 <v-radio :label="reports[0].legend+' ('+reports[0].name+')'" :value='reports[0]'></v-radio>
                 <v-radio v-for="(value, idx) in tr_reports" :key="idx" :value="value"
-                         :label="value.name+' : '+value.legend">Hello World</v-radio>
+                         :label="value.name+' : '+value.legend"></v-radio>
               </v-expansion-panel-content>
             </v-expansion-panel>
 
@@ -111,7 +93,7 @@
                   <p>Available Views</p>
                   <v-radio :label="reports[2].legend+' ('+reports[2].name+')'" :value='reports[2]'></v-radio>
                   <v-radio v-for="(value, idx) in pr_reports" :key="idx" :value="value"
-                           :label="value.name+' : '+value.legend">Hi Sailor!</v-radio>
+                           :label="value.name+' : '+value.legend"></v-radio>
               </v-expansion-panel-content>
             </v-expansion-panel>
 
@@ -132,7 +114,7 @@
       </v-col>
     </v-row>
 
-    <v-row v-if="dialogs.date">
+    <v-row v-if="dialogs.date" class="d-flex ma-0" no-gutters>
         <span><h4>Choose Report Dates</h4></span>
         <v-col class="ma-2" cols="12">
           <v-radio-group v-model="dateRange" @change="onDateRangeChange">
@@ -140,13 +122,13 @@
             <v-radio :label="'Latest Year ['+latestYear+']'" value='latestYear'></v-radio>
             <v-radio :label="'Custom Date Range'" value='Custom'></v-radio>
           </v-radio-group>
-          <div v-if="dateRange=='Custom'">
+          <div v-if="dateRange=='Custom'" class="d-flex pa-2">
               <date-range :minym="minYM" :maxym="maxYM" :ymfrom="minYM" :ymto="maxYM"></date-range>
           </div>
         </v-col>
     </v-row>
     <v-row v-if="dialogs.done">
-      <v-btn color="green" small @click="goRedirect">Finish</v-btn>
+      <v-btn color="primary" small @click="goRedirect">Finish</v-btn>
     </v-row>
   </v-form>
 </template>
@@ -165,13 +147,13 @@
             fields: { type:Array, default: () => [] },
             reports: { type:Array, default: () => [] },
     },
-
     data() {
         return {
             working: true,
-            dialogs: { inst: false, prov: false, rept: false, date: false, done:false },
-            inst_id: null,
-            prov_id: null,
+            selections_made: false,
+            dialogs: { date: false, done:false },
+            inst: [],
+            prov: [],
             inst_group_id: 0,
             selectedReport: {},
             masterId: 0,
@@ -179,10 +161,6 @@
             minYM: '',
             maxYM: '',
             latestYear: '',
-            inst_name: '',
-            prov_name: '',
-            mutable_insts: this.institutions,
-            mutable_groups: this.inst_groups,
             tr_reports: this.reports[0].children,
             dr_reports: this.reports[1].children,
             pr_reports: this.reports[2].children,
@@ -195,7 +173,6 @@
       masterId: {
         handler() {
             if (this.masterId == 0) return;  // reset?
-
             let key = this.reports[this.masterId-1].name;
             this.maxYM = this.report_data[key].YM_max;
             this.minYM = this.report_data[key].YM_min;
@@ -214,45 +191,34 @@
         resetForm () {
             // Reset dialogs
             this.$refs.wizardForm.reset();
-            if (this.is_admin || this.is_viewer) {
-                this.dialogs.inst = true;
-            }
-            this.dialogs.prov = false;
-            this.dialogs.rept = false;
             this.dialogs.date = false;
             this.dialogs.done = false;
+            this.selections_made = false;
             // Reset locally bound variables
-            this.inst_id = null;
-            this.prov_id = null;
-            this.inst_name = '';
-            this.prov_name = '';
+            this.inst = 0;
+            this.prov = 0;
             this.masterId = 0;
             this.inst_group_id = 0;
-            this.mutable_insts = this.institutions;
-            this.mutable_groups = this.inst_groups;
             // Reset the data store
-            this.$store.dispatch('updateInstitutionFilter',0);
+            this.$store.dispatch('updateInstitutionFilter',[]);
             this.$store.dispatch('updateInstGroupFilter',0);
-            this.$store.dispatch('updateProviderFilter',0);
+            this.$store.dispatch('updateProviderFilter',[]);
             this.$store.dispatch('updateReportId',1);
+            this.updateAvailable();
         },
         onInstChange () {
-            this.$store.dispatch('updateInstitutionFilter',this.inst_id);
-            let inst = this.institutions.find(obj => obj.id == this.inst_id);
-            this.inst_name = inst.name;
-            this.dialogs.prov = true;
+            this.$store.dispatch('updateInstitutionFilter',this.inst);
+            this.selections_made = true;
+            this.updateAvailable();
         },
         onGroupChange () {
             this.$store.dispatch('updateInstGroupFilter',this.inst_group_id);
-            let grp = this.inst_groups.find(obj => obj.id == this.inst_group_id);
-            this.inst_name = grp.name;
-            this.dialogs.prov = true;
+            this.selections_made = true;
+            this.updateAvailable();
         },
         onProvChange () {
-            this.$store.dispatch('updateProviderFilter',this.prov_id);
-            let prov = this.providers.find(obj => obj.id == this.prov_id);
-            this.prov_name = prov.name;
-            this.dialogs.rept = true;
+            this.$store.dispatch('updateProviderFilter',this.prov);
+            this.selections_made = true;
             this.updateAvailable();
         },
         onReportChange () {
@@ -267,6 +233,7 @@
                 this.masterId = parent_id;
             }
             this.$store.dispatch('updateReportId',this.selectedReport.id);
+            this.selections_made = true;
             this.dialogs.date = true;
         },
         onDateRangeChange () {
@@ -282,6 +249,7 @@
                 this.$store.dispatch('updateFromYM',ym_f);
                 this.$store.dispatch('updateToYM',ym_t);
             }
+            this.selections_made = true;
             this.dialogs.done = true;
         },
         updateAvailable () {
@@ -311,16 +279,18 @@
     },
     mounted() {
       // set dialog starting point
-      if (this.is_admin || this.is_viewer) {
-          this.dialogs['inst'] = true;
-      } else {
-          this.dialogs['prov'] = true;
+      if (!this.is_admin && !this.is_viewer) {
+          this.inst=[this.institutions[0]];
       }
-      this.user_inst=this.institutions[0];
+      this.$store.dispatch('updateInstitutionFilter',this.inst);
+      this.$store.dispatch('updateInstGroupFilter',this.inst_group_id);
+      this.$store.dispatch('updateProviderFilter',this.prov);
+      this.updateAvailable();
       console.log('CreateReport Component mounted.');
     }
   }
 </script>
 
 <style>
+.align-mid { align-items: center; }
 </style>

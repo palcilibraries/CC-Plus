@@ -48,7 +48,7 @@ class SushiQLoader extends Command
     /**
      * Execute the console command.
      * ----------------------------
-     *   ccplus:sushiqn is intended to be run primarily as a nightly job.
+     *   ccplus:sushiqloader is intended to be run primarily as a nightly job.
      *      The optional arguments exist to allow the script to be run from the artisan command-line
      *      to add harvests and jobs in a more customized way.
      *   Processing phase-1:
@@ -111,10 +111,10 @@ class SushiQLoader extends Command
 
        // Get active provider data
         if ($prov_id == 0) {
-            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active','reports')
+            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
                                  ->where('is_active', '=', true)->get();
         } else {
-            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active','reports')
+            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
                                  ->where('is_active', '=', true)->where('id', '=', $prov_id)->get();
         }
 
@@ -163,7 +163,7 @@ class SushiQLoader extends Command
                             }
                             $this->line('Harvest ' . '(ID:' . $harvest->id . ') already defined. Updating to retry (' .
                                         'setting: ' . $setting->id . ', ' . $report->name . ':' . $yearmon . ').');
-                            $harvest->status = 'Retrying';
+                            $harvest->status = 'ReQueued';
                             $harvest->save();
                         } else {
                             $this->line('Failed adding to HarvestLog! Error code:' . $errorCode);
@@ -176,7 +176,7 @@ class SushiQLoader extends Command
 
        // Part II : Create queue jobs based on HarvestLogs
        // -----------------------------------------------
-        $harvests = HarvestLog::where('status', '=', 'New')->orWhere('status', '=', 'Retrying')->get();
+        $harvests = HarvestLog::where('status', '=', 'New')->orWhere('status', '=', 'ReQueued')->get();
         foreach ($harvests as $harvest) {
             try {
                 $newjob = SushiQueueJob::create(['consortium_id' => $consortium->id,

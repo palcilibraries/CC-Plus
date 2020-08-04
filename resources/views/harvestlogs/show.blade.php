@@ -1,75 +1,48 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="row">
-    <div class="col-lg-12 margin-tb">
-        <div class="pull-left">
-            <h2>Harvest Record Details</h2>
-        </div>
-        <div class="pull-right">
-            <a class="btn btn-primary" href="{{ route('harvestlogs.index') }}"> Back</a>
-        </div>
+<v-app harvestlogform>
+  <v-content>
+    <div class="details">
+      <h3 class="section-title">Harvest Details</h3>
+      <table>
+        <tr>
+          <td>Institution: </td>
+          <td width="20px"> &nbsp; </td>
+          <td>{{ $harvest->sushiSetting->institution->name }}</td>
+        </tr>
+        <tr>
+          <td>Provider: </td>
+          <td> &nbsp; </td>
+          <td>{{ $harvest->sushiSetting->provider->name }}</td>
+        </tr>
+        <tr>
+          <td>Report: </td>
+          <td> &nbsp; </td>
+          <td>{{ $harvest->report->name }}</td>
+        </tr>
+        <tr>
+          <td>Usage Month: </td>
+          <td> &nbsp; </td>
+          <td>{{ $harvest->yearmon }}</td>
+        </tr>
+        <tr>
+          <td>Attempts: </td>
+          <td> &nbsp; </td>
+          <td>{{ $harvest->attempts }}</td>
+        </tr>
+        <tr>
+          <td>Status: </td>
+          <td> &nbsp; </td>
+          <td>{{ $harvest->status }}</td>
+        </tr>
+      </table>
     </div>
-</div>
-
-@if (count($errors) > 0)
-    <div class="alert alert-danger">
-        <strong>Whoops!</strong> There were some problems with your input.<br><br>
-        <ul>
-        @foreach ($errors->all() as $error)
-            <li>{{ $error }}</li>
-        @endforeach
-        </ul>
+    @if (sizeof($failed) > 0)
+    <div class="related-list">
+      <failed-by-harvest :failed_harvests="{{ json_encode($failed) }}"><failed-by-harvest>
     </div>
-@endif
-
-<div class="row">
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <strong>Institution: </strong>
-            {{ $record->sushiSetting->institution->name }}
-        </div>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <strong>Provider: </strong>
-            {{ $record->sushiSetting->provider->name }}
-        </div>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            <strong>Report: </strong>
-            {{ $record->report->name }}
-        </div>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-12">
-        <div class="form-group">
-            @if ($record->failedHarvests()->count() > 0)
-            <strong>Failed attempts: </strong>
-            <table class="table table-bordered">
-              <tr>
-                 <th>Attempted</th>
-                 <th>Process Step</th>
-                 <th>Error Code</th>
-                 <th>Severity</th>
-                 <th>Message</th>
-                 <th>Details</th>
-              </tr>
-              @foreach ($record->failedHarvests as $fail)
-              <tr>
-                  <td>{{ $fail->created_at }}</td>
-                  <td>{{ $fail->process_step }}</td>
-                  <td>{{ $fail->error_id }}</td>
-                  <td>{{ $fail->ccplusError->severity }}</td>
-                  <td>{{ $fail->ccplusError->message }}</td>
-                  <td>{{ $fail->detail }}</td>
-              </tr>
-              @endforeach
-            </table>
-            @endif
-        </div>
-    </div>
-</div>
-
-{!! Form::close() !!}
+    @endif
+  </v-content>
+</v-app>
 @endsection

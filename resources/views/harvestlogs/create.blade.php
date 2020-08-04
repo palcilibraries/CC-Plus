@@ -11,7 +11,7 @@
      <h5>Note:</h5>
      <ul>
       <li>Requesting a manual harvest for a previously harvested provider, institition, and month,
-          will re-initializ the harvest as a <strong>new</strong> entry with zero attempts.</li>
+          will re-initialize the harvest as a <strong>new</strong> entry with zero attempts.</li>
       <li>On successful retrieval, manually harvested data will replace (overwrite) all previously
           harvested report data for a given institution->provider->month.</li>
      </ul>
@@ -19,6 +19,7 @@
   <manual-harvest :institutions="{{ json_encode($institutions) }}"
                   :providers="{{ json_encode($providers) }}"
                   :all_reports="{{ json_encode($all_reports) }}"
+                  :presets="{{ json_encode($presets) }}"
   ></manual-harvest>
 </v-app>
 @endsection

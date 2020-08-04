@@ -246,29 +246,27 @@ class ReportController extends Controller
 
         // Get fields if we're not loading a saved report
         if (!isset($request->saved_id)) {
-            if ($report->parent_id == 0) {   // previewing a master report?
-                $master_id = $report->id;
+            // Get all fields
+            if ($report->parent_id == 0) {
                 $field_data = $report->reportFields;
             } else {
-                // Build field array from inherited fields
-                $master_fields = $report->parent->reportFields;
+                $field_data = $report->parent->reportFields;
+            }
+            // If we're previewing a subview, the inherited fields determine which fields are active intially.
+            // All will still be available to allow filtering or activation during the preview.
+            if ($report->parent_id > 0) {
+
                 // Turn report->inherited_fields into key=>value array
                 $inherited = $report->parsedInherited();
-                $child_fields = array();
-                foreach ($inherited as $key => $value) {
-                    $field = $master_fields->find($key);
-                    if (!$field) {
-                        continue;
-                    }
-                    $child_fields[] = $field;
-
-                    // If the field has a filter, update the filters array with report-specific limits
-                    $filter = $all_filters->find($field->report_filter_id);
-                    if ($filter && !is_null($value)) {
-                        $preset_filters[$filter->report_column] = $value;
+                foreach ($field_data as $field) {
+                    $field->active = (array_key_exists($field->id,$inherited)) ? 1 : 0;
+                    if ($field->active) {
+                        $filter = $all_filters->find($field->report_filter_id);
+                        if ($filter && !is_null($inherited[$field->id])) {
+                            $preset_filters[$filter->report_column] = $inherited[$field->id];
+                        }
                     }
                 }
-                $field_data = collect($child_fields);
             }
         }
 
@@ -388,49 +386,37 @@ class ReportController extends Controller
     //   $rpt_info .= array($warning);
     // }
 
-        // Setup header row(s)
+        // Setup header in 2-parts: "Basic" fields to the left, "Metric" fields to the right
         $left_head = array();
-        $upper_right_head = array();
-        $lower_right_head = array();
+        $right_head = array();
         $year_mons = self::createYMarray();
         $num_months = sizeof($year_mons);
         $has_metrics = false;
 
-        // Get non-metric columns first (these are same across yearmons)
-        // (this assumes that the caller ordered the $fields as: basics->metrics)
+        // Loop through the fields and add to the appropriate (left/right) header array
         foreach ($fields as $key => $data) {
-            // "basic" column
+            // "basic" field
             if (!preg_match('/^(searches_|total_|unique_|limit_|no_lic)/', $key)) {
-                $has_metrics = true;
                 $left_head[] = $data['legend'];
-                if ($num_months > 1) {
-                    $upper_right_head[] = '';
-                }
 
-            // "metric" column?
+            // "metric" field
             } else {
-                $upper_right_head[] = $data['legend'];
+                $has_metrics = true;
                 if ($num_months > 1) {
                     foreach ($year_mons as $ym) {
-                        $lower_right_head[] = $ym;
-                    }
-                    for ($m = 1; $m < $num_months; $m++) {
-                        $upper_right_head[] = '';
+                        $right_head[] = $data['legend'] . ' ' . $ym;
                     }
                 } else {
-                    $lower_right_head[] = $data['legend'];
+                    $right_head[] = $data['legend'];
                 }
             }
         }
 
-        // Tack on metric totals as right-most columns
-        if ($num_months > 1) {
-            if ($has_metrics) {
-                $upper_right_head[] = 'Reporting Period Total';
-                foreach ($fields as $key => $data) {
-                    if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/', $key)) {
-                        $lower_right_head[] = $data['legend'];
-                    }
+        // Tack on metric totals as right-most columns for multi-month reporting
+        if ($num_months > 1 && $has_metrics) {
+            foreach ($fields as $key => $data) {
+                if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/', $key)) {
+                    $right_head[] = 'Reporting Period Total' . ' ' . $data['legend'];
                 }
             }
         }
@@ -439,10 +425,7 @@ class ReportController extends Controller
         foreach ($rpt_info as $arr) {
             $writer->insertOne($arr);
         }
-        if ($num_months > 1) {
-            $writer->insertOne($upper_right_head);
-        }
-        $writer->insertOne(array_merge($left_head, $lower_right_head));
+        $writer->insertOne(array_merge($left_head, $right_head));
 
         // Return the handle
         return array('writer' => $writer, 'filename' => $out_file);
@@ -882,7 +865,7 @@ class ReportController extends Controller
                 // Add column to the raw-list and the raw_where string (for ignoring zero-records)
                 // If the field is a metric that sums-by-yearmon, assign metric-by-year as query fields
                 if (preg_match('/^sum/', $data->qry)) {
-                    $raw_where .= ($raw_where != "") ? " or " : "";
+                    $raw_where .= ($raw_where != "") ? " or " : "(";
                     $raw_where .= $data->qry_as . ">0";
                     foreach ($year_mons as $ym) {
                         $raw_fields .= preg_replace('/@YM@/', $ym, $data->qry) . ' as ';
@@ -912,6 +895,7 @@ class ReportController extends Controller
             }
         }
 
+        $raw_where .= ($raw_where == "") ? "" : ")";
         $raw_fields = $raw_fields . $total_fields;
         $raw_fields = rtrim($raw_fields, ',');
         return;

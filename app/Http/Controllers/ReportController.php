@@ -961,14 +961,15 @@ class ReportController extends Controller
             if (!auth()->user()->hasAnyRole(['Admin','Viewer'])) {
                 array_push($return_values, auth()->user()->inst_id);
                 return $return_values;
+            }
 
             // If both inst_id and group_id are set, return all inst_ids from the group
-            } elseif (isset(self::$input_filters['institutiongroup_id'])) {
+            if (isset(self::$input_filters['institutiongroup_id'])) {
                 if (self::$input_filters['institutiongroup_id'] > 0) {
                     $group = InstitutionGroup::find(self::$input_filters['institutiongroup_id']);
                     $return_values = $group->institutions->pluck('id')->toArray();
+                    return $return_values;
                 }
-                return $return_values;
             }
         }
         if (isset(self::$input_filters[$column])) {

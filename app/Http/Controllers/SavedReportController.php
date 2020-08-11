@@ -163,7 +163,7 @@ class SavedReportController extends Controller
                 $record['detail_url'] = "/alertsettings/" . $alert->alertsettings_id;
                 $record['detail_txt'] = $alert->alertSetting->reportField->legend . " is out of bounds!";
             } else {
-                $record['detail_url'] = "/harvestlogs/" . $alert->harvest_id;
+                $record['detail_url'] = "/harvestlogs/" . $alert->harvest_id . '/edit';
                 $record['detail_txt'] = "Harvest failed";
             }
             $record['report_name'] = $alert->reportName();

@@ -101,7 +101,7 @@ class SavedReportController extends Controller
         }
 
         // Summarize harvest data values and counts
-        $limit_to_insts = ($user_is_admin || $user_is_viewer) ? array() : $user_inst;
+        $limit_to_insts = ($user_is_admin || $user_is_viewer) ? array() : array($user_inst);
         $total_insts = Institution::where('is_active', true)->count() - 1;   // inst_id=1 doesn't count...
         $inst_count = ($user_is_admin || $user_is_viewer) ? $total_insts : 1;
         if ($user_is_admin) {

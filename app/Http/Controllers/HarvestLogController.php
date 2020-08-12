@@ -88,11 +88,11 @@ class HarvestLogController extends Controller
             if ($show_all) {
                 $providers = Provider::get(['id', 'name'])->toArray();
             } else {
-                $providers = DB::table($consodb . '.providers as prv')
-                          ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
+                $providers = DB::table($conso_db . '.providers as prv')
+                          ->join($conso_db . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
                           ->where('prv.inst_id', 1)
                           ->orWhere('prv.inst_id', auth()->user()->inst_id)
-                          ->orderBy('prov_name', 'ASC')
+                          ->orderBy('prv.name', 'ASC')
                           ->get(['prv.id','prv.name'])
                           ->toArray();
             }

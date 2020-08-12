@@ -445,7 +445,7 @@ class HarvestLogController extends Controller
     */
     public function edit($id)
     {
-        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+        // abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
         $harvest = HarvestLog::with(
             'report:id,name',
             'sushiSetting',

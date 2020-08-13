@@ -286,7 +286,7 @@ class ReportFieldsTableSeeder extends Seeder
                 'qry_counter' => ' WHEN RF.qry_as="total_item_investigations" THEN total_item_investigations',
                 'qry_as' => 'total_item_investigations', 'is_metric' => 1, 'active' => 1]);
             DB::table($table)->insert(['id' => 99, 'report_id' => 4, 'legend' => 'Total Item Requests',
-                'qry' => 'sum(IF (yearmon=""@YM@"",total_item_requests,0))',
+                'qry' => 'sum(IF (yearmon="@YM@",total_item_requests,0))',
                 'qry_counter' => ' WHEN RF.qry_as="total_item_requests" THEN total_item_requests',
                 'qry_as' => 'total_item_requests', 'is_metric' => 1, 'active' => 1]);
             DB::table($table)->insert(['id' => 100,'report_id' => 4, 'legend' => 'Unique Item Investigations',
@@ -294,7 +294,7 @@ class ReportFieldsTableSeeder extends Seeder
                 'qry_counter' => ' WHEN RF.qry_as="unique_item_investigations" THEN unique_item_investigations',
                 'qry_as' => 'unique_item_investigations', 'is_metric' => 1, 'active' => 1]);
             DB::table($table)->insert(['id' => 101, 'report_id' => 4, 'legend' => 'Unique Item Requests',
-                'qry' => 'sum(IF (yearmon=""@YM@"",unique_item_requests,0))',
+                'qry' => 'sum(IF (yearmon="@YM@",unique_item_requests,0))',
                 'qry_counter' => ' WHEN RF.qry_as="unique_item_requests" THEN unique_item_requests',
                 'qry_as' => 'unique_item_requests', 'is_metric' => 1, 'active' => 1]);
             DB::table($table)->insert(['id' => 102,'report_id' => 4, 'legend' => 'Limit Exceeded',

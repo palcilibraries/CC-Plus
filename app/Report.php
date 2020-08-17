@@ -15,6 +15,7 @@ class Report extends Model
      */
     protected $connection = 'globaldb';
     protected $table = 'reports';
+    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.
@@ -30,18 +31,6 @@ class Report extends Model
     {
         return $this->hasMany('App\ReportField');
     }
-
-    // // Return a collection of fields, incudling inherited fields
-    // // (useful for handling custom or user-specific report layouts)
-    // public function allFields()
-    // {
-    //    // Get a collection of ReportFields (not a relationship)
-    //     if ($this->parent_id == 0) {
-    //         return ReportField::where('report_id', '=', $this->id)->get();
-    //     } else {
-    //         return $this->inheritedFields();
-    //     }
-    // }
 
     public function harvests()
     {

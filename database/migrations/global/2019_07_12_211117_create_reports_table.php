@@ -20,7 +20,6 @@ class CreateReportsTable extends Migration
             $table->unsignedInteger('revision')->default(5);
             $table->unsignedInteger('parent_id')->default(0);
             $table->string('inherited_fields')->nullable();
-            $table->timestamps();
         });
     }
 

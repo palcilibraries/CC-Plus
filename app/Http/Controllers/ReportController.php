@@ -28,8 +28,11 @@ class ReportController extends Controller
 {
     private static $input_filters;
     private $group_by;
+    private $format;
     private $raw_fields;
     private $raw_where;
+    private $subq_fields;
+    private $subq_where;
     private $joins;
     private $global_db;
     private $conso_db;
@@ -46,7 +49,10 @@ class ReportController extends Controller
         self::$input_filters = [];
         $raw_fields = '';
         $raw_where = '';
+        $subq_raw_fields = '';
+        $subq_raw_where = '';
         $group_by = [];
+        $format = 'Compact';
         $joins = ['institution' => "", 'provider' => "", 'platform' => "", 'publisher' => "",
                   'datatype' => "", 'accesstype' => "", 'accessmethod' => "", 'sectiontype' => ""];
     }
@@ -276,7 +282,7 @@ class ReportController extends Controller
         $year_mons = self::createYMarray();
         foreach ($field_data as $fld) {
             $key = (is_null($fld->qry_as)) ? $fld->qry : $fld->qry_as;
-            $field = array('id' => $key, 'text' => $fld->legend, 'active' => $fld->active, 'reload' => $fld->reload);
+            $field = array('id' => $key,'text' => $fld->legend,'active' => $fld->active,'is_metric' => $fld->is_metric);
 
             // Activate any field w/ an filter preset defined
             if (!$fld->active && $fld->reportFilter) {
@@ -328,53 +334,92 @@ class ReportController extends Controller
      */
     public function prepareExport($report, $fields)
     {
+        global $format;
+
         // Get/set global things
         $filters = self::$input_filters;
         $con_key = Session::get('ccp_con_key');
         $con_name = Consortium::where('ccp_key', '=', $con_key)->value('name');
+        $all_filters = ReportFilter::all();
 
         // Setup the output stream for sending info and header records
         $writer = Writer::createFromFileObject(new SplTempFileObject());
 
-        // Build some info to precede headers
-        $rpt_info = array();
-        $rpt_info[] = array("CC-Plus " . $report->legend, " Summary Report Created: " . date("d-M-Y G:i"));
-        $rpt_info[] = array("Consortium: " . $con_name,
-                            "Date Range: " . self::$input_filters['fromYM'] . " to " . self::$input_filters['toYM']);
-
-        // Turn filter settings into an output line and/or as part of the output filename
-        $limits = "";
+        // Setup Report Header rows
+        $multiple_insts = false;
+        $group_name = '';
+        $header_rows = array(["Report_Name",$report->legend]);
+        $header_rows[] = array("Report_ID",$report->name);
+        $header_rows[] = array("Release","5");
+        if (isset(self::$input_filters['institutiongroup_id'])) {
+            if (self::$input_filters['institutiongroup_id'] > 0) {
+                $multiple_insts = true;
+                $group_name = InstitutionGroup::where('id',self::$input_filters['institutiongroup_id'])->value('name');
+                $header_rows[] = array("Institution_Group",$group_name);
+            }
+        }
+        if (!$multiple_insts) {
+            if (isset(self::$input_filters['inst_id'])) {
+                $filt = $all_filters->where('report_column', '=', 'inst_id')->first();
+                if (sizeof(self::$input_filters['inst_id'])>1) {
+                    $multiple_insts = true;
+                    $header_rows[] = array("Institution_Name","Multiple");
+                } else {
+                    $_name = Institution::where('id',self::$input_filters['inst_id'])->value('name');
+                    $header_rows[] = array("Institution_Name",$_name);
+                }
+            } else {
+                $header_rows[] = array("Institution_Name",
+                                       Institution::where('id', auth()->user()->inst_id)->value('name'));
+            }
+        }
+        $header_rows[] = array("Institution_ID","");
+        $_data = "";
+        foreach ($fields as $fld) {
+            if ($fld->is_metric) {
+                $_data .= ($_data=="") ? ucwords($fld->qry_as,"_") : "; " . ucwords($fld->qry_as,"_");
+            }
+        }
+        $header_rows[] = array("Metric_Types",$_data);
+        $yops = "";
+        $_data = "";
         $out_file = "CCPLUS";
-        $all_filters = ReportFilter::all();
         foreach (self::$input_filters as $key => $value) {
             $filt = $all_filters->where('report_column', '=', $key)->first();
             if ($filt) {
-                if ($value <= 0) {  // skip if filter is off
-                    continue;
-                }
-                if ($key == 'institutiongroup_id') {
-                    $out_file .= "_" . preg_replace('/ /', '', $filt->model::where('id', $value)->value('name'));
+                if (!in_array($key,['inst_id','institutiongroup_id','prov_id','plat_id','yop'])) {
+                    if ($value[0] == 0) {
+                        $_data .= ($_data=="") ? "" : "; ";
+                        $_data .= $filt->attrib . ":All";
+                    } else if ($value[0] > 0) {
+                        $_data .= ($_data=="") ? $filt->attrib : "; " . $filt->attrib;
+                        $_data .= ":" . $filt->model::where('id', $value[0])->value('name');
+                    }
+                } else if ($key == "yop") {
+                    if (sizeof($value) == 2) {
+                        $yops = "YOP:" . $value[0] . ' - ' . $value[1];
+                    }
+                // These filter values used to define the filename
+                } else if ($key == 'institutiongroup_id' && $group_name != '') {
+                    $out_file .= "_" . $group_name;
                 } else if ($key == 'inst_id' || $key == 'prov_id' || $key == 'plat_id') {
                     if (sizeof($value) > 1) {
                         $out_file .= "_Multiple_" . $filt->table_name;
                     } else if (sizeof($value) == 1) {
                         $out_file .= "_" . preg_replace('/ /', '', $filt->model::where('id', $value[0])->value('name'));
                     }
-                } else if ($key == "yop") {
-                    if (sizeof($value) == 2) {
-                        $limits .= ($limits == "") ? '' : ', ';
-                        $limits .= "YOP=" . $value[0] . ' to ' . $value[1];
-                    }
-                } else {
-                    $limits .= ($limits == "") ? '' : ', ';
-                    $limits .= rtrim($filt->table_name, "s") . "=";
-                    $limits .= $filt->model::where('id', $value)->value('name');
                 }
             }
         }
-        if ($limits != "") {
-            $rpt_info[] = array("Limited By: " . $limits);
-        }
+        $header_rows[] = array("Report_Filters",$_data);
+        $header_rows[] = array("Report_Attributes",$yops);
+        $header_rows[] = array("Exceptions","");
+        $_data  = "Begin_Date=" . self::$input_filters['fromYM'] . "-01; ";
+        $_data .= "End_Date=" . date("Y-m-t", strtotime(self::$input_filters['toYM']));
+        $header_rows[] = array("Reporting_Period",$_data);
+        $header_rows[] = array("Created",date('c'));
+        $header_rows[] = array("Created_By","CC Plus");
+        $header_rows[] = array();
         $out_file .= "_" . $report->name . "_";
         $out_file .= self::$input_filters['fromYM'] . "_" . self::$input_filters['toYM'] . ".csv";
 
@@ -393,37 +438,47 @@ class ReportController extends Controller
         $num_months = sizeof($year_mons);
         $has_metrics = false;
 
-        // Loop through the fields and add to the appropriate (left/right) header array
-        foreach ($fields as $key => $data) {
-            // "basic" field
-            if (!preg_match('/^(searches_|total_|unique_|limit_|no_lic)/', $key)) {
-                $left_head[] = $data['legend'];
-
-            // "metric" field
-            } else {
+        // Build left side the same, regardless of $format
+        foreach ($fields as $field) {
+            if ($field['is_metric']) {
                 $has_metrics = true;
-                if ($num_months > 1) {
-                    foreach ($year_mons as $ym) {
-                        $right_head[] = $data['legend'] . ' ' . $ym;
-                    }
-                } else {
-                    $right_head[] = $data['legend'];
-                }
+            } else {
+                $left_head[] = $field['legend'];
             }
         }
 
-        // Tack on metric totals as right-most columns for multi-month reporting
-        if ($num_months > 1 && $has_metrics) {
-            foreach ($fields as $key => $data) {
-                if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/', $key)) {
-                    $right_head[] = 'Reporting Period Total' . ' ' . $data['legend'];
+        // If there are metrics, build right side. This side is $format-dependent
+        if ($has_metrics) {
+            // Metric-names for COUNTER format expressed as row-values (of Metric_Type), with counts in columns
+            // labelled as YYYY_mm that come after the RP_Total column.
+            if ($format == 'COUNTER') {
+                $right_head[] = "Metric_Type";
+                $right_head[] = "Reporting_Period_Total";
+                foreach ($year_mons as $ym) {
+                    $right_head[] = $ym;
+                }
+
+            // Counts for Metrics in 'Compact' format expressed in columns labelled <metric>_YYYY_mm,
+            // Plus a Reporting Period Total for each metric. Single-month reports don't get an RP_total column
+            } else {
+                foreach ($fields as $field) {
+                    if (!$field['is_metric']) {
+                        if ($num_months > 1) {
+                            foreach ($year_mons as $ym) {
+                                $right_head[] = $field['legend'] . ' ' . $ym;
+                            }
+                            $right_head[] = 'Reporting Period Total' . ' ' . $data['legend'];
+                        } else {
+                            $right_head[] = $field['legend'];
+                        }
+                    }
                 }
             }
         }
 
         // Send info and header records to the stream
-        foreach ($rpt_info as $arr) {
-            $writer->insertOne($arr);
+        foreach ($header_rows as $hdr) {
+            $writer->insertOne($hdr);
         }
         $writer->insertOne(array_merge($left_head, $right_head));
 
@@ -547,7 +602,7 @@ class ReportController extends Controller
         foreach ($models as $key => $model) {
             $result = $model::when($limit_to_insts, function ($query, $limit_to_insts) {
                                 return $query->whereIn('inst_id', $limit_to_insts);
-            })
+                            })
                             ->when($limit_to_provs, function ($query, $limit_to_provs) {
                                 return $query->whereIn('prov_id', $limit_to_provs);
                             })
@@ -557,6 +612,12 @@ class ReportController extends Controller
                             ->selectRaw($raw_query)
                             ->get()
                             ->toArray();
+
+            // if no data, set dates to one month ago (to keep them from being ...1969)
+            if ($result[0]['count'] == 0) {
+                $result[0]['YM_min'] = date("Y-m", mktime(0, 0, 0, date("m")-1, date("d"), date("Y")));
+                $result[0]['YM_max'] = $result[0]['YM_min'];
+            }
             $output[$key] = $result[0];
         }
         return $output;
@@ -570,7 +631,7 @@ class ReportController extends Controller
      */
     public function getReportData(Request $request)
     {
-         global $joins, $raw_fields, $group_by, $global_db, $conso_db, $raw_where;
+         global $joins, $raw_fields, $raw_where, $subq_fields, $subq_where, $group_by, $global_db, $conso_db, $format;
 
          // Validate and deal w/ inputs
          $this->validate($request, ['report_id' => 'required', 'fields' => 'required', 'filters' => 'required']);
@@ -579,6 +640,7 @@ class ReportController extends Controller
          $_filters = json_decode($request->filters, true);
          $runtype = (isset($request->runtype)) ? $request->runtype : 'preview';
          $preview = (isset($request->preview) && $runtype == 'preview') ? $request->preview : 0;
+         $format = (isset($request->format)) ? $request->format : 'COUNTER';
          $ignore_zeros = json_decode($request->zeros, true);
 
          // Get/set global things
@@ -593,9 +655,11 @@ class ReportController extends Controller
         }
 
         if ($report->parent_id == 0) {
+            $master_id = $report_id;
             $master_name = $report->name;
             $report_fields = $report->reportFields;
         } else {
+            $master_id = $report->parent_id;
             $master_name = $report->parent->name;
             $report_fields = $report->parent->reportFields;
         }
@@ -624,13 +688,13 @@ class ReportController extends Controller
                 }
             }
 
-            // Call prepareExport tp setup the output stream with headers
+            // Call prepareExport to setup the output stream with headers
             $export_settings = self::prepareExport($report, array_merge($basic_fields, $metric_fields));
             $csv_file = $export_settings['filename'];
             $writer = $export_settings['writer'];
         }
 
-        // Setup joins, fields to select, raw_where, and group_by based on active columns
+        // Setup joins, fields to select, raw_where, and group_by based on active columns and formattting
         self::setupQueryFields($report_fields, $selected_fields);
 
         // Setup arrays for institution, provider, and platform whereIn clauses
@@ -649,71 +713,144 @@ class ReportController extends Controller
         } elseif ($master_name == 'DR') {
             $sortBy = ($request->sortBy != '') ? $request->sortBy : 'Dbase';
         } elseif ($master_name == 'PR') {
-            $sortBy = ($request->sortBy != '') ? $request->sortBy : 'Platform';
+            $sortBy = ($request->sortBy != '') ? $request->sortBy : 'platform';
         }
 
-        // Run the query
-        $records = DB::table($report_table)
-                  ->when($master_name == "TR", function ($query, $join) use ($master_name, $global_db) {
-                      return $query->join($global_db . '.titles as TI', $master_name . '.title_id', 'TI.id');
-                  })
-                  ->when($master_name == "DR", function ($query, $join) use ($master_name, $global_db) {
-                      return $query->join($global_db . '.databases as DB', $master_name . '.db_id', 'DB.id');
-                  })
-                  ->when($master_name == "IR", function ($query, $join) use ($master_name, $global_db) {
-                      return $query->join($global_db . '.items as Item', $master_name . '.item_id', 'Item.id')
-                                   ->join($global_db . '.titles as TI', 'Item.title_id', 'TI.id');
-                  })
-                  ->when($joins['institution'], function ($query, $join) use ($master_name) {
-                      return $query->join($join, $master_name . '.inst_id', 'INST.id');
-                  })
-                  ->when($joins['provider'], function ($query, $join) use ($master_name) {
-                      return $query->join($join, $master_name . '.prov_id', 'PROV.id');
-                  })
-                  ->when($joins['platform'], function ($query, $join) use ($master_name) {
-                      return $query->join($join, $master_name . '.plat_id', 'PLAT.id');
-                  })
-                  ->when($joins['publisher'], function ($query, $join) use ($master_name) {
-                      return $query->join($join, $master_name . '.publisher_id', 'PUBL.id');
-                  })
-                  ->when($joins['datatype'], function ($query, $join) use ($master_name) {
-                      return $query->join($join, $master_name . '.datatype_id', 'DTYP.id');
-                  })
-                  ->when($joins['accesstype'], function ($query, $join) use ($master_name) {
-                      return $query->join($join, $master_name . '.accesstype_id', 'ATYP.id');
-                  })
-                  ->when($joins['accessmethod'], function ($query, $join) use ($master_name) {
-                      return $query->join($join, $master_name . '.accessmethod_id', 'AMTH.id');
-                  })
-                  ->when($joins['sectiontype'], function ($query, $join) use ($master_name) {
-                      return $query->join($join, $master_name . '.sectiontype_id', 'STYP.id');
-                  })
-                  ->selectRaw($raw_fields)
-                  ->when($limit_to_insts, function ($query, $limit_to_insts) use ($master_name) {
-                      return $query->whereIn($master_name . '.inst_id', $limit_to_insts);
-                  })
-                  ->when($limit_to_provs, function ($query, $limit_to_provs) use ($master_name) {
-                      return $query->whereIn($master_name . '.prov_id', $limit_to_provs);
-                  })
-                  ->when($limit_to_plats, function ($query, $limit_to_plats) use ($master_name) {
-                      return $query->whereIn($master_name . '.plat_id', $limit_to_plats);
-                  })
-                  ->when(self::$input_filters['yop'], function ($query) {
-                      return $query->whereBetween('yop', self::$input_filters['yop']);
-                  })
-                  ->when($ignore_zeros, function ($query) use ($raw_where) {
-                      return $query->whereRaw($raw_where);
-                  })
-                  ->where($conditions)
-                  ->groupBy($group_by)
-                  ->orderBy($sortBy, $sortDir)
-                  ->when($preview, function ($query, $preview) {
+        // Run the query for "COUNTER" formatted output
+        if ($format == "COUNTER") {
+            $conditions[] = array('RF.is_metric',1);
+            $inner_group = $group_by;
+            $inner_group[] = 'yearmon';
+            $records = DB::table(function ($query)
+                        use ($report_table, $joins, $subq_fields, $conditions, $inner_group, $limit_to_insts,
+                             $limit_to_provs, $limit_to_plats, $master_name, $master_id, $global_db) {
+                      $query->from($report_table)
+                      ->when($master_name == "TR", function ($query, $join) use ($master_name, $global_db) {
+                          return $query->join($global_db . '.titles as TI', $master_name . '.title_id', 'TI.id');
+                      })
+                      ->when($master_name == "DR", function ($query, $join) use ($master_name, $global_db) {
+                          return $query->join($global_db . '.databases as DB', $master_name . '.db_id', 'DB.id');
+                      })
+                      ->when($master_name == "IR", function ($query, $join) use ($master_name, $global_db) {
+                          return $query->join($global_db . '.items as Item', $master_name . '.item_id', 'Item.id')
+                                       ->join($global_db . '.titles as TI', 'Item.title_id', 'TI.id');
+                      })
+                      ->when($joins['institution'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.inst_id', 'INST.id');
+                      })
+                      ->when($joins['provider'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.prov_id', 'PROV.id');
+                      })
+                      ->when($joins['platform'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.plat_id', 'PLAT.id');
+                      })
+                      ->when($joins['publisher'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.publisher_id', 'PUBL.id');
+                      })
+                      ->when($joins['datatype'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.datatype_id', 'DTYP.id');
+                      })
+                      ->when($joins['accesstype'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.accesstype_id', 'ATYP.id');
+                      })
+                      ->when($joins['accessmethod'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.accessmethod_id', 'AMTH.id');
+                      })
+                      ->when($joins['sectiontype'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.sectiontype_id', 'STYP.id');
+                      })
+                      ->join($global_db . '.reportfields as RF', 'report_id', '=', $master_id, 'inner', true)
+                      ->selectRaw($subq_fields)
+                      ->when($limit_to_insts, function ($query, $limit_to_insts) use ($master_name) {
+                          return $query->whereIn($master_name . '.inst_id', $limit_to_insts);
+                      })
+                      ->when($limit_to_provs, function ($query, $limit_to_provs) use ($master_name) {
+                          return $query->whereIn($master_name . '.prov_id', $limit_to_provs);
+                      })
+                      ->when($limit_to_plats, function ($query, $limit_to_plats) use ($master_name) {
+                          return $query->whereIn($master_name . '.plat_id', $limit_to_plats);
+                      })
+                      ->when(self::$input_filters['yop'], function ($query) {
+                          return $query->whereBetween('yop', self::$input_filters['yop']);
+                      })
+                      ->where($conditions)
+                      ->groupBy($inner_group);
+                }, 'stats')
+                ->selectRaw($raw_fields)
+                ->groupBy($group_by)
+                ->when($ignore_zeros, function ($query) {
+                    return $query->havingRaw('Reporting_Period_Total>0');
+                })
+                ->orderBy($sortBy, $sortDir)
+                ->orderBy('Metric_Type', 'ASC')
+                ->when($preview, function ($query, $preview) {
                       return $query->limit($preview)->get();
-                  }, function ($query) {
-                      // return $query->get()->paginate($rows);
-                      return $query->get();
-                  });
-
+                }, function ($query) {
+                    return $query->get();
+                });
+        // Run the query for the "Compact" format
+        } else {
+            $records = DB::table($report_table)
+                      ->when($master_name == "TR", function ($query, $join) use ($master_name, $global_db) {
+                          return $query->join($global_db . '.titles as TI', $master_name . '.title_id', 'TI.id');
+                      })
+                      ->when($master_name == "DR", function ($query, $join) use ($master_name, $global_db) {
+                          return $query->join($global_db . '.databases as DB', $master_name . '.db_id', 'DB.id');
+                      })
+                      ->when($master_name == "IR", function ($query, $join) use ($master_name, $global_db) {
+                          return $query->join($global_db . '.items as Item', $master_name . '.item_id', 'Item.id')
+                                       ->join($global_db . '.titles as TI', 'Item.title_id', 'TI.id');
+                      })
+                      ->when($joins['institution'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.inst_id', 'INST.id');
+                      })
+                      ->when($joins['provider'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.prov_id', 'PROV.id');
+                      })
+                      ->when($joins['platform'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.plat_id', 'PLAT.id');
+                      })
+                      ->when($joins['publisher'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.publisher_id', 'PUBL.id');
+                      })
+                      ->when($joins['datatype'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.datatype_id', 'DTYP.id');
+                      })
+                      ->when($joins['accesstype'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.accesstype_id', 'ATYP.id');
+                      })
+                      ->when($joins['accessmethod'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.accessmethod_id', 'AMTH.id');
+                      })
+                      ->when($joins['sectiontype'], function ($query, $join) use ($master_name) {
+                          return $query->join($join, $master_name . '.sectiontype_id', 'STYP.id');
+                      })
+                      ->selectRaw($raw_fields)
+                      ->when($limit_to_insts, function ($query, $limit_to_insts) use ($master_name) {
+                          return $query->whereIn($master_name . '.inst_id', $limit_to_insts);
+                      })
+                      ->when($limit_to_provs, function ($query, $limit_to_provs) use ($master_name) {
+                          return $query->whereIn($master_name . '.prov_id', $limit_to_provs);
+                      })
+                      ->when($limit_to_plats, function ($query, $limit_to_plats) use ($master_name) {
+                          return $query->whereIn($master_name . '.plat_id', $limit_to_plats);
+                      })
+                      ->when(self::$input_filters['yop'], function ($query) {
+                          return $query->whereBetween('yop', self::$input_filters['yop']);
+                      })
+                      ->when($ignore_zeros && $raw_where, function ($query) use ($raw_where) {
+                          return $query->whereRaw($raw_where);
+                      })
+                      ->where($conditions)
+                      ->groupBy($group_by)
+                      ->orderBy($sortBy, $sortDir)
+                      ->when($preview, function ($query, $preview) {
+                          return $query->limit($preview)->get();
+                      }, function ($query) {
+                          // return $query->get()->paginate($rows);
+                          return $query->get();
+                      });
+        }
         // If not exporting, return the records as JSON
         if ($runtype != 'export') {
             return response()->json(['usage' => $records], 200);
@@ -752,6 +889,7 @@ class ReportController extends Controller
         if (!isset($input['filters']) || !isset($input['fields'])) {
             return response()->json(['result' => false, 'msg' => 'One or more inputs are missing!']);
         }
+        $_format = (isset($input['format'])) ? $input['format'] : 'Compact';
 
         // Put the input filters into a temporary array and get Report model
         $_filters = $input['filters'];
@@ -770,7 +908,7 @@ class ReportController extends Controller
             $report_fields = $report->parent->reportFields;
         }
 
-        // Assign global filter values with only the filters apply to this report
+        // Assign global filter values with the filters that apply to this report
         $all_filters = ReportFilter::all();
         $active_ids = $report_fields->where('report_filter_id', '<>', null)->pluck('report_filter_id')->toArray();
         $active_filters =  $all_filters->whereIn('id', $active_ids)->pluck('report_column')->toArray();
@@ -793,55 +931,81 @@ class ReportController extends Controller
         $columns = array();
         $input_fields = $input['fields'];
         $year_mons = self::createYMarray();
-        if (sizeof($year_mons) > 1) {
-            $metric_totals = array();
-        }
-        foreach ($input_fields as $fld) {
-            $col = array('active' => $fld['active'], 'field' => $fld['id']);
 
-            // If this is a summing-metric field, add a column for each month
-            if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/', $fld['id'])) {
+        // Build columns for COUNTER format
+        if ($_format == 'COUNTER') {
+            $metric_count = 0;
+            foreach ($input_fields as $fld) {
+                if ($fld['is_metric']) {
+                    $metric_count++;
+                } else {
+                    $columns[] = array('active' => $fld['active'], 'field' => $fld['id'], 'value' => $fld['id'],
+                                       'text' => $fld['text']);
+                }
+            }
+            $columns[] = array('active' => 1, 'field' => 'Metric_Type', 'value' => 'Metric_Type',
+                               'text' => 'Metric_Type');
+            if ($metric_count>0) {
+                $columns[] = array('active' => 1, 'field' => 'Reporting_Period_Total',
+                                   'value' => 'Reporting_Period_Total', 'text' => 'Reporting_Period_Total');
                 foreach ($year_mons as $ym) {
-                    $col['value'] = $fld['id'] . '_' . self::prettydate($ym);
-                    $col['text'] = $fld['text'] . ' - ' . self::prettydate($ym);
+                    $columns[] = array('active' => 1, 'field' => $ym, 'value' => $ym, 'text' => $ym);
+                }
+            }
+
+        // Build columns for Compact format
+        } else {
+            if (sizeof($year_mons) > 1) {
+                $metrics = array();
+            }
+            foreach ($input_fields as $fld) {
+                $col = array('active' => $fld['active'], 'field' => $fld['id']);
+
+                // If this is a summing-metric field, add a column for each month
+                if (preg_match('/^(searches_|total_|unique_|limit_|no_lic)/', $fld['id'])) {
+                    foreach ($year_mons as $ym) {
+                        $col['value'] = $fld['id'] . '_' . self::prettydate($ym);
+                        $col['text'] = $fld['text'] . ' - ' . self::prettydate($ym);
+                        $columns[] = $col;
+                    }
+
+                    // If we're spanning multiple months, put the totals column into a separate array
+                    if (sizeof($year_mons) > 1) {
+                        $col['value'] = "RP_" . $fld['id'];
+                        $col['text'] = $fld['text'] . " - " . "Reporting Period Total";
+                        $metrics[] = $col;
+                    }
+
+                // Otherwise add a single column to the map
+                } else {
+                    $col['value'] = $fld['id'];
+                    $col['text'] = $fld['text'];
                     $columns[] = $col;
                 }
+            }
 
-                // If we're spanning multiple months, put the totals column into a separate array
-                if (sizeof($year_mons) > 1) {
-                    $col['value'] = "RP_" . $fld['id'];
-                    $col['text'] = $fld['text'] . " - " . "Reporting Period Total";
-                    $metric_totals[] = $col;
-                }
-
-            // Otherwise add a single column to the map
-            } else {
-                $col['value'] = $fld['id'];
-                $col['text'] = $fld['text'];
-                $columns[] = $col;
+            // Tack on totals columns
+            if (sizeof($year_mons) > 1) {
+                $columns = array_merge($columns, $metrics);
             }
         }
-
-        // Tack on totals columns
-        if (sizeof($year_mons) > 1) {
-            $columns = array_merge($columns, $metric_totals);
-        }
-
         return response()->json(['result' => true, 'columns' => $columns]);
     }
 
     /**
-     * Set joins, the raw-select string, and group_by array based on fields and Columns
+     * Set joins, the raw-select string, and group_by array based on fields, columns, and formatting
      *
      * @param  ReportField $all_fields
      * @param  Array $selected_fields
+     * @param  String $format
      * @return
      */
     private function setupQueryFields($all_fields, $selected_fields)
     {
-        global $joins, $raw_fields, $group_by, $global_db, $conso_db, $raw_where;
+        global $joins, $raw_fields, $group_by, $subq_fields, $subq_where, $global_db, $conso_db, $raw_where, $format;
         $year_mons = self::createYMarray();
         $total_fields = "";
+        $subq_case = "";
 
         // Loop through all the fields
         foreach ($selected_fields as $key => $field) {
@@ -862,32 +1026,52 @@ class ReportController extends Controller
                     $joins[$key] = $_join;
                 }
 
-                // Add column to the raw-list and the raw_where string (for ignoring zero-records)
-                // If the field is a metric that sums-by-yearmon, assign metric-by-year as query fields
-                if ($data->is_metric) {
-                    $raw_where .= ($raw_where != "") ? " or " : "(";
-                    $raw_where .= $data->qry_as . ">0";
-                    foreach ($year_mons as $ym) {
-                        $raw_fields .= preg_replace('/@YM@/', $ym, $data->qry) . ' as ';
-                        $raw_fields .= $data->qry_as . '_' . self::prettydate($ym) . ',';
-                    }
-                    // (if we're spanning multiple months,extend the reporting-period-total string)
-                    if (sizeof($year_mons) > 1) {
-                        $total_fields .= "sum(" . $data->qry_as . ") as RP_" . $data->qry_as . ',';
-                    }
-                } else {
-                    if ($data->qry != $data->qry_as) {
-                        $raw_fields .= $data->qry . ' as ' . $data->qry_as . ',';
+                // Output format drives how query fields and clauses are built
+                // For "COUNTER", metrics and joins are embedded in a subquery
+                if ($format == 'COUNTER') {
+                    if ($data->is_metric) {
+                        $subq_case .= $data->qry_counter . ' ';
                     } else {
                         $raw_fields .= $data->qry_as . ',';
+                        if ($data->qry != $data->qry_as) {
+                            $subq_fields .= $data->qry . ' as ' . $data->qry_as . ',';
+                        } else {
+                            $subq_fields .= $data->qry_as . ',';
+                        }
                     }
-
-                    // update filter based on column setting
-                    if (isset($field['limit'])) {
-                        $input_filters[$key] = $field['limit'];
+                    // Group the field if reportField says to
+                    if ($data->group_it) {
+                        $group_by[] = $data->qry_as;
                     }
+                } else {
+                    if ($data->is_metric) {
+                        // For "Compact", Metric fields that sum-by-yearmon become output columns.
+                        // Assign metric-by-year as query fields
+                        foreach ($year_mons as $ym) {
+                            $raw_fields .= preg_replace('/@YM@/', $ym, $data->qry) . ' as ';
+                            $raw_fields .= $data->qry_as . '_' . self::prettydate($ym) . ',';
+                        }
+                        // (if we're spanning multiple months,extend the reporting-period-total string)
+                        if (sizeof($year_mons) > 1) {
+                            $total_fields .= "sum(" . $data->qry_as . ") as RP_" . $data->qry_as . ',';
+                        }
+                        // Build raw_where string (for ignoring zero-records)
+                        // Metric fields that sum-by-yearmon become output columns. Assign metric-by-year as query fields
+                        $raw_where .= ($raw_where != "") ? " or " : "(";
+                        $raw_where .= $data->qry_as . ">0";
+                    } else {
+                        if ($data->qry != $data->qry_as) {
+                            $raw_fields .= $data->qry . ' as ' . $data->qry_as . ',';
+                        } else {
+                            $raw_fields .= $data->qry_as . ',';
+                        }
 
-                    // Add column to group-by
+                        // update filter based on column setting
+                        if (isset($field['limit'])) {
+                            $input_filters[$key] = $field['limit'];
+                        }
+                    }
+                    // Group the field if reportField says to
                     if ($data->group_it) {
                         $group_by[] = $data->qry;
                     }
@@ -895,9 +1079,20 @@ class ReportController extends Controller
             }
         }
 
-        $raw_where .= ($raw_where == "") ? "" : ")";
-        $raw_fields = $raw_fields . $total_fields;
-        $raw_fields = rtrim($raw_fields, ',');
+        if ($format == 'COUNTER') {
+            $raw_fields .= "Metric_Type, sum(data) as Reporting_Period_Total";
+            $subq_fields .= "yearmon, RF.qry_as as Metric_Type, sum(CASE" . $subq_case . " ELSE 0 END) as data";
+
+            // For "COUNTER", Metric names become column-values and sums are displayed by yearmon.
+            foreach ($year_mons as $ym) {
+                $raw_fields .= ",sum(case yearmon when '" . $ym . "' then data else 0 end) as '" . $ym . "'";
+            }
+            $group_by[] = "Metric_Type";
+        } else {
+            $raw_where .= ($raw_where == "") ? "" : ")";
+            $raw_fields = $raw_fields . $total_fields;
+            $raw_fields = rtrim($raw_fields, ',');
+        }
         return;
     }
 
@@ -961,15 +1156,14 @@ class ReportController extends Controller
             if (!auth()->user()->hasAnyRole(['Admin','Viewer'])) {
                 array_push($return_values, auth()->user()->inst_id);
                 return $return_values;
-            }
 
             // If both inst_id and group_id are set, return all inst_ids from the group
-            if (isset(self::$input_filters['institutiongroup_id'])) {
+            } elseif (isset(self::$input_filters['institutiongroup_id'])) {
                 if (self::$input_filters['institutiongroup_id'] > 0) {
                     $group = InstitutionGroup::find(self::$input_filters['institutiongroup_id']);
                     $return_values = $group->institutions->pluck('id')->toArray();
-                    return $return_values;
                 }
+                return $return_values;
             }
         }
         if (isset(self::$input_filters[$column])) {

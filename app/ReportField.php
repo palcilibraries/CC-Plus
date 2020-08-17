@@ -11,6 +11,7 @@ class ReportField extends Model
    */
     protected $connection = 'globaldb';
     protected $table = 'reportfields';
+    public $timestamps = false;
 
   /**
    * The attributes that are mass assignable.

@@ -13,6 +13,15 @@
         <v-switch v-model="zeroRecs" label="Exclude Zero-Use Records?"></v-switch>
       </div>
     </div>
+    <div>
+      <v-radio-group v-model="format" @change="changeFormat" row>
+        <template v-slot:label>
+          <strong>Report formatting</strong>
+        </template>
+        <v-radio label="CC+ Compact" value='Compact'></v-radio>
+        <v-radio label="COUNTER-R5" value='COUNTER'></v-radio>
+      </v-radio-group>
+    </div>
     <v-expansion-panels multiple focusable :value="panels">
       <v-expansion-panel>
         <v-expansion-panel-header>Show/Hide Columns</v-expansion-panel-header>
@@ -241,6 +250,7 @@
         success: '',
         failure: '',
         runtype: '',
+        format: 'Compact',
         form: new window.Form({
             title: '',
             save_id: this.input_save_id,
@@ -416,6 +426,7 @@
           })
           params['fields'] = JSON.stringify(_flds);
           params['zeros'] = this.zeroRecs;
+          params['format'] = this.format;
 
           if (this.runtype != 'export') {   // currently only other value is 'preview'
               return new Promise((resolve, reject) => {
@@ -435,11 +446,15 @@
               a.click();
           }
         },
+        changeFormat () {
+          this.updateColumns();
+        },
         updateColumns () {
           var self = this;
           axios.post('/update-report-columns', {
               filters: this.all_filters,
-              fields: this.mutable_fields
+              fields: this.mutable_fields,
+              format: this.format
           })
           .then( function(response) {
               if (response.data.result) {

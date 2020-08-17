@@ -300,7 +300,7 @@ class ReportController extends Controller
             $fields[] = $field;
 
             // If this is a summing-metric field, add a column for each month
-            if (preg_match('/^sum/', $fld->qry)) {
+            if ($fld->is_metric) {
                 foreach ($year_mons as $ym) {
                     $columns[] = array('text' => $fld->legend, 'field' => $key, 'active' => $fld->active,
                                        'value' => $fld->qry_as . '_' . self::prettydate($ym));
@@ -864,7 +864,7 @@ class ReportController extends Controller
 
                 // Add column to the raw-list and the raw_where string (for ignoring zero-records)
                 // If the field is a metric that sums-by-yearmon, assign metric-by-year as query fields
-                if (preg_match('/^sum/', $data->qry)) {
+                if ($data->is_metric) {
                     $raw_where .= ($raw_where != "") ? " or " : "(";
                     $raw_where .= $data->qry_as . ">0";
                     foreach ($year_mons as $ym) {
@@ -961,14 +961,15 @@ class ReportController extends Controller
             if (!auth()->user()->hasAnyRole(['Admin','Viewer'])) {
                 array_push($return_values, auth()->user()->inst_id);
                 return $return_values;
+            }
 
             // If both inst_id and group_id are set, return all inst_ids from the group
-            } elseif (isset(self::$input_filters['institutiongroup_id'])) {
+            if (isset(self::$input_filters['institutiongroup_id'])) {
                 if (self::$input_filters['institutiongroup_id'] > 0) {
                     $group = InstitutionGroup::find(self::$input_filters['institutiongroup_id']);
                     $return_values = $group->institutions->pluck('id')->toArray();
+                    return $return_values;
                 }
-                return $return_values;
             }
         }
         if (isset(self::$input_filters[$column])) {

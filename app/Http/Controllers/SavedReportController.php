@@ -101,7 +101,7 @@ class SavedReportController extends Controller
         }
 
         // Summarize harvest data values and counts
-        $limit_to_insts = ($user_is_admin || $user_is_viewer) ? array() : $user_inst;
+        $limit_to_insts = ($user_is_admin || $user_is_viewer) ? array() : array($user_inst);
         $total_insts = Institution::where('is_active', true)->count() - 1;   // inst_id=1 doesn't count...
         $inst_count = ($user_is_admin || $user_is_viewer) ? $total_insts : 1;
         if ($user_is_admin) {
@@ -163,7 +163,7 @@ class SavedReportController extends Controller
                 $record['detail_url'] = "/alertsettings/" . $alert->alertsettings_id;
                 $record['detail_txt'] = $alert->alertSetting->reportField->legend . " is out of bounds!";
             } else {
-                $record['detail_url'] = "/harvestlogs/" . $alert->harvest_id;
+                $record['detail_url'] = "/harvestlogs/" . $alert->harvest_id . '/edit';
                 $record['detail_txt'] = "Harvest failed";
             }
             $record['report_name'] = $alert->reportName();

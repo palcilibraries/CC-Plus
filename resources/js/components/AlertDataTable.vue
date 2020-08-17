@@ -60,8 +60,10 @@
               <td v-else>Inactive</td>
               <td>{{ alert.severity.name }}</td>
               <td>{{ alert.text }}</td>
-              <td><v-btn small color="primary" @click="editSys(alert.id)">edit</v-btn></td>
-              <td><v-btn small class='btn btn-danger' type="button" @click="deleteSys(alert.id)">delete</v-btn></td>
+              <td v-if="is_admin"><v-btn small color="primary" @click="editSys(alert.id)">edit</v-btn></td>
+              <td v-if="is_admin">
+                <v-btn small class='btn btn-danger' type="button" @click="deleteSys(alert.id)">delete</v-btn>
+              </td>
             </tr>
           </tbody>
         </template>

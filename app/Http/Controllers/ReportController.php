@@ -361,7 +361,9 @@ class ReportController extends Controller
         if (!$multiple_insts) {
             if (isset(self::$input_filters['inst_id'])) {
                 $filt = $all_filters->where('report_column', '=', 'inst_id')->first();
-                if (sizeof(self::$input_filters['inst_id'])>1) {
+                if (sizeof(self::$input_filters['inst_id']) == 0) {
+                    $header_rows[] = array("Institution_Name","All");
+                } else if (sizeof(self::$input_filters['inst_id'])>1) {
                     $multiple_insts = true;
                     $header_rows[] = array("Institution_Name","Multiple");
                 } else {

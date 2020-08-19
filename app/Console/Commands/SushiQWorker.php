@@ -114,7 +114,7 @@ class SushiQWorker extends Command
         $this->all_consortia = Consortium::where('is_active', true)->get();
 
        // Set error-severity so we only have to query for it once
-        $severities_error = Severity::::where('name', '=', 'Error')->value('id');
+        $severities_error = Severity::where('name', '=', 'Error')->value('id');
 
        // Keep looping as long as there are jobs we can do
        // ($job_ids is updated @ bottom of loop)

@@ -113,8 +113,8 @@ class SushiQWorker extends Command
        // Save all consortia records for detecting active jobs, strings for job queries
         $this->all_consortia = Consortium::where('is_active', true)->get();
 
-       // Grab all the error-severities so we only have to query for it once
-        $severities = Severity::get(['id','name']);
+       // Set error-severity so we only have to query for it once
+        $severities_error = Severity::where('name', '=', 'Error')->value('id');
 
        // Keep looping as long as there are jobs we can do
        // ($job_ids is updated @ bottom of loop)
@@ -267,10 +267,10 @@ class SushiQWorker extends Command
            // If request failed, update the Logs
             } else {    // Fail
                 $error_msg = '';
-                // Turn severity string into an ID
-                 $severity_id = $severities::where('name', 'LIKE', $sushi->severity . '%')->value('id');
+               // Turn severity string into an ID
+                $severity_id = Severity::where('name', 'LIKE', $sushi->severity . '%')->value('id');
                 if ($severity_id === null) {  // if not found, set to 'Error' and prepend it to the message
-                    $severity_id = $severities::where('name', '=', 'Error')->value('id');
+                    $severity_id = $severities_error;
                     $error_msg .= $sushi->severity . " : ";
                 }
 

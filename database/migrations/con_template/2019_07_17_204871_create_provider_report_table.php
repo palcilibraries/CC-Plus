@@ -20,7 +20,7 @@ class CreateProviderReportTable extends Migration
             $table->integer('provider_id')->unsigned();
             $table->integer('report_id')->unsigned();
             $table->timestamps();
-            $table->foreign('provider_id')->references('id')->on('providers');
+            $table->foreign('provider_id')->references('id')->on('providers')->onDelete('cascade');
             $table->foreign('report_id')->references('id')->on($global_db . '.reports');
         });
     }

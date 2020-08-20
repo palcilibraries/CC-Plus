@@ -547,6 +547,14 @@ class HarvestLogController extends Controller
         if (!$record->canManage()) {
             return response()->json(['result' => false, 'msg' => 'Not authorized!']);
         }
+
+        // Delete any related jobs from the global queue
+        $jobs = SushiQueueJob::where('harvest_id',$id)->get();
+        foreach ($jobs as $job) {
+            $job->delete();
+        }
+
+        // Delete the harvestlog record itself
         $record->delete();
         return response()->json(['result' => true, 'msg' => 'Log record deleted successfully']);
     }

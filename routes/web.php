@@ -49,6 +49,7 @@ Route::post('/save-report-config', 'SavedReportController@saveReportConfig')->mi
 //
 Route::post('/update-alert-status', 'AlertController@updateStatus')->middleware(['auth','role:Admin,Manager']);
 Route::post('/update-system-alert', 'AlertController@updateSysAlert')->middleware(['auth','role:Admin,Manager']);
+Route::delete('/alerts/{id}', 'AlertController@destroy')->middleware(['auth','role:Admin']);
 Route::post('/alert-dash-refresh', 'AlertController@dashRefresh')->middleware('auth');
 Route::post('/alertsettings-fields-refresh', 'AlertSettingController@fieldsRefresh')
      ->middleware(['auth','role:Admin,Manager']);

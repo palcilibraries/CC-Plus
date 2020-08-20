@@ -145,4 +145,20 @@ class AlertController extends Controller
                                         'manager' => auth()->user()->hasRole('Manager') );
         return response()->json($main);
     }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+     public function destroy($id)
+     {
+         abort_unless(auth()->user()->hasRole("Admin"), 403);
+         $record = Alert::findOrFail($id);
+
+         // Delete the harvestlog record itself
+         $record->delete();
+         return response()->json(['result' => true, 'msg' => 'Alert successfully deleted']);
+     }
 }

@@ -58,15 +58,13 @@
               </v-col>
             </div>
             <div v-if='!filterInst && filter_data["institutiongroup"].active' cols="3" sm="2">
-              <v-col v-if='filter_data["institutiongroup"].value == 0' class="d-flex pa-2 align-center">
+              <v-col v-if='filter_data["institutiongroup"].value >= 0' class="d-flex pa-2 align-center">
+                <img v-if='filter_data["institutiongroup"].value > 0' src="/images/red-x-16.png"
+                     alt="clear filter" @click="clearFilter('institutiongroup')"/>&nbsp;
                 <v-select :items='filter_options.institutiongroup' v-model='filter_data.institutiongroup.value'
                           @change="setFilter('institutiongroup')" label="Institution Group"
                           item-text="name" item-value="id"
                 ></v-select>
-              </v-col>
-              <v-col v-if='filter_data["institutiongroup"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-                <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('institutiongroup')"/>&nbsp;
-                Inst-Group: {{ filter_data["institutiongroup"].name }}
               </v-col>
             </div>
             <v-col v-if='filter_data["datatype"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">

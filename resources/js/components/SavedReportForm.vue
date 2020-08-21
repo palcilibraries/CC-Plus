@@ -181,7 +181,7 @@
                       axios.delete('/savedreports/'+id)
                            .then( (response) => {
                                if (response.data.result) {
-                                   window.location.assign("/savedreports");
+                                   window.location.reload();
                                } else {
                                    self.success = '';
                                    self.failure = response.data.msg;

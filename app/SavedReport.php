@@ -66,7 +66,7 @@ class SavedReport extends Model
                     }
                     $return_filters[$_f[0]] = $arr;
                 } else {
-                    $return_filters[$_f[0]] = $_f[1];
+                    $return_filters[$_f[0]] = intval($_f[1]);
                 }
             }
         }

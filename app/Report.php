@@ -66,7 +66,7 @@ class Report extends Model
         $_fields = array();
         foreach (preg_split('/,/', $this->inherited_fields) as $field) {
             $_f = preg_split('/:/', $field);
-            $_fields[$_f[0]] = (isset($_f[1])) ? $_f[1] : null;
+            $_fields[$_f[0]] = (isset($_f[1])) ? intval($_f[1]) : null;
         }
         return $_fields;
     }

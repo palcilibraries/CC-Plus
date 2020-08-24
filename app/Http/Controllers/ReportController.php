@@ -196,6 +196,7 @@ class ReportController extends Controller
                 $preset_filters['fromYM'] = $saved_report->ym_from;
                 $preset_filters['toYM'] = $saved_report->ym_to;
             }
+            $preset_filters['dateRange'] = $rangetype;
 
         // If not previewing a saved report the filters should arrive via $request as Json
         } else {
@@ -261,11 +262,10 @@ class ReportController extends Controller
             // If we're previewing a subview, the inherited fields determine which fields are active intially.
             // All will still be available to allow filtering or activation during the preview.
             if ($report->parent_id > 0) {
-
                 // Turn report->inherited_fields into key=>value array
                 $inherited = $report->parsedInherited();
                 foreach ($field_data as $field) {
-                    $field->active = (array_key_exists($field->id,$inherited)) ? 1 : 0;
+                    $field->active = (array_key_exists($field->id, $inherited)) ? 1 : 0;
                     if ($field->active) {
                         $filter = $all_filters->find($field->report_filter_id);
                         if ($filter && !is_null($inherited[$field->id])) {
@@ -288,15 +288,14 @@ class ReportController extends Controller
             if (!$fld->active && $fld->reportFilter) {
                 if (isset($preset_filters[$fld->reportFilter->report_column])) {
                     $report_column = $fld->reportFilter->report_column;
-                    if ($fld->qry_as == 'institution' || $fld->qry_as == 'provider' || $fld->qry_as == 'platform' ||
-                        $fld->qry_as == 'yop') {
+                    if (is_array($preset_filters[$report_column])) {
                         $_count = sizeof($preset_filters[$report_column]);
                         if ($_count >= 1) {
                             if ($preset_filters[$report_column][0] > 0 || $_count > 1) {
-                               $field['active'] = 1;
+                                $field['active'] = 1;
                             }
                         }
-                    } else {
+                    } else {    // maybe unnecessary... just-in-case
                         if ($preset_filters[$report_column] > 0) {
                             $field['active'] = 1;
                         }
@@ -354,7 +353,7 @@ class ReportController extends Controller
         if (isset(self::$input_filters['institutiongroup_id'])) {
             if (self::$input_filters['institutiongroup_id'] > 0) {
                 $multiple_insts = true;
-                $group_name = InstitutionGroup::where('id',self::$input_filters['institutiongroup_id'])->value('name');
+                $group_name = InstitutionGroup::where('id', self::$input_filters['institutiongroup_id'])->value('name');
                 $header_rows[] = array("Institution_Group",$group_name);
             }
         }
@@ -363,11 +362,11 @@ class ReportController extends Controller
                 $filt = $all_filters->where('report_column', '=', 'inst_id')->first();
                 if (sizeof(self::$input_filters['inst_id']) == 0) {
                     $header_rows[] = array("Institution_Name","All");
-                } else if (sizeof(self::$input_filters['inst_id'])>1) {
+                } elseif (sizeof(self::$input_filters['inst_id']) > 1) {
                     $multiple_insts = true;
                     $header_rows[] = array("Institution_Name","Multiple");
                 } else {
-                    $_name = Institution::where('id',self::$input_filters['inst_id'])->value('name');
+                    $_name = Institution::where('id', self::$input_filters['inst_id'])->value('name');
                     $header_rows[] = array("Institution_Name",$_name);
                 }
             } else {
@@ -379,35 +378,43 @@ class ReportController extends Controller
         $_data = "";
         foreach ($fields as $fld) {
             if ($fld->is_metric) {
-                $_data .= ($_data=="") ? ucwords($fld->qry_as,"_") : "; " . ucwords($fld->qry_as,"_");
+                $_data .= ($_data == "") ? ucwords($fld->qry_as, "_") : "; " . ucwords($fld->qry_as, "_");
             }
         }
         $header_rows[] = array("Metric_Types",$_data);
         $yops = "";
         $_data = "";
+        // Loop across input_filters to build output filename at same time
+        // as setting data strings for the Report_Filters and yops header rows
         $out_file = "CCPLUS";
         foreach (self::$input_filters as $key => $value) {
             $filt = $all_filters->where('report_column', '=', $key)->first();
             if ($filt) {
-                if (!in_array($key,['inst_id','institutiongroup_id','prov_id','plat_id','yop'])) {
+                if (!in_array($key, ['inst_id','institutiongroup_id','prov_id','plat_id','yop'])) {
+                    // if the filter is not limiting, ignore for filename and Report_Filters
+                    if (sizeof($value) == 0) {
+                        continue;
+                    }
+                    // Add to $_data for Report_Filters
                     if ($value[0] == 0) {
-                        $_data .= ($_data=="") ? "" : "; ";
+                        $_data .= ($_data == "") ? "" : "; ";
                         $_data .= $filt->attrib . ":All";
-                    } else if ($value[0] > 0) {
-                        $_data .= ($_data=="") ? $filt->attrib : "; " . $filt->attrib;
+                    } elseif ($value[0] > 0) {
+                        $_data .= ($_data == "") ? $filt->attrib : "; " . $filt->attrib;
                         $_data .= ":" . $filt->model::where('id', $value[0])->value('name');
                     }
-                } else if ($key == "yop") {
+                // YOP is in the filters... make the header row data for it here
+                } elseif ($key == "yop") {
                     if (sizeof($value) == 2) {
                         $yops = "YOP:" . $value[0] . ' - ' . $value[1];
                     }
-                // These filter values used to define the filename
-                } else if ($key == 'institutiongroup_id' && $group_name != '') {
+                // These filter values used to define the filename, but are not included in Report_Filters
+                } elseif ($key == 'institutiongroup_id' && $group_name != '') {
                     $out_file .= "_" . $group_name;
-                } else if ($key == 'inst_id' || $key == 'prov_id' || $key == 'plat_id') {
+                } elseif ($key == 'inst_id' || $key == 'prov_id' || $key == 'plat_id') {
                     if (sizeof($value) > 1) {
                         $out_file .= "_Multiple_" . $filt->table_name;
-                    } else if (sizeof($value) == 1) {
+                    } elseif (sizeof($value) == 1) {
                         $out_file .= "_" . preg_replace('/ /', '', $filt->model::where('id', $value[0])->value('name'));
                     }
                 }
@@ -496,7 +503,7 @@ class ReportController extends Controller
      */
     public function show($id)
     {
-        $report = Report::with('parent','children')->findOrFail($id);
+        $report = Report::with('parent', 'children')->findOrFail($id);
 
         // Get report fields and filters for master reports
         $filters = array();
@@ -507,7 +514,8 @@ class ReportController extends Controller
             // Set any connected filters to 'All'
             foreach ($fields as $field) {
                 if ($field->reportFilter) {
-                    $filters[$field->qry_as] = array('legend' => $field->legend, 'name' => 'All');;
+                    $filters[$field->qry_as] = array('legend' => $field->legend, 'name' => 'All');
+                    ;
                 }
             }
 
@@ -604,7 +612,7 @@ class ReportController extends Controller
         foreach ($models as $key => $model) {
             $result = $model::when($limit_to_insts, function ($query, $limit_to_insts) {
                                 return $query->whereIn('inst_id', $limit_to_insts);
-                            })
+            })
                             ->when($limit_to_provs, function ($query, $limit_to_provs) {
                                 return $query->whereIn('prov_id', $limit_to_provs);
                             })
@@ -617,7 +625,7 @@ class ReportController extends Controller
 
             // if no data, set dates to one month ago (to keep them from being ...1969)
             if ($result[0]['count'] == 0) {
-                $result[0]['YM_min'] = date("Y-m", mktime(0, 0, 0, date("m")-1, date("d"), date("Y")));
+                $result[0]['YM_min'] = date("Y-m", mktime(0, 0, 0, date("m") - 1, date("d"), date("Y")));
                 $result[0]['YM_max'] = $result[0]['YM_min'];
             }
             $output[$key] = $result[0];
@@ -703,9 +711,12 @@ class ReportController extends Controller
         $limit_to_insts = self::limitToIds('inst_id');
         $limit_to_provs = self::limitToIds('prov_id');
         $limit_to_plats = self::limitToIds('plat_id');
-
-        // Build where clause conditions for this report based on the other filters
-        $conditions = self::filterOnConditions();
+        $limit_to_dtype = self::limitToIds('datatype_id');
+        $limit_to_atype = self::limitToIds('accesstype_id');
+        $limit_to_ameth = self::limitToIds('accessmethod_id');
+        $limit_to_stype = self::limitToIds('sectiontype_id');
+        // Create where clause conditions for this report beginning with date-range
+        $conditions = self::filterDates();
 
         // Set sorting based on report-type
         $sortBy = $master_name . ".yearmon";    // default to ... something
@@ -723,9 +734,9 @@ class ReportController extends Controller
             $conditions[] = array('RF.is_metric',1);
             $inner_group = $group_by;
             $inner_group[] = 'yearmon';
-            $records = DB::table(function ($query)
-                        use ($report_table, $joins, $subq_fields, $conditions, $inner_group, $limit_to_insts,
-                             $limit_to_provs, $limit_to_plats, $master_name, $master_id, $global_db) {
+            $records = DB::table(function ($query) use ($report_table, $joins, $subq_fields, $conditions, $inner_group,
+                           $limit_to_insts, $limit_to_provs, $limit_to_plats, $limit_to_dtype, $limit_to_atype,
+                           $limit_to_ameth, $limit_to_stype, $master_name, $master_id, $global_db) {
                       $query->from($report_table)
                       ->when($master_name == "TR", function ($query, $join) use ($master_name, $global_db) {
                           return $query->join($global_db . '.titles as TI', $master_name . '.title_id', 'TI.id');
@@ -772,12 +783,26 @@ class ReportController extends Controller
                       ->when($limit_to_plats, function ($query, $limit_to_plats) use ($master_name) {
                           return $query->whereIn($master_name . '.plat_id', $limit_to_plats);
                       })
+                      ->when($limit_to_dtype, function ($query, $limit_to_dtype) use ($master_name) {
+                          return $query->whereIn($master_name . '.datatype_id', $limit_to_dtype);
+                      })
+                      ->when($limit_to_atype, function ($query, $limit_to_atype) use ($master_name) {
+                          return $query->whereIn($master_name . '.accesstype_id', $limit_to_atype);
+                      })
+                      ->when($limit_to_ameth, function ($query, $limit_to_ameth) use ($master_name) {
+                          return $query->whereIn($master_name . '.accessmethod_id', $limit_to_ameth);
+                      })
+                      ->when($limit_to_stype, function ($query, $limit_to_stype) use ($master_name) {
+                          return $query->whereIn($master_name . '.sectiontype_id', $limit_to_stype);
+                      })
                       ->when(self::$input_filters['yop'], function ($query) {
                           return $query->whereBetween('yop', self::$input_filters['yop']);
                       })
-                      ->where($conditions)
+                      ->when(sizeof($conditions) > 0, function ($query) use ($conditions) {
+                          return $query->where($conditions);
+                      })
                       ->groupBy($inner_group);
-                }, 'stats')
+            }, 'stats')
                 ->selectRaw($raw_fields)
                 ->groupBy($group_by)
                 ->when($ignore_zeros, function ($query) {
@@ -837,13 +862,27 @@ class ReportController extends Controller
                       ->when($limit_to_plats, function ($query, $limit_to_plats) use ($master_name) {
                           return $query->whereIn($master_name . '.plat_id', $limit_to_plats);
                       })
+                      ->when($limit_to_dtype, function ($query, $limit_to_dtype) use ($master_name) {
+                          return $query->whereIn($master_name . '.datatype_id', $limit_to_dtype);
+                      })
+                      ->when($limit_to_atype, function ($query, $limit_to_atype) use ($master_name) {
+                          return $query->whereIn($master_name . '.accesstype_id', $limit_to_atype);
+                      })
+                      ->when($limit_to_ameth, function ($query, $limit_to_ameth) use ($master_name) {
+                          return $query->whereIn($master_name . '.accessmethod_id', $limit_to_ameth);
+                      })
+                      ->when($limit_to_stype, function ($query, $limit_to_stype) use ($master_name) {
+                          return $query->whereIn($master_name . '.sectiontype_id', $limit_to_stype);
+                      })
                       ->when(self::$input_filters['yop'], function ($query) {
                           return $query->whereBetween('yop', self::$input_filters['yop']);
                       })
                       ->when($ignore_zeros && $raw_where, function ($query) use ($raw_where) {
                           return $query->whereRaw($raw_where);
                       })
-                      ->where($conditions)
+                      ->when(sizeof($conditions) > 0, function ($query) use ($conditions) {
+                          return $query->where($conditions);
+                      })
                       ->groupBy($group_by)
                       ->orderBy($sortBy, $sortDir)
                       ->when($preview, function ($query, $preview) {
@@ -916,14 +955,10 @@ class ReportController extends Controller
         $active_filters =  $all_filters->whereIn('id', $active_ids)->pluck('report_column')->toArray();
         foreach ($_filters as $key => $value) {
             if (
-                $key == 'inst_id'
-                || $key == 'institutiongroup_id'
-                || $key == 'fromYM'
-                || $key == 'toYM'
-                || $key == 'report_id'
-                || $key == 'plat_id'
-                || $key == 'prov_id'
-                || in_array($key, $active_filters)
+                array_key_exists($key, self::$input_filters) ||
+                in_array($key, $active_filters) ||
+                $key == 'fromYM' ||
+                $key == 'toYM'
             ) {
                 self::$input_filters[$key] = $value;
             }
@@ -947,7 +982,7 @@ class ReportController extends Controller
             }
             $columns[] = array('active' => 1, 'field' => 'Metric_Type', 'value' => 'Metric_Type',
                                'text' => 'Metric_Type');
-            if ($metric_count>0) {
+            if ($metric_count > 0) {
                 $columns[] = array('active' => 1, 'field' => 'Reporting_Period_Total',
                                    'value' => 'Reporting_Period_Total', 'text' => 'Reporting_Period_Total');
                 foreach ($year_mons as $ym) {
@@ -1058,7 +1093,7 @@ class ReportController extends Controller
                             $total_fields .= "sum(" . $data->qry_as . ") as RP_" . $data->qry_as . ',';
                         }
                         // Build raw_where string (for ignoring zero-records)
-                        // Metric fields that sum-by-yearmon become output columns. Assign metric-by-year as query fields
+                        // Metric fields that sum-by-yearmon become output columns. Assign metric-by-yr as query fields
                         $raw_where .= ($raw_where != "") ? " or " : "(";
                         $raw_where .= $data->qry_as . ">0";
                     } else {
@@ -1099,47 +1134,22 @@ class ReportController extends Controller
     }
 
     /**
-     * Build an eloquent Where-Array based on $input_filters
-     *   filter value > 0 : means column should be filtered by the given ID
-     *   Inst, Prov, and Inst-groups are ignored and expected to be handled via a "whereIn" clause
+     * Build an eloquent Where-Array based on From/To yearmon range in $input_filters
      *
-     * @return Array  $conditions
+     * @return Array  $dates
      */
-    private function filterOnConditions($with_dates = true)
+    private function filterDates()
     {
-        $conditions = array();
-        foreach (self::$input_filters as $filt => $value) {
-            // Skip report_id, date-fields, inst, prov, plat, and inst-group
-            if (
-                $filt == "report_id" ||
-                $filt == "inst_id" ||
-                $filt == "prov_id" ||
-                $filt == "plat_id" ||
-                $filt == "institutiongroup_id" ||
-                $filt == 'fromYM' ||
-                $filt == 'toYM' ||
-                $filt == 'yop'
-            ) {
-                continue;
-            }
-
-            // Set the where-condition
-            if ($value > 0) {
-                $conditions[] = array($filt,$value);
-            }
-        }
+        $dates = array();
 
         // Add date range as a condition if they're *both* set
-        if ($with_dates) {
-            if (isset(self::$input_filters['fromYM']) && isset(self::$input_filters['toYM'])) {
-                if (self::$input_filters['fromYM'] != '' && self::$input_filters['toYM'] != '') {
-                    $conditions[] = array('yearmon','>=',self::$input_filters['fromYM']);
-                    $conditions[] = array('yearmon','<=',self::$input_filters['toYM']);
-                }
+        if (isset(self::$input_filters['fromYM']) && isset(self::$input_filters['toYM'])) {
+            if (self::$input_filters['fromYM'] != '' && self::$input_filters['toYM'] != '') {
+                $dates[] = array('yearmon','>=',self::$input_filters['fromYM']);
+                $dates[] = array('yearmon','<=',self::$input_filters['toYM']);
             }
         }
-
-        return $conditions;
+        return $dates;
     }
 
     /**
@@ -1151,8 +1161,7 @@ class ReportController extends Controller
     private function limitToIds($column)
     {
         $return_values = array();
-
-        // Handle institution cases first
+        // Handle institution cases explicitly
         if ($column == 'inst_id') {
             // If user is not an "admin" or "viewer", return only their own inst.
             if (!auth()->user()->hasAnyRole(['Admin','Viewer'])) {
@@ -1164,9 +1173,11 @@ class ReportController extends Controller
                 if (self::$input_filters['institutiongroup_id'] > 0) {
                     $group = InstitutionGroup::find(self::$input_filters['institutiongroup_id']);
                     $return_values = $group->institutions->pluck('id')->toArray();
+                    return $group->institutions->pluck('id')->toArray();
                 }
-                return $return_values;
             }
+            // Otherwise, return the inst_id filter values
+            $return_values = self::$input_filters['inst_id'];
         }
         if (isset(self::$input_filters[$column])) {
             if (self::$input_filters[$column] > 0) {

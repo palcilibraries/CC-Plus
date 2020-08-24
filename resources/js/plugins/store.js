@@ -13,14 +13,14 @@ export const store = new Vuex.Store({
           report_id: 1,
           fromYM: "",
           toYM: "",
-          accessmethod_id: 0,
-          accesstype_id: 0,
-          datatype_id: 0,
           inst_id: [],
           institutiongroup_id: 0,
           plat_id: [],
           prov_id: [],
-          sectiontype_id: 0,
+          datatype_id: [],
+          accesstype_id: [],
+          sectiontype_id: [],
+          accessmethod_id: [],
           yop: [],
       },
       options: {
@@ -69,14 +69,14 @@ export const store = new Vuex.Store({
     SET_TOYM(state, yearmon) {
         state.filter_by.toYM = yearmon;
     },
-    SET_ACCESSMETHOD_FILTER(state, method_id) {
-        state.filter_by.accessmethod_id = method_id;
+    SET_ACCESSMETHOD_FILTER(state, method) {
+        state.filter_by.accessmethod_id = method;
     },
-    SET_ACCESSTYPE_FILTER(state, type_id) {
-        state.filter_by.accesstype_id = type_id;
+    SET_ACCESSTYPE_FILTER(state, type) {
+        state.filter_by.accesstype_id = type;
     },
-    SET_DATATYPE_FILTER(state, type_id) {
-        state.filter_by.datatype_id = type_id;
+    SET_DATATYPE_FILTER(state, type) {
+        state.filter_by.datatype_id = type;
     },
     SET_INSTITUTION_FILTER(state, inst) {
         state.filter_by.inst_id = inst;
@@ -90,8 +90,8 @@ export const store = new Vuex.Store({
     SET_PROVIDER_FILTER(state, prov) {
         state.filter_by.prov_id = prov;
     },
-    SET_SECTIONTYPE_FILTER(state, type_id) {
-        state.filter_by.sectiontype_id = type_id;
+    SET_SECTIONTYPE_FILTER(state, type) {
+        state.filter_by.sectiontype_id = type;
     },
     SET_YOP(state, fromto) {
         state.filter_by.yop = fromto;
@@ -125,8 +125,8 @@ export const store = new Vuex.Store({
     updateAccess({ commit }, access) {
       commit('SET_ACCESS', access);
     },
-    updateUserInst({ commit }, inst_id) {
-      commit('SET_USERINST', inst_id);
+    updateUserInst({ commit }, inst) {
+      commit('SET_USERINST', inst);
     },
     updateReportId({ commit }, report_id) {
       commit('SET_REPORTID', report_id);
@@ -143,14 +143,14 @@ export const store = new Vuex.Store({
     updateAllFilters({ commit }, filter_by) {
       commit('SET_ALL_FILTERS', filter_by);
     },
-    updateAccessMethodFilter({ commit }, method_id) {
-      commit('SET_ACCESSMETHOD_FILTER', method_id);
+    updateAccessMethodFilter({ commit }, method) {
+      commit('SET_ACCESSMETHOD_FILTER', method);
     },
-    updateAccessTypeFilter({ commit }, type_id) {
-      commit('SET_ACCESSTYPE_FILTER', type_id);
+    updateAccessTypeFilter({ commit }, type) {
+      commit('SET_ACCESSTYPE_FILTER', type);
     },
-    updateDataTypeFilter({ commit }, type_id) {
-      commit('SET_DATATYPE_FILTER', type_id);
+    updateDataTypeFilter({ commit }, type) {
+      commit('SET_DATATYPE_FILTER', type);
     },
     updateInstitutionFilter({ commit }, inst) {
       commit('SET_INSTITUTION_FILTER', inst);
@@ -164,8 +164,8 @@ export const store = new Vuex.Store({
     updateProviderFilter({ commit }, prov) {
       commit('SET_PROVIDER_FILTER', prov);
     },
-    updateSectionTypeFilter({ commit }, type_id) {
-      commit('SET_SECTIONTYPE_FILTER', type_id);
+    updateSectionTypeFilter({ commit }, type) {
+      commit('SET_SECTIONTYPE_FILTER', type);
     },
     updateYopFilter({ commit }, fromto) {
       commit('SET_YOP', fromto);
@@ -220,13 +220,13 @@ export const store = new Vuex.Store({
     filter_by_toYM: state => {
         return state.filter_by.toYM
     },
-    filter_by_accessmethod_id: state => {
+    filter_by_accessmethod: state => {
       return state.filter_by.accessmethod_id
     },
-    filter_by_accesstype_id: state => {
+    filter_by_accesstype: state => {
       return state.filter_by.accesstype_id
     },
-    filter_by_datatype_id: state => {
+    filter_by_datatype: state => {
       return state.filter_by.datatype_id
     },
     filter_by_institutiongroup_id: state => {
@@ -241,7 +241,7 @@ export const store = new Vuex.Store({
     filter_by_provider: state => {
       return state.filter_by.provider_id
     },
-    filter_by_sectiontype_id: state => {
+    filter_by_sectiontype: state => {
       return state.filter_by.sectiontype_id
     },
     filter_by_yop: state => {

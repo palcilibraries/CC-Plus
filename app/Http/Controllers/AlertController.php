@@ -152,13 +152,13 @@ class AlertController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-     public function destroy($id)
-     {
-         abort_unless(auth()->user()->hasRole("Admin"), 403);
-         $record = Alert::findOrFail($id);
+    public function destroy($id)
+    {
+        abort_unless(auth()->user()->hasRole("Admin"), 403);
+        $record = Alert::findOrFail($id);
 
-         // Delete the harvestlog record itself
-         $record->delete();
-         return response()->json(['result' => true, 'msg' => 'Alert successfully deleted']);
-     }
+        // Delete the harvestlog record itself
+        $record->delete();
+        return response()->json(['result' => true, 'msg' => 'Alert successfully deleted']);
+    }
 }

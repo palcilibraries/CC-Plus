@@ -549,7 +549,7 @@ class HarvestLogController extends Controller
         }
 
         // Delete any related jobs from the global queue
-        $jobs = SushiQueueJob::where('harvest_id',$id)->get();
+        $jobs = SushiQueueJob::where('harvest_id', $id)->get();
         foreach ($jobs as $job) {
             $job->delete();
         }

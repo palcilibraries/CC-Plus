@@ -193,7 +193,7 @@ class SavedReportController extends Controller
     public function edit($id)
     {
         // User must be able to manage the settings
-        $report = SavedReport::with('master', 'user')->findOrFail($id);
+        $report = SavedReport::with('master', 'report', 'user')->findOrFail($id);
         abort_unless($report->canManage(), 403);
 
         // Get master fields for $report->inherited_fields and tack on filter relationship
@@ -313,15 +313,10 @@ class SavedReportController extends Controller
         $save_id = $request->save_id;
         $report_id = $request->report_id;
         $input_fields = json_decode($request->fields, true);
+
        // Pull the model for report_id (points to presets in global table), and get all fields for it
         $_report = Report::findorFail($report_id);
-        if ($_report->parent_id == 0) {
-            $master_id = $_report->id;
-            $all_fields = $_report->reportFields;
-        } else {
-            $master_id = $_report->parent_id;
-            $all_fields = $_report->parent->reportFields;
-        }
+        $master_id = ($_report->parent_id == 0) ? $_report->id : $_report->parent_id;
         $all_fields = ReportField::where('report_id', '=', $master_id)->get();
 
        // Get the saved report config
@@ -337,6 +332,7 @@ class SavedReportController extends Controller
             $saved_report->title = $request->title;
             $saved_report->user_id = auth()->id();
             $saved_report->master_id = $master_id;
+            $saved_report->report_id = $report_id;
         }
 
        // Build inherited fields and filters strings based on active columns/filters

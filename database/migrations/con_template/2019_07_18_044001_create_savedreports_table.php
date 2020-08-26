@@ -23,6 +23,7 @@ class CreateSavedReportsTable extends Migration
             $table->string('ym_from', 7)->nullable();
             $table->string('ym_to', 7)->nullable();
             $table->unsignedInteger('master_id');
+            $table->unsignedInteger('report_id');
             $table->string('inherited_fields')->nullable();
             $table->string('filters')->nullable();
             $table->timestamps();

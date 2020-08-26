@@ -164,7 +164,10 @@ class ReportController extends Controller
             $title = $saved_report->title;
             $preset_filters = $saved_report->filterBy();
             $inherited = preg_split('/,/', $saved_report->inherited_fields);
-            $field_data = ReportField::with('reportFilter')->where('report_id', '=', $saved_report->master_id)->get();
+            $field_data = ReportField::with('reportFilter')
+                                     ->where('report_id', '=', $saved_report->master_id)
+                                     ->whereIn('id',$inherited)
+                                     ->get();
             $field_data->whereIn('id', $inherited)->transform(function ($record) {
                                                         $record['active'] = 1;
                                                         return $record;

@@ -29,7 +29,7 @@
         <v-simple-table dense>
           <div v-if="is_admin">
             <tr><td>Owner : {{ mutable_report.user.name }}</td></tr>
-            <tr><td>Report derived from : {{ mutable_report.master.legend }}</td></tr>
+            <tr><td>Report based on {{ mutable_report.report.name }} : {{ mutable_report.report.legend }}</td></tr>
           </div>
           <tr class="d-flex mb-5">
             <td v-if="mutable_report.date_range=='latestMonth'">

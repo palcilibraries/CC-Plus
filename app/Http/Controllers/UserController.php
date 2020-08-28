@@ -32,26 +32,22 @@ class UserController extends Controller
         // Admins see all, managers see only their inst, eveyone else gets an error
         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
         if (auth()->user()->hasRole("Admin")) {
-            $users = User::with('roles', 'institution:id,name')->orderBy('id', 'ASC')->get();
+            $user_data = User::with('roles', 'institution:id,name')->orderBy('id', 'ASC')->get();
         } else {    // is manager
-            $users = User::with('roles', 'institution:id,name')->orderBy('ID', 'ASC')
+            $user_data = User::with('roles', 'institution:id,name')->orderBy('ID', 'ASC')
                          ->where('inst_id', '=', auth()->user()->inst_id)->get();
         }
 
-        // Add user's roles as a string in the data array we're sending to the view
-        $data = array();
-        foreach ($users as $_u) {
+        // Map role names and status to strings for the view
+        $data = $user_data->map(function($user) {
+            $user->status = ($user->is_active == 1) ? 'Active' : 'Inactive';
             $_roles = "";
-            $new_u = $_u->toArray();
-            $new_u['inst_name'] = $_u->institution->name;
-            $new_u['status'] = ($_u->is_active == 1) ? 'Active' : 'Inactive';
-            foreach ($_u->roles as $role) {
+            foreach ($user->roles as $role) {
                 $_roles .= $role->name . ", ";
             }
-            $_roles = rtrim(trim($_roles), ',');
-            $new_u['role_string'] = $_roles;
-            array_push($data, $new_u);
-        }
+            $user->role_string = rtrim(trim($_roles), ',');
+            return $user;
+        });
 
         // Admin gets a select-box of institutions, otherwise just the users' inst
         if (auth()->user()->hasRole('Admin')) {
@@ -439,5 +435,161 @@ class UserController extends Controller
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');
         $writer->save('php://output');
+    }
+
+    /**
+     * Import users from a CSV file to the database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function import(Request $request)
+    {
+        // Only Admins can import institution data
+        abort_unless(auth()->user()->hasRole(['Admin']), 403);
+
+        // Handle and validate inputs
+        $this->validate($request, ['csvfile' => 'required']);
+        if (!$request->hasFile('csvfile')) {
+            return response()->json(['result' => false, 'msg' => 'Error accessing CSV import file']);
+        }
+
+        // Get the CSV data
+        $file = $request->file("csvfile")->getRealPath();
+        $csvData = file_get_contents($file);
+        $rows = array_map("str_getcsv", explode("\n", $csvData));
+        if (sizeof($rows) < 1) {
+            return response()->json(['result' => false, 'msg' => 'Import file is empty, no changes applied.']);
+        }
+
+        // Get existing user data
+        $users = User::with('roles', 'institution:id,name')->orderBy('id', 'ASC')->get();
+        $institutions = Institution::get();
+
+        // Process the input rows
+        $num_skipped = 0;
+        $num_updated = 0;
+        $num_created = 0;
+        foreach ($rows as $row) {
+            // Ignore bad/missing/invalid IDs and/or headers
+            if (!isset($row[0])) {
+                continue;
+            }
+            if ($row[0] == "" || !is_numeric($row[0]) || sizeof($row) < 7) {
+                continue;
+            }
+            $cur_user_id = $row[0];
+
+            // Update/Add the user data/settings
+            // Check ID and name columns for silliness or errors
+            $_email = trim($row[1]);
+            $current_user = $users->where("id", "=", $cur_user_id)->first();
+            if (!is_null($current_user)) {      // found existing ID
+                if (strlen($_email) < 1) {       // If import email empty, use current value
+                    $_name = trim($current_user->email);
+                } else {                        // trap changing an email to one that already exists
+                    $existing_user = $users->where("name", "=", $_email)->first();
+                    if (!is_null($existing_user)) {
+                        $_email = trim($current_user->email);     // override, use current - no change
+                    }
+                }
+            } else {        // existing ID not found, try to find by name
+                $current_user = $users->where("email", "=", $_email)->first();
+                if (!is_null($current_user)) {
+                    $_email = trim($current_user->email);
+                }
+            }
+
+            // If we're creating a user, but the password field is empty, skip it
+            if (is_null($current_user) && $row[2] == '') {
+                $num_skipped++;
+                continue;
+            }
+
+            // Dont store/create anything if email is still empty
+            if (strlen($_email) < 1) {
+                $num_skipped++;
+                continue;
+            }
+
+            // Enforce defaults
+            $_name = ($row[3] == '') ? $_email : $row[3];
+            $_phone = ($row[4] == '') ? $_email : $row[4];
+            $_active = ($row[5] == 'N') ? 0 : 1;
+            $_pwchange = ($row[7] == 'Y') ? 1 : 0;
+            $_inst = ($row[8] == '') ? 0 : $row[8];
+            $user_inst = $institutions->where('id', $_inst)->first();
+            if (!$user_inst) {
+                $num_skipped++;
+                continue;
+            }
+
+            // Put user data columns into an array
+            $_user = array('id' => $cur_user_id, 'email' => $_email, 'name' => $_name, 'phone' => $_phone,
+                           'is_active' => $_active, 'password_change_required' => $_pwchange, 'inst_id' => $_inst);
+
+            // Only include password if it has a value
+            if ($row[2] != '') {
+                $_user['password'] = $row[2];
+            }
+
+            // Update or create the User record
+            if (is_null($current_user)) {      // Create
+                $current_user = User::create($_user);
+                $cur_user_id = $current_user->id;
+                $num_created++;
+            } else {                            // Update
+                $current_user->update($_user);
+                $num_updated++;
+            }
+
+            // Set roles
+            $import_roles = preg_replace('/,,/', ',',preg_replace('/ /', ',',$row[6]));
+            $_roles = preg_split('/,/', $import_roles);
+            $role_ids = array();
+            $sawUser = false;
+            foreach ($_roles as $r) {
+                $rstr = ucwords(trim($r));
+                if ($rstr == 'User') {
+                    $sawUser = true;
+                }
+                $role = Role::where('name', '=', $rstr)->first();
+                if ($role) {
+                    $role_ids[] = $role->id;
+                }
+            }
+            if (!$sawUser) {
+                $role_ids[] = Role::where('name', '=', 'User')->value('id');
+            }
+            $current_user->roles()->detach();
+            foreach ($role_ids as $_r) {
+                $current_user->roles()->attach($_r);
+            }
+        }
+
+        // Recreate the users list (like index does) to be returned to the caller
+        $user_data = User::with('roles', 'institution:id,name')->orderBy('id', 'ASC')->get();
+        $users = $user_data->map(function($user) {
+            $user->status = ($user->is_active == 1) ? 'Active' : 'Inactive';
+            $_roles = "";
+            foreach ($user->roles as $role) {
+                $_roles .= $role->name . ", ";
+            }
+            $user->role_string = rtrim(trim($_roles), ',');
+            return $user;
+        });
+
+        // return the current full list of users with a success message
+        $detail = "";
+        $detail .= ($num_updated > 0) ? $num_updated . " updated" : "";
+        if ($num_created > 0) {
+            $detail .= ($detail != "") ? ", " . $num_created . " added" : $num_created . " added";
+        }
+        if ($num_skipped > 0) {
+            $detail .= ($detail != "") ? ", " . $num_skipped . " skipped" : $num_skipped . " skipped";
+        }
+        $msg  = 'Import successful, Users : ' . $detail;
+
+        return response()->json(['result' => true, 'msg' => $msg, 'users' => $users]);
     }
 }

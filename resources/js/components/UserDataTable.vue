@@ -5,17 +5,22 @@
       <span class="fail" role="alert" v-text="failure"></span>
     </div>
     <div v-if="showForm==''">
-      <v-btn small color="primary" @click="createForm">Create a User</v-btn>
-      <div v-if="is_manager || is_admin">
-        Export to:
+      <v-row>
+        <v-col v-if="is_admin" cols="2"><v-btn small color="primary" @click="importForm">Import Users</v-btn></v-col>
+        <v-col><v-btn small color="primary" @click="createForm">Create a User</v-btn></v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="1">Export to:</v-col>
+        <v-col>
             <a :href="'/users/export/xls'">.xls</a> &nbsp; &nbsp;
             <a :href="'/users/export/xlsx'">.xlsx</a>
-      </div>
+        </v-col>
+      </v-row>
       <v-data-table :headers="headers" :items="mutable_users" item-key="id" class="elevation-1">
         <template v-slot:item="{ item }">
           <tr>
             <td><a @click="editForm(item.id)">{{ item.name }}</a></td>
-            <td><a :href="'/institutions/'+item.inst_id+'/edit'">{{ item.inst_name }}</a></td>
+            <td><a :href="'/institutions/'+item.inst_id+'/edit'">{{ item.institution.name }}</a></td>
             <td v-if="item.status">Active</td>
             <td>{{ item.email }}</td>
             <td>{{ item.role_string }}</td>
@@ -24,6 +29,42 @@
           </tr>
         </template>
       </v-data-table>
+    </div>
+    <div v-else-if="showForm=='import'" style="width:50%; display:inline-block;">
+      <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined></v-file-input>
+      <p>
+        <strong>Users cannot be deleted during an import operation.</strong><br />
+      </p>
+      <p>
+        Use caution when using this import function. Password fields will be encrypted when they are saved in the
+        database. The <strong>import source file</strong>, however, could contain clear-text user passwords as CSV
+        values. Protecting or deleting this file after a successful import is recommended to help prevent
+        unauthorized access to the data and settings for your consortium.
+      </p>
+      <p><strong>User imports operate as both "Add" and "Update".</strong><br />
+        If an ID in column-1 of the import file matches an existing user -OR- if the ID does not match any existing
+        user, but the email in column-2 does match an existing user, the import will update that user. Otherwise,
+        the import will perform an "Add" operation. Any import row with an empty or non-existent institution ID in
+        column-9 will be ignored.</li>
+      </p>
+      <ul><strong>Updating users</strong>:
+        <li>Updates will overrwite all fields for the user, with the possible exception of the password, with the
+            values in the import file.
+        <li>Import rows (with a matching ID) that attempt to set an existing user's email to a value already defined
+            for another user will result in an unchanged email address and the other values updated.</li>
+        <li>Rows with a blank or empty password value will result in an unchanged password and the other fields
+            updated.
+        </li>
+      </ul>
+      <ul><strong>Adding users</strong>:
+        <li>The surest way to add users is to assign new, sequentially increasing values in the column-1 (ID),
+            and a unique email address in column-2.</li>
+        <li>Import rows that attempt to add a user with an email field value that matches the email address for
+            another user will be ignored.</li>
+        <li>Rows with a blank or empty password values will be ignored.</li>
+      </ul>
+      <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+      <v-btn small type="button" @click="hideForm">cancel</v-btn>
     </div>
     <div v-else style="width:50%; display:inline-block;">
       <div v-if="showForm=='edit'">
@@ -89,7 +130,7 @@
         showForm: '',
         headers: [
           { text: 'User Name ', value: 'name' },
-          { text: 'Institution', value: 'inst_name' },
+          { text: 'Institution', value: 'institution.name' },
           { text: 'Status', value: 'status' },
           { text: 'Email', value: 'email' },
           { text: 'Roles', value: 'role_string' },
@@ -111,7 +152,8 @@
             password: '',
             confirm_pass: '',
             roles: []
-        })
+        }),
+        csv_upload: null,
       }
     },
     methods: {
@@ -178,6 +220,10 @@
             })
             .catch({});
         },
+        importForm () {
+            this.csv_upload = null;
+            this.showForm = 'import';
+        },
         editForm (userid) {
             this.failure = '';
             this.success = '';
@@ -206,6 +252,33 @@
             this.form.roles = [];
         },
         hideForm (event) {
+            this.showForm = '';
+        },
+        importSubmit (event) {
+            this.success = '';
+            if (this.csv_upload==null) {
+                this.failure = 'A CSV import file is required';
+                return;
+            }
+            this.failure = '';
+            let formData = new FormData();
+            formData.append('csvfile', this.csv_upload);
+            axios.post('/users/import', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                  })
+                 .then( (response) => {
+                     if (response.data.result) {
+                         this.failure = '';
+                         this.success = response.data.msg;
+                         // Replace mutable array with response users
+                         this.mutable_users = response.data.users;
+                     } else {
+                         this.success = '';
+                         this.failure = response.data.msg;
+                     }
+                 });
             this.showForm = '';
         },
     },

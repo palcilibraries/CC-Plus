@@ -378,9 +378,9 @@ class HarvestLogController extends Controller
         }
 
         // The new status will be based on one of 2 possible values:
-        //   Reset: resets attempts to zero and requeues the harvest for immediate retrying
+        //   Restart: resets attempts to zero and requeues the harvest for immediate retrying
         //   Stop: Sets harvest to "Stopped", regardless of what it was before.
-        $new_status_allowed = array('Reset', 'Stop');
+        $new_status_allowed = array('Restart', 'Stop');
         if (!in_array($input['status'], $new_status_allowed)) {
             return response()->json(['result' => false,
                                      'msg' => 'Invalid request: status cannot be set to requested value.']);

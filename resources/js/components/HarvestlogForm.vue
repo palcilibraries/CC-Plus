@@ -96,7 +96,7 @@
                 }).then((result) => {
                   if (result.value) {
                     axios.post('/update-harvest-status', {
-                        id: harvest.id,
+                        id: self.mutable_harvest.id,
                         status: self.new_status
                     })
                     .then( function(response) {

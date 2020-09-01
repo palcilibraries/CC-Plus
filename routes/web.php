@@ -49,7 +49,6 @@ Route::post('/save-report-config', 'SavedReportController@saveReportConfig')->mi
 //
 Route::post('/update-alert-status', 'AlertController@updateStatus')->middleware(['auth','role:Admin,Manager']);
 Route::post('/update-system-alert', 'AlertController@updateSysAlert')->middleware(['auth','role:Admin,Manager']);
-Route::delete('/alerts/{id}', 'AlertController@destroy')->middleware(['auth','role:Admin']);
 Route::post('/alert-dash-refresh', 'AlertController@dashRefresh')->middleware('auth');
 Route::post('/alertsettings-fields-refresh', 'AlertSettingController@fieldsRefresh')
      ->middleware(['auth','role:Admin,Manager']);
@@ -57,6 +56,7 @@ Route::post('/sushisettings-update', 'SushiSettingController@update')->middlewar
 Route::get('/sushisettings-refresh', 'SushiSettingController@refresh')->middleware(['auth']);
 Route::get('/sushisettings-test', 'SushiSettingController@test')->middleware(['auth','role:Admin,Manager']);
 Route::get('/harvestlogs/{id}/raw', 'HarvestLogController@downloadRaw')->middleware(['auth','role:Admin,Manager']);
+Route::get('/available-providers', 'HarvestLogController@availableProviders')->middleware(['auth']);
 Route::post('/update-harvest-status', 'HarvestLogController@updateStatus')->middleware(['auth','role:Admin,Manager']);
 //
 Route::get('/users/export/{type}', 'UserController@export');

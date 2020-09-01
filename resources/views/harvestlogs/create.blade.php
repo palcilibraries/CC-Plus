@@ -17,6 +17,7 @@
      </ul>
   </p>
   <manual-harvest :institutions="{{ json_encode($institutions) }}"
+                  :inst_groups="{{ json_encode($inst_groups) }}"
                   :providers="{{ json_encode($providers) }}"
                   :all_reports="{{ json_encode($all_reports) }}"
                   :presets="{{ json_encode($presets) }}"

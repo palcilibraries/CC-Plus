@@ -1,20 +1,40 @@
 <template>
   <div>
+    <div v-if="selections_made">
+      <v-btn color="gray" small @click="resetForm">Reset Selections</v-btn>
+    </div>
   	<form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
   	      @keydown="form.errors.clear($event.target.name)">
-      <v-row v-if="is_admin">
-        <v-col class="ma-2" cols="3" sm="3">
-          <v-select
-            :items="institutions"
-            v-model="form.inst_id"
-            @change="onInstChange"
-            label="Institution(s)"
-            item-text="name"
-            item-value="id"
-            hint="Institution(s) to Harvest"
-          ></v-select>
-        </v-col>
-      </v-row>
+      <div v-if="this.is_admin">
+        <v-row class="d-flex align-mid">
+          <v-col v-if="form.inst_group_id==0" class="d-flex ma-2" cols="3" sm="3">
+            <v-select
+              :items="institutions"
+              v-model="form.inst"
+              @change="onInstChange"
+              multiple
+              label="Institution(s)"
+              item-text="name"
+              item-value="id"
+              hint="Institution(s) to Harvest"
+            ></v-select>
+          </v-col>
+          <v-col v-if="form.inst.length==0 && form.inst_group_id==0 " class="d-flex" cols="1" sm="1">
+            <strong>OR</strong>
+          </v-col>
+          <v-col v-if="form.inst.length==0" class="d-flex ma-2" cols="3" sm="3">
+            <v-select
+                :items="inst_groups"
+                v-model="form.inst_group_id"
+                @change="onGroupChange"
+                label="Institution Group"
+                item-text="name"
+                item-value="id"
+                hint="Institution group to harvest"
+            ></v-select>
+          </v-col>
+        </v-row>
+      </div>
       <v-row v-else>
         <v-col class="ma-2" cols="6" sm="4">
           <h5>Institution : {{ inst_name }}</h5>
@@ -24,8 +44,9 @@
         <v-col class="ma-2" cols="3" sm="3">
           <v-select
             :items="available_providers"
-            v-model="form.prov_id"
+            v-model="form.prov"
             @change="onProvChange"
+            multiple
             label="Provider(s)"
             item-text="name"
             item-value="id"
@@ -79,17 +100,20 @@
   export default {
     props: {
             institutions: { type:Array, default: () => [] },
+            inst_groups: { type:Array, default: () => [] },
             providers: { type:Array, default: () => [] },
             all_reports: { type:Array, default: () => [] },
-            presets: { type:Array, default: () => [] },
+            presets: { type:Object, default: () => {} },
     },
     data() {
         return {
             success: '',
             failure: '',
+            selections_made: false,
             form: new window.Form({
-                inst_id: null,
-                prov_id: null,
+                inst: [],
+                inst_group_id: 0,
+                prov: [],
                 reports: [],
                 fromYM: '',
                 toYM: '',
@@ -102,46 +126,79 @@
         }
     },
     methods: {
-        // Update mutable providers based on inst-change
-        onInstChange(instid) {
-            if (instid == 0) {
-                this.available_providers = this.providers;
+        resetForm () {
+            // Reset form values
+            this.form.inst = [];
+            this.form.prov = [];
+            this.form.inst_group_id = 0;
+            this.form.reports = [];
+            this.form.fromYM = '';
+            this.form.toYM = '';
+            this.selections_made = false;
+            this.available_providers = [];
+            this.available_reports = [];
+        },
+        // Verify provider preset value
+        verifyProvPreset() {
+            let preset_id = Number(this.presets['prov_id']);
+            let prov = this.available_providers.find(p => p.id == preset_id);
+            if (prov) {
+                this.onProvChange(preset_id);
+                this.form.prov[0] = preset_id;
             } else {
-                this.available_providers = [];
-                let inst = this.institutions.find(obj => obj.id == instid);
-                this.providers.forEach(prov => {
-                    let setting = inst.sushi_settings.find(ss => ss.prov_id == prov.id);
-                    if (setting) this.available_providers.push(prov);
-                });
-                if (this.available_providers.length > 1) {
-                    this.available_providers.unshift({id: 0, name: 'All Providers'});
-                }
-            }
-            if (this.presets['prov_id']) {
-                let preset_id = Number(this.presets['prov_id']);
-                let prov = this.available_providers.find(p => p.id == preset_id);
-                if (prov) {
-                    this.onProvChange(preset_id);
-                    this.form.prov_id = preset_id;
-                } else {
-                    this.failure = 'The preset provider is not available - verify sushi settings';
-                    this.form.prov_id = null;
-                    this.presets['prov_id'] = null;
-                }
+                this.failure = 'The preset provider is not available - verify sushi settings';
+                this.form.prov = [];
+                this.presets['prov_id'] = null;
             }
         },
-        onProvChange(provid) {
-            this.failure = '';
-            // Update available reports based on provider-change
-            if (provid == 0) {
-                this.available_reports = this.all_reports;
+        // Update mutable providers when inst-group changes
+        onGroupChange(groupid) {
+            if (groupid == 0) {
+                this.available_providers = this.providers;
             } else {
-                this.available_reports = [];
-                let prov = this.available_providers.find(obj => obj.id == provid);
-                prov.reports.map(r => r.id).forEach(report => {
-                    this.available_reports.push(this.all_reports.find(obj => obj.id == report));
+                this.updateProviders();
+            }
+            if (this.presets['prov_id']) this.verifyProvPreset();
+            this.selections_made = true;
+        },
+        // Update mutable providers when inst changes
+        onInstChange(inst) {
+            if (inst.length == 0) {
+                this.available_providers = this.providers;
+            } else {
+                this.updateProviders();
+            }
+            if (this.presets['prov_id']) this.verifyProvPreset();
+            this.selections_made = true;
+        },
+        // External axios call to return available providers
+        updateProviders () {
+            let inst_ids = JSON.stringify(this.form.inst);
+            axios.get('/available-providers?inst_ids='+inst_ids+'&group_id='+this.form.inst_group_id)
+                 .then((response) => {
+                     this.available_providers = response.data.providers;
+                 })
+                 .catch(error => {});
+        },
+        onProvChange(providers) {
+            this.failure = '';
+            // If no providers, set to available to all
+            if (providers.length == 0) {
+                this.available_reports = this.all_reports;
+            // Update available reports when providers changes
+            } else {
+                let self = this;
+                self.available_reports = [];
+                providers.forEach(provid => {
+                    let prov = self.available_providers.find(obj => obj.id == provid);
+                    prov.reports.forEach(report =>{
+                        if (!self.available_reports.some(elem => elem.id === report.id)) {
+                            self.available_reports.push(report);
+                        }
+                    });
                 });
             }
+            this.selections_made = true;
         },
         formSubmit (event) {
             if (this.form.reports.length == 0) {
@@ -174,9 +231,9 @@
     },
     mounted() {
       if ( !this.is_admin ) {
-          this.form.inst_id = this.institutions[0].id;
+          this.form.inst[0] = this.institutions[0].id;
           this.inst_name = this.institutions[0].name;
-          this.onInstChange(this.form.inst_id);
+          this.onInstChange(this.form.inst);
       }
       let dt = new Date();
       this.maxYM = dt.getFullYear()+"-"+("0"+(dt.getMonth() + 1));
@@ -185,7 +242,7 @@
       if (this.presets['inst_id']) {
           let instid = Number(this.presets['inst_id']);
           this.onInstChange(instid);
-          this.form.inst_id = instid;
+          this.form.inst[0] = instid;
       }
 
       console.log('ManualHarvest Component mounted.');

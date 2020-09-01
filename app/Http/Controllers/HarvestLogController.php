@@ -11,6 +11,7 @@ use App\FailedHarvest;
 use App\Report;
 use App\Provider;
 use App\Institution;
+use App\InstitutionGroup;
 use App\SushiSetting;
 use App\SushiQueueJob;
 use Storage;
@@ -198,9 +199,18 @@ class HarvestLogController extends Controller
                                        ->where('id', '<>', 1)->where('is_active', true)
                                        ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
             array_unshift($institutions, ['id' => 0, 'name' => 'Entire Consortium']);
-            $providers = Provider::with('reports')
+            $inst_groups = InstitutionGroup::with('institutions')->get(['id','name']);
+            $provider_data = Provider::with('reports')
                                  ->whereIn('id', $possible_providers)->where('is_active', true)
-                                 ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+                                 ->orderBy('name', 'ASC')->get(['id','name']);
+
+            // Copy available_providers into the groups (to simplify the vue component)
+            foreach ($inst_groups as $group) {
+                $insts = $group->institutions->pluck('id')->toArray();
+                $available_providers = SushiSetting::whereIn('inst_id',$insts)->pluck('prov_id')->toArray();
+                $group->providers = $provider_data->whereIn('id',$available_providers)->toArray();
+            }
+            $providers = $provider_data->toArray();
         } else {    // manager view
             $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
                                        ->where('id', '=', $user_inst)
@@ -219,7 +229,7 @@ class HarvestLogController extends Controller
         $report_ids = DB::table($table)->distinct('report_id')->pluck('report_id')->toArray();
         $all_reports = Report::whereIn('id', $report_ids)->orderBy('id', 'asc')->get()->toArray();
 
-        return view('harvestlogs.create', compact('institutions', 'providers', 'all_reports', 'presets'));
+        return view('harvestlogs.create', compact('institutions','inst_groups','providers','all_reports','presets'));
     }
 
     /**
@@ -231,32 +241,50 @@ class HarvestLogController extends Controller
     public function store(Request $request)
     {
         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
-        $is_admin = auth()->user()->hasRole('Admin');
-        $user_inst = auth()->user()->inst_id;
 
         // Get args from the $input
         $this->validate(
             $request,
-            ['inst_id' => 'required', 'prov_id' => 'required', 'reports' => 'required',
-            'fromYM' => 'required',
-            'toYM' => 'required',
-            'when' => 'required']
+            ['inst' => 'required', 'inst_group_id' => 'required', 'prov' => 'required', 'reports' => 'required',
+             'fromYM' => 'required', 'toYM' => 'required', 'when' => 'required']
         );
         $input = $request->all();
+        $user_inst = auth()->user()->inst_id;
+        $is_admin = auth()->user()->hasRole('Admin');
 
-        // Set inst_id (force to user's inst if not an admin)
-        $inst_id = ($is_admin) ? $input["inst_id"] : $user_inst;
-
+        // Admins can harvest multiple insts or a group
+        $inst_ids = array();
+        if ($is_admin) {
+            // Set inst_ids (force to user's inst if not an admin)
+            if ($input["inst_group_id"] > 0) {
+                $group = InstitutionGroup::with('institutions')->findOrFail($input["inst_group_id"]);
+                $inst_ids = $group->institutions->pluck('id')->toArray();
+            } else {
+                // A value of 0 in inst_ids means we're doing entire consortium
+                if (in_array(0,$input["inst"])) {
+                    $inst_ids = Institution::where('is_active',true)->where('id','<>',1)->pluck('id')->toArray();
+                } else {
+                    $inst_ids = $input["inst"];
+                }
+            }
+        // Managers are confined to only their inst
+        } else {
+            $inst_ids = array($user_inst);
+        }
+        if (sizeof($inst_ids) == 0) {
+            return response()->json(['result' => false, 'msg' => 'Error: no matching institutions to harvest']);
+        }
         // Get provider info
-        $prov_id = $input["prov_id"];
-        if ($prov_id != 0) {
+        $prov_ids = $input["prov"];
+        if (sizeof($prov_ids) > 0) {
             $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
-                                 ->where('id', $prov_id)->get();
+                                 ->whereIn('id', $prov_ids)->get();
 
             // Non-admin disallowed from harvesting non-consortium providers owned by other institutions
             if (!$is_admin && $providers[0]->inst_id != $user_inst && $providers[0]->inst_id != 1) {
                 return response()->json(['result' => false, 'msg' => 'Requested provider is not authorized.']);
             }
+        // if providers array is empty, get all active
         } else {
             $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
                                  ->where('is_active', '=', true)
@@ -264,7 +292,6 @@ class HarvestLogController extends Controller
                                      return $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
                                  })->get();
         }
-
         // Set the status for the harvests we're creating based on "when"
         $state = "New";
         if ($input["when"] == 'now') {
@@ -291,9 +318,8 @@ class HarvestLogController extends Controller
             foreach ($providers as $provider) {
                // Loop through all sushisettings for this provider
                 foreach ($provider->sushiSettings as $setting) {
-                   // If institution is inactive, -or- only processing a single instituution and this isn't it,
-                   // skip to next setting.
-                    if ((!$setting->institution->is_active) || ($inst_id != 0 && $setting->inst_id != $inst_id)) {
+                   // If institution is inactive or this inst_id is not in the $inst_ids array, skip it
+                    if ((!$setting->institution->is_active) || (!in_array($setting->inst_id,$inst_ids))) {
                         continue;
                     }
 
@@ -355,6 +381,47 @@ class HarvestLogController extends Controller
         $msg  = "Success : " . $num_created . " new harvests added, " . $num_updated . " harvests updated";
         $msg .= ($num_queued > 0) ? ", and " . $num_queued . " queue jobs created." : ".";
         return response()->json(['result' => true, 'msg' => $msg]);
+    }
+
+    /**
+     * Return available providers for an array of inst_ids or an inst_group
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function availableProviders(Request $request)
+    {
+        abort_unless(auth()->user()->hasRole('Admin'), 403);
+        $group_id = json_decode($request->group_id, true);
+        $insts = json_decode($request->inst_ids, true);
+
+        // Setup an array of inst_ids for querying against the sushisettings
+        if ($group_id > 0) {
+            $group = InstitutionGroup::with('institutions')->findOrFail($group_id);
+            $inst_ids = $group->institutions->pluck('id')->toArray();
+        } else if (sizeof($insts) > 0) {
+            $inst_ids = $insts;
+        } else {
+            return response()->json(['result' => false, 'msg' => 'Missing expected inputs!']);
+        }
+
+        // Query the sushisettings for providers connected to the requested inst IDs
+        if (in_array(0,$inst_ids)) {
+            // If inst_ids array includes a value=0, it means user chose "Entire Consortium"
+            $availables = SushiSetting::pluck('prov_id')->toArray();
+        } else {
+            $availables = SushiSetting::whereIn('inst_id',$inst_ids)->pluck('prov_id')->toArray();
+        }
+
+        // Use availables (IDs) to get the provider data and return it via JSON
+        $providers = Provider::with('reports')->where('is_active', true)
+                             ->whereIn('id',$availables)
+                             ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+        if (sizeof($providers) == 0) {
+            return response()->json(['result' => false, 'msg' => 'No matching, active providers found']);
+        } else {
+            return response()->json(['providers' => $providers], 200);
+        }
     }
 
     /**

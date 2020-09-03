@@ -249,7 +249,7 @@ class ReportController extends Controller
             }
             $_key = rtrim($filter->table_name, "s");
             if ($_key != 'institution' && $_key != 'provider') {
-                $result = $filter->model::orderBy('name', 'ASC')->get(['id','name'])->toArray();
+                $result = $filter->model::orderBy('name', 'ASC')->where('name','<>',' ')->get(['id','name'])->toArray();
                 $filter_options[$_key] = $result;
             }
         }
@@ -474,7 +474,7 @@ class ReportController extends Controller
             // Plus a Reporting Period Total for each metric. Single-month reports don't get an RP_total column
             } else {
                 foreach ($fields as $field) {
-                    if (!$field['is_metric']) {
+                    if ($field['is_metric']) {
                         if ($num_months > 1) {
                             foreach ($year_mons as $ym) {
                                 $right_head[] = $field['legend'] . ' ' . $ym;

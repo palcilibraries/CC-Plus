@@ -479,7 +479,7 @@ class ReportController extends Controller
                             foreach ($year_mons as $ym) {
                                 $right_head[] = $field['legend'] . ' ' . $ym;
                             }
-                            $right_head[] = 'Reporting Period Total' . ' ' . $data['legend'];
+                            $right_head[] = 'Reporting Period Total' . ' ' . $field['legend'];
                         } else {
                             $right_head[] = $field['legend'];
                         }

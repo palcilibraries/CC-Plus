@@ -395,16 +395,26 @@ class ReportController extends Controller
             if ($filt) {
                 if (!in_array($key, ['inst_id','institutiongroup_id','prov_id','plat_id','yop'])) {
                     // if the filter is not limiting, ignore for filename and Report_Filters
-                    if (sizeof($value) == 0) {
-                        continue;
-                    }
-                    // Add to $_data for Report_Filters
-                    if ($value[0] == 0) {
-                        $_data .= ($_data == "") ? "" : "; ";
-                        $_data .= $filt->attrib . ":All";
-                    } elseif ($value[0] > 0) {
-                        $_data .= ($_data == "") ? $filt->attrib : "; " . $filt->attrib;
-                        $_data .= ":" . $filt->model::where('id', $value[0])->value('name');
+                    if (is_array($value)) {
+                        if (sizeof($value) == 0) {
+                            continue;
+                        }
+                        // Add to $_data for Report_Filters
+                        if ($value[0] == 0) {
+                            $_data .= ($_data == "") ? "" : "; ";
+                            $_data .= $filt->attrib . ":All";
+                        } elseif ($value[0] > 0) {
+                            $_data .= ($_data == "") ? $filt->attrib : "; " . $filt->attrib;
+                            $_data .= ":" . $filt->model::where('id', $value[0])->value('name');
+                        }
+                    } else {
+                        if ($value == 0) {
+                            $_data .= ($_data == "") ? "" : "; ";
+                            $_data .= $filt->attrib . ":All";
+                        } elseif ($value > 0) {
+                            $_data .= ($_data == "") ? $filt->attrib : "; " . $filt->attrib;
+                            $_data .= ":" . $filt->model::where('id', $value)->value('name');
+                        }
                     }
                 // YOP is in the filters... make the header row data for it here
                 } elseif ($key == "yop") {

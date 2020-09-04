@@ -24,6 +24,7 @@ class SectionTypesTableSeeder extends Seeder
                                 ['id' => 3, 'name' => 'Chapter'],
                                 ['id' => 4, 'name' => 'Book'],
                                 ['id' => 5, 'name' => 'Other'],
+                                ['id' => 6, 'name' => 'Section'],
                              ]);
       }
     }

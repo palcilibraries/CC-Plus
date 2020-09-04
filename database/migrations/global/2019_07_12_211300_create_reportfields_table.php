@@ -25,7 +25,6 @@ class CreateReportFieldsTable extends Migration
             $table->unsignedInteger('report_filter_id')->nullable();
             $table->boolean('active')->default(0);
             $table->boolean('metric')->default(0);
-            $table->timestamps();
 
             $table->foreign('report_id')->references('id')->on('reports')->onDelete('cascade');
             $table->foreign('report_filter_id')->references('id')->on('reportfilters');

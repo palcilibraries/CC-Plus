@@ -233,6 +233,7 @@ class SushiQWorker extends Command
                 }
                 $raw_filename = $report->name . '_' . $begin . '_' . $end . '.json';
                 $sushi->raw_datafile = $full_path . $raw_filename;
+                $job->harvest->rawfile = $raw_filename;
             }
 
            // Construct URI for the request
@@ -303,7 +304,6 @@ class SushiQWorker extends Command
                 }
                 $job->harvest->attempts++;
                 $job->harvest->status = $_status;
-                $job->harvest->rawfile = $raw_filename;
 
            // No valid report data saved. If we failed, update harvest record
             } else {

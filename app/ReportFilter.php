@@ -11,13 +11,14 @@ class ReportFilter extends Model
    */
     protected $connection = 'globaldb';
     protected $table = 'reportfilters';
+    public $timestamps = false;
 
   /**
    * The attributes that are mass assignable.
    *
    * @var array
    */
-    protected $fillable = ['model', 'table_name', 'report_column'];
+    protected $fillable = ['attrib', 'model', 'table_name', 'report_column'];
 
     public function reportField()
     {

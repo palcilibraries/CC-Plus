@@ -13,6 +13,15 @@
         <v-switch v-model="zeroRecs" label="Exclude Zero-Use Records?"></v-switch>
       </div>
     </div>
+    <div>
+      <v-radio-group v-model="format" @change="changeFormat" row>
+        <template v-slot:label>
+          <strong>Report formatting</strong>
+        </template>
+        <v-radio label="CC+ Compact" value='Compact'></v-radio>
+        <v-radio label="COUNTER-R5" value='COUNTER'></v-radio>
+      </v-radio-group>
+    </div>
     <v-expansion-panels multiple focusable :value="panels">
       <v-expansion-panel>
         <v-expansion-panel-header>Show/Hide Columns</v-expansion-panel-header>
@@ -67,42 +76,42 @@
                 ></v-select>
               </v-col>
             </div>
-            <v-col v-if='filter_data["datatype"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-              <v-select :items='filter_options.datatype' v-model='filter_data.datatype.value' label="Data Type"
-                        @change="setFilter('datatype')" item-text="name" item-value="id"
-              ></v-select>
-            </v-col>
-            <v-col v-if='filter_data["datatype"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-              <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('datatype')"/>&nbsp;
-              Datatype: {{ filter_data["datatype"].name }}
-            </v-col>
-            <v-col v-if='filter_data["sectiontype"].value > 0' class="d-flex pa-2 align-center">
-              <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('sectiontype')"/>&nbsp;
-              Section Type: {{ filter_data["sectiontype"].name }}
-            </v-col>
-            <v-col v-if='filter_data["sectiontype"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-              <v-select :items='filter_options.sectiontype' v-model='filter_data.sectiontype.value' label="SectionType"
-                        @change="setFilter('sectiontype')" item-text="name" item-value="id"
-              ></v-select>
-            </v-col>
-            <v-col v-if='filter_data["accesstype"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-              <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('accesstype')"/>&nbsp;
-              Access Type: {{ filter_data["accesstype"].name }}
-            </v-col>
-            <v-col v-if='filter_data["accesstype"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-              <v-select :items='filter_options.accesstype' v-model='filter_data.accesstype.value' label="Access Type"
-                        @change="setFilter('accesstype')" item-text="name" item-value="id"
-              ></v-select>
-            </v-col>
-            <v-col v-if='filter_data["accessmethod"].value > 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-              <img src="/images/red-x-16.png" alt="clear filter" @click="clearFilter('accessmethod')"/>&nbsp;
-              Access Method: {{ filter_data["accessmethod"].name }}
-            </v-col>
-            <v-col v-if='filter_data["accessmethod"].value == 0' class="d-flex pa-2 align-center" cols="3" sm="2">
-              <v-select :items='filter_options.accessmethod' v-model='filter_data.accessmethod.value'
-                        label="Access Method" @change="setFilter('accessmethod')" item-text="name" item-value="id"
-              ></v-select>
-            </v-col>
+            <div v-if='filter_data["datatype"].active' cols="3" sm="2">
+              <v-col v-if='filter_data["datatype"].value.length >= 0' class="d-flex pa-2 align-center">
+                <img v-if='filter_data["datatype"].value.length > 0' src="/images/red-x-16.png"
+                     alt="clear filter" @click="clearFilter('datatype')"/>&nbsp;
+                <v-select :items='filter_options.datatype' v-model='filter_data.datatype.value' multiple
+                          @change="setFilter('datatype')" label="Data Type" item-text="name" item-value="id"
+                ></v-select>
+              </v-col>
+            </div>
+            <div v-if='filter_data["sectiontype"].active' cols="3" sm="2">
+              <v-col v-if='filter_data["sectiontype"].value.length >= 0' class="d-flex pa-2 align-center">
+                <img v-if='filter_data["sectiontype"].value.length > 0' src="/images/red-x-16.png"
+                     alt="clear filter" @click="clearFilter('sectiontype')"/>&nbsp;
+                  <v-select :items='filter_options.sectiontype' v-model='filter_data.sectiontype.value' multiple
+                            @change="setFilter('sectiontype')" label="Section Type" item-text="name" item-value="id"
+                ></v-select>
+              </v-col>
+            </div>
+            <div v-if='filter_data["accesstype"].active' cols="3" sm="2">
+              <v-col v-if='filter_data["accesstype"].value.length >= 0' class="d-flex pa-2 align-center">
+                <img v-if='filter_data["accesstype"].value.length > 0' src="/images/red-x-16.png"
+                     alt="clear filter" @click="clearFilter('accesstype')"/>&nbsp;
+                <v-select :items='filter_options.accesstype' v-model='filter_data.accesstype.value' multiple
+                          @change="setFilter('accesstype')" label="Access Type" item-text="name" item-value="id"
+                ></v-select>
+              </v-col>
+          </div>
+            <div v-if='filter_data["accessmethod"].active' cols="3" sm="2">
+              <v-col v-if='filter_data["accessmethod"].value.length >= 0' class="d-flex pa-2 align-center">
+                <img v-if='filter_data["accessmethod"].value.length > 0' src="/images/red-x-16.png"
+                     alt="clear filter" @click="clearFilter('accessmethod')"/>&nbsp;
+                <v-select :items='filter_options.accessmethod' v-model='filter_data.accessmethod.value' multiple
+                          label="Access Method" @change="setFilter('accessmethod')" item-text="name" item-value="id"
+                ></v-select>
+              </v-col>
+            </div>
             <div v-if='filter_data["yop"].active' cols="3" sm="2">
               <v-col v-if='filter_data["yop"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["yop"].value.length > 0' src="/images/red-x-16.png"
@@ -226,10 +235,10 @@
           platform: { col:'plat_id', act:'updatePlatform', value:[], name:'', active: false },
           institution: { col:'inst_id', act:'updateInstitution', value:[], name:'', active: false },
           institutiongroup: { col:'institutiongroup_id', act:'updateInstGroup', value: -1, name:'', active: false },
-          datatype: { col:'datatype_id', act:'updateDataType', value: -1, name:'', active: false },
-          sectiontype: { col:'sectiontype_id', act:'updateSectionType', value: -1, name:'', active: false },
-          accesstype: { col:'accesstype_id', act:'updateAccessType', value: -1, name:'', active: false },
-          accessmethod: { col:'accessmethod_id', act:'updateAccessMethod', value: -1, name:'', active: false },
+          datatype: { col:'datatype_id', act:'updateDataType', value: [], name:'', active: false },
+          sectiontype: { col:'sectiontype_id', act:'updateSectionType', value: [], name:'', active: false },
+          accesstype: { col:'accesstype_id', act:'updateAccessType', value: [], name:'', active: false },
+          accessmethod: { col:'accessmethod_id', act:'updateAccessMethod', value: [], name:'', active: false },
           yop: { col:'yop', act:'updateYop', value:[], name:'', active: false },
         },
         mutable_fields: this.fields,
@@ -239,6 +248,7 @@
         success: '',
         failure: '',
         runtype: '',
+        format: 'Compact',
         form: new window.Form({
             title: '',
             save_id: this.input_save_id,
@@ -330,6 +340,7 @@
                   this.$store.dispatch(action,this.filter_data[field.id].value);
                   this.updateColumns();
                   this.active_filter_count--;
+                  // turning off institution means turning off instgroup filter, too
                   if (field.id == 'institution') {
                       var act2 = this.filter_data.institutiongroup.act+'Filter';
                       this.filter_data.institutiongroup.value = -1;
@@ -348,7 +359,8 @@
             // Treat preset date range as a filter for UI
             // inbound: set to whatever was saved; cleared: show date-selectors instead
             if (filter == 'dateRange') {
-                this.mutable_rangetype = '';
+                // If we're clearing and displaying dropdowns, the type is now Custom
+                this.mutable_rangetype = 'Custom';
                 return;
             }
             let method = this.filter_data[filter].act+'Filter';
@@ -414,6 +426,7 @@
           })
           params['fields'] = JSON.stringify(_flds);
           params['zeros'] = this.zeroRecs;
+          params['format'] = this.format;
 
           if (this.runtype != 'export') {   // currently only other value is 'preview'
               return new Promise((resolve, reject) => {
@@ -433,11 +446,15 @@
               a.click();
           }
         },
+        changeFormat () {
+          this.updateColumns();
+        },
         updateColumns () {
           var self = this;
           axios.post('/update-report-columns', {
               filters: this.all_filters,
-              fields: this.mutable_fields
+              fields: this.mutable_fields,
+              format: this.format
           })
           .then( function(response) {
               if (response.data.result) {
@@ -541,10 +558,11 @@
             } else {
                 if (this.filter_data[idx].value.constructor === Array) {
                     this.filter_data[idx].value = [];
+                    this.$store.dispatch(action,[]);
                 } else {
                     this.filter_data[idx].value = -1;
+                    this.$store.dispatch(action,-1);
                 }
-                this.$store.dispatch(action,-1);
             }
         }
       });
@@ -568,6 +586,8 @@
       if (this.is_admin || this.is_viewer) {
           if (this.preset_filters['institutiongroup_id']>0) {
               this.filterGroup = true;
+              // activate manually since instgroup isn't a "column"
+              this.filter_data['institutiongroup'].active = true;
           }
           // filter by inst if preset defined - BUT only if group filtering is inactive (group > inst)
           if (this.preset_filters['inst_id'].length>0 && !this.filterGroup) {

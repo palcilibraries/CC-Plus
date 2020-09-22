@@ -49,9 +49,14 @@ class Sushi extends Model
         $this->severity = "";
         $client = new Client();   //GuzzleHttp\Client
 
+        // ASME (there may be others) checks the Agent and returns 403 if it doesn't like what it sees
+        $options = [
+            'headers' => ['User-Agent' => "Mozilla/5.0 (CC-Plus custom) Firefox/80.0"]
+        ];
+
        // Make the request and convert into JSON
         try {
-             $result = $client->get($uri);
+             $result = $client->request('GET', $uri, $options);
         } catch (\Exception $e) {
             if ($e->hasResponse()) {
                 $response = $e->getResponse();

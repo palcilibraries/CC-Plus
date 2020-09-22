@@ -129,6 +129,11 @@ class SushiSettingController extends Controller
         $this->validate($request, ['prov_id' => 'required']);
         $provider = Provider::findOrFail($request->prov_id);
 
+        // ASME (there may be others) checks the Agent and returns 403 if it doesn't like what it sees
+        $options = [
+            'headers' => ['User-Agent' => "Mozilla/5.0 (CC-Plus custom) Firefox/80.0"]
+        ];
+
        // Begin setting up the URI by cleaning/standardizing the server_url_r5 string in the setting
         $_url = rtrim($provider->server_url_r5);    // remove trailing whitespace
         $_url = preg_replace('/\/?reports\/?/i', '', $_url); // take off any methods with any bounding slashes
@@ -151,7 +156,7 @@ class SushiSettingController extends Controller
         $rows = array();
         $client = new Client();   //GuzzleHttp\Client
         try {
-            $response = $client->get($request_uri);
+            $response = $client->request('GET', $request_uri, $options);
             $rows[] = "JSON Response:";
             $rows[] = json_decode($response->getBody(), JSON_PRETTY_PRINT);
             $result = 'Service status successfully received';

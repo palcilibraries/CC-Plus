@@ -84,8 +84,11 @@
           </v-radio-group>
         </v-col>
       </v-row>
-      <v-row>
+      <v-row v-if="form.reports.length>0">
         <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Submit</v-btn>
+      </v-row>
+      <v-row v-else-if="form.inst.length>0 && form.prov.length>0 && available_reports.length==0">
+        <span class="form-fail" role="alert">No reports defined or available for selected Provider/Institution.</span>
       </v-row>
     </form>
     <div>
@@ -121,7 +124,7 @@
             }),
             maxYM: '',
             inst_name: '',
-            available_providers: [],
+            available_providers: this.providers,
             available_reports: [],
         }
     },
@@ -143,8 +146,8 @@
             let preset_id = Number(this.presets['prov_id']);
             let prov = this.available_providers.find(p => p.id == preset_id);
             if (prov) {
-                this.onProvChange(preset_id);
-                this.form.prov[0] = preset_id;
+                this.form.prov = [preset_id];
+                this.onProvChange([preset_id]);
             } else {
                 this.failure = 'The preset provider is not available - verify sushi settings';
                 this.form.prov = [];
@@ -162,8 +165,8 @@
             this.selections_made = true;
         },
         // Update mutable providers when inst changes
-        onInstChange(inst) {
-            if (inst.length == 0) {
+        onInstChange(inst_list) {
+            if (inst_list.length == 0) {
                 this.available_providers = this.providers;
             } else {
                 this.updateProviders();
@@ -180,22 +183,23 @@
                  })
                  .catch(error => {});
         },
-        onProvChange(providers) {
+        onProvChange(prov_list) {
             this.failure = '';
             // If no providers, set to available to all
-            if (providers.length == 0) {
+            if (prov_list.length == 0) {
                 this.available_reports = this.all_reports;
             // Update available reports when providers changes
             } else {
-                let self = this;
-                self.available_reports = [];
-                providers.forEach(provid => {
-                    let prov = self.available_providers.find(obj => obj.id == provid);
-                    prov.reports.forEach(report =>{
-                        if (!self.available_reports.some(elem => elem.id === report.id)) {
-                            self.available_reports.push(report);
-                        }
-                    });
+                this.available_reports = [];
+                prov_list.forEach(pid => {
+                    let cur_prov = this.providers.find(p => p.id == pid);
+                    if (typeof(cur_prov.reports) != 'undefined') {
+                        cur_prov.reports.forEach(report =>{
+                            if (!this.available_reports.some(elem => elem.id === report.id)) {
+                                this.available_reports.push(report);
+                            }
+                        });
+                    }
                 });
             }
             this.selections_made = true;
@@ -231,7 +235,7 @@
     },
     mounted() {
       if ( !this.is_admin ) {
-          this.form.inst[0] = this.institutions[0].id;
+          this.form.inst = [this.institutions[0].id];
           this.inst_name = this.institutions[0].name;
           this.onInstChange(this.form.inst);
       }
@@ -241,8 +245,8 @@
       // Apply inbound institution preset (provider handled in the InstChange function)
       if (this.presets['inst_id']) {
           let instid = Number(this.presets['inst_id']);
-          this.onInstChange(instid);
-          this.form.inst[0] = instid;
+          this.form.inst = [instid];
+          this.onInstChange([instid]);
       }
 
       console.log('ManualHarvest Component mounted.');

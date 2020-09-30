@@ -1190,7 +1190,9 @@ class ReportController extends Controller
                 }
             }
             // Otherwise, return the inst_id filter values
-            $return_values = self::$input_filters['inst_id'];
+            if (isset(self::$input_filters['inst_id'])) {
+                $return_values = self::$input_filters['inst_id'];
+            }
         }
         if (isset(self::$input_filters[$column])) {
             if (self::$input_filters[$column] > 0) {

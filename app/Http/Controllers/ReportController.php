@@ -483,18 +483,21 @@ class ReportController extends Controller
             // Counts for Metrics in 'Compact' format expressed in columns labelled <metric>_YYYY_mm,
             // Plus a Reporting Period Total for each metric. Single-month reports don't get an RP_total column
             } else {
+                $met_head = array();
+                $ttl_head = array();
                 foreach ($fields as $field) {
                     if ($field['is_metric']) {
                         if ($num_months > 1) {
                             foreach ($year_mons as $ym) {
-                                $right_head[] = $field['legend'] . ' ' . $ym;
+                                $met_head[] = $field['legend'] . ' ' . $ym;
                             }
-                            $right_head[] = 'Reporting Period Total' . ' ' . $field['legend'];
+                            $ttl_head[] = 'Reporting Period Total' . ' ' . $field['legend'];
                         } else {
-                            $right_head[] = $field['legend'];
+                            $met_head[] = $field['legend'];
                         }
                     }
                 }
+                $right_head = ($num_months > 1) ? array_merge($met_head,$ttl_head) : $met_head;
             }
         }
 

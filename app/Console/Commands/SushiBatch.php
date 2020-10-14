@@ -118,9 +118,11 @@ class SushiBatchCommand extends Command
 
        // Get Provider data as a collection regardless of whether we just need one
         if ($prov_id == 0) {
-            $providers = Provider::where('is_active', '=', true)->get();
+            $providers = Provider::with('SushiSettings','reports')
+                                 ->where('is_active', '=', true)->get();
         } else {
-            $providers = Provider::where('is_active', '=', true)->where('id', '=', $prov_id)->get();
+            $providers = Provider::with('SushiSettings','reports')
+                                 ->where('is_active', '=', true)->where('id', '=', $prov_id)->get();
         }
 
        // Loop through providers

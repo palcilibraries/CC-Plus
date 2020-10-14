@@ -18,6 +18,8 @@ class Kernel extends ConsoleKernel
       Commands\SushiBatchCommand::class,
       Commands\SushiQLoader::class,
       Commands\SushiQWorker::class,
+      Commands\DataArchiveCommand::class,
+      Commands\DataPurgeCommand::class,
     ];
 
     /**

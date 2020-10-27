@@ -53,7 +53,7 @@ class ConsortiumCommand extends Command
         $count = DB::table('information_schema.tables')->where("TABLE_SCHEMA", "=", $conso_db)->count();
         if ($count > 0) {
             $this->error('Another database named ' . $conso_db . ' already exists!');
-            exit;
+            return 0;
         }
         $_active = $this->ask('Make it active (Y/N) [Y]?');
         if ($_active == "") {
@@ -143,5 +143,6 @@ class ConsortiumCommand extends Command
         $this->line('<fg=cyan>New consortium : ' . $conso_data['name'] . ' Successfully Created.');
 
         $this->line('<fg=cyan>NOTE: app/Console/Kernel.php needs updating in order to automate harvesting!');
+        return 1;
     }
 }

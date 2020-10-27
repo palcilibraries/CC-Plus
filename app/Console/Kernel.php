@@ -14,8 +14,8 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
       Commands\ConsortiumCommand::class,
-      Commands\C5TestCommand::class,
-      Commands\SushiBatchCommand::class,
+      Commands\C5Test::class,
+      Commands\SushiBatch::class,
       Commands\SushiQLoader::class,
       Commands\SushiQWorker::class,
       Commands\DataArchiveCommand::class,

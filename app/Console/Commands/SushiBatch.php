@@ -23,7 +23,7 @@ use App\HarvestLog;
  *   (60-100K characters is not uncommon). This script will fail and die with a
  *   shutdown exception (that cannot be caught) if it cannot allocate enough memory.
  */
-class SushiBatchCommand extends Command
+class SushiBatch extends Command
 {
     /**
      * The name and signature for the Sushi Batch processing console command.
@@ -74,7 +74,7 @@ class SushiBatchCommand extends Command
         }
         if (is_null($consortium)) {
             $this->line('Cannot Load Consortium: ' . $conarg);
-            exit;
+            return 0;
         }
 
        // Aim the consodb connection at specified consortium's database and initialize the
@@ -113,7 +113,7 @@ class SushiBatchCommand extends Command
         }
         if (count($requested_reports) == 0) {
             $this->error("No matching reports found; only master reports allowed.");
-            exit;
+            return 0;
         }
 
        // Get Provider data as a collection regardless of whether we just need one
@@ -199,7 +199,7 @@ class SushiBatchCommand extends Command
                             $harvest->save();
                         } else {
                             $this->line('Failed adding to HarvestLog! Error code:' . $errorCode);
-                            exit;
+                            return 0;
                         }
                     }
 
@@ -283,5 +283,6 @@ class SushiBatchCommand extends Command
         }  // foreach providers
 
         $this->line("Harvest ends at : " . date("Y-m-d H:i:s"));
+        return 1;
     }
 }

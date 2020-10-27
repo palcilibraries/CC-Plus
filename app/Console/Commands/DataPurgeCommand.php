@@ -61,7 +61,7 @@ class DataPurgeCommand extends Command
         }
         if (is_null($consortium)) {
             $this->line('Cannot Load Consortium: ' . $conarg);
-            exit;
+            return 0;
         }
 
        // Aim the consodb connection at specified consortium's database and initialize the
@@ -77,7 +77,7 @@ class DataPurgeCommand extends Command
             $range[1] = $this->option('to');
             if (is_null($range[0]) || is_null($range[1])) {
                 $this->line('Error: One of the Year or From/To date range options is required');
-                exit;
+                return 0;
             }
         } else {
             $range[0] = $this->option('year') . '-01';
@@ -95,7 +95,7 @@ class DataPurgeCommand extends Command
                 $providerName = $provider->name;
             } else {
                 $this->error("Error: Provider with ID: " . $prov_id . "not found.");
-                exit;
+                return 0;
             }
             $prov_ids[] = $provider->id;
         } else {
@@ -110,7 +110,7 @@ class DataPurgeCommand extends Command
                 $institutionName = $institution->name;
             } else {
                 $this->error("Error: Institution with ID: " . $inst_id . "not found.");
-                exit;
+                return 0;
             }
             $inst_ids[] = $institution->id;
         } else {
@@ -132,7 +132,7 @@ class DataPurgeCommand extends Command
             $report = $reports->where('name',$rept)->first();
             if (!$report) {
                 $this->error("Error: cannot export " . $rept . " data. Only master report names supported.");
-                exit;
+                return 0;
             }
             $report_ids[] = $report->id;
             $data_tables = array(strtolower($rept) . '_report_data');
@@ -151,7 +151,7 @@ class DataPurgeCommand extends Command
         $_msg .= "where Year_Month is between " . $range[0] . " and " . $range[1] . " (inclusive).";
         $this->comment($_msg);
         if (!$this->confirm('Proceed with this operation?')) {
-            exit;
+            return 0;
         }
 
        // Loop through data tables; delete matching rows from each master report table.
@@ -220,7 +220,7 @@ class DataPurgeCommand extends Command
             $this->comment("Purging these will also remove the associated SUSHI settings.");
             if (!$this->confirm('ARE YOU SURE you want to proceed with this operation?')) {
                 $this->info('Providers and Institutions not changed.');
-                exit;
+                return 0;
             }
 
             // Toss all the providers and insts with no data (sushisettings should cascasde)
@@ -236,7 +236,7 @@ class DataPurgeCommand extends Command
 
        // All done...
         $this->line('Data Purge successfully completed');
-        exit;
+        return 1;
     }
 
     // Turn a fromYM/toYM range into an array of yearmon strings
@@ -245,9 +245,6 @@ class DataPurgeCommand extends Command
         $yearmons = array();
         $start = strtotime($range[0]);
         $end = strtotime($range[1]);
-        if ($start > $end) {
-            return $yearmons;
-        }
         while ($start <= $end) {
             $yearmons[] = date('Y-m', $start);
             $start = strtotime("+1 month", $start);

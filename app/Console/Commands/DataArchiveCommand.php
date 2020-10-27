@@ -76,7 +76,7 @@ class DataArchiveCommand extends Command
         }
         if (is_null($consortium)) {
             $this->line('Cannot Load Consortium: ' . $conarg);
-            exit;
+            return 0;
         }
 
        // Aim the consodb connection at specified consortium's database and initialize the
@@ -92,7 +92,7 @@ class DataArchiveCommand extends Command
             $range[1] = $this->option('to');
             if (is_null($range[0]) || is_null($range[1])) {
                 $this->line('Error: One of the Year or From/To date range options is required');
-                exit;
+                return 0;
             }
         } else {
             $range[0] = $this->option('year') . '-01';
@@ -110,7 +110,7 @@ class DataArchiveCommand extends Command
                 $providerName = $providers[0]->name;
             } else {
                 $this->error("Error: Provider with ID: " . $prov_id . "not found.");
-                exit;
+                return 0;
             }
         } else {
             $providerName = "ALL";
@@ -123,7 +123,7 @@ class DataArchiveCommand extends Command
                 $institutionName = $institutions[0]->name;
             } else {
                 $this->error("Error: Institution with ID: " . $inst_id . "not found.");
-                exit;
+                return 0;
             }
         } else {
             $institutionName = "ALL";
@@ -144,7 +144,7 @@ class DataArchiveCommand extends Command
             $report = $reports->where('name',$rept)->first();
             if (!$report) {
                 $this->error("Error: cannot export " . $rept . " data. Only master report names supported.");
-                exit;
+                return 0;
             }
             $report_ids[] = $report->id;
             $data_tables = array(strtolower($rept) . '_report_data');
@@ -164,7 +164,7 @@ class DataArchiveCommand extends Command
         $is_created = Storage::put($outputFile,$headerRecs);
         if (!$is_created) {
             $this->error("Error - unable to create file : " . $outputFile);
-            exit;
+            return 0;
         }
 
        // Loop through data tables; generate SQL Insert commands from each master report table
@@ -274,7 +274,7 @@ class DataArchiveCommand extends Command
         $_res = Storage::append($outputFile,"--\nSET FOREIGN_KEY_CHECKS=1;\n");
         $this->line('Archive successfully created');
         $this->line('Output saved in: ' . Storage::disk('local')->path($outputFile));
-        exit;
+        return 0;
     }
 
     // Save related table records in $outputFile as an insert statement
@@ -323,7 +323,7 @@ class DataArchiveCommand extends Command
         if (in_array('id',$table_columns)) {
             return $records->pluck('id')->toArray();
         } else {
-            return false;
+            return 0;
         }
     }
 
@@ -372,9 +372,6 @@ class DataArchiveCommand extends Command
         $yearmons = array();
         $start = strtotime($range[0]);
         $end = strtotime($range[1]);
-        if ($start > $end) {
-            return $yearmons;
-        }
         while ($start <= $end) {
             $yearmons[] = date('Y-m', $start);
             $start = strtotime("+1 month", $start);

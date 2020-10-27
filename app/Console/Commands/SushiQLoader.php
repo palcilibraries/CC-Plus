@@ -71,7 +71,7 @@ class SushiQLoader extends Command
         }
         if (is_null($consortium)) {
             $this->line('Cannot locate Consortium: ' . $conarg);
-            exit;
+            return 0;
         }
 
        // Aim the consodb connection at specified consortium's database and initialize the
@@ -106,7 +106,7 @@ class SushiQLoader extends Command
         }
         if (count($requested_reports) == 0) {
             $this->error("No matching reports found; only master reports allowed.");
-            exit;
+            return 0;
         }
 
        // Get active provider data
@@ -167,7 +167,7 @@ class SushiQLoader extends Command
                             $harvest->save();
                         } else {
                             $this->line('Failed adding to HarvestLog! Error code:' . $errorCode);
-                            exit;
+                            return 0;
                         }
                     }
                 } // for each report
@@ -197,5 +197,6 @@ class SushiQLoader extends Command
             $harvest->status = 'Queued';
             $harvest->save();
         }
+        return 1;
     }
 }

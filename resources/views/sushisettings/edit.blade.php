@@ -5,7 +5,7 @@
 
     <div>
     	<div class="page-header">
-    	    <h1>{{ $setting->institution->name }} / {{ $setting->provider->name }} </h1>
+    	    <h1><a href="/institutions/{{ $setting->institution>id }}">{{ $setting->institution->name }}</a> / <a href="/providers/{{ $setting->provider>id }}">{{ $setting->provider->name }}</a> </h1>
     	</div>
     </div>
 

@@ -240,7 +240,7 @@
           this.onInstChange(this.form.inst);
       }
       let dt = new Date();
-      this.maxYM = dt.getFullYear()+"-"+("0"+(dt.getMonth() + 1));
+      this.maxYM = dt.getFullYear() + '-' + ('0' + (dt.getMonth()+1)).slice(-2);
 
       // Apply inbound institution preset (provider handled in the InstChange function)
       if (this.presets['inst_id']) {

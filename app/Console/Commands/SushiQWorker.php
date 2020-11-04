@@ -80,11 +80,11 @@ class SushiQWorker extends Command
         }
         if (is_null($consortium)) {
             $this->line($ts . $ident . 'Cannot locate Consortium: ' . $conarg);
-            exit;
+            return 0;
         }
         if (!$consortium->is_active) {
             $this->line($ts . $ident . 'Consortium: ' . $conarg . " is NOT ACTIVE ... quitting.");
-            exit;
+            return 0;
         }
 
        // Aim the consodb connection at specified consortium's database and initialize the
@@ -107,7 +107,7 @@ class SushiQWorker extends Command
                       ->whereIn('ing.status', $runable_status)
                       ->pluck('job.id');
         if (sizeof($job_ids) == 0) {
-            exit;
+            return 0;
         }
 
        // Save all consortia records for detecting active jobs, strings for job queries
@@ -125,7 +125,7 @@ class SushiQWorker extends Command
                                  ->orderBy('id', 'ASC')
                                  ->get();
             if (empty($jobs)) {
-                exit;
+                return 0;
             }
 
            // Find the next available job
@@ -163,7 +163,7 @@ class SushiQWorker extends Command
                 $job->harvest->status = 'Active';
                 $job->harvest->save();
             } else {
-                exit;
+                return 0;
             }
 
            // Setup begin and end dates for sushi request
@@ -342,6 +342,7 @@ class SushiQWorker extends Command
                          ->whereIn('ing.status', $runable_status)
                          ->pluck('job.id');
         }   // While there are jobs in the queue
+        return 1;
     }
 
     /**

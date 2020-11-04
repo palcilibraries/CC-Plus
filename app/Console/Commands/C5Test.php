@@ -18,7 +18,7 @@ use \ubfr\c5tools\JsonR5Report;
 use \ubfr\c5tools\CheckResult;
 use \ubfr\c5tools\ParseException;
 
-class C5TestCommand extends Command
+class C5Test extends Command
 {
     /**
      * The name and signature of the console command.
@@ -64,7 +64,7 @@ class C5TestCommand extends Command
         }
         if (is_null($consortium)) {
             $this->line('Cannot Load Consortium: ' . $conarg);
-            exit;
+            return 0;
         }
 
        // The other required arguments
@@ -121,7 +121,7 @@ class C5TestCommand extends Command
                     $json_text = file_get_contents($infile);
                     if ($json_text === false) {
                         $this->line("System Error - reading file {$infile} failed");
-                        exit;
+                        return 0;
                     }
 
                    // Issue a warning if it looks like we'll run out of memory
@@ -139,13 +139,13 @@ class C5TestCommand extends Command
                     $json = json_decode($json_text);
                     if (json_last_error() !== JSON_ERROR_NONE) {
                         $this->line("Error decoding JSON - " . json_last_error_msg());
-                        exit;
+                        return 0;
                     }
 
                    // Make sure $json is a proper object
                     if (! is_object($json)) {
                         $this->line('JSON must be an object, found ' . (is_array($json) ? 'an array' : 'a scalar'));
-                        exit;
+                        return 0;
                     }
 
                    // Validate report
@@ -153,6 +153,7 @@ class C5TestCommand extends Command
                         $valid_report = self::validateJson($json);
                     } catch (\Exception $e) {
                         $this->line("COUNTER Validation Failed: " . $e->getMessage());
+                        return 0;
                     }
 
                    // Store the report if it's valid
@@ -166,6 +167,7 @@ class C5TestCommand extends Command
         $this->line("Memory Usage : " . memory_get_usage() . " / " . memory_get_usage(true));
         $this->line("Peak Usage: " . memory_get_peak_usage() . " / " . memory_get_peak_usage(true));
         $this->line("Test completed: " . date("Y-m-d H:i:s"));
+        return 1;
     }
 
     protected static function validateJson($json)

@@ -10,13 +10,10 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-// Route::get('/', function () {
-//     return view('reports.create');
-// })->middleware('auth');
-//
-Route::get('/', 'SavedReportController@home')->name('home')->middleware(['auth']);
+Auth::routes();
+Route::get('/', 'SavedReportController@home')->name('index')->middleware(['auth']);
 Route::get('/home', 'SavedReportController@home')->name('home')->middleware(['auth']);
-
+//
 Route::resource('/consortia','ConsortiumController')->middleware('can:update,consortium');
 Route::resource('/roles', 'RoleController');
 Route::resource('/users', 'UserController');
@@ -25,14 +22,12 @@ Route::resource('/institutiontypes', 'InstitutionTypeController');
 Route::resource('/institutiongroups', 'InstitutionGroupController');
 Route::resource('/providers', 'ProviderController');
 Route::resource('/harvestlogs', 'HarvestLogController');
-// Route::resource('/failedharvests', 'FailedHarvestController');
 Route::resource('/sushisettings', 'SushiSettingController')->middleware(['auth','role:Admin,Manager']);
 Route::resource('/alertsettings', 'AlertSettingController')->middleware(['auth','role:Admin,Manager']);
 Route::resource('/savedreports', 'SavedReportController')->middleware(['auth']);
 Route::resource('/systemalerts', 'SystemAlertController')->middleware(['auth']);
-
-Auth::routes();
 Route::get('logout', 'Auth\LoginController@logout');
+//
 // Route::get('/globaladmin', 'GlobalAdminController@index')->middleware('auth','role:GlobalAdmin');
 // Route::get('/', 'ReportController@index')->name('reports')->middleware('auth');
 Route::get('/admin', 'AdminController@index')->name('admin')->middleware(['auth','role:Admin,Manager']);

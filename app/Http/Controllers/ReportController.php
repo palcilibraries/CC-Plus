@@ -170,14 +170,6 @@ class ReportController extends Controller
             $title = $saved_report->title;
             $preset_filters = $saved_report->filterBy();
             $inherited = preg_split('/,/', $saved_report->inherited_fields);
-            $field_data = ReportField::with('reportFilter')
-                                     ->where('report_id', '=', $saved_report->master_id)
-                                     ->whereIn('id',$inherited)
-                                     ->get();
-            $field_data->whereIn('id', $inherited)->transform(function ($record) {
-                                                        $record['active'] = 1;
-                                                        return $record;
-            });
             $rangetype = $saved_report->date_range;
 
             // update the private global filters and get available data bounds
@@ -214,7 +206,8 @@ class ReportController extends Controller
         // Get the report model and all rows of the reportFilter model
         $report = Report::where('id', $preset_filters['report_id'])->first();
         if (!$report) {
-            return response()->json(['result' => false, 'msg' => 'Report ID: ' . $report_id . ' is undefined']);
+            return response()
+                ->json(['result' => false, 'msg' => 'Report ID: ' . $preset_filters['report_id'] . ' is undefined']);
         }
         $all_filters = ReportFilter::all();
 
@@ -254,20 +247,27 @@ class ReportController extends Controller
             }
         }
 
-        // Get fields if we're not loading a saved report
-        if (!isset($request->saved_id)) {
-            // Get all fields
-            if ($report->parent_id == 0) {
-                $field_data = $report->reportFields;
-            } else {
-                $field_data = $report->parent->reportFields;
+        // Get all master-fields
+        if ($report->parent_id == 0) {
+            $master_fields = $report->reportFields;
+        } else {
+            $master_fields = $report->parent->reportFields;
+        }
+
+        // If previewing a savedreport, the $inherited defines which columns are enabled
+        if (isset($request->saved_id)) {
+            foreach ($master_fields as $fld) {
+                $fld->active = (in_array($fld->id,$inherited)) ?  true : false;
             }
+
+        // not loading a saved report
+        } else  {
             // If we're previewing a subview, the inherited fields determine which fields are active intially.
             // All will still be available to allow filtering or activation during the preview.
             if ($report->parent_id > 0) {
                 // Turn report->inherited_fields into key=>value array
                 $inherited = $report->parsedInherited();
-                foreach ($field_data as $field) {
+                foreach ($master_fields as $field) {
                     $field->active = (array_key_exists($field->id, $inherited)) ? 1 : 0;
                     if ($field->active) {
                         $filter = $all_filters->find($field->report_filter_id);
@@ -279,11 +279,11 @@ class ReportController extends Controller
             }
         }
 
-        // Create fields and columns arrays for the component based on $field_data and preset filters
+        // Create fields and columns arrays for the component based on $master_fields and preset filters
         $fields = array();
         $columns = array();
         $year_mons = self::createYMarray();
-        foreach ($field_data as $fld) {
+        foreach ($master_fields as $fld) {
             $key = (is_null($fld->qry_as)) ? $fld->qry : $fld->qry_as;
             $field = array('id' => $key,'text' => $fld->legend,'active' => $fld->active,'is_metric' => $fld->is_metric);
 

@@ -62,7 +62,7 @@
     },
     mounted() {
       if (this.user_reports.length > 10) hide_user_footer = false;
-      if (this.counter_reports.length > 20) hide_user_footer = false;
+      if (this.counter_reports.length > 20) hide_counter_footer = false;
       console.log('ReportView Component mounted.');
     }
   }

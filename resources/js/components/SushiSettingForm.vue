@@ -1,6 +1,16 @@
 <template>
   <div class="details">
-	<h2 class="section-title">Sushi Settings</h2>
+  	<v-row no-gutters>
+	  <v-col class="d-flex ma-2" cols="2" sm="2">
+		<h2 class="section-title">Sushi Settings</h2>
+	  </v-col>
+      <v-col class="d-flex ma-2" cols="2" sm="2">
+        <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+      </v-col>
+      <v-col v-if="is_admin && mutable_prov.can_delete" class="d-flex ma-2" cols="2" sm="2">
+        <v-btn small class='btn btn-danger' type="button" @click="destroy(setting.id)">Delete</v-btn>
+      </v-col>
+	</v-row>
     <div v-if="!showForm">
       <!-- form display control and confirmations  -->
       <!-- Values-only when form not active -->
@@ -13,9 +23,6 @@
         </v-col>
       </v-row>
       <v-row class="d-flex ma-2 pa-0">
-    	<v-col class="d-flex pa-4" cols="3">
-           <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
-        </v-col>
         <v-col class="d-flex pa-4" cols="3">
           <v-btn small color="secondary" type="button" @click="testSettings">test</v-btn>
         </v-col>
@@ -23,9 +30,6 @@
           <a :href="'/harvestlogs/create?inst='+setting.inst_id+'&prov='+setting.prov_id">
             <v-btn small color="primary" type="button">harvest</v-btn>
           </a>
-        </v-col>
-        <v-col class="d-flex pa-4" cols="3">
-          <v-btn small class='btn btn-danger' type="button" @click="destroy(setting.id)">Delete</v-btn></td>
         </v-col>
       </v-row>
       <v-row>

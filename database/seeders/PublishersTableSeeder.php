@@ -1,8 +1,11 @@
 <?php
 
+namespace Database\Seeders;
+
+use DB;
 use Illuminate\Database\Seeder;
 
-class PlatformsTableSeeder extends Seeder
+class PublishersTableSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -14,7 +17,7 @@ class PlatformsTableSeeder extends Seeder
 
      // Make sure we're talking to the global database
       $_db = \Config::get('database.connections.globaldb.database');
-      $table = $_db . ".platforms";
+      $table = $_db . ".publishers";
 
      // Make sure table is empty
       if (DB::table($table)->get()->count() == 0) {

@@ -30,12 +30,13 @@ class UserController extends Controller
     {
 
         // Admins see all, managers see only their inst, eveyone else gets an error
-        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
-        if (auth()->user()->hasRole("Admin")) {
-            $user_data = User::with('roles', 'institution:id,name')->orderBy('id', 'ASC')->get();
+        $thisUser = auth()->user();
+        abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
+        if ($thisUser->hasRole("Admin")) {
+            $user_data = User::with('roles','institution:id,name')->orderBy('name', 'ASC')->get();
         } else {    // is manager
-            $user_data = User::with('roles', 'institution:id,name')->orderBy('ID', 'ASC')
-                         ->where('inst_id', '=', auth()->user()->inst_id)->get();
+            $user_data = User::with('roles', 'institution:id,name')->orderBy('name', 'ASC')
+                             ->where('inst_id', '=', $thisUser->inst_id)->get();
         }
 
         // Map role names and status to strings for the view
@@ -49,16 +50,17 @@ class UserController extends Controller
             return $user;
         });
 
-        // Admin gets a select-box of institutions, otherwise just the users' inst
-        if (auth()->user()->hasRole('Admin')) {
-            $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
+        // Admin gets a select-box of institutions (built-in create option), otherwise just the users' inst
+        if ($thisUser->hasRole('Admin')) {
+            $institutions = Institution::orderBy('name', 'ASC')->get(['id','name'])->toArray();
         } else {
-            $institutions = Institution::where('id', '=', auth()->user()->inst_id)
+            $institutions = Institution::where('id', '=', $thisUser->inst_id)
                                        ->get(['id','name'])->toArray();
         }
 
         // Set choices for roles; disallow choosing roles higher current user's max role
-        $all_roles = Role::where('id', '<=', auth()->user()->maxRole())->get(['name', 'id'])->toArray();
+        $all_roles = Role::where('id', '<=', $thisUser->maxRole())->orderBy('name', 'ASC')
+                         ->get(['name', 'id'])->toArray();
 
         return view('users.index', compact('data', 'institutions', 'all_roles'));
     }
@@ -81,7 +83,8 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        if (!auth()->user()->hasAnyRole(['Admin','Manager'])) {
+        $thisUser = auth()->user();
+        if (!$thisUser->hasAnyRole(['Admin','Manager'])) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
         $this->validate($request, [
@@ -90,10 +93,9 @@ class UserController extends Controller
             'password' => 'required|same:confirm_pass',
             'inst_id' => 'required'
         ]);
-
         $input = $request->all();
-        if (!auth()->user()->hasRole("Admin")) {     // managers only store to their institution
-            $input['inst_id'] = auth()->user()->inst_id;
+        if (!$thisUser->hasRole("Admin")) {     // managers only store to their institution
+            $input['inst_id'] = $thisUser->inst_id;
         }
         if (!isset($input['is_active'])) {
             $input['is_active'] = 0;
@@ -110,10 +112,10 @@ class UserController extends Controller
         $viewer_role_id = Role::where('name', '=', 'Viewer')->value('id');
         $user = User::create($input);
         foreach ($new_roles as $r) {
-            if (!auth()->user()->hasRole("Admin") && $r == $viewer_role_id) {
+            if (!$thisUser->hasRole("Admin") && $r == $viewer_role_id) {
                 continue;   // only allow admin to set Viewer
             }
-            if (auth()->user()->maxRole() >= $r) {
+            if ($thisUser->maxRole() >= $r) {
                 $user->roles()->attach($r);
             }
         }
@@ -156,21 +158,21 @@ class UserController extends Controller
      */
     public function edit($id)
     {
-        // $user = User::with('roles')->findOrFail($id);
+        $thisUser = auth()->user();
         $user = User::findOrFail($id);
         $user_roles = $user->roles()->pluck('role_id')->all();
         abort_unless($user->canManage(), 403);
 
         // Admin gets a select-box of institutions, otherwise just the users' inst
-        if (auth()->user()->hasRole('Admin')) {
-            $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
+        if ($thisUser->hasRole('Admin')) {
+            $institutions = Institution::orderBy('name', 'ASC')->get(['id','name'])->toArray();
         } else {
-            $institutions = Institution::where('id', '=', auth()->user()->inst_id)
+            $institutions = Institution::where('id', '=', $thisUser->inst_id)
                                        ->get(['id','name'])->toArray();
         }
 
         // Set choices for roles; disallow choosing roles higher current user's max role
-        $all_roles = Role::where('id', '<=', auth()->user()->maxRole())->get(['name', 'id'])->toArray();
+        $all_roles = Role::where('id', '<=', $thisUser->maxRole())->get(['name', 'id'])->toArray();
 
         return view('users.edit', compact('user', 'user_roles', 'all_roles', 'institutions'));
     }
@@ -184,6 +186,7 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $thisUser = auth()->user();
         $user = User::findOrFail($id);
         if (!$user->canManage()) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
@@ -204,8 +207,8 @@ class UserController extends Controller
         $input = array_except($input, array('confirm_pass'));
 
         // Only admins can change inst_id
-        if (!auth()->user()->hasRole("Admin")) {
-            $input['inst_id'] = auth()->user()->inst_id;
+        if (!$thisUser->hasRole("Admin")) {
+            $input['inst_id'] = $thisUser->inst_id;
         }
 
         // Make sure roles include "User"
@@ -225,11 +228,11 @@ class UserController extends Controller
             $user->roles()->detach();
             foreach ($new_roles as $r) {
                 // Current user must be an admin to set Viewer role
-                if (!auth()->user()->hasRole("Admin") && $r == $viewer_role_id) {
+                if (!$thisUser->hasRole("Admin") && $r == $viewer_role_id) {
                     continue;
                 }
                 // ignore roles higher than current user's max
-                if (auth()->user()->maxRole() >= $r) {
+                if ($thisUser->maxRole() >= $r) {
                     $user->roles()->attach($r);
                 }
             }
@@ -279,13 +282,15 @@ class UserController extends Controller
      */
     public function export($type)
     {
+        $thisUser = auth()->user();
+
         // Admins access all, managers only access their inst, eveyone else gets an error
-        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
-        if (auth()->user()->hasRole("Admin")) {
-            $users = User::with('roles', 'institution:id,name')->orderBy('id', 'ASC')->get();
+        abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
+        if ($thisUser->hasRole("Admin")) {
+            $users = User::with('roles', 'institution:id,name')->orderBy('name', 'ASC')->get();
         } else {    // is manager
-            $users = User::with('roles', 'institution:id,name')->orderBy('ID', 'ASC')
-                         ->where('inst_id', '=', auth()->user()->inst_id)->get();
+            $users = User::with('roles', 'institution:id,name')->orderBy('name', 'ASC')
+                         ->where('inst_id', '=', $thisUser->inst_id)->get();
         }
 
         // Setup some styles arrays
@@ -383,7 +388,7 @@ class UserController extends Controller
         $users_sheet->setCellValue('F1', 'Active');
         $users_sheet->setCellValue('G1', 'Role(s)');
         $users_sheet->setCellValue('H1', 'PWChangeReq');
-        if (auth()->user()->hasRole('Admin')) {
+        if ($thisUser->hasRole('Admin')) {
             $users_sheet->setCellValue('I1', 'Institution ID');
             $users_sheet->setCellValue('J1', 'Institution');
         }
@@ -404,7 +409,7 @@ class UserController extends Controller
             $users_sheet->setCellValue('G' . $row, $_roles);
             $_pwcr = ($user->password_change_required) ? "Y" : "N";
             $users_sheet->setCellValue('H' . $row, $_pwcr);
-            if (auth()->user()->hasRole('Admin')) {
+            if ($thisUser->hasRole('Admin')) {
                 $users_sheet->setCellValue('I' . $row, $user->inst_id);
                 $_inst = ($user->inst_id == 1) ? "Staff" : $user->institution->name;
                 $users_sheet->setCellValue('J' . $row, $_inst);
@@ -419,10 +424,10 @@ class UserController extends Controller
         }
 
         // Give the file a meaningful filename
-        if (auth()->user()->hasRole('Admin')) {
+        if ($thisUser->hasRole('Admin')) {
             $fileName = "CCplus_" . session('ccp_con_key', '') . "_Users." . $type;
         } else {
-            $fileName = "CCplus_" . preg_replace('/ /', '', auth()->user()->institution->name) . "_Users." . $type;
+            $fileName = "CCplus_" . preg_replace('/ /', '', $thisUser->institution->name) . "_Users." . $type;
         }
 
         // redirect output to client browser
@@ -446,7 +451,7 @@ class UserController extends Controller
     public function import(Request $request)
     {
         // Only Admins can import institution data
-        abort_unless(auth()->user()->hasRole(['Admin']), 403);
+        abort_unless($thisUser->hasRole(['Admin']), 403);
 
         // Handle and validate inputs
         $this->validate($request, ['csvfile' => 'required']);
@@ -463,7 +468,7 @@ class UserController extends Controller
         }
 
         // Get existing user data
-        $users = User::with('roles', 'institution:id,name')->orderBy('id', 'ASC')->get();
+        $users = User::with('roles', 'institution:id,name')->orderBy('name', 'ASC')->get();
         $institutions = Institution::get();
 
         // Process the input rows
@@ -568,7 +573,7 @@ class UserController extends Controller
         }
 
         // Recreate the users list (like index does) to be returned to the caller
-        $user_data = User::with('roles', 'institution:id,name')->orderBy('id', 'ASC')->get();
+        $user_data = User::with('roles', 'institution:id,name')->orderBy('name', 'ASC')->get();
         $users = $user_data->map(function($user) {
             $user->status = ($user->is_active == 1) ? 'Active' : 'Inactive';
             $_roles = "";

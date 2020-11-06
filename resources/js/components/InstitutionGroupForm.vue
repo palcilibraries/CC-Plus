@@ -83,15 +83,17 @@
         },
         methods: {
             addInst (inst) {
-              // Add the entry to the members list
+              // Add the entry to the members list and re-sort it
               this.mutable_group.institutions.push(inst);
+              this.mutable_group.institutions.sort((a,b) => { return a.name.valueOf() > b.name.valueOf(); });
               // Remove the setting from the not_members list
               this.mutable_not_members.splice(this.mutable_not_members.findIndex(i=> i.id == inst.id),1);
               this.curInst = {};
 			},
             delInst (inst) {
-              // Add the entry to the not_members list
+              // Add the entry to the not_members list and re-sort it
               this.mutable_not_members.push(inst);
+              this.mutable_not_members.sort((a,b) => { return a.name.valueOf() > b.name.valueOf(); });
               // Remove the setting from the not_members list
               this.mutable_group.institutions.splice(this.mutable_group.institutions.findIndex(i=> i.id == inst.id),1);
               this.curInst = {};

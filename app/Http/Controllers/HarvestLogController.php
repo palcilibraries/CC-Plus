@@ -33,6 +33,7 @@ class HarvestLogController extends Controller
     */
     public function index(Request $request)
     {
+        $thisUser = auth()->user();
         $json = ($request->input('json')) ? true : false;
         $conso_db = config('database.connections.consodb.database');
 
@@ -59,9 +60,9 @@ class HarvestLogController extends Controller
         }
 
         // Managers and users only see their own insts
-        $show_all = auth()->user()->hasAnyRole(["Admin","Viewer"]);
+        $show_all = $thisUser->hasAnyRole(["Admin","Viewer"]);
         if (!$show_all) {
-            $filters['inst'] = array(auth()->user()->inst_id);
+            $filters['inst'] = array($thisUser->inst_id);
         }
 
         // Make sure dates are sensible
@@ -92,7 +93,7 @@ class HarvestLogController extends Controller
                 $providers = DB::table($conso_db . '.providers as prv')
                           ->join($conso_db . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
                           ->where('prv.inst_id', 1)
-                          ->orWhere('prv.inst_id', auth()->user()->inst_id)
+                          ->orWhere('prv.inst_id', $thisUser->inst_id)
                           ->orderBy('prv.name', 'ASC')
                           ->get(['prv.id','prv.name'])
                           ->toArray();
@@ -176,11 +177,12 @@ class HarvestLogController extends Controller
      */
     public function create(Request $request)
     {
-        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
-        if (auth()->user()->hasRole('Admin')) {
+        $thisUser = auth()->user();
+        abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
+        if ($thisUser->hasRole('Admin')) {
             $is_admin = true;
         } else {
-            $user_inst = auth()->user()->inst_id;
+            $user_inst =$thisUser->inst_id;
             $is_admin = false;
         }
 
@@ -199,7 +201,7 @@ class HarvestLogController extends Controller
                                        ->where('id', '<>', 1)->where('is_active', true)
                                        ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
             array_unshift($institutions, ['id' => 0, 'name' => 'Entire Consortium']);
-            $inst_groups = InstitutionGroup::with('institutions')->get(['id','name']);
+            $inst_groups = InstitutionGroup::with('institutions')->orderBy('name', 'ASC')->get(['id','name']);
             $provider_data = Provider::with('reports')
                                  ->whereIn('id', $possible_providers)->where('is_active', true)
                                  ->orderBy('name', 'ASC')->get(['id','name']);
@@ -221,6 +223,7 @@ class HarvestLogController extends Controller
                                      $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
                                  })
                                  ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+            $inst_groups = array();
         }
         array_unshift($providers, ['id' => 0, 'name' => 'All Providers']);
 
@@ -240,7 +243,8 @@ class HarvestLogController extends Controller
      */
     public function store(Request $request)
     {
-        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+        $thisUser = auth()->user();
+        abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
 
         // Get args from the $input
         $this->validate(
@@ -249,8 +253,8 @@ class HarvestLogController extends Controller
              'fromYM' => 'required', 'toYM' => 'required', 'when' => 'required']
         );
         $input = $request->all();
-        $user_inst = auth()->user()->inst_id;
-        $is_admin = auth()->user()->hasRole('Admin');
+        $user_inst =$thisUser->inst_id;
+        $is_admin =$thisUser->hasRole('Admin');
 
         // Admins can harvest multiple insts or a group
         $inst_ids = array();
@@ -512,7 +516,6 @@ class HarvestLogController extends Controller
     */
     public function edit($id)
     {
-        // abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
         $harvest = HarvestLog::with(
             'report:id,name',
             'sushiSetting',
@@ -574,9 +577,10 @@ class HarvestLogController extends Controller
      */
     public function downloadRaw($id)
     {
+        $thisUser = auth()->user();
         $harvest = HarvestLog::findOrFail($id);
-        if (!auth()->user()->hasRole(['Admin'])) {
-            if (!auth()->user()->hasRole(['Manager']) || $harvest->sushiSetting->inst_id != auth()->user()->inst_id) {
+        if (!$thisUser->hasRole(['Admin'])) {
+            if (!$thisUser->hasRole(['Manager']) || $harvest->sushiSetting->inst_id != $thisUser->inst_id) {
                 return response()->json(['result' => false, 'msg' => 'Error - Not authorized']);
             }
         }

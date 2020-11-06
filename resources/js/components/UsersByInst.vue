@@ -92,7 +92,7 @@
                 form: new window.Form({
                     name: '',
                     inst_id: this.inst_id,
-                    is_active: 0,
+                    is_active: 1,
                     email: '',
                     password: '',
                     confirm_pass: '',
@@ -120,7 +120,7 @@
                 this.showForm = 'create';
                 this.form.name = '';
                 this.form.inst_id = this.inst_id;
-                this.form.is_active = 0;
+                this.form.is_active = 1;
                 this.form.email = '';
                 this.form.password = '';
                 this.form.confirm_pass = '';
@@ -152,8 +152,9 @@
                             if (response.result) {
                                 this.failure = '';
                                 this.success = response.msg;
-                                // Add the new user to the mutable array
+                                // Add the new user to the mutable array and re-sort it
                                 this.mutable_users.push(response.user);
+                                this.mutable_users.sort((a,b) => { return a.name.valueOf() > b.name.valueOf(); });
                             } else {
                                 this.success = '';
                                 this.failure = response.msg;

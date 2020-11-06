@@ -148,7 +148,8 @@
                         this.failure = '';
                         this.success = response.msg;
                         // Add the new type into the mutable array
-                        this.mutable_institutions.push(response.type);
+                        this.mutable_types.push(response.type);
+                        this.mutable_types.sort((a,b) => { return a.name.valueOf() > b.name.valueOf(); });
                     } else {
                         this.success = '';
                         this.failure = response.msg;

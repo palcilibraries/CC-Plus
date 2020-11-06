@@ -26,9 +26,10 @@ class ProviderController extends Controller
      */
     public function index(Request $request)
     {
+        $thisUser = auth()->user();
         $consodb = config('database.connections.consodb.database');
        // Admins get list of all providers
-        if (auth()->user()->hasRole("Admin")) {
+        if ($thisUser->hasRole("Admin")) {
             $providers = DB::table($consodb . '.providers as prv')
                       ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
                       ->orderBy('prov_name', 'ASC')
@@ -40,18 +41,18 @@ class ProviderController extends Controller
             $providers = DB::table($consodb . '.providers as prv')
                       ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
                       ->where('prv.inst_id', 1)
-                      ->orWhere('prv.inst_id', auth()->user()->inst_id)
+                      ->orWhere('prv.inst_id', $thisUser->inst_id)
                       ->orderBy('prov_name', 'ASC')
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
                              'prv.inst_id','inst.name as inst_name','day_of_month']);
         }
 
        // $institutions depends on whether current user is admin or Manager
-        if (auth()->user()->hasRole("Admin")) {
-            $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
+        if ($thisUser->hasRole("Admin")) {
+            $institutions = Institution::orderBy('name', 'ASC')->get(['id','name'])->toArray();
             $institutions[0]['name'] = 'Entire Consortium';
         } else {  // Managers and Users limited their own inst
-            $institutions = Institution::where('id', '=', auth()->user()->inst_id)->get(['id','name'])->toArray();
+            $institutions = Institution::where('id', '=', $thisUser->inst_id)->get(['id','name'])->toArray();
         }
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
                                  ->get(['id','name'])->toArray();
@@ -115,8 +116,10 @@ class ProviderController extends Controller
      */
     public function show($id)
     {
+        $thisUser = auth()->user();
+
        // Build data to be passed based on whether the user is admin or Manager
-        if (auth()->user()->hasRole("Admin")) {
+        if ($thisUser->hasRole("Admin")) {
             $provider = Provider::with(['reports:reports.id,reports.name','sushiSettings','sushiSettings.institution'])
                                 ->findOrFail($id);
 
@@ -125,17 +128,17 @@ class ProviderController extends Controller
             $provider['can_delete'] = (is_null($last_harvest)) ? true : false;
 
             // Make an institutions list
-            $institutions = Institution::orderBy('id', 'ASC')->get(['id','name'])->toArray();
+            $institutions = Institution::orderBy('name', 'ASC')->get(['id','name'])->toArray();
             $institutions[0]['name'] = 'Entire Consortium';
 
             // Setup an array of insts without settings for this provider
             $set_inst_ids = $provider->sushiSettings->pluck('inst_id');
             $set_inst_ids[] = 1;
             $unset_institutions = Institution::whereNotIn('id', $set_inst_ids)
-                                             ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
+                                             ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
             $limit_to_insts = array();
         } else {  // Managers/Users are limited their own inst
-            $user_inst = auth()->user()->inst_id;
+            $user_inst = $thisUser->inst_id;
             $limit_to_insts = array($user_inst);
             $provider = Provider::with(['reports:reports.id,reports.name',
                                         'sushiSettings' => function ($query) use ($user_inst) {
@@ -252,15 +255,17 @@ class ProviderController extends Controller
      */
     public function export($type)
     {
+        $thisUser = auth()->user();
+
         // Only admins and managers can export
-        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+        abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
         $consodb = config('database.connections.consodb.database');
 
        // Admins get all providers
-        if (auth()->user()->hasRole("Admin")) {
+        if ($thisUser->hasRole("Admin")) {
             $providers = DB::table($consodb . '.providers as prv')
                       ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
-                      ->orderBy('prov_id', 'ASC')
+                      ->orderBy('prov_name', 'ASC')
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','server_url_r5',
                              'inst.name as inst_name','day_of_month']);
        // Managers get all consortia-wide providers and those that match user's inst_id
@@ -269,8 +274,8 @@ class ProviderController extends Controller
             $providers = DB::table($consodb . '.providers as prv')
                       ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
                       ->where('prv.inst_id', 1)
-                      ->orWhere('prv.inst_id', auth()->user()->inst_id)
-                      ->orderBy('prov_id', 'ASC')
+                      ->orWhere('prv.inst_id', $thisUser->inst_id)
+                      ->orderBy('prov_name', 'ASC')
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','server_url_r5',
                              'inst.name as inst_name','day_of_month']);
         }
@@ -403,10 +408,10 @@ class ProviderController extends Controller
         }
 
         // Give the file a meaningful filename
-        if (auth()->user()->hasRole('Admin')) {
+        if ($thisUser->hasRole('Admin')) {
             $fileName = "CCplus_" . session('ccp_con_key', '') . "_Providers." . $type;
         } else {
-            $fileName = "CCplus_" . preg_replace('/ /', '', auth()->user()->institution->name) . "_Providers." . $type;
+            $fileName = "CCplus_" . preg_replace('/ /', '', $thisUser->institution->name) . "_Providers." . $type;
         }
 
         // redirect output to client browser

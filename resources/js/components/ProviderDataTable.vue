@@ -120,7 +120,7 @@
         form: new window.Form({
             name: '',
             inst_id: 1,
-            is_active: 0,
+            is_active: 1,
             server_url_r5: '',
             day_of_month: 15,
             master_reports: [],
@@ -138,7 +138,7 @@
             this.success = '';
             this.form.name = '';
             this.form.inst_id = (this.is_admin) ? 1 : this.institutions[0].id;
-            this.form.is_active = 0;
+            this.form.is_active = 1;
             this.form.server_url_r5 = '';
             this.form.day_of_month = 15;
             this.form.master_reports = [];
@@ -182,8 +182,9 @@
                     if (response.result) {
                         this.failure = '';
                         this.success = response.msg;
-                        // Add the new provider onto the mutable array
+                        // Add the new provider onto the mutable array and re-sort it
                         this.mutable_providers.push(response.provider);
+                        this.mutable_providers.sort((a,b) => { return a.prov_name.valueOf() > b.prov_name.valueOf(); });
                     } else {
                         this.success = '';
                         this.failure = response.msg;

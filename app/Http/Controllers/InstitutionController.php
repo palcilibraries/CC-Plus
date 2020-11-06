@@ -28,7 +28,8 @@ class InstitutionController extends Controller
      */
     public function index(Request $request)
     {
-        if (auth()->user()->hasRole("Admin")) { // show them all
+        $thisUser = auth()->user();
+        if ($thisUser->hasRole("Admin")) { // show them all
             $institutions = Institution::with('institutionType', 'institutionGroups')->orderBy('name', 'ASC')
                                        ->get(['id','name','type_id','is_active']);
 
@@ -44,11 +45,11 @@ class InstitutionController extends Controller
                 $data[] = $i_data;
             }
             $types = InstitutionType::get(['id','name'])->toArray();
-            $all_groups = InstitutionGroup::get(['id','name'])->toArray();
+            $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
 
             return view('institutions.index', compact('data', 'types', 'all_groups'));
         } else {    // not admin, load the edit view for user's inst
-            return redirect()->route('institutions.show', auth()->user()->inst_id);
+            return redirect()->route('institutions.show', $thisUser->inst_id);
         }
     }
 
@@ -107,8 +108,9 @@ class InstitutionController extends Controller
      */
     public function show($id)
     {
-        if (!auth()->user()->hasRole("Admin")) {
-            abort_unless(auth()->user()->inst_id == $id, 403);
+        $thisUser = auth()->user();
+        if (!$thisUser->hasRole("Admin")) {
+            abort_unless($thisUser->inst_id == $id, 403);
         }
 
         // Get the institution and most recent harvest
@@ -125,15 +127,18 @@ class InstitutionController extends Controller
             $new_u['permission'] = $inst_user->maxRoleName();
             array_push($users, $new_u);
         }
+        $_name = array_column($users, "name");
+        array_multisort($_name, SORT_ASC, $users);        
 
         // Related models we'll be passing
         $types = InstitutionType::get(['id','name'])->toArray();
-        $all_groups = InstitutionGroup::get(['id','name'])->toArray();
+        $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
         $institution['groups'] = $institution->institutionGroups()->pluck('institution_group_id')->all();
 
 
         // Roles are limited to current user's max role
-        $all_roles = Role::where('id', '<=', auth()->user()->maxRole())->get(['name', 'id'])->toArray();
+        $all_roles = Role::where('id', '<=', $thisUser->maxRole())->orderBy('name', 'ASC')
+                         ->get(['name', 'id'])->toArray();
 
         // Get id+name pairs for accessible providers without settings
         $set_provider_ids = $institution->sushiSettings->pluck('prov_id');
@@ -141,7 +146,7 @@ class InstitutionController extends Controller
                            ->where(function ($query) use ($id) {
                                $query->where('inst_id', 1)->orWhere('inst_id', $id);
                            })
-                           ->orderBy('id', 'ASC')->get(['id','name'])->toArray();
+                           ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
 
         // Get 10 most recent harvests
         $harvests = HarvestLog::with(
@@ -235,18 +240,20 @@ class InstitutionController extends Controller
      */
     public function export($type)
     {
+        $thisUser = auth()->user();
+
         // Only Admins and Managers can export institution data
-        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+        abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
 
         // Admins get all institutions; eager load type, groups, and sushi settings
-        if (auth()->user()->hasRole("Admin")) {
+        if ($thisUser->hasRole("Admin")) {
             $institutions = Institution::with(
                 'institutionType',
                 'institutionGroups',
                 'sushiSettings',
                 'sushiSettings.provider:id,name'
             )
-                                       ->orderBy('id', 'ASC')->get();
+                                       ->orderBy('name', 'ASC')->get();
         } else {
             $institutions = Institution::with(
                 'institutionType',
@@ -254,8 +261,8 @@ class InstitutionController extends Controller
                 'sushiSettings',
                 'sushiSettings.provider:id,name'
             )
-                                       ->where('id', auth()->user()->inst_id)
-                                       ->orderBy('id', 'ASC')->get();
+                                       ->where('id', $thisUser->inst_id)
+                                       ->orderBy('name', 'ASC')->get();
         }
 
         // Setup some styles arrays
@@ -432,10 +439,10 @@ class InstitutionController extends Controller
         }
 
         // Give the file a meaningful filename
-        if (auth()->user()->hasRole('Admin')) {
+        if ($thisUser->hasRole('Admin')) {
             $fileName = "CCplus_" . session('ccp_con_key', '') . "_Institutions." . $type;
         } else {
-            $fileName = "CCplus_" . preg_replace('/ /', '', auth()->user()->institution->name) . "_Settings." . $type;
+            $fileName = "CCplus_" . preg_replace('/ /', '', $thisUser->institution->name) . "_Settings." . $type;
         }
 
         // redirect output to client browser
@@ -458,8 +465,10 @@ class InstitutionController extends Controller
      */
     public function import(Request $request)
     {
+        $thisUser = auth()->user();
+
         // Only Admins and Managers can import institution data
-        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+        abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
 
         // Handle and validate inputs
         $this->validate($request, ['type' => 'required', 'csvfile' => 'required']);
@@ -480,11 +489,11 @@ class InstitutionController extends Controller
         }
 
         // Get existing institution and inst-groups data
-        if (auth()->user()->hasRole('Admin')) {
+        if ($thisUser->hasRole('Admin')) {
             $limit_inst = 0;
             $institutions = Institution::with('sushiSettings')->get();
         } else {
-            $limit_inst = auth()->user()->inst_id;
+            $limit_inst = $thisUser->inst_id;
             $institutions = Institution::with('sushiSettings')->where('id', '=', $limit_inst)->get();
         }
         $all_groups = InstitutionGroup::get(['id','name']);
@@ -589,7 +598,7 @@ class InstitutionController extends Controller
 
                 if (!is_null($provider)) {
                     // Disallow managers assigning credentials for non-consortia providers belonging to another inst
-                    if ($limit_inst > 0 && $provider->inst_id != 1 && $provider->inst_id != auth()->user()->inst_id) {
+                    if ($limit_inst > 0 && $provider->inst_id != 1 && $provider->inst_id != $thisUser->inst_id) {
                         $sushi_skipped++;
                         continue;
                     }
@@ -622,7 +631,7 @@ class InstitutionController extends Controller
 
             // If we're doing full-replace, delete sushi settings missing from the import
             if ($type == 'Full Replacement') {
-                $sushi_deleted = SushiSetting::where('inst_id', '=', auth()->user()->inst_id)
+                $sushi_deleted = SushiSetting::where('inst_id', '=', $thisUser->inst_id)
                                              ->whereNotIn('id', $settings_to_keep)->delete();
             }
 

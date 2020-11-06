@@ -25,7 +25,7 @@ class InstitutionTypeController extends Controller
        */
     public function index(Request $request)
     {
-        $data = InstitutionType::orderBy('id', 'ASC')->get()->toArray();
+        $data = InstitutionType::orderBy('name', 'ASC')->get()->toArray();
         return view('institutiontypes.index', compact('data'));
     }
 
@@ -36,7 +36,7 @@ class InstitutionTypeController extends Controller
        */
     public function create()
     {
-        return view('institutiontypes.create');
+        // return view('institutiontypes.create');
     }
 
       /**
@@ -47,9 +47,6 @@ class InstitutionTypeController extends Controller
        */
     public function store(Request $request)
     {
-        // $this->validate($request, [
-        //     'name' => 'required|unique:consodb.institutiontypes,name',
-        // ]);
         $test = InstitutionType::where('name', '=', $request->input('name'))->first();
         if ($test) {
             return response()->json(['result' => false, 'msg' => 'An existing type with that name already exists']);
@@ -58,8 +55,6 @@ class InstitutionTypeController extends Controller
 
         return response()->json(['result' => true, 'msg' => 'New institution type successfully created',
                                  'type' => $type]);
-        // return redirect()->route('institutiontypes.index')
-        //                 ->with('success', 'Institution Type created successfully');
     }
 
     /**
@@ -70,8 +65,8 @@ class InstitutionTypeController extends Controller
      */
     public function show($id)
     {
-        $type = InstitutionType::findOrFail($id);
-        return view('institutiontypes.edit', compact('type'));
+        // $type = InstitutionType::findOrFail($id);
+        // return view('institutiontypes.edit', compact('type'));
     }
 
     /**
@@ -82,8 +77,8 @@ class InstitutionTypeController extends Controller
      */
     public function edit($id)
     {
-        $type = InstitutionType::findOrFail($id);
-        return view('institutiontypes.edit', compact('type'));
+        // $type = InstitutionType::findOrFail($id);
+        // return view('institutiontypes.edit', compact('type'));
     }
 
     /**
@@ -110,8 +105,6 @@ class InstitutionTypeController extends Controller
 
         return response()->json(['result' => true, 'msg' => 'Institution type successfully updated',
                                  'type' => $type]);
-        // return redirect()->route('institutiontypes.index')
-        //               ->with('success', 'Institution Type updated successfully');
     }
 
     /**
@@ -131,8 +124,6 @@ class InstitutionTypeController extends Controller
             $inst->save();
         }
         $type->delete();
-        // return redirect()->route('institutiontypes.index')
-        //               ->with('success', 'Institution Type deleted successfully');
         return response()->json(['result' => true, 'msg' => 'Institution type successfully deleted']);
     }
 

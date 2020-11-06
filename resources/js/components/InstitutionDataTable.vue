@@ -106,7 +106,7 @@
         mutable_institutions: this.institutions,
         form: new window.Form({
             name: '',
-            is_active: 0,
+            is_active: 1,
             fte: 0,
             type_id: 1,
             institutiongroups: [],
@@ -127,7 +127,7 @@
             this.failure = '';
             this.success = '';
             this.form.name = '';
-            this.form.is_active = 0;
+            this.form.is_active = 1;
             this.form.fte = 0;
             this.form.type_id = 1;
             this.form.institutiongroups = [];
@@ -174,8 +174,9 @@
                     if (response.result) {
                         this.failure = '';
                         this.success = response.msg;
-                        // Add the new institution onto the mutable array
+                        // Add the new institution onto the mutable array and re-sort it
                         this.mutable_institutions.push(response.institution);
+                        this.mutable_institutions.sort((a,b) => { return a.name.valueOf() > b.name.valueOf(); });
                     } else {
                         this.success = '';
                         this.failure = response.msg;

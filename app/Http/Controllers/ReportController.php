@@ -110,19 +110,21 @@ class ReportController extends Controller
      */
     public function create(Request $request)
     {
+        $thisUser = auth()->user();
+
         // Get an array of providers with successful harvests (to limit choices below)
         $provs_with_data = self::hasHarvests('prov_id');
 
         // Setup arrays for the report creator
-        if (auth()->user()->hasAnyRole(['Admin','Viewer'])) {
+        if ($thisUser->hasAnyRole(['Admin','Viewer'])) {
             $insts_with_data = self::hasHarvests('inst_id');
             $institutions = Institution::whereIn('id', $insts_with_data)->orderBy('name', 'ASC')->where('id', '<>', 1)
                                        ->get(['id','name'])->toArray();
-            $inst_groups = InstitutionGroup::get(['name', 'id'])->toArray();
+            $inst_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
             $providers = Provider::with('reports')->whereIn('id', $provs_with_data)->orderBy('name', 'ASC')
                                  ->get(['id','name'])->toArray();
         } else {    // limited view
-            $user_inst = auth()->user()->inst_id;
+            $user_inst = $thisUser->inst_id;
             $institutions = Institution::where('id', '=', $user_inst)->get(['id','name'])->toArray();
             $inst_groups = array();
             $providers = Provider::with('reports')->whereIn('id', $provs_with_data)
@@ -159,6 +161,8 @@ class ReportController extends Controller
      */
     public function preview(Request $request)
     {
+        $thisUser = auth()->user();
+
         // Start by getting a full filter-set (all elements from the datastore)
         // Saved reports have the active fields and filters built-in
         $title = "";
@@ -215,7 +219,7 @@ class ReportController extends Controller
         $filter_options = array();
 
         // Providers and insts inclusion as options depend on successful harvests
-        $show_all = (auth()->user()->hasAnyRole(['Admin','Viewer']));
+        $show_all = ($thisUser->hasAnyRole(['Admin','Viewer']));
         $provs_with_data = self::hasHarvests('prov_id');
         if ($show_all) {
             $insts_with_data = self::hasHarvests('inst_id');
@@ -224,13 +228,13 @@ class ReportController extends Controller
             $filter_options['provider'] = Provider::whereIn('id', $provs_with_data)->orderBy('name', 'ASC')
                                                   ->get(['id','name'])->toArray();
         } else {  // Managers and Users are limited their own inst
-            $filter_options['institution'] = Institution::where('id', '=', auth()->user()->inst_id)
+            $filter_options['institution'] = Institution::where('id', '=', $thisUser->inst_id)
                                                         ->get(['id','name'])->toArray();
 
             $filter_options['provider'] = Provider::with('reports')->whereIn('id', $provs_with_data)
                                                   ->where(function ($query) {
                                                       $query->where('inst_id', 1)
-                                                            ->orWhere('inst_id', auth()->user()->inst_id);
+                                                            ->orWhere('inst_id', $thisUser->inst_id);
                                                   })
                                                   ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
         }
@@ -337,6 +341,7 @@ class ReportController extends Controller
     public function prepareExport($report, $fields)
     {
         global $format;
+        $thisUser = auth()->user();
 
         // Get/set global things
         $filters = self::$input_filters;
@@ -374,7 +379,7 @@ class ReportController extends Controller
                 }
             } else {
                 $header_rows[] = array("Institution_Name",
-                                       Institution::where('id', auth()->user()->inst_id)->value('name'));
+                                       Institution::where('id', $thisUser->inst_id)->value('name'));
             }
         }
         $header_rows[] = array("Institution_ID","");
@@ -658,6 +663,7 @@ class ReportController extends Controller
     public function getReportData(Request $request)
     {
          global $joins, $raw_fields, $raw_where, $subq_fields, $subq_where, $group_by, $global_db, $conso_db, $format;
+         $thisUser = auth()->user();
 
          // Validate and deal w/ inputs
          $this->validate($request, ['report_id' => 'required', 'fields' => 'required', 'filters' => 'required']);
@@ -919,10 +925,10 @@ class ReportController extends Controller
             $writer->insertOne($values);
         }
         $writer->output($csv_file);
-        if (auth()->user()->email == 'Administrator') {
+        if ($thisUser->email == 'Administrator') {
             $_user =  session('ccp_con_key', '') . "_" . "Administrator";
         } else {
-            $_user = auth()->user()->email;
+            $_user = $thisUser->email;
         }
         $logrec = date("Y-m-d H:m") . " : " . $_user . " : " . $export_settings['filename'];
         Storage::append('exports.log', $logrec);
@@ -1176,12 +1182,14 @@ class ReportController extends Controller
      */
     private function limitToIds($column)
     {
+        $thisUser = auth()->user();
         $return_values = array();
+
         // Handle institution cases explicitly
         if ($column == 'inst_id') {
             // If user is not an "admin" or "viewer", return only their own inst.
-            if (!auth()->user()->hasAnyRole(['Admin','Viewer'])) {
-                array_push($return_values, auth()->user()->inst_id);
+            if (!$thisUser->hasAnyRole(['Admin','Viewer'])) {
+                array_push($return_values, $thisUser->inst_id);
                 return $return_values;
 
             // If both inst_id and group_id are set, return all inst_ids from the group

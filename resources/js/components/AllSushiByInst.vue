@@ -127,8 +127,11 @@
                         if (response.result) {
                             this.failure = '';
                             this.success = response.msg;
-                            // Add the new connection to the settings rows
+                            // Add the new connection to the settings rows and sort it by-name ascending
                             this.mutable_settings.push(response.setting);
+                            this.mutable_settings.sort((a,b) => {
+                                return a.provider.name.valueOf() > b.provider.name.valueOf();
+                            });
                             // Remove the unset row that just got added
                             let newid = response.setting.prov_id;
                             this.mutable_unset.splice(this.mutable_unset.findIndex(u=> u.id == newid),1);
@@ -167,8 +170,9 @@
                                }
                            })
                            .catch({});
-                       // Add the entry to the "unset" list
+                       // Add the entry to the "unset" list and res-sort it
                        this.mutable_unset.push({'id': setting.prov_id, 'name': setting.provider.name});
+                       this.mutable_unset.sort((a,b) => { return a.name.valueOf() > b.name.valueOf() });
                        // Remove the setting from the "set" list
                        this.mutable_settings.splice(this.mutable_settings.findIndex(s=> s.id == setting.id),1);
                        this.form.prov_id = 0;
@@ -196,7 +200,10 @@
                    .catch(error => {});
             },
             onUnsetChange (prov) {
-				this.showForm = true;
+                this.form.customer_id = '';
+                this.form.requestor_id = '';
+                this.form.API_key = '';
+                this.showForm = true;
             },
             hideForm (event) {
                 this.showForm = false;
@@ -206,6 +213,10 @@
           ...mapGetters(['is_admin','is_manager'])
         },
         mounted() {
+            // Sort the settings by provider name
+            this.mutable_settings.sort((a,b) => {
+                return a.provider.name.valueOf() > b.provider.name.valueOf();
+            });
             console.log('Providers-by-Inst Component mounted.');
         }
     }

@@ -1,5 +1,8 @@
 <?php
 
+namespace Database\Seeders;
+
+use DB;
 use Illuminate\Database\Seeder;
 
 class ReportFieldsTableSeeder extends Seeder
@@ -11,7 +14,7 @@ class ReportFieldsTableSeeder extends Seeder
      */
     public function run()
     {
-        Schema::disableForeignKeyConstraints();
+        // Schema::disableForeignKeyConstraints();
 
         // Make sure we're talking to the global database
         $_db = \Config::get('database.connections.globaldb.database');
@@ -310,7 +313,7 @@ class ReportFieldsTableSeeder extends Seeder
             //     'is_metric' => 1]);
 
 
-            Schema::enableForeignKeyConstraints();
+            // Schema::enableForeignKeyConstraints();
         }
     }
 }

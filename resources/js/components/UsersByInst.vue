@@ -154,7 +154,11 @@
                                 this.success = response.msg;
                                 // Add the new user to the mutable array and re-sort it
                                 this.mutable_users.push(response.user);
-                                this.mutable_users.sort((a,b) => { return a.name.valueOf() > b.name.valueOf(); });
+                                this.mutable_users.sort((a,b) => {
+                                  if ( a.name < b.name ) return -1;
+                                  if ( a.name > b.name ) return 1;
+                                  return 0;
+                                });
                             } else {
                                 this.success = '';
                                 this.failure = response.msg;

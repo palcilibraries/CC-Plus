@@ -176,7 +176,11 @@
                         this.success = response.msg;
                         // Add the new institution onto the mutable array and re-sort it
                         this.mutable_institutions.push(response.institution);
-                        this.mutable_institutions.sort((a,b) => { return a.name.valueOf() > b.name.valueOf(); });
+                        this.mutable_institutions.sort((a,b) => {
+                          if ( a.name < b.name ) return -1;
+                          if ( a.name > b.name ) return 1;
+                          return 0;
+                        });
                     } else {
                         this.success = '';
                         this.failure = response.msg;

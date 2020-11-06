@@ -149,7 +149,11 @@
                         this.success = response.msg;
                         // Add the new type into the mutable array
                         this.mutable_types.push(response.type);
-                        this.mutable_types.sort((a,b) => { return a.name.valueOf() > b.name.valueOf(); });
+                        this.mutable_types.sort((a,b) => {
+                          if ( a.name < b.name ) return -1;
+                          if ( a.name > b.name ) return 1;
+                          return 0;
+                        });
                     } else {
                         this.success = '';
                         this.failure = response.msg;

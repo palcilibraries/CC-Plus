@@ -125,7 +125,11 @@
                     this.success = response.msg;
                     // Add the new group into the mutable array
                     this.mutable_groups.push(response.group);
-                    this.mutable_groups.sort((a,b) => { return a.name.valueOf() > b.name.valueOf(); });
+                    this.mutable_groups.sort((a,b) => {
+                      if ( a.name < b.name ) return -1;
+                      if ( a.name > b.name ) return 1;
+                      return 0;
+                    });
                 } else {
                     this.success = '';
                     this.failure = response.msg;

@@ -184,7 +184,11 @@
                         this.success = response.msg;
                         // Add the new provider onto the mutable array and re-sort it
                         this.mutable_providers.push(response.provider);
-                        this.mutable_providers.sort((a,b) => { return a.prov_name.valueOf() > b.prov_name.valueOf(); });
+                        this.mutable_providers.sort((a,b) => {
+                          if ( a.prov_name < b.prov_name ) return -1;
+                          if ( a.prov_name > b.prov_name ) return 1;
+                          return 0;
+                        });
                     } else {
                         this.success = '';
                         this.failure = response.msg;

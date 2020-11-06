@@ -114,7 +114,9 @@
                             // Add the new connection to the settings rows and sort it by-name ascending
                             this.mutable_settings.push(response.setting);
                             this.mutable_settings.sort((a,b) => {
-                                return a.institution.name.valueOf() > b.institution.name.valueOf();
+                              if ( a.institution.name < b.institution.name ) return -1;
+                              if ( a.institution.name > b.institution.name ) return 1;
+                              return 0;
                             });
                             // Remove the unset row that just got added
                             let newid = response.setting.inst_id;
@@ -156,7 +158,11 @@
                            .catch({});
                       // Add the entry to the "unset" list
                       this.mutable_unset.push({'id': setting.inst_id, 'name': setting.institution.name});
-                      this.mutable_unset.sort((a,b) => { return a.name.valueOf() > b.name.valueOf() });
+                      this.mutable_unset.sort((a,b) => {
+                        if ( a.name < b.name ) return -1;
+                        if ( a.name > b.name ) return 1;
+                        return 0;
+                      });
                       // Remove the setting from the "set" list
                       this.mutable_settings.splice(this.mutable_settings.findIndex(u=> u.id == setting.id),1);
                       this.form.inst_id = 0;
@@ -199,7 +205,9 @@
         mounted() {
             // Sort the settings by institution name
             this.mutable_settings.sort((a,b) => {
-                return a.institution.name.valueOf() > b.institution.name.valueOf();
+                if ( a.institution.name < b.institution.name ) return -1;
+                if ( a.institution.name > b.institution.name ) return 1;
+                return 0;
             });
             console.log('Institutions-by-Prov Component mounted.');
         }

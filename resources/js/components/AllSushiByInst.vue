@@ -130,7 +130,9 @@
                             // Add the new connection to the settings rows and sort it by-name ascending
                             this.mutable_settings.push(response.setting);
                             this.mutable_settings.sort((a,b) => {
-                                return a.provider.name.valueOf() > b.provider.name.valueOf();
+                              if ( a.provider.name < b.provider.name ) return -1;
+                              if ( a.provider.name > b.provider.name ) return 1;
+                              return 0;
                             });
                             // Remove the unset row that just got added
                             let newid = response.setting.prov_id;
@@ -172,7 +174,11 @@
                            .catch({});
                        // Add the entry to the "unset" list and res-sort it
                        this.mutable_unset.push({'id': setting.prov_id, 'name': setting.provider.name});
-                       this.mutable_unset.sort((a,b) => { return a.name.valueOf() > b.name.valueOf() });
+                       this.mutable_unset.sort((a,b) => {
+                         if ( a.name < b.name ) return -1;
+                         if ( a.name > b.name ) return 1;
+                         return 0;
+                       });
                        // Remove the setting from the "set" list
                        this.mutable_settings.splice(this.mutable_settings.findIndex(s=> s.id == setting.id),1);
                        this.form.prov_id = 0;
@@ -215,7 +221,9 @@
         mounted() {
             // Sort the settings by provider name
             this.mutable_settings.sort((a,b) => {
-                return a.provider.name.valueOf() > b.provider.name.valueOf();
+                if ( a.provider.name < b.provider.name ) return -1;
+                if ( a.provider.name > b.provider.name ) return 1;
+                return 0;
             });
             console.log('Providers-by-Inst Component mounted.');
         }

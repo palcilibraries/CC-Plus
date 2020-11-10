@@ -79,7 +79,7 @@ class HarvestLogController extends Controller
         if (!$json) {
             // Setup array of institutions
             if ($show_all) {
-                $inst_data = Institution::where('id', '<>', 1)->get(['id', 'name']);
+                $inst_data = Institution::where('id', '<>', 1)->orderBy('name', 'ASC')->get(['id', 'name']);
                 $institutions = $inst_data->toArray();
             } else {
                 $inst_data = Institution::whereIn('id', $filters['inst'])->get(['id', 'name']);
@@ -88,7 +88,7 @@ class HarvestLogController extends Controller
 
             // Build an array of $providers
             if ($show_all) {
-                $providers = Provider::get(['id', 'name'])->toArray();
+                $providers = Provider::orderBy('name', 'ASC')->get(['id', 'name'])->toArray();
             } else {
                 $providers = DB::table($conso_db . '.providers as prv')
                           ->join($conso_db . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')

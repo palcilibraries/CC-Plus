@@ -7,7 +7,7 @@
       <v-col class="d-flex ma-2" cols="2" sm="2">
         <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
       </v-col>
-      <v-col v-if="is_admin && mutable_prov.can_delete" class="d-flex ma-2" cols="2" sm="2">
+      <v-col class="d-flex ma-2" cols="2" sm="2">
         <v-btn small class='btn btn-danger' type="button" @click="destroy(setting.id)">Delete</v-btn>
       </v-col>
 	</v-row>

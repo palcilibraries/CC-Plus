@@ -73,10 +73,49 @@
 
     <!-- Data table for data/harvest alerts -->
     <h3>Harvest / Data Alerts</h3>
+    <div class="d-flex pa-0">
+      <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM" :key="rangeKey"
+      ></date-range>
+    </div>
+    <v-row class="d-flex pa-1" no-gutters>
+      <v-col v-if="is_admin" class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if='mutable_filters.inst.length>0' class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="mutable_filters.inst=[]"/>&nbsp;
+        </div>
+        <v-select :items='institutions' v-model='mutable_filters.inst' @change="updateRecords()"
+                  multiple label="Institution(s)" item-text="name" item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if='mutable_filters.prov.length>0' class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
+        </div>
+        <v-select :items='providers' v-model='mutable_filters.prov' @change="updateRecords()"
+                  multiple label="Provider(s)" item-text="name" item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if='mutable_filters.rept.length>0' class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('rept')"/>&nbsp;
+        </div>
+        <v-select :items='reports' v-model='mutable_filters.rept' @change="updateRecords()"
+                  multiple label="Report(s)" item-text="name" item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if='mutable_filters.stat!=null' class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('stat')"/>&nbsp;
+        </div>
+        <v-select :items='fstatus' v-model='mutable_filters.stat' @change="updateRecords()"
+                  label="Status" item-text="text" item-value="value"
+        ></v-select>
+      </v-col>
+    </v-row>
+
     <v-data-table :headers="headers" :items="mutable_alerts" item-key="id" class="elevation-1" dense>
       <template v-slot:item="{ item }">
         <tr>
-          <td width="10%" v-if="is_admin" style="vertical-align:middle">
+          <td width="10%" v-if="is_admin" classs="align-center">
             <v-select :items="statusvals" v-model="item.status" value="item.status" dense
                       @change="updateStatus(item)"
             ></v-select>
@@ -86,7 +125,7 @@
           <td><a :href="item.detail_url">{{ item.detail_txt }}</a></td>
           <td>{{ item.report_name }}</td>
           <td>{{ item.prov_name }}</td>
-          <td>{{ item.inst_name }}</td>
+          <td v-if="is_admin">{{ item.inst_name }}</td>
           <td v-if="(item.updated_at)">{{ item.updated_at.substr(0,10) }}</td>
           <td v-else> </td>
           <td>{{ item.mod_by }}</td>
@@ -106,6 +145,10 @@
             providers: { type:Array, default: () => [] },
             statuses: { type:Array, default: () => [] },
             severities: { type:Array, default: () => [] },
+            institutions: { type:Array, default: () => [] },
+            reports: { type:Array, default: () => [] },
+            bounds: { type:Array, default: () => [] },
+            filters: { type:Object, default: () => ({ymfr:null,ymto:null,inst:[],prov:[],rept:[],stat:null}) },
            },
     data () {
       return {
@@ -131,9 +174,43 @@
         current_sysalert: {},
         mutable_sysalerts: this.sysalerts,
         mutable_alerts: this.alerts,
+        mutable_filters: this.filters,
+        fstatus: [{ text: 'Active', value: 1}, {text: 'Silent', value: 0}],
+        minYM: '',
+        maxYM: '',
+        rangeKey: 1,
       }
     },
+    watch: {
+      datesFromTo: {
+        handler() {
+          // Changing date-range means we need to reload records, just not the FIRST one
+          if (this.rangeKey > 1) {
+              this.updateRecords();
+          }
+          this.rangeKey += 1;           // force re-render of the date-range component
+        }
+      },
+    },
     methods:{
+        updateRecords() {
+            if (this.filter_by_toYM != null) this.mutable_filters['ymto'] = this.filter_by_toYM;
+            if (this.filter_by_fromYM != null) this.mutable_filters['ymfr'] = this.filter_by_fromYM;
+            let _filters = JSON.stringify(this.mutable_filters);
+            axios.get("/alerts?json=1&filters="+_filters)
+                 .then((response) => {
+                     this.mutable_alerts = response.data.alerts;
+                 })
+                 .catch(err => console.log(err));
+        },
+        clearFilter(filter) {
+            if (filter == 'stat') {
+                this.mutable_filters[filter] = null;
+            } else {
+                this.mutable_filters[filter] = [];
+            }
+            this.updateRecords();
+        },
         createSys() {
             this.failure = '';
             this.success = '';
@@ -241,11 +318,22 @@
         },
     },
     computed: {
-      ...mapGetters(['is_admin'])
+      ...mapGetters(['is_admin', 'filter_by_fromYM', 'filter_by_toYM']),
+      datesFromTo() {
+        return this.filter_by_fromYM+'|'+this.filter_by_toYM;
+      },
     },
     mounted() {
       // per-alert select options don't use "ALL"
       this.statusvals = this.statuses.slice(1);
+      // Setup date-range filters
+      if (typeof(this.bounds[0]) != 'undefined') {
+        this.minYM = this.bounds[0].YM_min;
+        this.maxYM = this.bounds[0].YM_max;
+      }
+      if (this.filters['ymfr'] != null) this.$store.dispatch('updateFromYM',this.filters['ymfr']);
+      if (this.filters['ymto'] != null) this.$store.dispatch('updateToYM',this.filters['ymto']);
+
       console.log('AlertData Component mounted.');
     }
   }
@@ -268,4 +356,5 @@
     border-radius: 0.25rem;
     color: red;
 }
+.x-box { width: 16px;  height: 16px; flex-shrink: 0; }
 </style>

@@ -166,7 +166,7 @@ class SavedReportController extends Controller
                 $record['detail_url'] = "/harvestlogs/" . $alert->harvest_id . '/edit';
                 $record['detail_txt'] = "Harvest failed";
             }
-            $record['report_name'] = $alert->reportName();
+            $record['report_name'] = $alert->report()->name;
             $record['mod_by'] = ($alert->modified_by == 1) ? 'CC-Plus System' : $alert->user->name;
             $record['inst_name'] = ($_inst_id == 1)  ? "Consortia-wide" : $alert->institution()->name;
             $record['prov_name'] = $alert->provider->name;

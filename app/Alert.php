@@ -56,7 +56,7 @@ class Alert extends BaseModel
         return $this->belongsTo('App\User', 'modified_by');
     }
 
-   // Shortcuts into the alert data since they are related
+   // Shortcuts for the alert and institution records since they are related
    // to either an alert-setting or to a failed harvest
     public function institution()
     {
@@ -67,12 +67,12 @@ class Alert extends BaseModel
         }
     }
 
-    public function reportName()
+    public function report()
     {
         if (is_null($this->harvest_id)) {
-            return $this->alertSetting->metric->report->name;
+            return $this->alertSetting->reportField->report;
         } else {
-            return $this->harvest->report->name;
+            return $this->harvest->report;
         }
     }
 }

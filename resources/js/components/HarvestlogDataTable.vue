@@ -1,57 +1,41 @@
 <template>
   <div>
     <h3>Harvest Logs</h3>
-    <div class="d-flex pa-2">
+    <div class="d-flex pa-0">
       <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM" :key="rangeKey"
       ></date-range>
     </div>
     <v-row no-gutters>
-      <v-col v-if='institutions.length>1' class="ma-2" cols="2" sm="2">
-        <img v-if='mutable_filters.inst.length>0' src="/images/red-x-16.png"
-             alt="clear filter" @click="mutable_filters.inst=[]"/>&nbsp;
-        <v-select :items='institutions'
-                  v-model='mutable_filters.inst'
-                  @change="updateLogRecords()"
-                  multiple
-                  label="Institution(s)"
-                  item-text="name"
-                  item-value="id"
+      <v-col v-if='institutions.length>1' class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if='mutable_filters.inst.length>0' class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="mutable_filters.inst=[]"/>&nbsp;
+        </div>
+        <v-select :items='institutions' v-model='mutable_filters.inst' @change="updateLogRecords()" multiple
+                  label="Institution(s)"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
-      <v-col class="ma-2" cols="2" sm="2">
-        <img v-if='mutable_filters.prov.length>0' src="/images/red-x-16.png"
-             alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
-        <v-select :items='providers'
-                  v-model='mutable_filters.prov'
-                  @change="updateLogRecords()"
-                  multiple
-                  label="Provider(s)"
-                  item-text="name"
-                  item-value="id"
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if='mutable_filters.prov.length>0' class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
+        </div>
+        <v-select :items='providers' v-model='mutable_filters.prov' @change="updateLogRecords()" multiple
+                  label="Provider(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
-      <v-col class="ma-2" cols="2" sm="2">
-        <img v-if='mutable_filters.rept.length>0' src="/images/red-x-16.png"
-             alt="clear filter" @click="clearFilter('rept')"/>&nbsp;
-        <v-select :items='reports'
-                  v-model='mutable_filters.rept'
-                  @change="updateLogRecords()"
-                  multiple
-                  label="Report(s)"
-                  item-text="name"
-                  item-value="id"
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if='mutable_filters.rept.length>0' class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('rept')"/>&nbsp;
+        </div>
+        <v-select :items='reports' v-model='mutable_filters.rept' @change="updateLogRecords()" multiple
+                  label="Report(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
-      <v-col class="ma-2" cols="2" sm="2">
-        <img v-if='mutable_filters.stat.length>0' src="/images/red-x-16.png"
-             alt="clear filter" @click="clearFilter('stat')"/>&nbsp;
-        <v-select :items='statuses'
-                  v-model='mutable_filters.stat'
-                  @change="updateLogRecords()"
-                  multiple
-                  label="Status(es)"
-                  item-text="name"
-                  item-value="name"
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if='mutable_filters.stat.length>0' class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('stat')"/>&nbsp;
+        </div>
+        <v-select :items='statuses' v-model='mutable_filters.stat' @change="updateLogRecords()" multiple
+                  label="Status(es)" item-text="name" item-value="name"
         ></v-select>
       </v-col>
     </v-row>
@@ -154,4 +138,5 @@
   }
 </script>
 <style>
+.x-box { width: 16px;  height: 16px; flex-shrink: 0; }
 </style>

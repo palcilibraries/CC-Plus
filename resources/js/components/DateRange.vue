@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-row class="d-flex mb-0 pa-0" no-gutters>
-      <v-col class="d-flex pa-2" cols="8" sm="4">
+      <v-col class="d-flex px-2" cols="8" sm="4">
         <v-menu ref="menuF" v-model="fromMenu" :close-on-content-click="true" transition="scale-transition"
                 offset-y max-width="290px" min-width="290px">
           <template v-slot:activator="{ on }">
@@ -10,7 +10,7 @@
           <v-date-picker v-model="YMFrom" type="month" :min="minym" :max="YMTo" no-title scrollable></v-date-picker>
         </v-menu>
       </v-col>
-      <v-col class="d-flex pa-2" cols="8" sm="4">
+      <v-col class="d-flex px-2" cols="8" sm="4">
         <v-menu ref="menuT" v-model="toMenu" :close-on-content-click="true" transition="scale-transition"
                 offset-y max-width="290px" min-width="290px">
           <template v-slot:activator="{ on }">

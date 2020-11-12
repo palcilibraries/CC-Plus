@@ -146,8 +146,9 @@ class HarvestLogController extends Controller
                                   ->get();
 
         $harvests = $harvest_data->map(function ($harvest) {
-            $rec = array('id' => $harvest->id, 'updated_at' => $harvest->updated_at, 'yearmon' => $harvest->yearmon,
-                         'attempts' => $harvest->attempts, 'status' => $harvest->status);
+            $rec = array('id' => $harvest->id, 'yearmon' => $harvest->yearmon, 'attempts' => $harvest->attempts,
+                         'status' => $harvest->status);
+            $rec['updated'] = substr($harvest->updated_at,0,10);
             $rec['institution'] = $harvest->sushiSetting->institution->name;
             $rec['provider'] = $harvest->sushiSetting->provider->name;
             $rec['report'] = $harvest->report->name;
@@ -485,6 +486,7 @@ class HarvestLogController extends Controller
         } catch (\Exception $e) {
             return response()->json(['result' => false, 'msg' => 'Error updating harvest!']);
         }
+        $harvest['updated'] = substr($harvest->updated_at,0,10);
 
         // If we're resetting, so create a Job entry if it doesn't exist
         if ($harvest->status == 'Queued') {

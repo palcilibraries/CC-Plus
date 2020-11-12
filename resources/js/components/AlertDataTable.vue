@@ -80,7 +80,7 @@
     <v-row class="d-flex pa-1" no-gutters>
       <v-col v-if="is_admin" class="d-flex px-2 align-center" cols="2" sm="2">
         <div v-if='mutable_filters.inst.length>0' class="x-box">
-            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="mutable_filters.inst=[]"/>&nbsp;
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
         <v-select :items='institutions' v-model='mutable_filters.inst' @change="updateRecords()"
                   multiple label="Institution(s)" item-text="name" item-value="id"

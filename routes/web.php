@@ -16,12 +16,12 @@ Route::get('/home', 'SavedReportController@home')->name('home')->middleware(['au
 //
 Route::resource('/consortia','ConsortiumController')->middleware('can:update,consortium');
 Route::resource('/roles', 'RoleController')->middleware(['auth']);
-Route::resource('/users', 'UserController')->middleware('auth','cache.headers:no_store');
-Route::resource('/institutions', 'InstitutionController')->middleware('auth','cache.headers:no_store');
-Route::resource('/institutiontypes', 'InstitutionTypeController')->middleware('auth','cache.headers:no_store');
-Route::resource('/institutiongroups', 'InstitutionGroupController')->middleware('auth','cache.headers:no_store');
-Route::resource('/providers', 'ProviderController')->middleware('auth','cache.headers:no_store');
-Route::resource('/harvestlogs', 'HarvestLogController')->middleware('auth','cache.headers:no_store');
+Route::resource('/users', 'UserController')->middleware(['auth','cache.headers:no_store']);
+Route::resource('/institutions', 'InstitutionController')->middleware(['auth','cache.headers:no_store']);
+Route::resource('/institutiontypes', 'InstitutionTypeController')->middleware(['auth','cache.headers:no_store']);
+Route::resource('/institutiongroups', 'InstitutionGroupController')->middleware(['auth','cache.headers:no_store']);
+Route::resource('/providers', 'ProviderController')->middleware(['auth','cache.headers:no_store']);
+Route::resource('/harvestlogs', 'HarvestLogController')->middleware(['auth','cache.headers:no_store']);
 Route::resource('/sushisettings', 'SushiSettingController')
      ->middleware(['auth','role:Admin,Manager','cache.headers:no_store']);
 Route::resource('/alertsettings', 'AlertSettingController')

@@ -7,7 +7,7 @@
         </v-col>
       </v-row>
     </div> -->
-    <div v-else-if="is_manager">
+    <div v-if="is_manager">
       <v-row>
         <v-col cols="2"><h5>Export settings to:</h5></v-col>
         <v-col>

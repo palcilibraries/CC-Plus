@@ -1,12 +1,12 @@
 <template>
   <div>
-    <div v-if="is_admin">
+<!--    <div v-if="is_admin">
       <v-row>
         <v-col v-if="is_admin">
-          <v-btn small color="primary" type="button" :href="'/providers/create'" class="section-action">add new</v-btn>
+          <v-btn small type="button" :href="'/providers/create'" class="section-action">add new</v-btn>
         </v-col>
       </v-row>
-    </div>
+    </div> -->
     <div v-else-if="is_manager">
       <v-row>
         <v-col cols="2"><h5>Export settings to:</h5></v-col>

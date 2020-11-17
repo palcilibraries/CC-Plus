@@ -1,7 +1,7 @@
 <template>
   <div class="details">
   	  <h2 class="section-title">Details</h2>
-      <div v-if="is_manager && showForm==''">
+      <div v-if="is_manager && showForm==''" style="display:inline-block;">
         <v-row>
           <v-col>
             <v-btn small color="primary" type="button" @click="editForm" class="section-action">edit</v-btn>
@@ -11,8 +11,6 @@
               Import Settings
             </v-btn>
           </v-col>
-        </v-row>
-        <v-row>
           <v-col v-if="is_admin && mutable_inst.can_delete">
             <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_inst.id)">Delete</v-btn>
           </v-col>

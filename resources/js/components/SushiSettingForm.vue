@@ -1,7 +1,7 @@
 <template>
   <div class="details">
   	<v-row no-gutters>
-	  <v-col class="d-flex ma-2" cols="2" sm="2">
+	  <v-col class="d-flex">
 		<h2 class="section-title">Sushi Settings</h2>
 	  </v-col>
       <v-col class="d-flex ma-2" cols="2" sm="2">
@@ -22,6 +22,7 @@
           <strong>Support Email: </strong><a :href="'mailto:'+form.support_email">{{ form.support_email }}</a>
         </v-col>
       </v-row>
+	  <h2>Actions</h2>
       <v-row class="d-flex ma-2 pa-0">
         <v-col class="d-flex pa-4" cols="3">
           <v-btn small color="secondary" type="button" @click="testSettings">test</v-btn>

@@ -35,7 +35,7 @@
 	  </v-expansion-panel></v-expansion-panels>
     </div>
     <div class="related-list">
-	  <h2 class="section-title">Providers</h2>
+	  <h2 class="section-title">Providers</h2> <a href="/providers/create">add new</a>
 	  <all-sushi-by-inst :settings="{{ json_encode($institution->sushiSettings->toArray()) }}"
 		  				 :inst_id="{{ json_encode($institution->id) }}"
 		  				 :unset="{{ json_encode($unset_providers) }}"

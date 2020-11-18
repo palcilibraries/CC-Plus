@@ -20,17 +20,13 @@
           <strong>Support Email: </strong><a :href="'mailto:'+form.support_email">{{ form.support_email }}</a>
         </v-col>
       </v-row>
-      <v-row class="d-flex ma-2 pa-0">
+      <div>
 	  	  <h2>Actions</h2>
-        <v-col class="d-flex pa-4" cols="3">
-          <v-btn small color="secondary" type="button" @click="testSettings">test</v-btn>
-        </v-col>
-        <v-col class="d-flex pa-4" cols="3">
+          <v-btn small color="secondary" type="button" @click="testSettings" style="display:inline-block;margin-right:1em;">test</v-btn>
           <a :href="'/harvestlogs/create?inst='+setting.inst_id+'&prov='+setting.prov_id">
-            <v-btn small color="primary" type="button">harvest</v-btn>
+            <v-btn small color="primary" type="button" style="display:inline-block;margin-right:1em;">harvest</v-btn>
           </a>
-        </v-col>
-      </v-row>
+      </div>
       <v-row v-if="showTest">
         <span class="form-good" role="alert" v-text="success"></span>
         <span class="form-fail" role="alert" v-text="failure"></span>

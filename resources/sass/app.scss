@@ -33,6 +33,11 @@ a.section-action {
 	margin-left: 1em;
 	vertical-align: super;
 }
+.section-action.align-right {
+	display: block;
+	float: right;
+	margin-top: 1em;
+}
 .page-header {
 	float: left;
 	width: 80%;

@@ -1,9 +1,7 @@
 <template>
   <div class="details">
   	<v-row no-gutters>
-	  <v-col class="d-flex">
-		<h2 class="section-title">Sushi Settings</h2>
-	  </v-col>
+	  <h2 class="section-title">Sushi Settings</h2>
       <v-col class="d-flex ma-2" cols="2" sm="2">
         <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
       </v-col>
@@ -22,8 +20,8 @@
           <strong>Support Email: </strong><a :href="'mailto:'+form.support_email">{{ form.support_email }}</a>
         </v-col>
       </v-row>
-	  <h2>Actions</h2>
       <v-row class="d-flex ma-2 pa-0">
+	  	  <h2>Actions</h2>
         <v-col class="d-flex pa-4" cols="3">
           <v-btn small color="secondary" type="button" @click="testSettings">test</v-btn>
         </v-col>
@@ -33,7 +31,7 @@
           </a>
         </v-col>
       </v-row>
-      <v-row>
+      <v-row v-if="showTest">
         <span class="form-good" role="alert" v-text="success"></span>
         <span class="form-fail" role="alert" v-text="failure"></span>
         <div v-if="showTest">

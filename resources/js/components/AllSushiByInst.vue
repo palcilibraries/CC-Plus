@@ -1,4 +1,6 @@
 <template>
+  <div class="section-action secondary" v-if="is_manager">
+      Export settings to: &nbsp; &nbsp; <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp; <a :href="'/institutions/export/xlsx'">.xlsx</a>
   <div>
 <!--    <div v-if="is_admin">
       <v-row>
@@ -7,15 +9,6 @@
         </v-col>
       </v-row>
     </div> -->
-    <div v-if="is_manager">
-      <v-row>
-        <v-col cols="2"><h5>Export settings to:</h5></v-col>
-        <v-col>
-          <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp;
-          <a :href="'/institutions/export/xlsx'">.xlsx</a>
-        </v-col>
-      </v-row>
-    </div>
     <template v-if="(is_manager || is_admin) && mutable_unset.length > 0">
 	  <form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
 	        @keydown="form.errors.clear($event.target.name)">

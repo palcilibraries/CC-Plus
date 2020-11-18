@@ -13,7 +13,7 @@
     <sushi-setting-form :setting="{{ json_encode($setting) }}"></sushi-setting-form>
     @if (sizeof($harvests) > 0)
     <div class="related-list">
-      <h3>Recent Harvest Activity</h3>
+      <h2>Recent Harvest Activity</h2>
       <harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"
                                 :inst_id="{{ $setting->inst_id }}"
                                 :prov_id="{{ $setting->prov_id }}"

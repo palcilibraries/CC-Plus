@@ -28,7 +28,8 @@
 .section-action {
 	display: inline-block;
 }
-.section-action.v-btn {
+.section-action.v-btn,
+a.section-action {
 	margin-left: 1em;
 	vertical-align: super;
 }

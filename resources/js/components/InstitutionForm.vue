@@ -15,9 +15,11 @@
             <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_inst.id)">Delete</v-btn>
           </v-col>
         </v-row>
-        <span class="form-good" role="alert" v-text="success"></span>
-        <span class="form-fail" role="alert" v-text="failure"></span>
       </div>
+	  <div>
+	      <span class="form-good" role="alert" v-text="success"></span>
+	      <span class="form-fail" role="alert" v-text="failure"></span>
+	  </div>
       <div>
         <!-- Values-only when form not active -->
         <div v-if="showForm==''">

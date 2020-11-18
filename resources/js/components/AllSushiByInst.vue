@@ -6,46 +6,45 @@
         </v-col>
       </v-row>
     </div> -->
-    <template v-if="(is_manager || is_admin) && mutable_unset.length > 0">
-	  <form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
-	        @keydown="form.errors.clear($event.target.name)">
-        <input v-model="form.inst_id" id="inst_id" type="hidden">
-	    <v-select
-	          :items="mutable_unset"
-			  v-model="form.prov_id"
-	          @change="onUnsetChange"
-	          placeholder="Connect a Provider"
-	          item-text="name"
-	          item-value="id"
-	          outlined
-			  color="primary"
-	    ></v-select>
-		<div v-if="showForm" class="form-fields">
-            <v-text-field v-model="form.customer_id"
-                          label="Customer ID"
-                          id="customer_id"
-                          outlined
-            ></v-text-field>
-            <v-text-field v-model="form.requestor_id"
-                          label="Requestor ID"
-                          id="requestor_id"
-                          outlined
-            ></v-text-field>
-            <v-text-field v-model="form.API_key"
-                          label="API Key"
-                          id="API_key"
-                          outlined
-            ></v-text-field>
-			<v-btn small color="primary" type="submit" :disabled="form.errors.any()">Connect</v-btn>
-			<v-btn small color="secondary" type="button" @click="testSettings">Test Settings</v-btn>
-			<v-btn small type="button" @click="hideForm">cancel</v-btn>
-			<div v-if="showTest">
-            	<div>{{ testStatus }}</div>
-            	<div v-for="row in testData">{{ row }}</div>
-			</div>
+  <div v-if="(is_manager || is_admin) && mutable_unset.length > 0">
+    <form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
+          @keydown="form.errors.clear($event.target.name)">
+      <input v-model="form.inst_id" id="inst_id" type="hidden">
+      <v-select
+            :items="mutable_unset"
+            v-model="form.prov_id"
+            @change="onUnsetChange"
+            placeholder="Connect a Provider"
+	        item-text="name"
+	        item-value="id"
+	        outlined
+			color="primary"
+      ></v-select>
+      <div v-if="showForm" class="form-fields">
+        <v-text-field v-model="form.customer_id"
+                      label="Customer ID"
+                      id="customer_id"
+                      outlined
+        ></v-text-field>
+        <v-text-field v-model="form.requestor_id"
+                      label="Requestor ID"
+                      id="requestor_id"
+                      outlined
+        ></v-text-field>
+        <v-text-field v-model="form.API_key"
+                      label="API Key"
+                      id="API_key"
+                      outlined
+        ></v-text-field>
+		<v-btn small color="primary" type="submit" :disabled="form.errors.any()">Connect</v-btn>
+		<v-btn small color="secondary" type="button" @click="testSettings">Test Settings</v-btn>
+		<v-btn small type="button" @click="hideForm">cancel</v-btn>
+		<div v-if="showTest">
+        	<div>{{ testStatus }}</div>
+        	<div v-for="row in testData">{{ row }}</div>
 		</div>
-	  </form>
- 	</template>
+	  </div>
+	</form>
     <div>
       <span class="good" role="alert" v-text="success"></span>
       <span class="fail" role="alert" v-text="failure"></span>

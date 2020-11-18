@@ -36,10 +36,10 @@
     </div>
     <div class="related-list">
 	  <h2 class="section-title">Providers</h2> <a class="section-action" href="/providers/create">add new</a>
-	  @if ( auth()->user()->hasAnyRole(['Manager']) )
-	  <div class="section-action align-right" v-if="is_manager">
+	  @if ( auth()->user()->hasAnyRole(['Admin','Manager']) )
+	  <div class="section-action align-right">
 	      Export settings to: &nbsp; &nbsp; <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp; <a :href="'/institutions/export/xlsx'">.xlsx</a>
-	  <div>
+	  </div>
 	  @endif
 	  <all-sushi-by-inst :settings="{{ json_encode($institution->sushiSettings->toArray()) }}"
 		  				 :inst_id="{{ json_encode($institution->id) }}"

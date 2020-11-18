@@ -16,7 +16,7 @@
           </v-col>
         </v-row>
       </div>
-	  <div>
+	  <div v-if="success || failure">
 	      <span class="form-good" role="alert" v-text="success"></span>
 	      <span class="form-fail" role="alert" v-text="failure"></span>
 	  </div>

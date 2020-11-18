@@ -1,7 +1,8 @@
 <template>
-  <div class="section-action secondary" v-if="is_manager">
-      Export settings to: &nbsp; &nbsp; <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp; <a :href="'/institutions/export/xlsx'">.xlsx</a>
   <div>
+    <div class="section-action secondary" v-if="is_manager">
+      Export settings to: &nbsp; &nbsp; <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp; <a :href="'/institutions/export/xlsx'">.xlsx</a>
+    </div>
 <!--    <div v-if="is_admin">
       <v-row>
         <v-col v-if="is_admin">

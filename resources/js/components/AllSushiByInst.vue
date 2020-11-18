@@ -1,8 +1,4 @@
 <template>
-  <div>
-    <div class="section-action secondary" v-if="is_manager">
-      Export settings to: &nbsp; &nbsp; <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp; <a :href="'/institutions/export/xlsx'">.xlsx</a>
-    </div>
 <!--    <div v-if="is_admin">
       <v-row>
         <v-col v-if="is_admin">
@@ -22,6 +18,7 @@
 	          item-text="name"
 	          item-value="id"
 	          outlined
+			  color="primary"
 	    ></v-select>
 		<div v-if="showForm" class="form-fields">
             <v-text-field v-model="form.customer_id"

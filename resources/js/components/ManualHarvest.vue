@@ -84,6 +84,10 @@
           </v-radio-group>
         </v-col>
       </v-row>
+      <div class="status-message" v-if="success || failure">
+        <span v-if="success" class="good" role="alert" v-text="success"></span>
+        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+      </div>
       <v-row v-if="form.reports.length>0">
         <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Submit</v-btn>
       </v-row>
@@ -91,10 +95,6 @@
         <span class="form-fail" role="alert">No reports defined or available for selected Provider/Institution.</span>
       </v-row>
     </form>
-    <div>
-      <span class="form-good" role="alert" v-text="success"></span>
-      <span class="form-fail" role="alert" v-text="failure"></span>
-    </div>
   </div>
 </template>
 
@@ -255,20 +255,5 @@
 </script>
 
 <style>
-.form-good {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: green;
-}
-.form-fail {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: red;
-}
+
 </style>

@@ -12,7 +12,7 @@
             <a :href="'/institutions/export/xlsx'">.xlsx</a>
         </v-col>
       </v-row>
-      <div v-if="success || failure">
+      <div class="status-message" v-if="success || failure">
         <span class="good" role="alert" v-text="success"></span>
         <span class="fail" role="alert" v-text="failure"></span>
       </div>
@@ -197,23 +197,3 @@
     }
   }
 </script>
-<style>
-.good {
-    position: relative;
-	display: block;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid #1b5e20;
-    border-radius: 0.25rem;
-    background-color: #66bb6a;
-	font-weight: bold;
-}
-.fail {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: red;
-}
-</style>

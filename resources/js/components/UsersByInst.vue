@@ -1,14 +1,14 @@
 <template>
   <div class="users" no-gutters>
     <v-row no-gutters>
-      <v-col class="d-flex ma-2" cols="2" sm="2">
-        <h2 class="section-title">Users</h2>
-      </v-col>
-      <v-col v-if="showForm==''" class="d-flex ma-2" cols="2" sm="2">
+      <h2 class="section-title">Users</h2>
+      <v-col v-if="showForm==''">
         <v-btn small color="primary" @click="createForm">Add user</v-btn>
       </v-col>
-      <span class="good" role="alert" v-text="success"></span>
-      <span class="fail" role="alert" v-text="failure"></span>
+	  <div class="status-message" v-if="success || failure">
+  		<span class="good" role="alert" v-text="success"></span>
+  		<span class="fail" role="alert" v-text="failure"></span>
+	  </div>
     </v-row>
     <v-row v-if="showForm==''">
       <v-col>
@@ -204,22 +204,3 @@
         }
     }
 </script>
-
-<style>
-.good {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: green;
-}
-.fail {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: red;
-}
-</style>

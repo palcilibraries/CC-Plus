@@ -16,9 +16,9 @@
           </v-col>
         </v-row>
       </div>
-	  <div v-if="success || failure">
-	      <span class="form-good" role="alert" v-text="success"></span>
-	      <span class="form-fail" role="alert" v-text="failure"></span>
+	  <div class="status-message" v-if="success || failure">
+	      <span class="good" role="alert" v-text="success"></span>
+	      <span class="fail" role="alert" v-text="failure"></span>
 	  </div>
       <div>
         <!-- Values-only when form not active -->
@@ -285,22 +285,3 @@
         }
     }
 </script>
-
-<style>
-.form-good {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: green;
-}
-.form-fail {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: red;
-}
-</style>

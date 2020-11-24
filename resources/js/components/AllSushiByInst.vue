@@ -45,7 +45,7 @@
 		</div>
 	  </div>
 	</form>
-    <div>
+    <div class="status-message" v-if="success || failure">
       <span class="good" role="alert" v-text="success"></span>
       <span class="fail" role="alert" v-text="failure"></span>
     </div>

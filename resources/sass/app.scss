@@ -147,3 +147,21 @@ main #app {
 .dashboard-section {
 	margin-top: 2em;
 }
+.status-message {
+    position: relative;
+    margin-bottom: 1rem;
+	border-radius: 0.25rem;
+	font-weight: bold;
+}
+.good {
+	display: block;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid #1b5e20;
+    background-color: #66bb6a;
+}
+.fail {
+	display: block;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid #d50000;
+    background-color: #ff5252;
+}

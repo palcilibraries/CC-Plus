@@ -18,9 +18,9 @@
       </v-col>
     </v-row>
     <v-row v-if="!showForm">
-      <v-col>
-        <span class="form-good" role="alert" v-text="success"></span>
-        <span class="form-fail" role="alert" v-text="failure"></span>
+      <v-col class="status-message" v-if="success || failure">
+        <span  v-if="success" class="form-good" role="alert" v-text="success"></span>
+        <span  v-if="failure" class="form-fail" role="alert" v-text="failure"></span>
       </v-col>
     </v-row>
     <v-row v-if="!showForm" no-gutters>
@@ -215,20 +215,5 @@
 </script>
 
 <style>
-.form-good {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: green;
-}
-.form-fail {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: red;
-}
+
 </style>

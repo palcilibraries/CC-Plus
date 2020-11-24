@@ -3,9 +3,9 @@
     <v-row no-gutters>
       <v-col><h3 class="section-title">Harvest Details</h3></v-col>
     </v-row>
-    <v-row>
-      <span class="form-good" role="alert" v-text="success"></span>
-      <span class="form-fail" role="alert" v-text="failure"></span>
+    <v-row class="status-message" v-if="success || failure">
+      <span v-if="success" class="good" role="alert" v-text="success"></span>
+      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </v-row>
     <v-row no-gutters>
       <v-col cols="2" sm="1">Institution</v-col>
@@ -151,20 +151,4 @@
 </script>
 <style>
 .align-mid { align-items: center; }
-.form-fail {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: red;
-}
-.form-good {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: green;
-}
 </style>

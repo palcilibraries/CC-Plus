@@ -10,8 +10,10 @@
   	  <h3 class="section-title">Details</h3>
       <template v-if="is_manager && !showForm">
     	<v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
-        <span class="form-good" role="alert" v-text="success"></span>
-        <span class="form-fail" role="alert" v-text="failure"></span>
+		<div class="status-message" v-if="success || failure">
+	        <span v-if="success" class="good" role="alert" v-text="success"></span>
+	        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+		</div>
    	  </template>
       <!-- form display control and confirmations  -->
       <!-- Values-only when form not active -->
@@ -165,20 +167,5 @@
 </script>
 
 <style>
-.form-good {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: green;
-}
-.form-fail {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: red;
-}
+
 </style>

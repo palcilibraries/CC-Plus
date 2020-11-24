@@ -70,8 +70,10 @@
           </v-row>
         </v-container>
       </form>
-      <span class="form-info" role="alert" v-text="warning"></span>
-      <span class="form-good" role="alert" v-text="confirm"></span>
+	  <div class="status-message" v-if="confirm || warning">
+	      <span v-if="warning" class="fail" role="alert" v-text="warning"></span>
+	      <span v-if="confirm" class="good" role="alert" v-text="confirm"></span>
+	  </div>
     </div>
     <!-- not manager -->
     <div v-else>

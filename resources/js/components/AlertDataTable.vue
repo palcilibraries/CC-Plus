@@ -1,8 +1,8 @@
 <template>
   <div>
-    <div>
-      <span class="good" role="alert" v-text="success"></span>
-      <span class="fail" role="alert" v-text="failure"></span>
+    <div class="status-message" v-if="success || failure">
+      <span v-if="success" class="good" role="alert" v-text="success"></span>
+      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
     <!-- Container for system alerts -->
     <v-row v-if="is_admin">
@@ -340,21 +340,5 @@
 </script>
 
 <style>
-.good {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: green;
-}
-.fail {
-    position: relative;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-    color: red;
-}
 .x-box { width: 16px;  height: 16px; flex-shrink: 0; }
 </style>

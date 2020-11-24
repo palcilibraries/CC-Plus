@@ -3,7 +3,7 @@
     <v-row no-gutters>
       <h2 class="section-title">Users</h2>
       <v-col v-if="showForm==''">
-        <v-btn small color="primary" @click="createForm">Add user</v-btn>
+        <v-btn class="section-action" small color="primary" @click="createForm">Add user</v-btn>
       </v-col>
 	  <div class="status-message" v-if="success || failure">
   		<span class="good" role="alert" v-text="success"></span>

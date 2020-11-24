@@ -10,8 +10,10 @@
       <v-col v-if="is_admin && mutable_prov.can_delete" class="d-flex ma-2" cols="2" sm="2">
         <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_prov.id)">Delete</v-btn>
       </v-col>
-      <span class="form-good" role="alert" v-text="success"></span>
-      <span class="form-fail" role="alert" v-text="failure"></span>
+	  <div class="status-message" v-if="success || failure">
+	      <span v-if="success" class="form-good" role="alert" v-text="success"></span>
+	      <span v-if="failure" class="form-fail" role="alert" v-text="failure"></span>
+	  </div>
     </v-row>
     <!-- form display control and confirmations  -->
     <!-- Values-only when form not active -->

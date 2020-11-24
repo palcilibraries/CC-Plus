@@ -6,8 +6,8 @@
         <v-btn class="section-action" small color="primary" @click="createForm">Add user</v-btn>
       </v-col>
 	  <div class="status-message" v-if="success || failure">
-  		<span class="good" role="alert" v-text="success"></span>
-  		<span class="fail" role="alert" v-text="failure"></span>
+  		<span v-if="success" class="good" role="alert" v-text="success"></span>
+  		<span v-if="failure" class="fail" role="alert" v-text="failure"></span>
 	  </div>
     </v-row>
     <v-row v-if="showForm==''">

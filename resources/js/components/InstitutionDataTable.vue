@@ -1,9 +1,5 @@
 <template>
   <div>
-    <div>
-      <span class="good" role="alert" v-text="success"></span>
-      <span class="fail" role="alert" v-text="failure"></span>
-    </div>
     <div v-if="showForm==''">
       <v-row>
         <v-col cols="2"><v-btn small color="primary" @click="importForm">Import Institutions</v-btn></v-col>
@@ -16,6 +12,10 @@
             <a :href="'/institutions/export/xlsx'">.xlsx</a>
         </v-col>
       </v-row>
+      <div>
+        <span class="good" role="alert" v-text="success"></span>
+        <span class="fail" role="alert" v-text="failure"></span>
+      </div>
       <v-data-table :headers="headers" :items="mutable_institutions" item-key="id" class="elevation-1">
         <template v-slot:item="{ item }">
           <tr>
@@ -200,11 +200,13 @@
 <style>
 .good {
     position: relative;
+	display: block;
     padding: 0.75rem 1.25rem;
     margin-bottom: 1rem;
-    border: 1px solid transparent;
+    border: 1px solid #1b5e20;
     border-radius: 0.25rem;
-    color: green;
+    background-color: #66bb6a;
+	font-weight: bold;
 }
 .fail {
     position: relative;

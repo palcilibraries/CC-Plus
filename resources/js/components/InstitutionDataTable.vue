@@ -12,7 +12,7 @@
             <a :href="'/institutions/export/xlsx'">.xlsx</a>
         </v-col>
       </v-row>
-      <div>
+      <div v-if="success || failure">
         <span class="good" role="alert" v-text="success"></span>
         <span class="fail" role="alert" v-text="failure"></span>
       </div>

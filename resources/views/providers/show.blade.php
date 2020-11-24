@@ -28,14 +28,7 @@
 	  </v-expansion-panel></v-expansion-panels>
     </div>
 	<div class="related-list">
-      <h3>Institutional Sushi Settings</h3>
-      @if (auth()->user()->hasRole("Admin"))
-	  <v-row><v-col>
-  	    <v-btn small color="primary" type="button" href="{{ route('institutions.create') }}" class="section-action">
-	      Add new institution
-  	    </v-btn>
-	  </v-col></v-row>
-	  @endif
+      <h2 class="section-title">Institutions</h2> @if (auth()->user()->hasRole("Admin"))<a href="/institutions/create" class="section-action">add new</a> @endif
 	  <all-sushi-by-prov :settings="{{ json_encode($provider->sushiSettings->toArray()) }}"
 	                     :prov_id="{{ json_encode($provider->id) }}"
                          :unset="{{ json_encode($unset_institutions) }}"

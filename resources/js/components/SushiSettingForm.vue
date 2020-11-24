@@ -27,7 +27,7 @@
             <v-btn small color="primary" type="button" style="display:inline-block;margin-right:1em;">harvest</v-btn>
           </a>
       </div>
-      <v-row v-if="showTest && success || failure" class="status-message">
+      <v-row v-if="showTest && (success || failure)" class="status-message">
         <span class="form-good" role="alert" v-text="success"></span>
         <span class="form-fail" role="alert" v-text="failure"></span>
         <div v-if="showTest">

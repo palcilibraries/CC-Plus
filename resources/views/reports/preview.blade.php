@@ -7,7 +7,7 @@
 @endif
 <div id="app">
   <v-app>
-    <v-content>
+    <v-main>
       <report-preview :preset_filters="{{ json_encode($preset_filters) }}"
                       :columns="{{ json_encode($columns) }}"
                       :fields="{{ json_encode($fields) }}"
@@ -15,7 +15,7 @@
                       :filter_options="{{ json_encode($filter_options) }}"
                       :rangetype="{{ json_encode($rangetype) }}"
       ></report-preview>
-    </v-content>
+    </v-main>
   </v-app>
 </div>
 @endsection

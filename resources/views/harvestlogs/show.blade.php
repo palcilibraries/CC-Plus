@@ -2,7 +2,7 @@
 
 @section('content')
 <v-app harvestlogform>
-  <v-content>
+  <v-main>
     <div class="details">
       <h3 class="section-title">Harvest Details</h3>
       <table>
@@ -43,6 +43,6 @@
       <failed-by-harvest :failed_harvests="{{ json_encode($failed) }}"><failed-by-harvest>
     </div>
     @endif
-  </v-content>
+  </v-main>
 </v-app>
 @endsection

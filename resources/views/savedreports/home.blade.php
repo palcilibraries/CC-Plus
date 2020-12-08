@@ -7,7 +7,7 @@
     @endforeach
 @endif
 <v-app>
-  <v-content>
+  <v-main>
     <h1>{{ auth()->user()->name }}'s dashboard</h1>
     <h2 class="component-subhead">{{ $inst_count }} institution(s) and {{ $prov_count }} provider(s) connected</h2>
     <div class="dashboard-section">
@@ -30,5 +30,6 @@
       <h2>Recent Activity</h2>
 	  <harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"></harvestlog-summary-table>
     </div>
+  </v-main>
 </v-app>
 @endsection

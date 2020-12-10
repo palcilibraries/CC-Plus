@@ -114,51 +114,50 @@ class HarvestLogController extends Controller
             }
         }
 
-        // Get the harvest rows based on sushisettings
-        $settings = SushiSetting::when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
-                                      return $qry->whereIn('inst_id', $filters['inst']);
-        })
-                                ->when(sizeof($filters['prov']) > 0, function ($qry) use ($filters) {
-                                      return $qry->whereIn('prov_id', $filters['prov']);
-                                })
-                                ->pluck('id')->toArray();
-
-        $harvest_data = HarvestLog::with(
-            'report:id,name',
-            'sushiSetting',
-            'sushiSetting.institution:id,name',
-            'sushiSetting.provider:id,name'
-        )
-                                  ->whereIn('sushisettings_id', $settings)
-                                  ->orderBy('updated_at', 'DESC')
-                                  ->when(sizeof($filters['rept']) > 0, function ($qry) use ($filters) {
-                                      return $qry->whereIn('report_id', $filters['rept']);
-                                  })
-                                  ->when(sizeof($filters['stat']) > 0, function ($qry) use ($filters) {
-                                      return $qry->whereIn('status', $filters['stat']);
-                                  })
-                                  ->when($filters['ymfr'], function ($qry) use ($filters) {
-                                      return $qry->where('yearmon', '>=', $filters['ymfr']);
-                                  })
-                                  ->when($filters['ymto'], function ($qry) use ($filters) {
-                                      return $qry->where('yearmon', '<=', $filters['ymto']);
-                                  })
-                                  ->get();
-
-        $harvests = $harvest_data->map(function ($harvest) {
-            $rec = array('id' => $harvest->id, 'yearmon' => $harvest->yearmon, 'attempts' => $harvest->attempts,
-                         'status' => $harvest->status);
-            $rec['updated'] = substr($harvest->updated_at,0,10);
-            $rec['institution'] = $harvest->sushiSetting->institution->name;
-            $rec['provider'] = $harvest->sushiSetting->provider->name;
-            $rec['report'] = $harvest->report->name;
-            return $rec;
-        });
-
-        // Return results
+        // Skip querying for records unless we're returning json
+        // The vue-component will run a request for JSON data once it is mounted
         if ($json) {
+
+            // Get the harvest rows based on sushisettings
+            $settings = SushiSetting::when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
+                                          return $qry->whereIn('inst_id', $filters['inst']);
+                                      })
+                                      ->when(sizeof($filters['prov']) > 0, function ($qry) use ($filters) {
+                                          return $qry->whereIn('prov_id', $filters['prov']);
+                                      })
+                                      ->pluck('id')->toArray();
+            $harvest_data = HarvestLog::
+                with('report:id,name','sushiSetting','sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+                ->whereIn('sushisettings_id', $settings)
+                ->orderBy('updated_at', 'DESC')
+                ->when(sizeof($filters['rept']) > 0, function ($qry) use ($filters) {
+                    return $qry->whereIn('report_id', $filters['rept']);
+                })
+                ->when(sizeof($filters['stat']) > 0, function ($qry) use ($filters) {
+                    return $qry->whereIn('status', $filters['stat']);
+                })
+                ->when($filters['ymfr'], function ($qry) use ($filters) {
+                    return $qry->where('yearmon', '>=', $filters['ymfr']);
+                })
+                ->when($filters['ymto'], function ($qry) use ($filters) {
+                    return $qry->where('yearmon', '<=', $filters['ymto']);
+                })
+                ->get();
+            $harvests = $harvest_data->map(function ($harvest) {
+                $rec = array('id' => $harvest->id, 'yearmon' => $harvest->yearmon, 'attempts' => $harvest->attempts,
+                             'status' => $harvest->status);
+                $rec['updated_at'] = substr($harvest->updated_at,0,10);
+                $rec['inst_name'] = $harvest->sushiSetting->institution->name;
+                $rec['prov_name'] = $harvest->sushiSetting->provider->name;
+                $rec['report_name'] = $harvest->report->name;
+                return $rec;
+            });
+
             return response()->json(['harvests' => $harvests], 200);
+
+        // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {
+            $harvests = array();
             return view('harvestlogs.index', compact(
                 'harvests',
                 'institutions',

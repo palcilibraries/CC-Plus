@@ -202,12 +202,14 @@
             this.maxYM = this.bounds['maxYM'];
             this.latestYear = this.bounds['latestYear'];
             // For filtering by Group, poke the institution legend
-            if (this.filters['institution'].legend == 'Institution Group') {
-                Object.keys(this.fields).forEach( (key) =>  {
-                    if (this.fields[key].legend == 'Institution') {
-                        this.fields[key].legend = this.filters['institution'].legend;
-                    }
-                });
+            if (this.filters['institution']) {
+                if (this.filters['institution'].legend == 'Institution Group') {
+                    Object.keys(this.fields).forEach( (key) =>  {
+                        if (this.fields[key].legend == 'Institution') {
+                            this.fields[key].legend = this.filters['institution'].legend;
+                        }
+                    });
+                }
             }
             console.log('SavedReport Component mounted.');
         }

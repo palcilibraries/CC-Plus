@@ -78,45 +78,45 @@
       ></date-range>
     </div>
     <v-row class="d-flex pa-1" no-gutters>
-      <v-col v-if="is_admin" class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if='mutable_filters.inst.length>0' class="x-box">
-            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
+      <v-col v-if='institutions.length>1' class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if="mutable_filters['inst'].length>0" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-select :items='institutions' v-model='mutable_filters.inst' @change="updateRecords()"
-                  multiple label="Institution(s)" item-text="name" item-value="id"
+        <v-select :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters()" multiple
+                  label="Institution(s)"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if='mutable_filters.prov.length>0' class="x-box">
+        <div v-if="mutable_filters['prov'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
-        <v-select :items='providers' v-model='mutable_filters.prov' @change="updateRecords()"
-                  multiple label="Provider(s)" item-text="name" item-value="id"
+        <v-select :items="providers" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
+                  label="Provider(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if='mutable_filters.rept.length>0' class="x-box">
+        <div v-if="mutable_filters['rept'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('rept')"/>&nbsp;
         </div>
-        <v-select :items='reports' v-model='mutable_filters.rept' @change="updateRecords()"
-                  multiple label="Report(s)" item-text="name" item-value="id"
+        <v-select :items="reports" v-model="mutable_filters['rept']" @change="updateFilters()" multiple
+                  label="Report(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if='mutable_filters.stat!=null' class="x-box">
+        <div v-if="mutable_filters['stat'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('stat')"/>&nbsp;
         </div>
-        <v-select :items='fstatus' v-model='mutable_filters.stat' @change="updateRecords()"
-                  label="Status" item-text="text" item-value="value"
+        <v-select :items="statuses" v-model="mutable_filters['stat'][0]" @change="updateFilters()"
+                  label="Status" item-text="name" item-value="name"
         ></v-select>
       </v-col>
     </v-row>
-
-    <v-data-table :headers="headers" :items="mutable_alerts" item-key="id" class="elevation-1" dense>
+    <v-data-table :headers="headers" :items="mutable_alerts" item-key="id" class="elevation-1" dense
+                  :options="mutable_options" @update:options="updateOptions" :key="dtKey">
       <template v-slot:item="{ item }">
         <tr>
           <td width="10%" v-if="is_admin" classs="align-center">
-            <v-select :items="statusvals" v-model="item.status" value="item.status" dense
+            <v-select :items="statusvals" v-model="item.status" value="item.status" :loading="loading" dense
                       @change="updateStatus(item)"
             ></v-select>
           </td>
@@ -148,7 +148,7 @@
             institutions: { type:Array, default: () => [] },
             reports: { type:Array, default: () => [] },
             bounds: { type:Array, default: () => [] },
-            filters: { type:Object, default: () => ({ymfr:null,ymto:null,inst:[],prov:[],rept:[],stat:null}) },
+            filters: { type:Object, default: () => ({fromYM:null,toYM:null,inst:[],prov:[],rept:[],stat:[]}) },
            },
     data () {
       return {
@@ -175,17 +175,25 @@
         mutable_sysalerts: this.sysalerts,
         mutable_alerts: this.alerts,
         mutable_filters: this.filters,
+        mutable_options: {},
         fstatus: [{ text: 'Active', value: 1}, {text: 'Silent', value: 0}],
         minYM: '',
         maxYM: '',
+        dtKey: 1,
         rangeKey: 1,
+        loading: true,
+        table_options: {},
       }
     },
     watch: {
       datesFromTo: {
         handler() {
-          // Changing date-range means we need to reload records, just not the FIRST one
+          // Changing date-range means we need to update state and reload records
+          // (just not the FIRST change that happens on page load)
           if (this.rangeKey > 1) {
+              this.mutable_filters['toYM'] = this.filter_by_toYM;
+              this.mutable_filters['fromYM'] = this.filter_by_fromYM;
+              this.$store.dispatch('updateAllFilters',this.mutable_filters);
               this.updateRecords();
           }
           this.rangeKey += 1;           // force re-render of the date-range component
@@ -193,23 +201,34 @@
       },
     },
     methods:{
+        updateFilters() {
+            this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            this.updateRecords();
+        },
+        clearFilter(filter) {
+            this.mutable_filters[filter] = [];
+            this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            this.updateRecords();
+        },
         updateRecords() {
-            if (this.filter_by_toYM != null) this.mutable_filters['ymto'] = this.filter_by_toYM;
-            if (this.filter_by_fromYM != null) this.mutable_filters['ymfr'] = this.filter_by_fromYM;
+            this.loading = true;
+            if (this.filter_by_toYM != null) this.mutable_filters['toYM'] = this.filter_by_toYM;
+            if (this.filter_by_fromYM != null) this.mutable_filters['fromYM'] = this.filter_by_fromYM;
             let _filters = JSON.stringify(this.mutable_filters);
             axios.get("/alerts?json=1&filters="+_filters)
                  .then((response) => {
                      this.mutable_alerts = response.data.alerts;
                  })
                  .catch(err => console.log(err));
+            this.loading = false;
         },
-        clearFilter(filter) {
-            if (filter == 'stat') {
-                this.mutable_filters[filter] = null;
-            } else {
-                this.mutable_filters[filter] = [];
-            }
-            this.updateRecords();
+        updateOptions(options) {
+            Object.keys(this.mutable_options).forEach( (key) =>  {
+                if (options[key] !== this.mutable_options[key]) {
+                    this.mutable_options[key] = options[key];
+                }
+            });
+            this.$store.dispatch('updateDatatableOptions',this.mutable_options);
         },
         createSys() {
             this.failure = '';
@@ -318,21 +337,54 @@
         },
     },
     computed: {
-      ...mapGetters(['is_admin', 'filter_by_fromYM', 'filter_by_toYM']),
+      ...mapGetters(['is_admin', 'filter_by_fromYM', 'filter_by_toYM', 'all_filters', 'datatable_options']),
       datesFromTo() {
         return this.filter_by_fromYM+'|'+this.filter_by_toYM;
       },
     },
+    beforeCreate() {
+      // Load existing store data
+      this.$store.commit('initialiseStore');
+    },
+    beforeMount() {
+        // Set page name in the store
+        this.$store.dispatch('updatePageName','alerts');
+	},
     mounted() {
-      // per-alert select options don't use "ALL"
-      this.statusvals = this.statuses.slice(1);
+      // Apply any defined prop-based filters (and overwrite existing store values)
+      var count = 0;
+      Object.assign(this.mutable_filters, this.all_filters);
+      Object.keys(this.filters).forEach( (key) =>  {
+        if (this.filters[key] != null) {
+          if (key == 'fromYM' || key == 'toYM') {
+            count++;
+            this.mutable_filters[key] = this.filters[key];
+          } else if (this.filters[key].length>0) {
+            count++;
+            this.mutable_filters[key] = this.filters[key];
+          }
+        }
+      });
+
+      // Set datatable options with store-values
+      Object.assign(this.mutable_options, this.datatable_options);
+
       // Setup date-range filters
       if (typeof(this.bounds[0]) != 'undefined') {
         this.minYM = this.bounds[0].YM_min;
         this.maxYM = this.bounds[0].YM_max;
       }
-      if (this.filters['ymfr'] != null) this.$store.dispatch('updateFromYM',this.filters['ymfr']);
-      if (this.filters['ymto'] != null) this.$store.dispatch('updateToYM',this.filters['ymto']);
+
+      // per-alert select options don't use "ALL"
+      this.statusvals = this.statuses.slice(1);
+
+      // Update store and apply filters now that they're set
+      if (count>0) this.$store.dispatch('updateAllFilters',this.mutable_filters);
+      this.updateRecords();
+      this.dtKey += 1;           // force re-render of the datatable
+
+      // Subscribe to store updates
+      this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
 
       console.log('AlertData Component mounted.');
     }

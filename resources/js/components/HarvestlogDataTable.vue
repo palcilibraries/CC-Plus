@@ -7,57 +7,62 @@
     </div>
     <v-row no-gutters>
       <v-col v-if='institutions.length>1' class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if='mutable_filters.inst.length>0' class="x-box">
+        <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-select :items='institutions' v-model='mutable_filters.inst' @change="updateLogRecords()" multiple
+        <v-select :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters()" multiple
                   label="Institution(s)"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if='mutable_filters.prov.length>0' class="x-box">
+        <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
-        <v-select :items='providers' v-model='mutable_filters.prov' @change="updateLogRecords()" multiple
+        <v-select :items="providers" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
                   label="Provider(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if='mutable_filters.rept.length>0' class="x-box">
+        <div v-if="mutable_filters['rept'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('rept')"/>&nbsp;
         </div>
-        <v-select :items='reports' v-model='mutable_filters.rept' @change="updateLogRecords()" multiple
+        <v-select :items="reports" v-model="mutable_filters['rept']" @change="updateFilters()" multiple
                   label="Report(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if='mutable_filters.stat.length>0' class="x-box">
+        <div v-if="mutable_filters['stat'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('stat')"/>&nbsp;
         </div>
-        <v-select :items='statuses' v-model='mutable_filters.stat' @change="updateLogRecords()" multiple
+        <v-select :items="statuses" v-model="mutable_filters['stat']" @change="updateFilters()" multiple
                   label="Status(es)" item-text="name" item-value="name"
         ></v-select>
       </v-col>
     </v-row>
     <div v-if='is_admin || is_manager'>
-      <v-row class="status-message" v-if="success!='' || failure!=''">
+      <v-row class="status-message" v-if="success || failure">
         <span v-if="success" class="good" role="alert" v-text="success"></span>
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
       </v-row>
-      <v-row class="d-flex pa-1"no-gutters>
-        <v-col class="d-flex px-2 align-center" cols="4" sm="2">
+      <v-row class="d-flex pa-1 align-center" no-gutters>
+        <v-col class="d-flex px-2" cols="4" sm="2">
           <v-select :items='bulk_actions' v-model='bulkAction' @change="processBulk()" label="Bulk Actions"
                     :disabled='selectedRows.length==0'></v-select>
         </v-col>
+        <v-col v-if="selectedRows.length>0" class="d-flex px-4 align-center" cols="8" sm="4">
+          <span class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
+        </v-col>
       </v-row>
-      <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_harvests" item-key="id" show-select>
+      <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_harvests" :loading="loading" show-select
+                    item-key="id" :options="mutable_options" @update:options="updateOptions" :key="dtKey">
         <template v-slot:item.action="{ item }">
           <v-btn class='btn' x-small type="button" :href="'/harvestlogs/'+item.id+'/edit'">Details</v-btn>
         </template>
       </v-data-table>
     </div>
     <div v-else>
-      <v-data-table :headers="headers" :items="mutable_harvests" item-key="id">
+      <v-data-table :headers="headers" :items="mutable_harvests" :loading="loading" item-key="id"
+                     :options="mutable_options" @update:options="updateOptions">
         <template v-slot:item.action="{ item }">
           <v-btn class='btn' x-small type="button" :href="'/harvestlogs/'+item.id+'/edit'">Details</v-btn>
         </template>
@@ -76,15 +81,15 @@
             providers: { type:Array, default: () => [] },
             reports: { type:Array, default: () => [] },
             bounds: { type:Array, default: () => [] },
-            filters: { type:Object, default: () => ({ymfr:null,ymto:null,inst:[],prov:[],rept:[],stat:[]}) },
+            filters: { type:Object, default: () => ({fromYM:null,toYM:null,inst:[],prov:[],rept:[],stat:[]}) },
            },
     data () {
       return {
         headers: [
-          { text: 'Last Update', value: 'updated' },
-          { text: 'Institution', value: 'institution' },
-          { text: 'Provider', value: 'provider' },
-          { text: 'Report', value: 'report' },
+          { text: 'Last Update', value: 'updated_at' },
+          { text: 'Institution', value: 'inst_name' },
+          { text: 'Provider', value: 'prov_name' },
+          { text: 'Report', value: 'report_name' },
           { text: 'Usage Date', value: 'yearmon' },
           { text: 'Attempts', value: 'attempts' },
           { text: 'Status', value: 'status' },
@@ -92,6 +97,7 @@
         ],
         mutable_harvests: this.harvests,
         mutable_filters: this.filters,
+        mutable_options: {},
         statuses: ['Success', 'Fail', 'New', 'Queued', 'Active', 'Pending', 'Stopped', 'ReQueued'],
         status_changeable: ['Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
         bulk_actions: ['Stop', 'Restart', 'Delete'],
@@ -99,17 +105,23 @@
         selectedRows: [],
         minYM: '',
         maxYM: '',
+        dtKey: 1,
         rangeKey: 1,
         bulkAction: '',
         success: '',
         failure: '',
+        loading: true,
       }
     },
     watch: {
       datesFromTo: {
         handler() {
-          // Changing date-range means we need to reload records, just not the FIRST one
+          // Changing date-range means we need to update state and reload records
+          // (just not the FIRST change that happens on page load)
           if (this.rangeKey > 1) {
+              this.mutable_filters['toYM'] = this.filter_by_toYM;
+              this.mutable_filters['fromYM'] = this.filter_by_fromYM;
+              this.$store.dispatch('updateAllFilters',this.mutable_filters);
               this.updateLogRecords();
           }
           this.rangeKey += 1;           // force re-render of the date-range component
@@ -117,21 +129,42 @@
       },
     },
     methods: {
+        // Changing filters means clearing SelectedRows - otherwise Bulk Actions could affect
+        // one of many rows no longer displayed.
+        updateFilters() {
+            this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            this.updateLogRecords();
+            this.selectedRows = [];
+        },
+        clearFilter(filter) {
+            this.mutable_filters[filter] = [];
+            this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            this.updateLogRecords();
+            this.selectedRows = [];
+        },
         updateLogRecords() {
             self.success = "";
             self.failure = "";
-            if (this.filter_by_toYM != null) this.mutable_filters['ymto'] = this.filter_by_toYM;
-            if (this.filter_by_fromYM != null) this.mutable_filters['ymfr'] = this.filter_by_fromYM;
+            this.loading = true;
+            if (this.filter_by_toYM != null) this.mutable_filters['toYM'] = this.filter_by_toYM;
+            if (this.filter_by_fromYM != null) this.mutable_filters['fromYM'] = this.filter_by_fromYM;
             let _filters = JSON.stringify(this.mutable_filters);
             axios.get("/harvestlogs?json=1&filters="+_filters)
                  .then((response) => {
                      this.mutable_harvests = response.data.harvests;
+                     this.numRows = this.mutable_harvests.length;
                  })
                  .catch(err => console.log(err));
+             this.loading = false;
         },
-        clearFilter(filter) {
-            this.mutable_filters[filter] = [];
-            this.updateLogRecords();
+        updateOptions(options) {
+            if (Object.keys(this.mutable_options).length === 0) return;
+            Object.keys(this.mutable_options).forEach( (key) =>  {
+                if (options[key] !== this.mutable_options[key]) {
+                    this.mutable_options[key] = options[key];
+                }
+            });
+            this.$store.dispatch('updateDatatableOptions',this.mutable_options);
         },
         processBulk() {
             this.success = "";
@@ -212,23 +245,56 @@
         },
     },
     computed: {
-      ...mapGetters(['is_manager', 'is_admin', 'is_viewer', 'filter_by_fromYM', 'filter_by_toYM']),
+      ...mapGetters(['is_manager', 'is_admin', 'is_viewer', 'filter_by_fromYM', 'filter_by_toYM', 'all_filters',
+                     'datatable_options']),
       datesFromTo() {
         return this.filter_by_fromYM+'|'+this.filter_by_toYM;
       },
     },
+    beforeCreate() {
+        // Load existing store data
+		this.$store.commit('initialiseStore');
+	},
+    beforeMount() {
+        // Set page name in the store
+        this.$store.dispatch('updatePageName','harvestlogs');
+	},
     mounted() {
+      // Apply any defined prop-based filters (and overwrite existing store values)
+      var count = 0;
+      Object.assign(this.mutable_filters, this.all_filters);
+      Object.keys(this.filters).forEach( (key) =>  {
+        if (this.filters[key] != null) {
+          if (key == 'fromYM' || key == 'toYM') {
+            count++;
+            this.mutable_filters[key] = this.filters[key];
+          } else if (this.filters[key].length>0) {
+            count++;
+            this.mutable_filters[key] = this.filters[key];
+          }
+        }
+      })
+      // Set datatable options with store-values
+      Object.assign(this.mutable_options, this.datatable_options);
+
+      // Setup date-bounds for the date-selector
       if (typeof(this.bounds[0]) != 'undefined') {
         this.minYM = this.bounds[0].YM_min;
         this.maxYM = this.bounds[0].YM_max;
       }
-      if (this.filters['ymfr'] != null) this.$store.dispatch('updateFromYM',this.filters['ymfr']);
-      if (this.filters['ymto'] != null) this.$store.dispatch('updateToYM',this.filters['ymto']);
 
       // Remove institution column in output if not admin or viewer
       if (!this.is_admin && !this.is_viewer) {
-         this.headers.splice(this.headers.findIndex(h=>h.value == "institution"),1);
+         this.headers.splice(this.headers.findIndex(h=>h.value == "inst_name"),1);
       }
+
+      // Update store and apply filters now that they're set
+      if (count>0) this.$store.dispatch('updateAllFilters',this.mutable_filters);
+      this.updateLogRecords();
+      this.dtKey += 1;           // force re-render of the datatable
+
+      // Subscribe to store updates
+      this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
 
       console.log('HarvestLogData Component mounted.');
     }

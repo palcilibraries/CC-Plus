@@ -16,7 +16,8 @@
         <span v-if="success" class="good" role="alert" v-text="success"></span>
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
       </div>
-      <v-data-table :headers="headers" :items="mutable_institutions" item-key="id" class="elevation-1">
+      <v-data-table :headers="headers" :items="mutable_institutions" item-key="id" :options="mutable_options"
+                     :key="dtKey" @update:options="updateOptions">
         <template v-slot:item="{ item }">
           <tr>
             <td><a :href="'/institutions/'+item.id">{{ item.name }}</a></td>
@@ -112,6 +113,8 @@
             institutiongroups: [],
             notes: '',
         }),
+        dtKey: 1,
+        mutable_options: {},
         csv_upload: null,
         import_type: '',
         import_types: ['Add or Update', 'Full Replacement']
@@ -191,8 +194,35 @@
         hideForm (event) {
             this.showForm = '';
         },
+        updateOptions(options) {
+            if (Object.keys(this.mutable_options).length === 0) return;
+            Object.keys(this.mutable_options).forEach( (key) =>  {
+                if (options[key] !== this.mutable_options[key]) {
+                    this.mutable_options[key] = options[key];
+                }
+            });
+            this.$store.dispatch('updateDatatableOptions',this.mutable_options);
+        },
     },
+    computed: {
+      ...mapGetters(['datatable_options'])
+    },
+    beforeCreate() {
+        // Load existing store data
+		this.$store.commit('initialiseStore');
+	},
+    beforeMount() {
+        // Set page name in the store
+        this.$store.dispatch('updatePageName','institutions');
+	},
     mounted() {
+      // Set datatable options with store-values
+      Object.assign(this.mutable_options, this.datatable_options);
+      this.dtKey += 1;           // force re-render of the datatable
+
+      // Subscribe to store updates
+      this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
+
       console.log('InstitutionData Component mounted.');
     }
   }

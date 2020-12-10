@@ -16,7 +16,8 @@
             <a :href="'/providers/export/xlsx'">.xlsx</a>
         </v-col>
       </v-row>
-      <v-data-table :headers="headers" :items="mutable_providers" item-key="prov_id" class="elevation-1">
+      <v-data-table :headers="headers" :items="mutable_providers" item-key="prov_id" :options="mutable_options"
+                     :key="dtKey" @update:options="updateOptions">
         <template v-slot:item="{ item }">
           <tr>
             <td v-if="is_admin || is_manager">
@@ -124,7 +125,9 @@
             server_url_r5: '',
             day_of_month: 15,
             master_reports: [],
-        })
+        }),
+        dtKey: 1,
+        mutable_options: {},
       }
     },
     methods:{
@@ -196,14 +199,39 @@
                 });
             this.showForm = '';
         },
+        updateOptions(options) {
+            if (Object.keys(this.mutable_options).length === 0) return;
+            Object.keys(this.mutable_options).forEach( (key) =>  {
+                if (options[key] !== this.mutable_options[key]) {
+                    this.mutable_options[key] = options[key];
+                }
+            });
+            this.$store.dispatch('updateDatatableOptions',this.mutable_options);
+        },
     },
     computed: {
-      ...mapGetters(['is_manager','is_admin'])
+      ...mapGetters(['is_manager','is_admin','datatable_options'])
     },
+    beforeCreate() {
+        // Load existing store data
+		this.$store.commit('initialiseStore');
+	},
+    beforeMount() {
+        // Set page name in the store
+        this.$store.dispatch('updatePageName','providers');
+	},
     mounted() {
       if (!this.is_admin) {
           this.inst_name = this.institutions[0].name;
       }
+
+      // Set datatable options with store-values
+      Object.assign(this.mutable_options, this.datatable_options);
+      this.dtKey += 1;           // force re-render of the datatable
+
+      // Subscribe to store updates
+      this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
+
       console.log('ProviderData Component mounted.');
     }
   }

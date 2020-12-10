@@ -184,8 +184,8 @@
       </form>
     </div>
     <v-container v-if="showPreview" fluid>
-      <v-data-table :headers="filteredHeaders" :items="report_data"
-                    :loading="loading" :footer-props="footer_props" dense class="elevation-1">
+      <v-data-table :headers="filteredHeaders" :items="report_data" :loading="loading" :options="mutable_options"
+                    :footer-props="footer_props" dense @update:options="updateOptions" :key="dtKey" class="elevation-1">
         <template slot-scope="item">
           <tr>
             <template slot="headers" slot-scope="head">
@@ -223,6 +223,7 @@
         panels: [1],
         minYM: '',
         maxYM: '',
+        dtKey: 1,
         rangeKey: 1,
         active_filter_count: 0,
         zeroRecs: 1,
@@ -244,6 +245,7 @@
         mutable_fields: this.fields,
         mutable_cols: this.columns,
         mutable_rangetype: this.rangetype,
+        mutable_options: {},
         cur_year: '',
         success: '',
         failure: '',
@@ -466,6 +468,15 @@
           })
           .catch(error => {});
         },
+        updateOptions(options) {
+            if (Object.keys(this.mutable_options).length === 0) return;
+            Object.keys(this.mutable_options).forEach( (key) =>  {
+                if (options[key] !== this.mutable_options[key]) {
+                    this.mutable_options[key] = options[key];
+                }
+            });
+            this.$store.dispatch('updateDatatableOptions',this.mutable_options);
+        },
         showForm (event) {
             this.configForm = true;
         },
@@ -525,7 +536,7 @@
         },
     },
     computed: {
-      ...mapGetters(['is_admin', 'is_viewer', 'all_filters', 'all_options', 'filter_by_fromYM', 'filter_by_toYM']),
+      ...mapGetters(['is_admin','is_viewer','all_filters','filter_by_fromYM','filter_by_toYM','datatable_options']),
       datesFromTo() {
         return this.filter_by_fromYM+'|'+this.filter_by_toYM;
       },
@@ -540,7 +551,18 @@
         return this.mutable_cols.filter(h => h.active)
       },
     },
+    beforeCreate() {
+        // Load existing store data
+		this.$store.commit('initialiseStore');
+	},
+    beforeMount() {
+        // Set page name in the store
+        this.$store.dispatch('updatePageName','preview');
+	},
     mounted() {
+      // Subscribe store to local storage
+      this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
+
       // Set initial filter-state for inactive "filterable" columns, and count the active ones
       this.mutable_cols.forEach(col => {
         let idx = col.value;
@@ -599,6 +621,9 @@
           }
       }
 
+      // Set datatable options with store-values
+      Object.assign(this.mutable_options, this.datatable_options);
+
       // Assign preset report_id, and from/to date fields to the store variables
       this.$store.dispatch('updateReportId',this.preset_filters['report_id']);
       this.$store.dispatch('updateFromYM',this.preset_filters['fromYM']);
@@ -607,7 +632,8 @@
       if (this.mutable_rangetype == 'latestMonth') this.mutable_rangetype = "Most recent available month";
 
       // Set options for all filters and in the datastore
-      this.rangeKey += 1;           // force re-render of the date-range component
+      this.dtKey += 1;           // force re-render of the datatable component
+      this.rangeKey += 1;        // force re-render of the date-range component
 
       // Get current year
       this.cur_year = (new Date()).getFullYear();

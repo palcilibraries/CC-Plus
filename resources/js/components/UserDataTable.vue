@@ -16,7 +16,8 @@
             <a :href="'/users/export/xlsx'">.xlsx</a>
         </v-col>
       </v-row>
-      <v-data-table :headers="headers" :items="mutable_users" item-key="id" class="elevation-1">
+      <v-data-table :headers="headers" :items="mutable_users" item-key="id" :options="mutable_options"
+                    :key="dtKey" @update:options="updateOptions">
         <template v-slot:item="{ item }">
           <tr>
             <td><a @click="editForm(item.id)">{{ item.name }}</a></td>
@@ -153,6 +154,8 @@
             confirm_pass: '',
             roles: []
         }),
+        dtKey: 1,
+        mutable_options: {},
         csv_upload: null,
       }
     },
@@ -286,14 +289,39 @@
                  });
             this.showForm = '';
         },
+        updateOptions(options) {
+            if (Object.keys(this.mutable_options).length === 0) return;
+            Object.keys(this.mutable_options).forEach( (key) =>  {
+                if (options[key] !== this.mutable_options[key]) {
+                    this.mutable_options[key] = options[key];
+                }
+            });
+            this.$store.dispatch('updateDatatableOptions',this.mutable_options);
+        },
     },
     computed: {
-      ...mapGetters(['is_manager','is_admin'])
+      ...mapGetters(['is_manager','is_admin','datatable_options'])
     },
+    beforeCreate() {
+        // Load existing store data
+		this.$store.commit('initialiseStore');
+	},
+    beforeMount() {
+        // Set page name in the store
+        this.$store.dispatch('updatePageName','users');
+	},
     mounted() {
       if (!this.is_admin) {
           this.inst_name = this.institutions[0].name;
       }
+
+      // Set datatable options with store-values
+      Object.assign(this.mutable_options, this.datatable_options);
+      this.dtKey += 1;           // force re-render of the datatable
+
+      // Subscribe to store updates
+      this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
+
       console.log('UserData Component mounted.');
     }
   }

@@ -277,15 +277,27 @@
           return count>0;
       },
     },
+    beforeCreate() {
+        // Load existing store data
+		this.$store.commit('initialiseStore');
+	},
+    beforeMount() {
+        // Set page name in the store
+        this.$store.dispatch('updatePageName','preview');
+	},
     mounted() {
       // set dialog starting point
       if (!this.is_admin && !this.is_viewer) {
           this.inst=[this.institutions[0]];
       }
+
+      // Subscribe to store updates and intialize filters and options
+      this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
       this.$store.dispatch('updateInstitutionFilter',this.inst);
       this.$store.dispatch('updateInstGroupFilter',this.inst_group_id);
       this.$store.dispatch('updateProviderFilter',this.prov);
       this.updateAvailable();
+
       console.log('CreateReport Component mounted.');
     }
   }

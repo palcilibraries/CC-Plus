@@ -27,20 +27,21 @@ class AlertController extends Controller
         array_unshift($statuses, 'ALL');
 
         // Assign optional inputs to $filters array
-        $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'stat' => null, 'ymfr' => null, 'ymto' => null);
+        $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'stat' => [], 'ymfr' => null, 'ymto' => null);
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
-                if ($val == 0 && $key != 'stat') {
-                    continue;
+                if (!is_array($val) && $key != 'ymfr' && $key != 'ymto') {
+                    $filters[$key] = array($val);
+                } else {
+                    $filters[$key] = $val;
                 }
-                $filters[$key] = $val;
             }
         } else {
             $keys = array_keys($filters);
             foreach ($keys as $key) {
                 if ($request->input($key)) {
-                    if ($key == 'stat' || $key == 'ymfr' || $key == 'ymto') {
+                    if ($key == 'ymfr' || $key == 'ymto') {
                         $filters[$key] = $request->input($key);
                     } elseif (is_numeric($request->input($key))) {
                         $filters[$key] = array(intval($request->input($key)));
@@ -103,73 +104,74 @@ class AlertController extends Controller
             }
         }
 
-        // Grab error-severities that apply to alerts
-        $severities = Severity::where('id', '<', 10)->get(['id','name'])->toArray();
-
-        // Get and map the alert records
-        $alerts = array();
-        $data = Alert::with('provider:id,name', 'alertSetting', 'alertSetting.reportField', 'alertSetting.institution',
-                            'alertSetting.reportField.report', 'harvest', 'harvest.sushiSetting',
-                            'harvest.sushiSetting.institution', 'user:id,name')
-                     ->orderBy('alerts.created_at', 'DESC')
-                     ->when(sizeof($filters['prov']) > 0, function ($qry) use ($filters) {
-                         return $qry->whereIn('prov_id', $filters['prov']);
-                     })
-                     ->when(!is_null($filters['stat']), function ($qry) use ($filters) {
-                         return $qry->where('status', '=', $filters['stat']);
-                     })
-                     ->when($filters['ymfr'], function ($qry) use ($filters) {
-                         return $qry->where('yearmon', '>=', $filters['ymfr']);
-                     })
-                     ->when($filters['ymto'], function ($qry) use ($filters) {
-                         return $qry->where('yearmon', '<=', $filters['ymto']);
-                     })
-                     ->get();
-
-        foreach ($data as $alert) {
-            if (is_null($alert->alertsettings_id) && is_null($alert->harvest_id)) { // broken record?
-                continue;
-            }
-
-            // Filter-by-inst (here, instead of in the query)
-            $_inst_id = $alert->institution()->id;
-            if ($filters['inst']) {
-                if (!in_array($alert->institution()->id, $filters['inst'])) {
-                    continue;
-                }
-            }
-
-            // Filter-by-Report (here, instead of in the query)
-            if ($filters['rept']) {
-                if (!in_array($alert->report()->id, $filters['rept'])) {
-                    continue;
-                }
-            }
-
-            // Build a record for the view
-            $record = array('id' => $alert->id, 'yearmon' => $alert->yearmon, 'status' => $alert->status,
-                            'updated_at' => $alert->updated_at);
-            if (!is_null($alert->alertsettings_id)) {
-                $record['detail_url'] = "/alertsettings/" . $alert->alertsettings_id;
-                $record['detail_txt'] = $alert->alertSetting->reportField->legend . " is out of bounds!";
-            } else {
-                $record['detail_url'] = "/harvestlogs/" . $alert->harvest_id . '/edit';
-                $record['detail_txt'] = "Harvest failed";
-            }
-            $record['report_name'] = $alert->report()->name;
-            $record['mod_by'] = ($alert->modified_by == 1) ? 'CC-Plus System' : $alert->user->name;
-            $record['inst_name'] = ($_inst_id == 1)  ? "Consortia-wide" : $alert->institution()->name;
-            $record['prov_name'] = $alert->provider->name;
-            $alerts[] = $record;
-        };
-
-        // Get all system alerts
+        // Get all system alerts and error-severities that apply to alerts
         $sysalerts = SystemAlert::with('severity')
                                 ->orderBy('severity_id', 'DESC')->orderBy('updated_at', 'DESC')->get()->toArray();
+        $severities = Severity::where('id', '<', 10)->get(['id','name'])->toArray();
 
-        // Return results
+        // Skip querying for records unless we're returning json
+        // The vue-component will run a request for JSON data once it is mounted
+        $alerts = array();
         if ($json) {
+            $data = Alert::with('provider:id,name', 'alertSetting', 'alertSetting.reportField',
+                                'alertSetting.institution', 'alertSetting.reportField.report', 'harvest',
+                                'harvest.sushiSetting', 'harvest.sushiSetting.institution', 'user:id,name')
+                         ->orderBy('alerts.created_at', 'DESC')
+                         ->when(sizeof($filters['prov']) > 0, function ($qry) use ($filters) {
+                             return $qry->whereIn('prov_id', $filters['prov']);
+                         })
+                         ->when(sizeof($filters['stat']) > 0, function ($qry) use ($filters) {
+                             return $qry->whereIn('status', $filters['stat']);
+                         })
+                         ->when($filters['ymfr'], function ($qry) use ($filters) {
+                             return $qry->where('yearmon', '>=', $filters['ymfr']);
+                         })
+                         ->when($filters['ymto'], function ($qry) use ($filters) {
+                             return $qry->where('yearmon', '<=', $filters['ymto']);
+                         })
+                         ->get();
+
+            foreach ($data as $alert) {
+                if (is_null($alert->alertsettings_id) && is_null($alert->harvest_id)) { // broken record?
+                    continue;
+                }
+
+                // Filter-by-inst (here, instead of in the query)
+                $_inst_id = $alert->institution()->id;
+                if ($filters['inst']) {
+                    if (!in_array($alert->institution()->id, $filters['inst'])) {
+                        continue;
+                    }
+                }
+
+                // Filter-by-Report (here, instead of in the query)
+                if ($filters['rept']) {
+                    if (!in_array($alert->report()->id, $filters['rept'])) {
+                        continue;
+                    }
+                }
+
+                // Build a record for the view
+                $record = array('id' => $alert->id, 'yearmon' => $alert->yearmon, 'status' => $alert->status,
+                                'updated_at' => $alert->updated_at);
+                if (!is_null($alert->alertsettings_id)) {
+                    $record['detail_url'] = "/alertsettings/" . $alert->alertsettings_id;
+                    $record['detail_txt'] = $alert->alertSetting->reportField->legend . " is out of bounds!";
+                } else {
+                    $record['detail_url'] = "/harvestlogs/" . $alert->harvest_id . '/edit';
+                    $record['detail_txt'] = "Harvest failed";
+                }
+                $record['report_name'] = $alert->report()->name;
+                $record['mod_by'] = ($alert->modified_by == 1) ? 'CC-Plus System' : $alert->user->name;
+                $record['inst_name'] = ($_inst_id == 1)  ? "Consortia-wide" : $alert->institution()->name;
+                $record['prov_name'] = $alert->provider->name;
+                $alerts[] = $record;
+            };
+
+            // Return results
             return response()->json(['alerts' => $alerts], 200);
+
+        // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {
             return view('alerts.dashboard',
                    compact('alerts', 'sysalerts', 'providers', 'statuses', 'severities', 'institutions', 'reports',

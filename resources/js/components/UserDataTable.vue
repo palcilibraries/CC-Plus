@@ -88,7 +88,6 @@
         <v-card-title>
           <span v-if="dialogType=='edit'">Edit user settings</span>
           <span v-else>Create a new user</span>
-          <v-spacer></v-spacer>
         </v-card-title>
         <v-card-text>
           <v-container grid-list-md>
@@ -179,9 +178,9 @@
             name: '',
             inst_id: null,
             is_active: 1,
-            email: null,
-            password: null,
-            confirm_pass: null,
+            email: '',
+            password: '',
+            confirm_pass: '',
             roles: []
         }),
         dtKey: 1,
@@ -272,8 +271,8 @@
             this.form.inst_id = this.current_user.inst_id;
             this.form.is_active = this.current_user.is_active;
             this.form.email = this.current_user.email;
-            this.form.password = null;
-            this.form.confirm_pass = null;
+            this.form.password = '';
+            this.form.confirm_pass = '';
             this.form.roles = this.current_user.roles;
             this.userDialog = true;
             this.importDialog = false;
@@ -287,9 +286,9 @@
             this.form.name = '';
             this.form.inst_id = _inst;
             this.form.is_active = 1;
-            this.form.email = null;
-            this.form.password = null;
-            this.form.confirm_pass = null;
+            this.form.email = '';
+            this.form.password = '';
+            this.form.confirm_pass = '';
             this.form.roles = [];
             this.userDialog = true;
             this.importDialog = false;

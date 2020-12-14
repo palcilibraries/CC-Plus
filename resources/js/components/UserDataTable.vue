@@ -1,9 +1,5 @@
 <template>
   <div>
-    <div class="status-message" v-if="success || failure">
-      <span v-if="success" class="good" role="alert" v-text="success"></span>
-      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-    </div>
     <div>
       <v-row>
         <v-col v-if="is_admin" cols="2"><v-btn small color="primary" @click="importForm">Import Users</v-btn></v-col>
@@ -16,6 +12,10 @@
             <a :href="'/users/export/xlsx'">.xlsx</a>
         </v-col>
       </v-row>
+      <div class="status-message" v-if="success || failure">
+        <span v-if="success" class="good" role="alert" v-text="success"></span>
+        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+      </div>
       <v-data-table :headers="headers" :items="mutable_users" item-key="id" :options="mutable_options"
                     :key="dtKey" @update:options="updateOptions">
         <template v-slot:item="{ item }">

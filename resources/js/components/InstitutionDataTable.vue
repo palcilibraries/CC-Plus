@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="showForm==''">
+    <div>
       <v-row>
         <v-col cols="2"><v-btn small color="primary" @click="importForm">Import Institutions</v-btn></v-col>
         <v-col><v-btn small color="primary" @click="createForm">Create an Institution</v-btn></v-col>
@@ -29,59 +29,95 @@
         </template>
       </v-data-table>
     </div>
-    <div v-if="showForm=='import'" style="width:50%; display:inline-block;">
-      <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined></v-file-input>
-      <p>
-        <strong>Institutions cannot be deleted during an import operation.</strong><br />
-        <strong>Note:</strong> Import Type below refers to the row(s) of Sushi Settings which may, or may not, follow
-        an institution record in the input CSV file. When "Full Replacement" is chosen, the existing settings for any
-        provider not included in the import file will be deleted! This will also remove all associated harvest and
-        failed-harvest records connected to the settings.
-      </p>
-      <p>
-        Regardless of the Import Type, the first record in the import file for any institution (based on ID or name)
-        will be used to update the institution's record (columns B through G). These values, including the group
-        assignments in column-F, will replace whatever is currently defined for the given institution.
-      </p>
-      <p>
-        For these reasons, use caution when using this import function, especially when requesting a Full Replacement
-        import. Generating an institution export FIRST will provide detailed instructions for importing on the "How
-        to Import" tab and help ensure that the desired end-state is achieved.
-      </p>
-      <p>
-        The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings whenever
-        a match for an institution-ID and Provider-ID are found in the import file. If no setting for a given
-        Institution-ID and Provider-ID currently exist, the setting will be added.
-      </p>
-      <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
-      <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
-      <v-btn small type="button" @click="hideForm">cancel</v-btn>
-    </div>
-    <div v-if="showForm=='create'" style="width:50%; display:inline-block;">
-      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
-        <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-        <v-select :items="types" v-model="form.type_id" item-text="name" item-value="id"
-                  label="Institution Type" outlined
-        ></v-select>
-        <v-switch v-model="form.is_active" label="Active?"></v-switch>
-        <div class="field-wrapper">
-            <v-subheader v-text="'FTE'"></v-subheader>
-            <v-text-field v-model="form.fte" label="FTE" hide-details single-line type="number"></v-text-field>
-        </div>
-        <div class="field-wrapper has-label">
-            <v-subheader v-text="'Belongs To'"></v-subheader>
-            <v-select :items="all_groups" v-model="form.institutiongroups" item-text="name" item-value="id"
-                      label="Institution Group(s)" multiple chips persistent-hint
-                      hint="Assign group membership for this institution"
-            ></v-select>
-        </div>
-        <v-textarea v-model="form.notes" label="Notes" auto-grow></v-textarea>
-          <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
-            Save New Institution
-          </v-btn>
-          <v-btn small type="button" @click="hideForm">cancel</v-btn>
-      </form>
-    </div>
+    <v-dialog v-model="importDialog" max-width="1200px">
+      <v-card>
+        <v-card-title>Import Users</v-card-title>
+        <v-spacer></v-spacer>
+        <v-card-subtitle><strong>Institutions cannot be deleted during an import operation.</strong>
+        </v-card-subtitle>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-layout wrap>
+              <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+              ></v-file-input>
+              <p>
+                <strong>NOTE:</strong> Import Type below refers to the row(s) of Sushi Settings which may, or may not,
+                follow an institution record in the input CSV file. When "Full Replacement" is chosen, the existing
+                settings for any provider not included in the import file will be deleted! This will also remove all
+                associated harvest and failed-harvest records connected to the settings.
+              </p>
+              <p>
+                Regardless of the Import Type, the first record in the import file for any institution (based on ID or
+                name) will be used to update the institution's record (columns B through G). These values, including the
+                group assignments in column-F, will replace whatever is currently defined for the given institution.
+              </p>
+              <p>
+                For these reasons, use caution when using this import function, especially when requesting a Full
+                Replacement import. Generating an institution export FIRST will provide detailed instructions for
+                importing on the "How to Import" tab and help ensure that the desired end-state is achieved.
+              </p>
+              <p>
+                The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings
+                whenever a match for an institution-ID and Provider-ID are found in the import file. If no setting for
+                a given Institution-ID and Provider-ID currently exist, the setting will be added.
+              </p>
+              <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
+            </v-layout>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-col class="d-flex">
+            <v-btn x-small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="instDialog" max-width="500px">
+      <v-card>
+        <v-card-title>
+          <span>Create a new institution</span>
+        </v-card-title>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-layout wrap>
+              <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
+                    @keydown="form.errors.clear($event.target.name)">
+                <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+                <v-select :items="types" v-model="form.type_id" item-text="name" item-value="id"
+                          label="Institution Type" outlined
+                ></v-select>
+                <v-switch v-model="form.is_active" label="Active?"></v-switch>
+                <div class="field-wrapper">
+                    <v-subheader v-text="'FTE'"></v-subheader>
+                    <v-text-field v-model="form.fte" label="FTE" hide-details single-line type="number"></v-text-field>
+                </div>
+                <div class="field-wrapper has-label">
+                    <v-subheader v-text="'Belongs To'"></v-subheader>
+                    <v-select :items="all_groups" v-model="form.institutiongroups" item-text="name" item-value="id"
+                              label="Institution Group(s)" multiple chips persistent-hint
+                              hint="Assign group membership for this institution"
+                    ></v-select>
+                </div>
+                <v-textarea v-model="form.notes" label="Notes" auto-grow></v-textarea>
+              </form>
+            </v-layout>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small color="primary" type="submit" @click="formSubmit">Save New Institution</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small type="button" color="primary" @click="instDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -97,7 +133,8 @@
       return {
         success: '',
         failure: '',
-        showForm: '',
+        instDialog: false,
+        importDialog: false,
         headers: [
           { text: 'Institution ', value: 'name', align: 'start' },
           { text: 'Type', value: 'type' },
@@ -124,7 +161,8 @@
         importForm () {
             this.csv_upload = null;
             this.import_type = '';
-            this.showForm = 'import';
+            this.instDialog = false;
+            this.importDialog = true;
         },
         createForm () {
             this.failure = '';
@@ -135,7 +173,8 @@
             this.form.type_id = 1;
             this.form.institutiongroups = [];
             this.form.notes = '';
-            this.showForm = 'create';
+            this.instDialog = true;
+            this.importDialog = false;
         },
         importSubmit (event) {
             this.success = '';
@@ -167,7 +206,7 @@
                          this.failure = response.data.msg;
                      }
                  });
-            this.showForm = '';
+             this.importDialog = false;
         },
         formSubmit (event) {
             this.success = '';
@@ -189,10 +228,7 @@
                         this.failure = response.msg;
                     }
                 });
-            this.showForm = '';
-        },
-        hideForm (event) {
-            this.showForm = '';
+            this.instDialog = false;
         },
         updateOptions(options) {
             if (Object.keys(this.mutable_options).length === 0) return;

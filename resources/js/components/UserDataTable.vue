@@ -4,7 +4,7 @@
       <span v-if="success" class="good" role="alert" v-text="success"></span>
       <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
-    <div v-if="showForm==''">
+    <div>
       <v-row>
         <v-col v-if="is_admin" cols="2"><v-btn small color="primary" @click="importForm">Import Users</v-btn></v-col>
         <v-col><v-btn small color="primary" @click="createForm">Create a User</v-btn></v-col>
@@ -31,83 +31,111 @@
         </template>
       </v-data-table>
     </div>
-    <div v-else-if="showForm=='import'" style="width:50%; display:inline-block;">
-      <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined></v-file-input>
-      <p>
-        <strong>Users cannot be deleted during an import operation.</strong><br />
-      </p>
-      <p>
-        Use caution when using this import function. Password fields will be encrypted when they are saved in the
-        database. The <strong>import source file</strong>, however, could contain clear-text user passwords as CSV
-        values. Protecting or deleting this file after a successful import is recommended to help prevent
-        unauthorized access to the data and settings for your consortium.
-      </p>
-      <p><strong>User imports operate as both "Add" and "Update".</strong><br />
-        If an ID in column-1 of the import file matches an existing user -OR- if the ID does not match any existing
-        user, but the email in column-2 does match an existing user, the import will update that user. Otherwise,
-        the import will perform an "Add" operation. Any import row with an empty or non-existent institution ID in
-        column-9 will be ignored.</li>
-      </p>
-      <ul><strong>Updating users</strong>:
-        <li>Updates will overrwite all fields for the user, with the possible exception of the password, with the
-            values in the import file.
-        <li>Import rows (with a matching ID) that attempt to set an existing user's email to a value already defined
-            for another user will result in an unchanged email address and the other values updated.</li>
-        <li>Rows with a blank or empty password value will result in an unchanged password and the other fields
-            updated.
-        </li>
-      </ul>
-      <ul><strong>Adding users</strong>:
-        <li>The surest way to add users is to assign new, sequentially increasing values in the column-1 (ID),
-            and a unique email address in column-2.</li>
-        <li>Import rows that attempt to add a user with an email field value that matches the email address for
-            another user will be ignored.</li>
-        <li>Rows with a blank or empty password values will be ignored.</li>
-      </ul>
-      <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
-      <v-btn small type="button" @click="hideForm">cancel</v-btn>
-    </div>
-    <div v-else style="width:50%; display:inline-block;">
-      <div v-if="showForm=='edit'">
-          <h4>Edit user settings</h4>
-      </div>
-      <div v-else>
-          <h4>Create a new user</h4>
-      </div>
-      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
-        <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-        <v-text-field outlined required name="email" label="Email" type="email"
-                      v-model="form.email" :rules="emailRules">
-        </v-text-field>
-        <v-switch v-model="form.is_active" label="Active?"></v-switch>
-        <div v-if="is_admin">
-            <v-select outlined required :items="institutions" v-model="form.inst_id" value="current_user.inst_id"
-                      label="Institution" item-text="name" item-value="id"
-            ></v-select>
-        </div>
-        <div v-else>
-            <v-text-field outlined readonly label="Institution" :value="inst_name"></v-text-field>
-        </div>
-        <v-text-field outlined name="password" label="Password" id="password" type="password"
-                      v-model="form.password" :rules="passwordRules">
-        </v-text-field>
-        <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
-                      type="password" v-model="form.confirm_pass" :rules="passwordRules">
-        </v-text-field>
-  		<div v-if="is_manager || is_admin" class="field-wrapper">
-	      <v-subheader v-text="'User Roles'"></v-subheader>
-	      <v-select :items="all_roles" v-model="form.roles" :value="current_user.roles" item-text="name"
- 	                item-value="id" label="User Role(s)" multiple chips hint="Define roles for user"
- 	                persistent-hint
-	      ></v-select>
-		</div>
-        <p>&nbsp;</p>
-        <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
-          Save User
-        </v-btn>
-		<v-btn small type="button" @click="hideForm">cancel</v-btn>
-      </form>
-    </div>
+    <v-dialog v-model="importDialog" max-width="1200px">
+      <v-card>
+        <v-card-title>Import Users</v-card-title>
+        <v-spacer></v-spacer>
+        <v-card-subtitle><strong>NOTE: Users cannot be deleted during an import operation.</strong></v-card-subtitle>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-layout wrap>
+              <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+              ></v-file-input>
+              <p>
+                Use caution when using this import function. Password fields will be encrypted when they are saved.
+                The <strong>import source file</strong>, however, could contain clear-text user passwords as CSV
+                values. Protecting or deleting this file after a successful import is recommended to help prevent
+                unauthorized access to the data and settings for your consortium.
+              </p>
+              <p><strong>User imports operate as both "Add" and "Update".</strong><br />
+                If an ID in column-1 of the import file matches an existing user -OR- if the ID does not match any
+                existing user, but the email in column-2 does match an existing user, the import will update that user.
+                Otherwise, the import will perform an "Add" operation. Any import row with an empty or non-existent
+                institution ID in column-9 will be ignored.</li>
+              </p>
+              <ul><strong>Updating users</strong>:
+                <li>Updates will overrwite all fields for the user, with the possible exception of the password, with
+                    the values in the import file.
+                <li>Import rows (with a matching ID) that attempt to set an existing user's email to a value already
+                    defined for another user will result in an unchanged email address and other values updated.</li>
+                <li>Rows with a blank or empty password value will result in an unchanged password and the other fields
+                    updated.
+                </li>
+              </ul>
+              <ul><strong>Adding users</strong>:
+                <li>The surest way to add users is to assign new, sequentially increasing values in the column-1 (ID),
+                    and a unique email address in column-2.</li>
+                <li>Import rows that attempt to add a user with an email field value that matches the email address for
+                    another user will be ignored.</li>
+                <li>Rows with a blank or empty password values will be ignored.</li>
+              </ul>
+            </v-layout>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-col class="d-flex">
+            <v-btn x-small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="userDialog" max-width="500px">
+      <v-card>
+        <v-card-title>
+          <span v-if="dialogType=='edit'">Edit user settings</span>
+          <span v-else>Create a new user</span>
+          <v-spacer></v-spacer>
+        </v-card-title>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-layout wrap>
+              <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
+                    @keydown="form.errors.clear($event.target.name)">
+                <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+                <v-text-field outlined required name="email" label="Email" type="email"
+                              v-model="form.email" :rules="emailRules">
+                </v-text-field>
+                <v-switch v-model="form.is_active" label="Active?"></v-switch>
+                <div v-if="is_admin">
+                    <v-select outlined required :items="institutions" v-model="form.inst_id" item-value="id"
+                              item-text="name" value="current_user.inst_id" label="Institution"
+                    ></v-select>
+                </div>
+                <div v-else>
+                    <v-text-field outlined readonly label="Institution" :value="inst_name"></v-text-field>
+                </div>
+                <v-text-field outlined name="password" label="Password" id="password" type="password"
+                              v-model="form.password" :rules="passwordRules">
+                </v-text-field>
+                <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
+                              type="password" v-model="form.confirm_pass" :rules="passwordRules">
+                </v-text-field>
+          		<div v-if="is_manager || is_admin" class="field-wrapper">
+        	      <v-subheader v-text="'User Roles'"></v-subheader>
+        	      <v-select :items="all_roles" v-model="form.roles" :value="current_user.roles" item-text="name"
+         	                item-value="id" label="User Role(s)" multiple chips hint="Define roles for user"
+         	                persistent-hint
+        	      ></v-select>
+        		</div>
+              </form>
+            </v-layout>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small color="primary" type="submit" @click="formSubmit">Save User</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small type="button" color="primary" @click="userDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -128,7 +156,9 @@
         inst_name: '',
         mutable_users: this.users,
         current_user: {},
-        showForm: '',
+        dialogType: 'create',
+        userDialog: false,
+        importDialog: false,
         headers: [
           { text: 'User Name ', value: 'name' },
           { text: 'Institution', value: 'institution.name' },
@@ -149,9 +179,9 @@
             name: '',
             inst_id: null,
             is_active: 1,
-            email: '',
-            password: '',
-            confirm_pass: '',
+            email: null,
+            password: null,
+            confirm_pass: null,
             roles: []
         }),
         dtKey: 1,
@@ -167,7 +197,7 @@
                 this.failure = 'Passwords do not match! Please re-enter';
                 return;
             }
-            if (this.showForm == 'edit') {
+            if (this.dialogType == 'edit') {
                 this.form.patch('/users/'+this.current_user.id)
                     .then((response) => {
                         if (response.result) {
@@ -179,7 +209,7 @@
                             this.failure = response.msg;
                         }
                     });
-            } else if (this.showForm == 'create') {
+            } else if (this.dialogType == 'create') {
                 this.form.post('/users')
                     .then((response) => {
                         if (response.result) {
@@ -198,7 +228,7 @@
                         }
                     });
             }
-            this.showForm = '';
+            this.userDialog = false;
         },
         destroy (userid) {
             var self = this;
@@ -230,37 +260,39 @@
         },
         importForm () {
             this.csv_upload = null;
-            this.showForm = 'import';
+            this.importDialog = true;
+            this.userDialog = false;
         },
         editForm (userid) {
             this.failure = '';
             this.success = '';
-            this.showForm = "edit";
+            this.dialogType = "edit";
             this.current_user = this.mutable_users[this.mutable_users.findIndex(u=> u.id == userid)];
             this.form.name = this.current_user.name;
             this.form.inst_id = this.current_user.inst_id;
             this.form.is_active = this.current_user.is_active;
             this.form.email = this.current_user.email;
-            this.form.password = '';
-            this.form.confirm_pass = '';
+            this.form.password = null;
+            this.form.confirm_pass = null;
             this.form.roles = this.current_user.roles;
+            this.userDialog = true;
+            this.importDialog = false;
         },
         createForm () {
             this.failure = '';
             this.success = '';
-            this.showForm = "create";
+            this.dialogType = "create";
             var _inst = (this.is_admin) ? null : this.institutions[0].id;
             this.current_user = {roles: [], inst_id: _inst};
             this.form.name = '';
             this.form.inst_id = _inst;
             this.form.is_active = 1;
-            this.form.email = '';
-            this.form.password = '';
-            this.form.confirm_pass = '';
+            this.form.email = null;
+            this.form.password = null;
+            this.form.confirm_pass = null;
             this.form.roles = [];
-        },
-        hideForm (event) {
-            this.showForm = '';
+            this.userDialog = true;
+            this.importDialog = false;
         },
         importSubmit (event) {
             this.success = '';
@@ -287,7 +319,7 @@
                          this.failure = response.data.msg;
                      }
                  });
-            this.showForm = '';
+            this.importDialog = false;
         },
         updateOptions(options) {
             if (Object.keys(this.mutable_options).length === 0) return;

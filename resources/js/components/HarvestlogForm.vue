@@ -12,11 +12,19 @@
     </v-row>
     <v-row no-gutters>
       <v-col cols="2" sm="1">Institution</v-col>
-      <v-col cols="4" sm="2"><a href="/institutions/{{ mutable_harvest.sushi_setting.institution.id }}">{{ mutable_harvest.sushi_setting.institution.name }}</a></v-col>
+      <v-col cols="4" sm="2">
+        <a :href="'/institutions/'+mutable_harvest.sushi_setting.institution.id">
+            {{ mutable_harvest.sushi_setting.institution.name }}
+        </a>
+      </v-col>
     </v-row>
     <v-row no-gutters>
       <v-col cols="2" sm="1">Provider</v-col>
-      <v-col cols="4" sm="2"><a href="/providers/{{ mutable_harvest.sushi_setting.provider.id }}">{{ mutable_harvest.sushi_setting.provider.name }}</a></v-col>
+      <v-col cols="4" sm="2">
+        <a :href="'/providers/'+mutable_harvest.sushi_setting.provider.id">
+          {{ mutable_harvest.sushi_setting.provider.name }}
+        </a>
+      </v-col>
     </v-row>
     <v-row no-gutters>
       <v-col cols="2" sm="1">Report</v-col>

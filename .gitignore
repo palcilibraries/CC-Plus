@@ -4,6 +4,7 @@
 /public/js/app.js
 /public/css/app.css
 /storage/*.key
+/storage/debugbar/*
 /vendor
 app/Console/Kernel.php
 .env

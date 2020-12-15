@@ -31,7 +31,7 @@
     </div>
     <v-dialog v-model="importDialog" max-width="1200px">
       <v-card>
-        <v-card-title>Import Users</v-card-title>
+        <v-card-title>Import Institutions</v-card-title>
         <v-spacer></v-spacer>
         <v-card-subtitle><strong>Institutions cannot be deleted during an import operation.</strong>
         </v-card-subtitle>
@@ -81,41 +81,39 @@
         <v-card-title>
           <span>Create a new institution</span>
         </v-card-title>
-        <v-card-text>
-          <v-container grid-list-md>
-            <v-layout wrap>
-              <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
-                    @keydown="form.errors.clear($event.target.name)">
-                <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-                <v-select :items="types" v-model="form.type_id" item-text="name" item-value="id"
-                          label="Institution Type" outlined
+        <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
+              @keydown="form.errors.clear($event.target.name)">
+          <v-card-text>
+            <v-container grid-list-md>
+              <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+              <v-select :items="types" v-model="form.type_id" item-text="name" item-value="id"
+                        label="Institution Type" outlined
+              ></v-select>
+              <v-switch v-model="form.is_active" label="Active?"></v-switch>
+              <div class="field-wrapper">
+                <v-subheader v-text="'FTE'"></v-subheader>
+                <v-text-field v-model="form.fte" label="FTE" hide-details single-line type="number"></v-text-field>
+              </div>
+              <div class="field-wrapper has-label">
+                <v-subheader v-text="'Belongs To'"></v-subheader>
+                <v-select :items="all_groups" v-model="form.institutiongroups" item-text="name" item-value="id"
+                          label="Institution Group(s)" multiple chips persistent-hint
+                          hint="Assign group membership for this institution"
                 ></v-select>
-                <v-switch v-model="form.is_active" label="Active?"></v-switch>
-                <div class="field-wrapper">
-                    <v-subheader v-text="'FTE'"></v-subheader>
-                    <v-text-field v-model="form.fte" label="FTE" hide-details single-line type="number"></v-text-field>
-                </div>
-                <div class="field-wrapper has-label">
-                    <v-subheader v-text="'Belongs To'"></v-subheader>
-                    <v-select :items="all_groups" v-model="form.institutiongroups" item-text="name" item-value="id"
-                              label="Institution Group(s)" multiple chips persistent-hint
-                              hint="Assign group membership for this institution"
-                    ></v-select>
-                </div>
-                <v-textarea v-model="form.notes" label="Notes" auto-grow></v-textarea>
-              </form>
-            </v-layout>
-          </v-container>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-col class="d-flex">
-            <v-btn class='btn' x-small color="primary" type="submit" @click="formSubmit">Save New Institution</v-btn>
-          </v-col>
-          <v-col class="d-flex">
-            <v-btn class='btn' x-small type="button" color="primary" @click="instDialog=false">Cancel</v-btn>
-          </v-col>
-        </v-card-actions>
+              </div>
+              <v-textarea v-model="form.notes" label="Notes" auto-grow></v-textarea>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-col class="d-flex">
+              <v-btn class='btn' x-small color="primary" type="submit" @click="formSubmit">Save New Institution</v-btn>
+            </v-col>
+            <v-col class="d-flex">
+              <v-btn class='btn' x-small type="button" color="primary" @click="instDialog=false">Cancel</v-btn>
+            </v-col>
+          </v-card-actions>
+        </form>
       </v-card>
     </v-dialog>
   </div>

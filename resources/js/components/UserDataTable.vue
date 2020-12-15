@@ -89,57 +89,54 @@
           <span v-if="dialogType=='edit'">Edit user settings</span>
           <span v-else>Create a new user</span>
         </v-card-title>
-        <v-card-text>
-          <v-container grid-list-md>
-            <v-layout wrap>
-              <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
-                    @keydown="form.errors.clear($event.target.name)">
-                <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-                <v-text-field outlined required name="email" label="Email" type="email"
-                              v-model="form.email" :rules="emailRules">
-                </v-text-field>
-                <v-switch v-model="form.is_active" label="Active?"></v-switch>
-                <div v-if="is_admin">
-                    <v-select outlined required :items="institutions" v-model="form.inst_id" item-value="id"
-                              item-text="name" value="current_user.inst_id" label="Institution"
-                    ></v-select>
+        <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
+              @keydown="form.errors.clear($event.target.name)">
+          <v-card-text>
+            <v-container grid-list-md>
+              <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+              <v-text-field outlined required name="email" label="Email" type="email"
+                            v-model="form.email" :rules="emailRules">
+              </v-text-field>
+              <v-switch v-model="form.is_active" label="Active?"></v-switch>
+              <div v-if="is_admin">
+                  <v-select outlined required :items="institutions" v-model="form.inst_id" item-value="id"
+                            item-text="name" value="current_user.inst_id" label="Institution"
+                  ></v-select>
+              </div>
+              <div v-else>
+                <v-text-field outlined readonly label="Institution" :value="inst_name"></v-text-field>
+              </div>
+              <v-text-field outlined name="password" label="Password" id="password" type="password"
+                            v-model="form.password" :rules="passwordRules">
+              </v-text-field>
+              <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
+                            type="password" v-model="form.confirm_pass" :rules="passwordRules">
+              </v-text-field>
+              <div v-if="is_manager || is_admin" class="field-wrapper">
+      	        <v-subheader v-text="'User Roles'"></v-subheader>
+        	    <v-select :items="all_roles" v-model="form.roles" :value="current_user.roles" item-text="name"
+         	              item-value="id" label="User Role(s)" multiple chips hint="Define roles for user"
+         	              persistent-hint
+        	    ></v-select>
+                <div style="display: inline-block;">
+                  Roles<br>
+                  Admin: can create and manage settings for all users, institutions, and providers<br>
+                  Manager: can manage settings for their own institutions and can create and manage users within their institution<br>
+                  User: can view statistics for their own institution<br>
+                  Viewer: can view statistics for all institutions
                 </div>
-                <div v-else>
-                    <v-text-field outlined readonly label="Institution" :value="inst_name"></v-text-field>
-                </div>
-                <v-text-field outlined name="password" label="Password" id="password" type="password"
-                              v-model="form.password" :rules="passwordRules">
-                </v-text-field>
-                <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
-                              type="password" v-model="form.confirm_pass" :rules="passwordRules">
-                </v-text-field>
-          		<div v-if="is_manager || is_admin" class="field-wrapper">
-        	      <v-subheader v-text="'User Roles'"></v-subheader>
-        	      <v-select :items="all_roles" v-model="form.roles" :value="current_user.roles" item-text="name"
-         	                item-value="id" label="User Role(s)" multiple chips hint="Define roles for user"
-         	                persistent-hint
-        	      ></v-select>
-				  <div style="display: inline-block;">
-				  	Roles<br>
-				    Admin: can create and manage settings for all users, institutions, and providers<br>
-				    Manager: can manage settings for their own institutions and can create and manage users within their institution<br>
-				    User: can view statistics for their own institution<br>
-				    Viewer: can view statistics for all institutions
-				  </div>
-        		</div>
-              </form>
-            </v-layout>
-          </v-container>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-col class="d-flex">
-            <v-btn class='btn' x-small color="primary" type="submit" @click="formSubmit">Save User</v-btn>
-          </v-col>
-          <v-col class="d-flex">
-            <v-btn class='btn' x-small type="button" color="primary" @click="userDialog=false">Cancel</v-btn>
-          </v-col>
-        </v-card-actions>
+              </div>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-col class="d-flex">
+              <v-btn class='btn' x-small color="primary" type="submit" @click="formSubmit">Save User</v-btn>
+            </v-col>
+            <v-col class="d-flex">
+              <v-btn class='btn' x-small type="button" color="primary" @click="userDialog=false">Cancel</v-btn>
+            </v-col>
+          </v-card-actions>
+        </form>
       </v-card>
     </v-dialog>
   </div>

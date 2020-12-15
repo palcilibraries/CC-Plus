@@ -1,10 +1,6 @@
 <template>
   <div>
-    <div class="status-message" v-if="success || failure">
-      <span v-if="success" class="good" role="alert" v-text="success"></span>
-      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-    </div>
-    <div v-if="showForm==''">
+    <div>
       <v-row>
         <v-col cols="2"><v-btn small color="primary" @click="importForm">Import Types</v-btn></v-col>
         <v-col><v-btn small color="primary" @click="createForm">Create a new type</v-btn></v-col>
@@ -16,6 +12,10 @@
             <a :href="'/institutiontypes/export/xlsx'">.xlsx</a>
         </v-col>
       </v-row>
+      <div class="status-message" v-if="success || failure">
+        <span v-if="success" class="good" role="alert" v-text="success"></span>
+        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+      </div>
       <v-data-table :headers="headers" :items="mutable_types" item-key="id" :options="mutable_options"
                      :key="dtKey" @update:options="updateOptions">
         <template v-slot:item="{ item }">
@@ -30,28 +30,78 @@
         </template>
       </v-data-table>
     </div>
-    <div v-if="showForm=='import'" style="width:50%; display:inline-block;">
-      <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined></v-file-input>
-      <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
-      <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
-      <v-btn small type="button" @click="hideForm">cancel</v-btn>
-    </div>
-    <div v-if="showForm=='create'" style="width:50%; display:inline-block;">
-      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)"
-            class="in-page-form">
-        <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-        <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Save New Type</v-btn>
-        <v-btn small type="button" @click="hideForm">cancel</v-btn>
-      </form>
-    </div>
-    <div v-if="showForm=='edit'" style="width:50%; display:inline-block;">
-      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)"
-            class="in-page-form">
-        <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-        <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Save</v-btn>
-        <v-btn small type="button" @click="hideForm">cancel</v-btn>
-      </form>
-    </div>
+    <v-dialog v-model="importDialog" max-width="1200px">
+      <v-card>
+        <v-card-title>Import Institution Types</v-card-title>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-row class="d-flex mb-2"><v-col class="d-flex pa-0">
+              <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+              ></v-file-input>
+            </v-col></v-row>
+            <v-row class="d-flex ma-0"><v-col class="d-flex pa-0">
+              <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
+            </v-col></v-row>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-col class="d-flex">
+            <v-btn x-small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="createDialog" max-width="800px">
+      <v-card>
+        <v-card-title>Create an Institution Type</v-card-title>
+        <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
+              @keydown="form.errors.clear($event.target.name)">
+          <v-card-text>
+            <v-container grid-list-md>
+              <v-row class="d-flex ma-0"><v-col class="d-flex pa-0">
+                <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+              </v-col></v-row>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-col class="d-flex">
+              <v-btn x-small color="primary" type="submit" :disabled="form.errors.any()">Save New Type</v-btn>
+            </v-col>
+            <v-col class="d-flex">
+              <v-btn class='btn' x-small type="button" color="primary" @click="createDialog=false">Cancel</v-btn>
+            </v-col>
+          </v-card-actions>
+        </form>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="editDialog" max-width="800px">
+      <v-card>
+        <v-card-title>Edit an Institution Type</v-card-title>
+        <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
+              @keydown="form.errors.clear($event.target.name)">
+          <v-card-text>
+            <v-container grid-list-md>
+              <v-row class="d-flex ma-0"><v-col class="d-flex pa-0">
+                <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+              </v-col></v-row>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-col class="d-flex">
+              <v-btn x-small color="primary" type="submit" :disabled="form.errors.any()">Update Type</v-btn>
+            </v-col>
+            <v-col class="d-flex">
+              <v-btn class='btn' x-small type="button" color="primary" @click="editDialog=false">Cancel</v-btn>
+            </v-col>
+          </v-card-actions>
+        </form>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 <script>
@@ -66,7 +116,6 @@
       return {
         success: '',
         failure: '',
-        showForm: '',
         current_type: {},
         mutable_types: this.types,
         headers: [
@@ -79,7 +128,9 @@
         dtKey: 1,
         mutable_options: {},
         csv_upload: null,
-        import_type: '',
+        importDialog: false,
+        createDialog: false,
+        editDialog: false,
         import_types: ['Full Replacement', 'New Additions']
       }
     },
@@ -87,16 +138,22 @@
         importForm () {
             this.csv_upload = null;
             this.import_type = '';
-            this.showForm = 'import';
+            this.importDialog = true;
+            this.createDialog = false;
+            this.editDialog = false;
         },
         createForm () {
             this.form.name = '';
-            this.showForm = 'create';
+            this.createDialog = true;
+            this.importDialog = false;
+            this.editDialog = false;
         },
         editForm (typeid) {
             this.current_type = this.mutable_types[this.mutable_types.findIndex(t=> t.id == typeid)];
             this.form.name = this.current_type.name;
-            this.showForm = 'edit';
+            this.editDialog = true;
+            this.createDialog = false;
+            this.importDialog = false;
         },
         importSubmit (event) {
             this.success = '';
@@ -128,12 +185,12 @@
                          this.failure = response.data.msg;
                      }
                  });
-            this.showForm = '';
+            this.importDialog = false;
         },
         formSubmit (event) {
             this.success = '';
             this.failure = '';
-            if (this.showForm == 'edit') {
+            if (this.editDialog) {
                 this.form.patch('/institutiontypes/'+this.current_type.id)
                     .then((response) => {
                         if (response.result) {
@@ -145,7 +202,8 @@
                             this.failure = response.msg;
                         }
                     });
-            } else if (this.showForm == 'create') {
+                this.editDialog = false;
+            } else if (this.createDialog) {
                 this.form.post('/institutiontypes')
                 .then( (response) => {
                     if (response.result) {
@@ -163,8 +221,8 @@
                         this.failure = response.msg;
                     }
                 });
+                this.createDialog = false;
             }
-            this.showForm = '';
         },
         destroy(typeid) {
             var self = this;
@@ -193,9 +251,6 @@
               }
             })
             .catch({});
-        },
-        hideForm (event) {
-            this.showForm = '';
         },
         updateOptions(options) {
             if (Object.keys(this.mutable_options).length === 0) return;

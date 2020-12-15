@@ -2,6 +2,9 @@
   <v-container fluid>
     <v-row no-gutters>
       <v-col><h3 class="section-title">Harvest Details</h3></v-col>
+      <v-col cols="1" sm="1">
+        <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_harvest.id)">Delete</v-btn>
+      </v-col>
     </v-row>
     <v-row class="status-message" v-if="success || failure">
       <span v-if="success" class="good" role="alert" v-text="success"></span>
@@ -9,11 +12,11 @@
     </v-row>
     <v-row no-gutters>
       <v-col cols="2" sm="1">Institution</v-col>
-      <v-col cols="4" sm="2">{{ mutable_harvest.sushi_setting.institution.name }}</v-col>
+      <v-col cols="4" sm="2"><a href="/institutions/{{ mutable_harvest.sushi_setting.institution.id }}">{{ mutable_harvest.sushi_setting.institution.name }}</a></v-col>
     </v-row>
     <v-row no-gutters>
       <v-col cols="2" sm="1">Provider</v-col>
-      <v-col cols="4" sm="2">{{ mutable_harvest.sushi_setting.provider.name }}</v-col>
+      <v-col cols="4" sm="2"><a href="/providers/{{ mutable_harvest.sushi_setting.provider.id }}">{{ mutable_harvest.sushi_setting.provider.name }}</a></v-col>
     </v-row>
     <v-row no-gutters>
       <v-col cols="2" sm="1">Report</v-col>
@@ -27,10 +30,6 @@
       <v-col cols="2" sm="1">Attempts</v-col>
       <v-col cols="2" sm="1">{{ mutable_harvest.attempts }}</v-col>
     </v-row>
-    <v-row no-gutters>
-      <v-col cols="2" sm="1">Status</v-col>
-      <v-col cols="2" sm="1">{{ mutable_harvest.status }}</v-col>
-    </v-row>
     <v-row v-if="mutable_harvest.rawfile" no-gutters class="d-flex align-mid">
       <v-col cols="2" sm="1">Raw Data</v-col>
       <v-col cols="2" sm="1">
@@ -40,16 +39,15 @@
     <v-row v-else class="d-flex my-2 align-mid">
       <v-col cols="8" sm="4"><strong>Raw Data is not available</strong></v-col>
     </v-row>
+    <div class="harvest-status">
+      Status: &nbsp;&nbsp; {{ mutable_harvest.status }}
+    </div>
     <div v-if="(is_manager || is_admin)" class="d-flex ma-2 pa-0">
       <!-- Some statuses cannot be changed -->
       <v-row v-if="!(status_fixed.includes(mutable_harvest.status))" no-gutters class="d-flex align-mid">
         <v-col cols="2" sm="2">
           <v-select :items="status_canset" v-model="new_status" label="Modify Status" dense @change="updateStatus()">
           </v-select>
-        </v-col>
-        <v-col cols="1" sm="1">&nbsp;</v-col>
-        <v-col cols="1" sm="1">
-          <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_harvest.id)">Delete</v-btn>
         </v-col>
       </v-row>
     </div>

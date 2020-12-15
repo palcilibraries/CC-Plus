@@ -1,10 +1,6 @@
 <template>
   <div>
-    <div class="status-message" v-if="success || failure">
-      <span v-if="success" class="good" role="alert" v-text="success"></span>
-      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-    </div>
-    <div v-if="showForm==''">
+    <div>
       <v-row>
         <v-col cols="2"><v-btn small color="primary" @click="importForm">Import Groups</v-btn></v-col>
         <v-col><v-btn small color="primary" @click="createForm">Create a new group</v-btn></v-col>
@@ -16,6 +12,10 @@
             <a :href="'/institutiongroups/export/xlsx'">.xlsx</a>
         </v-col>
       </v-row>
+      <div class="status-message" v-if="success || failure">
+        <span v-if="success" class="good" role="alert" v-text="success"></span>
+        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+      </div>
       <v-data-table :headers="headers" :items="mutable_groups" item-key="id" :options="mutable_options"
                      :key="dtKey" @update:options="updateOptions">
         <template v-slot:item="{ item }">
@@ -32,20 +32,55 @@
         </template>
       </v-data-table>
     </div>
-    <div v-if="showForm=='import'" style="width:50%; display:inline-block;">
-      <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined></v-file-input>
-      <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
-      <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
-      <v-btn small type="button" @click="hideForm">cancel</v-btn>
-    </div>
-    <div v-if="showForm=='create'" style="width:50%; display:inline-block;">
-      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)"
-            class="in-page-form">
-        <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-        <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Save New Group</v-btn>
-        <v-btn small type="button" @click="hideForm">cancel</v-btn>
-      </form>
-    </div>
+    <v-dialog v-model="importDialog" max-width="800px">
+      <v-card>
+        <v-card-title>Import Institution Groups</v-card-title>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-row class="d-flex mb-2"><v-col class="d-flex pa-0">
+              <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+              ></v-file-input>
+            </v-col></v-row>
+            <v-row class="d-flex ma-0"><v-col class="d-flex pa-0">
+              <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
+            </v-col></v-row>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-col class="d-flex">
+            <v-btn x-small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="createDialog" max-width="800px">
+      <v-card>
+        <v-card-title>Create an Institution Group</v-card-title>
+        <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
+              @keydown="form.errors.clear($event.target.name)">
+          <v-card-text>
+            <v-container grid-list-md>
+              <v-row class="d-flex ma-0"><v-col class="d-flex pa-0">
+                <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+              </v-col></v-row>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-col class="d-flex">
+              <v-btn x-small color="primary" type="submit" :disabled="form.errors.any()">Save New Group</v-btn>
+            </v-col>
+            <v-col class="d-flex">
+              <v-btn class='btn' x-small type="button" color="primary" @click="createDialog=false">Cancel</v-btn>
+            </v-col>
+          </v-card-actions>
+        </form>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 <script>
@@ -60,7 +95,6 @@
       return {
         success: '',
         failure: '',
-        showForm: '',
         mutable_groups: this.groups,
         headers: [
           { text: 'Group', value: 'name' },
@@ -72,6 +106,8 @@
         dtKey: 1,
         mutable_options: {},
         csv_upload: null,
+        importDialog: false,
+        createDialog: false,
         import_type: '',
         import_types: ['Full Replacement', 'New Additions']
       }
@@ -80,11 +116,13 @@
         importForm () {
             this.csv_upload = null;
             this.import_type = '';
-            this.showForm = 'import';
+            this.importDialog = true;
+            this.createDialog = false;
         },
         createForm () {
             this.form.name = '';
-            this.showForm = 'create';
+            this.createDialog = true;
+            this.importDialog = false;
         },
         importSubmit (event) {
             this.success = '';
@@ -116,7 +154,7 @@
                          this.failure = response.data.msg;
                      }
                  });
-            this.showForm = '';
+            this.importDialog = false;
         },
         // Create a group
         formSubmit (event) {
@@ -139,7 +177,7 @@
                     this.failure = response.msg;
                 }
             });
-            this.showForm = '';
+            this.createDialog = false;
         },
         // Delete a group
         destroy(groupid) {
@@ -169,9 +207,6 @@
               }
             })
             .catch({});
-        },
-        hideForm (event) {
-            this.showForm = '';
         },
         updateOptions(options) {
             if (Object.keys(this.mutable_options).length === 0) return;

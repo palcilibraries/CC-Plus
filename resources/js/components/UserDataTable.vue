@@ -130,7 +130,7 @@
           </v-card-text>
           <v-card-actions>
             <v-col class="d-flex">
-              <v-btn class='btn' x-small color="primary" type="submit" @click="formSubmit">Save User</v-btn>
+              <v-btn class='btn' x-small color="primary" type="submit">Save User</v-btn>
             </v-col>
             <v-col class="d-flex">
               <v-btn class='btn' x-small type="button" color="primary" @click="userDialog=false">Cancel</v-btn>

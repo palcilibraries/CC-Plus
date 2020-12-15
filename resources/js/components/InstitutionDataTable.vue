@@ -107,7 +107,7 @@
           <v-card-actions>
             <v-spacer></v-spacer>
             <v-col class="d-flex">
-              <v-btn class='btn' x-small color="primary" type="submit" @click="formSubmit">Save New Institution</v-btn>
+              <v-btn class='btn' x-small color="primary" type="submit">Save New Institution</v-btn>
             </v-col>
             <v-col class="d-flex">
               <v-btn class='btn' x-small type="button" color="primary" @click="instDialog=false">Cancel</v-btn>

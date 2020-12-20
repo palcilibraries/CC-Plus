@@ -17,6 +17,8 @@ class CreateCCplusErrorsTable extends Migration
             $table->integer('id')->unsigned()->unique();
             $table->string('message',60);
             $table->unsignedInteger('severity_id')->default(0);     // default is Info
+            $table->string('explanation')->default('');
+            $table->string('suggestion')->default('');
             $table->timestamps();
 
             $table->foreign('severity_id')->references('id')->on('severities');

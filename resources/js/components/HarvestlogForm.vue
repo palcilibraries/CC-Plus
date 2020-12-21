@@ -19,7 +19,7 @@
       <v-col v-else class="d-flex justify-center harvest-status">
         Latest Result: {{ last_attempt.message }} &nbsp;
         <div class="x-box">
-          <img src="/images/blue-qm-16.png" width="100%" alt="clear filter" @click="errorDialog=true;"/>&nbsp;
+          <img src="/images/blue-qm-16.png" width="100%" alt="clear filter" @click="errorDetail"/>&nbsp;
         </div>
 <!--
 This would be a good place to link in a small overlay connected to a (?) ... for ... what does this mean?
@@ -90,9 +90,9 @@ in the pop-up.   ??? Could also connect it to a mouseover action in the Attempts
         <v-card-text>
           <v-container grid-list-md>
             <h5>Explanation</h5>
-            <p>{{ last_attempt.ccplus_error.explanation }}</p>
+            <p>{{ explain_text }}</p>
             <h5>Suggested next step(s)</h5>
-            <p>{{ last_attempt.ccplus_error.suggestion }}</p>
+            <p>{{ suggest_text }}</p>
           </v-container>
         </v-card-text>
 <!--
@@ -129,6 +129,8 @@ in the pop-up.   ??? Could also connect it to a mouseover action in the Attempts
                 status_canset: ['Restart', 'Stop'],
                 status_fixed: ['Success', 'Active', 'Pending'],
                 errorDialog: false,
+                explain_text: '',
+                suggest_text: '',
             }
         },
         methods: {
@@ -196,6 +198,13 @@ in the pop-up.   ??? Could also connect it to a mouseover action in the Attempts
                   }
                 })
                 .catch({});
+            },
+            errorDetail() {
+                if (this.last_attempt.ccplus_error) {
+                    this.explain_text = this.last_attempt.ccplus_error.explanation;
+                    this.suggest_text = this.last_attempt.ccplus_error.suggestion;
+                    this.errorDialog = true;
+                }
             },
         },
         computed: {

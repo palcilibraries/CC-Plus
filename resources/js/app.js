@@ -41,7 +41,7 @@ Vue.component('harvestlog-data-table', require('./components/HarvestlogDataTable
 Vue.component('harvestlog-summary-table', require('./components/HarvestlogSummaryTable.vue').default);
 Vue.component('harvestlog-form', require('./components/HarvestlogForm.vue').default);
 Vue.component('failed-harvests', require('./components/FailedHarvests.vue').default);
-Vue.component('failed-by-harvest', require('./components/FailedByHarvest.vue').default);
+Vue.component('harvest-attempts', require('./components/HarvestAttempts.vue').default);
 Vue.component('date-range', require('./components/DateRange.vue').default);
 Vue.component('show-counter-report', require('./components/ShowCounterReport.vue').default);
 Vue.component('view-reports', require('./components/ViewReports.vue').default);

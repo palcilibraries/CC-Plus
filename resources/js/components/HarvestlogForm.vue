@@ -2,8 +2,30 @@
   <v-container fluid>
     <v-row no-gutters>
       <v-col><h3 class="section-title">Harvest Details</h3></v-col>
+<!--
+      <v-col v-if="mutable_harvest.status=='Success'" class="harvest-status">Last Attempt Succeeded</v-col>
+      <v-col v-else class="harvest-status">
+          Latest Result: {{ last_attempt.message }}
+      </v-col>
+  -->
       <v-col cols="1" sm="1">
         <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_harvest.id)">Delete</v-btn>
+      </v-col>
+    </v-row>
+    <v-row class="d-flex align-center" no-gutters>
+      <v-col v-if="mutable_harvest.status=='Success'" class="d-flex justify-center harvest-status">
+        Last Attempt Succeeded
+      </v-col>
+      <v-col v-else class="d-flex justify-center harvest-status">
+        Latest Result: {{ last_attempt.message }} &nbsp;
+        <div class="x-box">
+          <img src="/images/blue-qm-16.png" width="100%" alt="clear filter" @click="errorDialog=true;"/>&nbsp;
+        </div>
+<!--
+This would be a good place to link in a small overlay connected to a (?) ... for ... what does this mean?
+And then display the last_attempt.ccplus_error.explanation and last_attempt.ccplus_error.suggestion info
+in the pop-up.   ??? Could also connect it to a mouseover action in the Attempts component table rows...???
+-->
       </v-col>
     </v-row>
     <v-row class="status-message" v-if="success || failure">
@@ -47,9 +69,11 @@
     <v-row v-else class="d-flex my-2 align-mid">
       <v-col cols="8" sm="4"><strong>Raw Data is not available</strong></v-col>
     </v-row>
+<!--
     <div class="harvest-status">
       Status: &nbsp;&nbsp; {{ mutable_harvest.status }}
     </div>
+-->
     <div v-if="(is_manager || is_admin)" class="d-flex ma-2 pa-0">
       <!-- Some statuses cannot be changed -->
       <v-row v-if="!(status_fixed.includes(mutable_harvest.status))" no-gutters class="d-flex align-mid">
@@ -59,6 +83,31 @@
         </v-col>
       </v-row>
     </div>
+    <v-dialog v-model="errorDialog" max-width="500px">
+      <v-card>
+        <v-card-title>{{ last_attempt.message }}</v-card-title>
+        </v-card-subtitle>
+        <v-card-text>
+          <v-container grid-list-md>
+            <h5>Explanation</h5>
+            <p>{{ last_attempt.ccplus_error.explanation }}</p>
+            <h5>Suggested next step(s)</h5>
+            <p>{{ last_attempt.ccplus_error.suggestion }}</p>
+          </v-container>
+        </v-card-text>
+<!--
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-col class="d-flex">
+            <v-btn x-small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+-->
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -69,6 +118,7 @@
     export default {
         props: {
                 harvest:  { type:Object, default: () => {} },
+                last_attempt: { type:Object, default: () => {} },
                },
         data() {
             return {
@@ -78,6 +128,7 @@
                 mutable_harvest: this.harvest,
                 status_canset: ['Restart', 'Stop'],
                 status_fixed: ['Success', 'Active', 'Pending'],
+                errorDialog: false,
             }
         },
         methods: {
@@ -157,4 +208,5 @@
 </script>
 <style>
 .align-mid { align-items: center; }
+.x-box { width: 16px;  height: 16px; flex-shrink: 0; }
 </style>

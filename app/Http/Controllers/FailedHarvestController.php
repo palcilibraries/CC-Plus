@@ -119,7 +119,7 @@ class FailedHarvestController extends Controller
                                  ->pluck('id')->toArray();
 
         // Get the failedharvest records
-        $failed = FailedHarvest::with(
+        $data = FailedHarvest::with(
             'harvest',
             'harvest.sushiSetting',
             'harvest.sushiSetting.institution:id,name',
@@ -127,10 +127,11 @@ class FailedHarvestController extends Controller
             'harvest.report:id,name',
             'ccplusError',
             'ccplusError.severity'
-        )
-                               ->whereIn('harvest_id', $harvest_ids)
-                               ->orderBy('created_at', 'DESC')
-                               ->get();
+        )->whereIn('harvest_id', $harvest_ids)->orderBy('created_at', 'DESC')->get();
+        $failed = $data->map(function ($rec) {
+            $rec->attempted = date("Y-m-d H:i:s", strtotime($rec->created_at));
+            return $rec;
+        });
 
         // Return results
         if ($json) {

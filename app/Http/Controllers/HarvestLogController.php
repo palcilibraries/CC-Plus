@@ -522,11 +522,27 @@ class HarvestLogController extends Controller
             'sushiSetting',
             'sushiSetting.institution:id,name',
             'sushiSetting.provider:id,name'
-        )
-                              ->findOrFail($id);
-        $failed = FailedHarvest::with('ccplusError', 'ccplusError.severity')
-                               ->where('harvest_id', '=', $id)->get()->toArray();
-        return view('harvestlogs.edit', compact('harvest', 'failed'));
+        )->findOrFail($id);
+
+        // Get any failed attempts, pass as an array
+        $data = FailedHarvest::with('ccplusError', 'ccplusError.severity')->where('harvest_id', '=', $id)
+                             ->orderBy('created_at','DESC')->get();
+        $attempts = $data->map(function ($rec) {
+            $rec->severity = $rec->ccplusError->severity->name;
+            $rec->message = $rec->ccplusError->message;
+            $rec->attempted = date("Y-m-d H:i:s", strtotime($rec->created_at));
+            return $rec;
+        })->toArray();
+
+        // If harvest successful, pass it as an array
+        if ($harvest->status == 'Success') {
+            $rec = array('process_step' => 'SUCCESS', 'error_id' => '', 'severity' => '', 'detail' => '');
+            $rec['message'] = "Harvest successfully completed";
+            $rec['attempted'] = date("Y-m-d H:i:s", strtotime($harvest->created_at));
+            array_unshift($attempts,$rec);
+        }
+
+        return view('harvestlogs.edit', compact('harvest', 'attempts'));
     }
 
 

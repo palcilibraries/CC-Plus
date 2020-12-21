@@ -47,6 +47,14 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
+        // Database/query exceptions return formatted JSON string
+        if ( ($exception instanceof \PDOException) || ($exception instanceof \QueryException) ) {
+            $msg = "Database Error";
+            foreach ($exception->errorInfo as $data) {
+                $msg .= " : " . $data;
+            }
+            return response()->json(['result' => false, 'msg' => $msg]);
+        }
         return parent::render($request, $exception);
     }
 }

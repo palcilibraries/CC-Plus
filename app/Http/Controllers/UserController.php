@@ -314,7 +314,7 @@ class UserController extends Controller
         $top_txt  = "The Users tab represents a starting place for updating or importing settings. The table below\n";
         $top_txt .= "describes the datatype and order that the import expects. Any Import rows without an ID value\n";
         $top_txt .= "in column 'A' will be ignored. If values are missing/invalid for a column, but not required,\n";
-        $top_txt .= "they will be set to the 'Default'. Any header row or columns beyond 'I' will be ignored.\n\n";
+        $top_txt .= "they will be set to the 'Default'. Any header row or columns beyond 'H' will be ignored.\n\n";
         $top_txt .= "Once the data sheet contains everything to be updated or inserted, save the sheet as a CSV\n";
         $top_txt .= "and import it into CC-Plus.";
         $info_sheet->setCellValue('A1', $top_txt);
@@ -358,14 +358,17 @@ class UserController extends Controller
         $info_sheet->setCellValue('B20', 'Comma-separated strings');
         $info_sheet->setCellValue('C20', 'Admin, Manager, User, or Viewer');
         $info_sheet->setCellValue('D20', 'User');
-        $info_sheet->setCellValue('A21', 'PWChangeReq');
-        $info_sheet->setCellValue('B21', 'String (Y or N)');
-        $info_sheet->setCellValue('C21', 'Force user to change password');
-        $info_sheet->setCellValue('D21', 'N');
-        $info_sheet->setCellValue('A22', 'Institution ID');
-        $info_sheet->setCellValue('B22', 'Integer');
-        $info_sheet->setCellValue('C22', 'Unique CC-Plus Institution ID (1=Staff)');
-        $info_sheet->setCellValue('D22', '1');
+        // IF you're planning to add these back in, note that the import function below also needs to
+        // updated to account for the new column.
+        //-------------------------------------------------------------------------------------------
+        // $info_sheet->setCellValue('A21', 'PWChangeReq');
+        // $info_sheet->setCellValue('B21', 'String (Y or N)');
+        // $info_sheet->setCellValue('C21', 'Force user to change password');
+        // $info_sheet->setCellValue('D21', 'N');
+        $info_sheet->setCellValue('A21', 'Institution ID');
+        $info_sheet->setCellValue('B21', 'Integer');
+        $info_sheet->setCellValue('C21', 'Unique CC-Plus Institution ID (1=Staff)');
+        $info_sheet->setCellValue('D21', '1');
 
         // Set row height and auto-width columns for the sheet
         for ($r = 1; $r < 25; $r++) {
@@ -387,9 +390,9 @@ class UserController extends Controller
         $users_sheet->setCellValue('E1', 'Phone');
         $users_sheet->setCellValue('F1', 'Active');
         $users_sheet->setCellValue('G1', 'Role(s)');
-        $users_sheet->setCellValue('H1', 'PWChangeReq');
+        // $users_sheet->setCellValue('H1', 'PWChangeReq');
         if ($thisUser->hasRole('Admin')) {
-            $users_sheet->setCellValue('I1', 'Institution ID');
+            $users_sheet->setCellValue('H1', 'Institution ID');
             $users_sheet->setCellValue('J1', 'Institution');
         }
         $row = 2;
@@ -407,10 +410,10 @@ class UserController extends Controller
             }
             $_roles = rtrim(trim($_roles), ',');
             $users_sheet->setCellValue('G' . $row, $_roles);
-            $_pwcr = ($user->password_change_required) ? "Y" : "N";
-            $users_sheet->setCellValue('H' . $row, $_pwcr);
+            // $_pwcr = ($user->password_change_required) ? "Y" : "N";
+            // $users_sheet->setCellValue('H' . $row, $_pwcr);
             if ($thisUser->hasRole('Admin')) {
-                $users_sheet->setCellValue('I' . $row, $user->inst_id);
+                $users_sheet->setCellValue('H' . $row, $user->inst_id);
                 $_inst = ($user->inst_id == 1) ? "Staff" : $user->institution->name;
                 $users_sheet->setCellValue('J' . $row, $_inst);
             }
@@ -450,8 +453,8 @@ class UserController extends Controller
      */
     public function import(Request $request)
     {
-        // Only Admins can import institution data
-        abort_unless($thisUser->hasRole(['Admin']), 403);
+        // Only Admins can import user data
+        abort_unless(auth()->user()->hasRole(['Admin']), 403);
 
         // Handle and validate inputs
         $this->validate($request, ['csvfile' => 'required']);
@@ -521,8 +524,7 @@ class UserController extends Controller
             $_name = ($row[3] == '') ? $_email : $row[3];
             $_phone = ($row[4] == '') ? $_email : $row[4];
             $_active = ($row[5] == 'N') ? 0 : 1;
-            $_pwchange = ($row[7] == 'Y') ? 1 : 0;
-            $_inst = ($row[8] == '') ? 0 : $row[8];
+            $_inst = ($row[7] == '') ? 0 : $row[7];
             $user_inst = $institutions->where('id', $_inst)->first();
             if (!$user_inst) {
                 $num_skipped++;
@@ -531,7 +533,7 @@ class UserController extends Controller
 
             // Put user data columns into an array
             $_user = array('id' => $cur_user_id, 'email' => $_email, 'name' => $_name, 'phone' => $_phone,
-                           'is_active' => $_active, 'password_change_required' => $_pwchange, 'inst_id' => $_inst);
+                           'is_active' => $_active, 'inst_id' => $_inst);
 
             // Only include password if it has a value
             if ($row[2] != '') {

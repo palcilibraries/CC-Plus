@@ -20,17 +20,17 @@
           <v-simple-table>
             <tr>
               <td>Name </td>
-  	          <td>{{ user.name }}</td>
+  	          <td>{{ mutable_user.name }}</td>
   	        </tr>
 	        <tr>
 	          <td>Email </td>
-	          <td>{{ user.email }}</td>
+	          <td>{{ mutable_user.email }}</td>
 	        </tr>
             <tr>
               <td>Roles</td>
               <td>
                 <template v-for="role in all_roles">
-                  <v-chip v-if="user_roles.includes(role.id)">{{ role.name }}</v-chip>
+                  <v-chip v-if="mutable_user.roles.includes(role.id)">{{ role.name }}</v-chip>
                 </template>
               </td>
             </tr>
@@ -45,15 +45,8 @@
                       v-model="form.email" :rules="emailRules">
         </v-text-field>
         <v-switch v-model="form.is_active" label="Active?"></v-switch>
-        <v-select v-if="is_admin"
-                  outlined
-                  required
-                  :items="institutions"
-                  v-model="form.inst_id"
-                  value="user.inst_id"
-                  label="Institution"
-                  item-text="name"
-                  item-value="id"
+        <v-select v-if="is_admin" outlined required :items="institutions" v-model="form.inst_id"
+                  label="Institution" item-text="name" item-value="id"
         ></v-select>
         <v-text-field v-else outlined readonly label="Institution" :value="inst_name"></v-text-field>
         <input type="hidden" id="inst_id" name="inst_id" :value="user.inst_id">
@@ -65,17 +58,8 @@
         </v-text-field>
   		<div  v-if="is_manager || is_admin" class="field-wrapper">
 	      <v-subheader v-text="'User Roles'"></v-subheader>
-	      <v-select
-	               :items="all_roles"
-	               v-model="form.roles"
-	               :value="mutable_roles"
-	               item-text="name"
-	               item-value="id"
-	               label="User Role(s)"
-	               multiple
-	               chips
-	               hint="Define roles for user"
-	               persistent-hint
+	      <v-select :items="all_roles" v-model="form.roles" item-text="name" item-value="id" label="User Role(s)"
+ 	                multiple chips hint="Define roles for user" persistent-hint
 	      ></v-select>
 		</div>
         <v-spacer></v-spacer>
@@ -101,7 +85,6 @@
     export default {
         props: {
                 user: { type:Object, default: () => {} },
-                user_roles: { type:Array, default: () => [] },
                 all_roles: { type:Array, default: () => [] },
                 institutions: { type:Array, default: () => [] },
                },
@@ -115,7 +98,7 @@
                 inst_name: '',
                 email: '',
                 password: '',
-                mutable_roles: this.user_roles,
+                mutable_user: this.user,
                 emailRules: [
                     v => !!v || 'E-mail is required',
                     v => /.+@.+/.test(v) || 'E-mail must be valid'
@@ -131,7 +114,7 @@
                     email: this.user.email,
                     password: '',
                     confirm_pass: '',
-                    roles: this.user_roles
+                    roles: this.user.roles
                 })
             }
         },
@@ -146,6 +129,7 @@
                 this.form.patch('/users/'+this.user['id'])
                     .then( (response) => {
                         if (response.result) {
+                            this.mutable_user = response.user;
                             this.success = response.msg;
                         } else {
                             this.failure = response.msg;

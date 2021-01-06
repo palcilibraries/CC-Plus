@@ -39,16 +39,20 @@ class UserController extends Controller
                              ->where('inst_id', '=', $thisUser->inst_id)->get();
         }
 
-        // Map role names and status to strings for the view
-        $data = $user_data->map(function($user) {
-            $user->status = ($user->is_active == 1) ? 'Active' : 'Inactive';
+        // Make user role names one string, role IDs into an array, and status to a string for the view
+        $data = array();
+        foreach ($user_data as $rec) {
             $_roles = "";
-            foreach ($user->roles as $role) {
+            $user = $rec->toArray();
+            $user['status'] = ($rec->is_active == 1) ? 'Active' : 'Inactive';
+            $user['roles'] = array();
+            foreach ($rec->roles as $role) {
+                $user['roles'][] = $role->id;
                 $_roles .= $role->name . ", ";
             }
-            $user->role_string = rtrim(trim($_roles), ',');
-            return $user;
-        });
+            $user['role_string'] = rtrim(trim($_roles), ',');
+            $data[] = $user;
+        }
 
         // Admin gets a select-box of institutions (built-in create option), otherwise just the users' inst
         if ($thisUser->hasRole('Admin')) {
@@ -119,7 +123,7 @@ class UserController extends Controller
                 $user->roles()->attach($r);
             }
         }
-        $user->load(['roles','institution:id,name']);
+        $user->load(['institution:id,name']);
 
         // Setup array to hold new user to match index fields
         $_roles = "";
@@ -132,6 +136,7 @@ class UserController extends Controller
         $_roles = rtrim(trim($_roles), ',');
         $new_user['permission'] = $user->maxRoleName();
         $new_user['role_string'] = $_roles;
+        $new_user['roles'] = $new_roles;
 
         return response()->json(['result' => true, 'msg' => 'User successfully created', 'user' => $new_user]);
     }
@@ -160,8 +165,8 @@ class UserController extends Controller
     {
         $thisUser = auth()->user();
         $user = User::findOrFail($id);
-        $user_roles = $user->roles()->pluck('role_id')->all();
         abort_unless($user->canManage(), 403);
+        $user->roles = $user->roles()->pluck('role_id')->all();
 
         // Admin gets a select-box of institutions, otherwise just the users' inst
         if ($thisUser->hasRole('Admin')) {
@@ -174,7 +179,7 @@ class UserController extends Controller
         // Set choices for roles; disallow choosing roles higher current user's max role
         $all_roles = Role::where('id', '<=', $thisUser->maxRole())->get(['name', 'id'])->toArray();
 
-        return view('users.edit', compact('user', 'user_roles', 'all_roles', 'institutions'));
+        return view('users.edit', compact('user','all_roles', 'institutions'));
     }
 
     /**
@@ -237,7 +242,7 @@ class UserController extends Controller
                 }
             }
         }
-        $user->load(['roles','institution:id,name']);
+        $user->load(['institution:id,name']);
 
         // Setup array to hold updated user record
         $_roles = "";
@@ -250,6 +255,7 @@ class UserController extends Controller
         $_roles = rtrim(trim($_roles), ',');
         $updated_user['permission'] = $user->maxRoleName();
         $updated_user['role_string'] = $_roles;
+        $updated_user['roles'] = $new_roles;
 
         return response()->json(['result' => true, 'msg' => 'User settings successfully updated',
                                  'user' => $updated_user]);

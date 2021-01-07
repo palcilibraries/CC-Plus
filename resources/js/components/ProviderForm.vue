@@ -1,79 +1,82 @@
 <template>
-  <div class="details">
-    <v-row v-if="can_edit && !showForm" no-gutters>
-      <v-col class="d-flex ma-2" cols="2" sm="2">
-        <h2 class="section-title">Details</h2>
-      </v-col>
-      <v-col class="d-flex ma-2" cols="2" sm="2">
-        <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
-      </v-col>
-      <v-col v-if="is_admin && mutable_prov.can_delete" class="d-flex ma-2" cols="2" sm="2">
-        <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_prov.id)">Delete</v-btn>
-      </v-col>
-	  <div class="status-message" v-if="success || failure">
-	      <span v-if="success" class="good" role="alert" v-text="success"></span>
-	      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-	  </div>
-    </v-row>
-    <!-- form display control and confirmations  -->
-    <!-- Values-only when form not active -->
-    <div v-if="!showForm">
-	  <v-simple-table dense>
-  	    <tr>
-  	      <td>Name </td>
-  	      <td>{{ mutable_prov.name }}</td>
-  	    </tr>
-  	    <tr>
-  	      <td>Status </td>
-  	      <td>{{ status }}</td>
-  	    </tr>
-  	    <tr>
-  	      <td>Serves </td>
-  	      <td>{{ inst_name }}</td>
-  	    </tr>
-  	    <tr>
-  	      <td>SUSHI service URL </td>
-  	      <td>{{ mutable_prov.server_url_r5 }}</td>
-  	    </tr>
-  	    <tr>
-  	      <td>Run harvests monthly on day </td>
-  	      <td>{{ mutable_prov.day_of_month }}</td>
-  	    </tr>
-  	    <tr>
-  	      <td>Reports to harvest </td>
-  	      <td>
-  	        <template v-for="report in master_reports">
-              <v-chip v-if="mutable_prov.reports.some(r => r.id === report.id)">
-  	            {{ report.name }}
-  	          </v-chip>
-  	        </template>
-  	      </td>
-  	    </tr>
-  	  </v-simple-table>
-    </div>
-    <div v-else>
-      <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
-        <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-        <v-switch v-model="form.is_active" label="Active?"></v-switch>
-        <v-select :items="institutions" v-model="form.inst_id" value="provider.inst_id" label="Serves"
-                  item-text="name" item-value="id" outlined
-        ></v-select>
-        <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined></v-text-field>
-		<div class="field-wrapper has-label">
-	      <v-subheader v-text="'Run Harvests Monthly on Day'"></v-subheader>
-	      <v-text-field v-model="form.day_of_month" label="Day-of-Month" hide-details single-line type="number"
-	      ></v-text-field>
-		</div>
-		<div class="field-wrapper has-label">
-	      <v-subheader v-text="'Reports to Harvest'"></v-subheader>
-	      <v-select :items="master_reports" v-model="form.master_reports" value="provider.reports" label="Select"
-	                item-text="name" item-value="id" multiple chips hint="Choose which reports to harvest"
-                    persistent-hint
-	      ></v-select>
-		</div>
-        <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Save Provider Settings</v-btn>
-        <v-btn small type="button" @click="hideForm">cancel</v-btn>
-      </form>
+  <div>
+    <div class="page-header"><h1>{{ form.name }}</h1></div>
+    <div class="details">
+      <v-row v-if="can_edit && !showForm" no-gutters>
+        <v-col class="d-flex ma-2" cols="2" sm="2">
+          <h2 class="section-title">Details</h2>
+        </v-col>
+        <v-col class="d-flex ma-2" cols="2" sm="2">
+          <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+        </v-col>
+        <v-col v-if="is_admin && mutable_prov.can_delete" class="d-flex ma-2" cols="2" sm="2">
+          <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_prov.id)">Delete</v-btn>
+        </v-col>
+  	    <div class="status-message" v-if="success || failure">
+  	      <span v-if="success" class="good" role="alert" v-text="success"></span>
+          <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+	    </div>
+      </v-row>
+      <!-- form display control and confirmations  -->
+      <!-- Values-only when form not active -->
+      <div v-if="!showForm">
+  	    <v-simple-table dense>
+    	  <tr>
+  	        <td>Name </td>
+  	        <td>{{ mutable_prov.name }}</td>
+  	      </tr>
+          <tr>
+    	    <td>Status </td>
+   	        <td>{{ status }}</td>
+  	      </tr>
+  	      <tr>
+  	        <td>Serves </td>
+  	        <td>{{ inst_name }}</td>
+  	      </tr>
+  	      <tr>
+  	        <td>SUSHI service URL </td>
+  	        <td>{{ mutable_prov.server_url_r5 }}</td>
+  	      </tr>
+  	      <tr>
+  	        <td>Run harvests monthly on day </td>
+  	        <td>{{ mutable_prov.day_of_month }}</td>
+    	  </tr>
+  	      <tr>
+  	        <td>Reports to harvest </td>
+  	        <td>
+  	          <template v-for="report in master_reports">
+                <v-chip v-if="mutable_prov.reports.some(r => r.id === report.id)">
+  	              {{ report.name }}
+  	            </v-chip>
+  	          </template>
+  	        </td>
+  	      </tr>
+  	    </v-simple-table>
+      </div>
+      <div v-else>
+        <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
+          <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+          <v-switch v-model="form.is_active" label="Active?"></v-switch>
+          <v-select :items="institutions" v-model="form.inst_id" value="provider.inst_id" label="Serves"
+                    item-text="name" item-value="id" outlined
+          ></v-select>
+          <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined></v-text-field>
+  		  <div class="field-wrapper has-label">
+  	        <v-subheader v-text="'Run Harvests Monthly on Day'"></v-subheader>
+  	        <v-text-field v-model="form.day_of_month" label="Day-of-Month" hide-details single-line type="number"
+	        ></v-text-field>
+		  </div>
+	      <div class="field-wrapper has-label">
+	        <v-subheader v-text="'Reports to Harvest'"></v-subheader>
+	        <v-select :items="master_reports" v-model="form.master_reports" value="provider.reports" label="Select"
+	                  item-text="name" item-value="id" multiple chips hint="Choose which reports to harvest"
+                      persistent-hint
+	        ></v-select>
+		  </div>
+          <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Save Provider Settings</v-btn>
+          <v-btn small type="button" @click="hideForm">cancel</v-btn>
+        </form>
+      </div>
     </div>
   </div>
 </template>

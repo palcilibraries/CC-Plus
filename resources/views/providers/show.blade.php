@@ -2,11 +2,6 @@
 
 @section('content')
 <v-app providerform>
-
-	<div class="page-header">
-	    <h1>{{ $provider->name }}</h1>
-	</div>
-
     <provider-form :provider="{{ json_encode($provider) }}"
 	     		   :institutions="{{ json_encode($institutions) }}"
 	 	      	   :master_reports="{{ json_encode($master_reports) }}"

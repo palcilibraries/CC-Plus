@@ -49,8 +49,8 @@ class ProviderController extends Controller
 
        // $institutions depends on whether current user is admin or Manager
         if ($thisUser->hasRole("Admin")) {
-            $institutions = Institution::orderBy('name', 'ASC')->get(['id','name'])->toArray();
-            $institutions[0]['name'] = 'Entire Consortium';
+            $institutions = Institution::where('id','>',1)->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+            array_unshift($institutions,array('id' => 1,'name' => 'Entire Consortium'));
         } else {  // Managers and Users limited their own inst
             $institutions = Institution::where('id', '=', $thisUser->inst_id)->get(['id','name'])->toArray();
         }
@@ -128,8 +128,8 @@ class ProviderController extends Controller
             $provider['can_delete'] = (is_null($last_harvest)) ? true : false;
 
             // Make an institutions list
-            $institutions = Institution::orderBy('name', 'ASC')->get(['id','name'])->toArray();
-            $institutions[0]['name'] = 'Entire Consortium';
+            $institutions = Institution::where('id','>',1)->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+            array_unshift($institutions,array('id' => 1,'name' => 'Entire Consortium'));
 
             // Setup an array of insts without settings for this provider
             $set_inst_ids = $provider->sushiSettings->pluck('inst_id');

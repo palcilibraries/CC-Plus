@@ -2,11 +2,6 @@
 
 @section('content')
 <v-app institutionform>
-
-	<div class="page-header">
-	    <h1>{{ $institution->name }}</h1>
-	</div>
-
     <institution-form :institution="{{ json_encode($institution) }}"
                       :types="{{ json_encode($types) }}"
                       :all_groups="{{ json_encode($all_groups) }}"

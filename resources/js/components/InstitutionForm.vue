@@ -1,5 +1,7 @@
 <template>
-  <div class="details">
+  <div>
+    <div class="page-header"><h1>{{ form.name }}</h1></div>
+    <div class="details">
   	  <h2 class="section-title">Details</h2>
       <div v-if="is_manager && showForm==''" style="display:inline-block;">
         <v-row>

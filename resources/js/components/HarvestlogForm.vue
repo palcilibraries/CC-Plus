@@ -1,14 +1,9 @@
 <template>
   <v-container fluid>
-    <v-row no-gutters>
-      <v-col><h3 class="section-title">Harvest Details</h3></v-col>
-<!--
-      <v-col v-if="mutable_harvest.status=='Success'" class="harvest-status">Last Attempt Succeeded</v-col>
-      <v-col v-else class="harvest-status">
-          Latest Result: {{ last_attempt.message }}
-      </v-col>
-  -->
-      <v-col cols="1" sm="1">
+    <v-row class="d-flex align-center" no-gutters>
+      <v-col><h3 class="d-flex section-title">Harvest Details</h3></v-col>
+      <v-col class="d-flex justify-center harvest-status">Status: {{ mutable_harvest.status }}</v-col>
+      <v-col class="d-flex">
         <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_harvest.id)">Delete</v-btn>
       </v-col>
     </v-row>
@@ -18,16 +13,25 @@
       </v-col>
       <v-col v-else class="d-flex justify-center harvest-status">
         Latest Result: {{ last_attempt.message }} &nbsp;
-        <div class="x-box">
+        <div v-if="last_attempt.severity!='Unknown'" class="x-box">
           <img src="/images/blue-qm-16.png" width="100%" alt="clear filter" @click="errorDetail"/>&nbsp;
         </div>
-<!--
-This would be a good place to link in a small overlay connected to a (?) ... for ... what does this mean?
-And then display the last_attempt.ccplus_error.explanation and last_attempt.ccplus_error.suggestion info
-in the pop-up.   ??? Could also connect it to a mouseover action in the Attempts component table rows...???
--->
       </v-col>
     </v-row>
+    <div v-if="(is_manager || is_admin)" class="d-flex ma-2 pa-0">
+      <!-- Some statuses cannot be changed -->
+      <v-row v-if="!(status_fixed.includes(mutable_harvest.status))" no-gutters class="d-flex align-center">
+        <v-col class="d-flex justify-center harvest-status">
+          <v-btn v-if="mutable_harvest.status!='Stopped'" color="primary" x-small @click="newStatus('Stopped')">
+            Stop
+          </v-btn>
+          &nbsp; &nbsp; &nbsp;
+          <v-btn v-if="mutable_harvest.status!='Queued'" color="primary" x-small @click="newStatus('Queued')">
+            Restart
+          </v-btn>
+        </v-col>
+      </v-row>
+    </div>
     <v-row class="status-message" v-if="success || failure">
       <span v-if="success" class="good" role="alert" v-text="success"></span>
       <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
@@ -60,29 +64,15 @@ in the pop-up.   ??? Could also connect it to a mouseover action in the Attempts
       <v-col cols="2" sm="1">Attempts</v-col>
       <v-col cols="2" sm="1">{{ mutable_harvest.attempts }}</v-col>
     </v-row>
-    <v-row v-if="mutable_harvest.rawfile" no-gutters class="d-flex align-mid">
+    <v-row v-if="mutable_harvest.rawfile" no-gutters class="d-flex align-center">
       <v-col cols="2" sm="1">Raw Data</v-col>
       <v-col cols="2" sm="1">
         <a :href="'/harvestlogs/'+mutable_harvest.id+'/raw'"><v-btn color="primary" x-small>download</v-btn></a>
       </v-col>
     </v-row>
-    <v-row v-else class="d-flex my-2 align-mid">
+    <v-row v-else class="d-flex my-2 align-center">
       <v-col cols="8" sm="4"><strong>Raw Data is not available</strong></v-col>
     </v-row>
-<!--
-    <div class="harvest-status">
-      Status: &nbsp;&nbsp; {{ mutable_harvest.status }}
-    </div>
--->
-    <div v-if="(is_manager || is_admin)" class="d-flex ma-2 pa-0">
-      <!-- Some statuses cannot be changed -->
-      <v-row v-if="!(status_fixed.includes(mutable_harvest.status))" no-gutters class="d-flex align-mid">
-        <v-col cols="2" sm="2">
-          <v-select :items="status_canset" v-model="new_status" label="Modify Status" dense @change="updateStatus()">
-          </v-select>
-        </v-col>
-      </v-row>
-    </div>
     <v-dialog v-model="errorDialog" max-width="500px">
       <v-card>
         <v-card-title>{{ last_attempt.message }}</v-card-title>
@@ -95,17 +85,6 @@ in the pop-up.   ??? Could also connect it to a mouseover action in the Attempts
             <p>{{ suggest_text }}</p>
           </v-container>
         </v-card-text>
-<!--
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-col class="d-flex">
-            <v-btn x-small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
-          </v-col>
-          <v-col class="d-flex">
-            <v-btn class='btn' x-small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
-          </v-col>
-        </v-card-actions>
--->
       </v-card>
     </v-dialog>
   </v-container>
@@ -124,9 +103,7 @@ in the pop-up.   ??? Could also connect it to a mouseover action in the Attempts
             return {
                 failure: '',
                 success: '',
-                new_status: '',
                 mutable_harvest: this.harvest,
-                status_canset: ['Restart', 'Stop'],
                 status_fixed: ['Success', 'Active', 'Pending'],
                 errorDialog: false,
                 explain_text: '',
@@ -134,16 +111,15 @@ in the pop-up.   ??? Could also connect it to a mouseover action in the Attempts
             }
         },
         methods: {
-            updateStatus() {
+            newStatus(stat) {
                 let msg = "";
-                if (this.new_status == 'Restart') {
+                if (stat == 'Queued') {
                     msg += "Updating this harvest status will reset the attempts counter to zero and cause the";
                     msg += " system to add it immediately to the processing queue.";
-                } else if (this.new_status == 'Stop') {
+                } else if (stat == 'Stopped') {
                     msg += "Changing this harvest's status will leave the attempts counter intact, and will prevent";
                     msg += " the system from running this harvest. Any future or queued attempts will be cancelled.";
                 }
-                var self = this;
                 Swal.fire({
                   title: 'Are you sure?',
                   text: msg,
@@ -154,23 +130,27 @@ in the pop-up.   ??? Could also connect it to a mouseover action in the Attempts
                   confirmButtonText: 'Yes, Proceed!'
                 }).then((result) => {
                   if (result.value) {
-                    axios.post('/update-harvest-status', {
-                        id: self.mutable_harvest.id,
-                        status: self.new_status
-                    })
-                    .then( function(response) {
-                        if (response.data.result) {
-                            self.mutable_harvest = result.data.harvest;
-                        } else {
-                            self.failure = response.data.msg;
-                        }
-                    })
-                    .catch(error => {});
-                } else {
-                    self.new_status = '';
-                }
+                    this.postNewStatus(stat);
+                  }
               })
               .catch({});
+            },
+            postNewStatus: async function (stat) {
+                var updated_harvest = '';
+                await axios.post('/update-harvest-status', {
+                    id: this.mutable_harvest.id,
+                    status: stat
+                })
+                .then((response) => {
+                    if (response.data.result) {
+                        updated_harvest = response.data.harvest;
+                    } else {
+                        this.failure = response.data.msg;
+                        return;
+                    }
+                })
+                .catch(error => {});
+                Object.assign(this.mutable_harvest, updated_harvest);
             },
             destroy (id) {
                 var self = this;
@@ -216,6 +196,5 @@ in the pop-up.   ??? Could also connect it to a mouseover action in the Attempts
     }
 </script>
 <style>
-.align-mid { align-items: center; }
 .x-box { width: 16px;  height: 16px; flex-shrink: 0; }
 </style>

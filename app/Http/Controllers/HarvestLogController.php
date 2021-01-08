@@ -449,9 +449,9 @@ class HarvestLogController extends Controller
         }
 
         // The new status will be based on one of 2 possible values:
-        //   Restart: resets attempts to zero and requeues the harvest for immediate retrying
-        //   Stop: Sets harvest to "Stopped", regardless of what it was before.
-        $new_status_allowed = array('Restart', 'Stop');
+        //   Queued: resets attempts to zero and requeues the harvest for immediate retrying
+        //   Stopped: Sets harvest to "Stopped", regardless of what it was before.
+        $new_status_allowed = array('Queued', 'Stopped');
         if (!in_array($input['status'], $new_status_allowed)) {
             return response()->json(['result' => false,
                                      'msg' => 'Invalid request: status cannot be set to requested value.']);
@@ -466,7 +466,7 @@ class HarvestLogController extends Controller
         }
 
         // Stopping a harvest also means deleting any corresponding job thats in the queue
-        if ($input['status'] == 'Stop') {
+        if ($input['status'] == 'Stopped') {
             $harvest->status = 'Stopped';
             $existing_job = SushiQueueJob::where('harvest_id', '=', $harvest->id)->first();
             if ($existing_job) {
@@ -540,6 +540,12 @@ class HarvestLogController extends Controller
             $rec['message'] = "Harvest successfully completed";
             $rec['attempted'] = date("Y-m-d H:i:s", strtotime($harvest->created_at));
             array_unshift($attempts,$rec);
+        } else {
+            // Just in case the failed records have been deleted or are missing for some reason
+            if (sizeof($attempts) == 0) {
+                $attempts[] = array('severity' => "Unknown", 'message' => "Failure records are missing!",
+                                    'attempted' => "Unknown");
+            }
         }
 
         return view('harvestlogs.edit', compact('harvest', 'attempts'));

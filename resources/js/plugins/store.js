@@ -9,31 +9,7 @@ export const store = new Vuex.Store({
       manager: false,
       viewer: false,
       user_inst_id: 0,
-      // filter_by: {
-      //     report_id: 1,
-      //     fromYM: "",
-      //     toYM: "",
-      //     inst_id: [],
-      //     institutiongroup_id: 0,
-      //     plat_id: [],
-      //     prov_id: [],
-      //     datatype_id: [],
-      //     accesstype_id: [],
-      //     sectiontype_id: [],
-      //     accessmethod_id: [],
-      //     yop: [],
-      // },
-      // options: {
-      //     accessmethods: [],
-      //     accesstypes: [],
-      //     datatypes: [],
-      //     sectiontypes: [],
-      //     institutions: [],
-      //     institutiongroups: [],
-      //     providers: [],
-      //     platforms: []
-      // },
-      page_name: '',
+      page_name: 'default',
       page_options: {
           default: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
                      datatable: {page: 1, itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
@@ -108,11 +84,11 @@ export const store = new Vuex.Store({
     },
     SET_ALL_FILTERS(state, filters) {
         if (state.page_name != '' && state.page_name != null)
-           state.page_options[state.page_name].filters = filters;
+            Object.assign(state.page_options[state.page_name].filters, filters);
     },
     SET_DATATABLE_OPTIONS(state, options) {
         if (state.page_name != '' && state.page_name != null)
-           state.page_options[state.page_name].datatable = options;
+           Object.assign(state.page_options[state.page_name].datatable, options);
     },
     SET_REPORTID(state, report_id) {
         state.page_options[state.page_name].filters.report_id = report_id;
@@ -153,30 +129,6 @@ export const store = new Vuex.Store({
     SET_REPORTDATA(state, data) {
         state.report_data = data;
     },
-    // SET_ACCESSMETHOD_OPTIONS(state, options) {
-    //     state.options.accessmethods = options;
-    // },
-    // SET_ACCESSTYPE_OPTIONS(state, options) {
-    //     state.options.accesstypes = options;
-    // },
-    // SET_DATATYPE_OPTIONS(state, options) {
-    //     state.options.datatypes = options;
-    // },
-    // SET_INSTITUTION_OPTIONS(state, options) {
-    //     state.options.institutions = options;
-    // },
-    // SET_INSTGROUP_OPTIONS(state, options) {
-    //     state.options.institutiongroups = options;
-    // },
-    // SET_PLATFORM_OPTIONS(state, options) {
-    //     state.options.platforms = options;
-    // },
-    // SET_PROVIDER_OPTIONS(state, options) {
-    //     state.options.providers = options;
-    // },
-    // SET_SECTIONTYPE_OPTIONS(state, options) {
-    //     state.options.sectiontypes = options;
-    // },
   },
   actions: {
     updateAccess({ commit }, access) {
@@ -233,30 +185,6 @@ export const store = new Vuex.Store({
     updateReportData({ commit }, data) {
       commit('SET_REPORTDATA', data);
     },
-    // updateAccessMethodOptions({ commit }, methods) {
-    //   commit('SET_ACCESSMETHOD_OPTIONS', methods);
-    // },
-    // updateAccessTypeOptions({ commit }, types) {
-    //   commit('SET_ACCESSTYPE_OPTIONS', types);
-    // },
-    // updateDataTypeOptions({ commit }, types) {
-    //   commit('SET_DATATYPE_OPTIONS', types);
-    // },
-    // updateInstitutionOptions({ commit }, insts) {
-    //   commit('SET_INSTITUTION_OPTIONS', insts);
-    // },
-    // updateInstGroupOptions({ commit }, groups) {
-    //   commit('SET_INSTGROUP_OPTIONS', groups);
-    // },
-    // updatePlatformOptions({ commit }, plats) {
-    //   commit('SET_PLATFORM_OPTIONS', plats);
-    // },
-    // updateProviderOptions({ commit }, provs) {
-    //   commit('SET_PROVIDER_OPTIONS', provs);
-    // },
-    // updateSectionTypeOptions({ commit }, types) {
-    //   commit('SET_SECTIONTYPE_OPTIONS', types);
-    // },
   },
   getters: {
     is_admin: state => { return state.admin },
@@ -265,94 +193,19 @@ export const store = new Vuex.Store({
     user_inst_id: state => { return state.user_inst_id },
     page_name: (state) => {  return state.page_name },
     all_filters: state => {
-        if (state.page_name != '' && state.page_name != null) {
-            return state.page_options[state.page_name].filters;
-        }
-        return state.page_options['default'].filters;
+        return state.page_options[state.page_name].filters;
     },
     datatable_options: (state) => {
-        if (state.page_name != '' && state.page_name != null) {
-            return state.page_options[state.page_name].datatable;
-        }
-        return state.page_options['default'].datatable;
+        return state.page_options[state.page_name].datatable;
     },
     filter_by_fromYM: state => {
-        if (state.page_name != '' && state.page_name != null) {
-            return state.page_options[state.page_name].filters.fromYM;
-        }
-        return state.page_options['default'].filters.fromYM;
+        return state.page_options[state.page_name].filters.fromYM;
     },
     filter_by_toYM: state => {
-        if (state.page_name != '' && state.page_name != null) {
-            return state.page_options[state.page_name].filters.toYM;
-        }
-        return state.page_options['default'].filters.toYM;
+        return state.page_options[state.page_name].filters.toYM;
     },
     report_data: state => {
       return state.report_data
     },
-    // filter_by_report_id: state => {
-    //   return state.filter_by.report_id
-    // },
-    // filter_by_fromYM: state => {
-    //     return state.filter_by.fromYM
-    // },
-    // filter_by_toYM: state => {
-    //     return state.filter_by.toYM
-    // },
-    // filter_by_accessmethod: state => {
-    //   return state.filter_by.accessmethod_id
-    // },
-    // filter_by_accesstype: state => {
-    //   return state.filter_by.accesstype_id
-    // },
-    // filter_by_datatype: state => {
-    //   return state.filter_by.datatype_id
-    // },
-    // filter_by_institutiongroup_id: state => {
-    //   return state.filter_by.institutiongroup_id
-    // },
-    // filter_by_institution: state => {
-    //   return state.filter_by.inst_id
-    // },
-    // filter_by_platform: state => {
-    //   return state.filter_by.platform_id
-    // },
-    // filter_by_provider: state => {
-    //   return state.filter_by.provider_id
-    // },
-    // filter_by_sectiontype: state => {
-    //   return state.filter_by.sectiontype_id
-    // },
-    // filter_by_yop: state => {
-    //     return state.filter_by.yop
-    // },
-    // all_options: state => {
-    //     return state.options
-    // },
-    // accessmethod_options: state => {
-    //   return state.options.accessmethods
-    // },
-    // accesstype_options: state => {
-    //   return state.options.accesstypes
-    // },
-    // datatype_options: state => {
-    //   return state.options.datatypes
-    // },
-    // institution_options: state => {
-    //   return state.options.institutions
-    // },
-    // institutiongroup_options: state => {
-    //   return state.options.institutiongroups
-    // },
-    // platform_options: state => {
-    //   return state.options.platforms
-    // },
-    // provider_options: state => {
-    //   return state.options.providers
-    // },
-    // sectiontype_options: state => {
-    //   return state.options.sectiontypes
-    // },
   },
 });

@@ -1,7 +1,10 @@
 <template>
   <div>
     <h3>Harvest Logs</h3>
-    <div class="d-flex pa-0">
+    <div class="d-flex pa-0 align-center">
+      <div v-if="datesFromTo!='|'" class="x-box">
+        <img src="/images/red-x-16.png" width="100%" alt="clear date range" @click="clearFilter('date_range')"/>&nbsp;
+      </div>
       <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM" :key="rangeKey"
       ></date-range>
     </div>
@@ -118,7 +121,8 @@
         handler() {
           // Changing date-range means we need to update state and reload records
           // (just not the FIRST change that happens on page load)
-          if (this.rangeKey > 1) {
+          if (this.rangeKey > 1 && this.all_filters.toYM != '' && this.all_filters.fromYM != '' &&
+              this.all_filters.toYM != null && this.all_filters.fromYM != null) {
               this.mutable_filters['toYM'] = this.filter_by_toYM;
               this.mutable_filters['fromYM'] = this.filter_by_fromYM;
               this.$store.dispatch('updateAllFilters',this.mutable_filters);
@@ -137,7 +141,13 @@
             this.selectedRows = [];
         },
         clearFilter(filter) {
-            this.mutable_filters[filter] = [];
+            if (filter == 'date_range') {
+                this.mutable_filters['toYM'] = '';
+                this.mutable_filters['fromYM'] = '';
+                this.rangeKey += 1;           // force re-render of the date-range component
+            } else {
+                this.mutable_filters[filter] = [];
+            }
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             this.updateLogRecords();
             this.selectedRows = [];

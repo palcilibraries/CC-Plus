@@ -38,7 +38,7 @@ class HarvestLogController extends Controller
         $conso_db = config('database.connections.consodb.database');
 
         // Assign optional inputs to $filters array
-        $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'stat' => [], 'ymfr' => null, 'ymto' => null);
+        $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'stat' => [], 'fromYM' => null, 'toYM' => null);
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
@@ -50,7 +50,7 @@ class HarvestLogController extends Controller
             $keys = array_keys($filters);
             foreach ($keys as $key) {
                 if ($request->input($key)) {
-                    if ($key == 'ymfr' || $key == 'ymto') {
+                    if ($key == 'fromYM' || $key == 'toYM') {
                         $filters[$key] = $request->input($key);
                     } elseif (is_numeric($request->input($key))) {
                         $filters[$key] = array(intval($request->input($key)));
@@ -66,12 +66,12 @@ class HarvestLogController extends Controller
         }
 
         // Make sure dates are sensible
-        if (!is_null($filters['ymfr']) || !is_null($filters['ymto'])) {
-            if (is_null($filters['ymfr'])) {
-                $filters['ymfr'] = $filters['ymto'];
+        if (!is_null($filters['fromYM']) || !is_null($filters['toYM'])) {
+            if (is_null($filters['fromYM'])) {
+                $filters['fromYM'] = $filters['toYM'];
             }
-            if (is_null($filters['ymto'])) {
-                $filters['ymto'] = $filters['ymfr'];
+            if (is_null($filters['toYM'])) {
+                $filters['toYM'] = $filters['fromYM'];
             }
         }
 
@@ -136,11 +136,11 @@ class HarvestLogController extends Controller
                 ->when(sizeof($filters['stat']) > 0, function ($qry) use ($filters) {
                     return $qry->whereIn('status', $filters['stat']);
                 })
-                ->when($filters['ymfr'], function ($qry) use ($filters) {
-                    return $qry->where('yearmon', '>=', $filters['ymfr']);
+                ->when($filters['fromYM'], function ($qry) use ($filters) {
+                    return $qry->where('yearmon', '>=', $filters['fromYM']);
                 })
-                ->when($filters['ymto'], function ($qry) use ($filters) {
-                    return $qry->where('yearmon', '<=', $filters['ymto']);
+                ->when($filters['toYM'], function ($qry) use ($filters) {
+                    return $qry->where('yearmon', '<=', $filters['toYM']);
                 })
                 ->get();
             $harvests = $harvest_data->map(function ($harvest) {

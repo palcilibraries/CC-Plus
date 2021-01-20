@@ -24,7 +24,14 @@ class InstitutionGroupController extends Controller
      */
     public function index(Request $request)
     {
-        $data = InstitutionGroup::orderBy('name', 'ASC')->get()->toArray();
+        $groups = InstitutionGroup::with('institutions:id,name')->orderBy('name', 'ASC')->get();
+
+        $data = array();
+        foreach ($groups as $group) {
+            $members = $group->institutions->pluck('id')->toArray();
+            $group->not_members = Institution::whereNotIn('id',$members)->get(['id','name'])->toArray();
+            $data[] = $group->toArray();
+        }
         return view('institutiongroups.index', compact('data'));
     }
 
@@ -51,6 +58,9 @@ class InstitutionGroupController extends Controller
         ]);
 
         $group = InstitutionGroup::create(['name' => $request->input('name')]);
+        $group->institutions = array();
+        $group->not_members = Institution::get(['id','name'])->toArray();
+
         return response()->json(['result' => true, 'msg' => 'Group created successfully', 'group' => $group]);
     }
 
@@ -62,17 +72,17 @@ class InstitutionGroupController extends Controller
      */
     public function show($id)
     {
-        $data = InstitutionGroup::with('institutions')->findOrFail($id);
-        $members = $data->institutions->sortBy('name')->values()->toArray();
-        $member_ids = $data->institutions->pluck('id');
-        $not_members = Institution::whereNotIn('id', $member_ids)
-                           ->where(function ($query) use ($id) {
-                               $query->where('id', '<>', 1)->where('is_active', true);
-                           })
-                           ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
-        $group = $data->toArray();
-        $group['institutions'] = $members;
-        return view('institutiongroups.edit', compact('group', 'not_members'));
+    //     $data = InstitutionGroup::with('institutions')->findOrFail($id);
+    //     $members = $data->institutions->sortBy('name')->values()->toArray();
+    //     $member_ids = $data->institutions->pluck('id');
+    //     $not_members = Institution::whereNotIn('id', $member_ids)
+    //                        ->where(function ($query) use ($id) {
+    //                            $query->where('id', '<>', 1)->where('is_active', true);
+    //                        })
+    //                        ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+    //     $group = $data->toArray();
+    //     $group['institutions'] = $members;
+    //     return view('institutiongroups.edit', compact('group', 'not_members'));
     }
 
     /**
@@ -83,17 +93,17 @@ class InstitutionGroupController extends Controller
      */
     public function edit($id)
     {
-        $data = InstitutionGroup::with('institutions')->findOrFail($id);
-        $members = $data->institutions->sortBy('name')->values()->toArray();
-        $member_ids = $data->institutions->pluck('id');
-        $not_members = Institution::whereNotIn('id', $member_ids)
-                           ->where(function ($query) use ($id) {
-                               $query->where('id', '<>', 1)->where('is_active', true);
-                           })
-                           ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
-        $group = $data->toArray();
-        $group['institutions'] = $members;
-        return view('institutiongroups.edit', compact('group', 'not_members'));
+    //     $data = InstitutionGroup::with('institutions')->findOrFail($id);
+    //     $members = $data->institutions->sortBy('name')->values()->toArray();
+    //     $member_ids = $data->institutions->pluck('id');
+    //     $not_members = Institution::whereNotIn('id', $member_ids)
+    //                        ->where(function ($query) use ($id) {
+    //                            $query->where('id', '<>', 1)->where('is_active', true);
+    //                        })
+    //                        ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+    //     $group = $data->toArray();
+    //     $group['institutions'] = $members;
+    //     return view('institutiongroups.edit', compact('group', 'not_members'));
     }
 
     /**
@@ -105,9 +115,10 @@ class InstitutionGroupController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $group = InstitutionGroup::findOrFail($id);
+        $group = InstitutionGroup::with('institutions:id,name')->findOrFail($id);
         $this->validate($request, [
           'name' => 'required',
+          'institutions' => 'required',
         ]);
         // Update group name
         $group->name = $request->input('name');
@@ -118,7 +129,15 @@ class InstitutionGroupController extends Controller
         foreach ($request->institutions as $inst) {
             $group->institutions()->attach($inst['id']);
         }
-        return response()->json(['result' => true, 'msg' => 'Group updated successfully']);
+
+        // Build returned group data the way index() does
+        $data = array();
+        $member_ids = $group->institutions->pluck('id')->toArray();
+        $group->not_members = Institution::whereNotIn('id',$member_ids)->get(['id','name'])->toArray();
+        $data = $group->toArray();
+        $data['institutions'] = $request->institutions;
+
+        return response()->json(['result' => true, 'msg' => 'Group updated successfully', 'group' => $data]);
     }
 
     /**

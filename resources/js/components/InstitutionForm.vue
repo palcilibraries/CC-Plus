@@ -191,7 +191,8 @@
                             this.success = response.msg;
                             this.mutable_inst.name = this.form.name;
                             this.mutable_inst.type_id = this.form.type_id;
-                            this.inst_type = this.types[this.form.type_id].name;
+                            const instType = this.types.find(t => t.id === this.form.type_id);
+                            this.inst_type = instType.name;
                             this.mutable_inst.is_active = this.form.is_active;
                             this.status = this.statusvals[this.form.is_active];
                             this.mutable_inst.fte = this.form.fte;
@@ -227,7 +228,8 @@
                              // Replace values in mutable array with response data
                              this.mutable_inst.name = response.data.inst_data['name'];
                              this.mutable_inst.type_id = response.data.inst_data['type_id'];
-                             this.inst_type = this.types[this.mutable_inst.type_id].name;
+                             const instType = this.types.find(t => t.id === this.mutable_inst.type_id);
+                             this.inst_type = instType.name;
                              this.mutable_inst.is_active = response.data.inst_data['is_active'];
                              this.status = this.statusvals[this.mutable_inst.is_active];
                              this.mutable_inst.fte = response.data.inst_data['fte'];
@@ -282,7 +284,8 @@
         mounted() {
             this.showForm = '';
             this.status=this.statusvals[this.institution.is_active];
-            this.inst_type = this.types[this.institution.type_id-1].name;
+            const instType = this.types.find(t => t.id === this.institution.type_id);
+            this.inst_type = instType.name;
             console.log('Institution Component mounted.');
         }
     }

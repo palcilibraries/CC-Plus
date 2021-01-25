@@ -118,14 +118,16 @@ class InstitutionGroupController extends Controller
         $group = InstitutionGroup::with('institutions:id,name')->findOrFail($id);
         $this->validate($request, [
           'name' => 'required',
-          'institutions' => 'required',
         ]);
+
         // Update group name
         $group->name = $request->input('name');
         $group->save();
 
         // Reset membership assignments
-        $group->institutions()->detach();
+        if ($group->institutions()->count() > 0) {
+            $group->institutions()->detach();
+        }
         foreach ($request->institutions as $inst) {
             $group->institutions()->attach($inst['id']);
         }

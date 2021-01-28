@@ -1,0 +1,16 @@
+{
+	"autoload" : {
+		"psr-4" : {
+			"ubfr\\c5tools\\" : "src"
+		}
+	},
+	"name" : "ubfr/c5tools",
+	"type" : "library",
+	"description" : "COUNTER Release 5 Tools",
+	"license" : "Apache-2.0",
+	"require" : {
+		"php" : ">=7.2",
+		"ext-fileinfo" : "*",
+		"phpoffice/phpspreadsheet" : "~1.10"
+	}
+}

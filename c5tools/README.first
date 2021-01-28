@@ -1,0 +1,18 @@
+COUNTER Release 5 Tools : Readme!
+
+This folder contains a pre-release version of the Counter-5 Tools package
+(c5tools) written by Bernd Oberknapp. He has graciously allowed CC-Plus to
+bundle it into this project while he is still working on it. This current
+instantiation is stable for CC-Plus purposes, and CC-Plus currently uses
+it to process and validate SUSHI reports delivered by content providers.
+
+The full release of the c5tools software is expected in Spring/Summer
+of 2021. Once the c5tools package is fully released, this folder will be
+removed and the CC-Plus application will be adapted to utilize the updated
+functionality in the package and resolve this dependency via npm/composer
+instead of explicitly including it.
+
+So , long story short:
+  Three cheers for Bernd!
+  This folder will disappear once c5tools is fully released and integrated
+  into CC-Plus.

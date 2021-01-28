@@ -468,7 +468,8 @@ class Counter5Processor extends Model
     {
         $platform_id = 1;   //default is blank
         if ($input_platform != "") {
-            $platform = Platform::firstOrCreate(['name' => $input_platform]);
+            $_plat_name = substr($input_platform, 0, intval(config('ccplus.max_name_length')));
+            $platform = Platform::firstOrCreate(['name' => $_plat_name]);
             $platform_id = $platform->id;
         }
         return $platform_id;
@@ -486,7 +487,8 @@ class Counter5Processor extends Model
     {
         $publisher_id = 1;  //default is blank
         if ($input_publisher != "") {
-            $publisher = Publisher::firstOrCreate(['name' => $input_publisher]);
+            $_pub_name = substr($input_publisher, 0, intval(config('ccplus.max_name_length')));
+            $publisher = Publisher::firstOrCreate(['name' => $_pub_name]);
             $publisher_id = $publisher->id;
         }
         return $publisher_id;
@@ -504,7 +506,8 @@ class Counter5Processor extends Model
     {
         $accesstype_id = 1;     // Controlled
         if ($input_type != "") {
-            $accesstype = AccessType::firstOrCreate(['name' => $input_type]);
+            $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+            $accesstype = AccessType::firstOrCreate(['name' => $_type_name]);
             $accesstype_id = $accesstype->id;
         }
         return $accesstype_id;
@@ -522,7 +525,8 @@ class Counter5Processor extends Model
     {
         $accessmethod_id = 1;   // Regular
         if ($input_method != "") {
-            $accessmethod = AccessMethod::firstOrCreate(['name' => $input_method]);
+            $_method_name = substr($input_method, 0, intval(config('ccplus.max_name_length')));
+            $accessmethod = AccessMethod::firstOrCreate(['name' => $_method_name]);
             $accessmethod_id = $accessmethod->id;
         }
         return $accessmethod_id;
@@ -541,7 +545,8 @@ class Counter5Processor extends Model
         if ($input_type == "") {
             $input_type = "Unknown";
         }
-        $datatype = DataType::firstOrCreate(['name' => $input_type]);
+        $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+        $datatype = DataType::firstOrCreate(['name' => $_type_name]);
         return $datatype;
     }
 
@@ -557,7 +562,8 @@ class Counter5Processor extends Model
     {
         $sectiontype_id = 1;    // default is blank
         if ($input_type != "") {
-            $sectiontype = SectionType::firstOrCreate(['name' => $input_type]);
+            $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+            $sectiontype = SectionType::firstOrCreate(['name' => $_type_name]);
             $sectiontype_id = $sectiontype->id;
         }
         return $sectiontype_id;
@@ -578,13 +584,13 @@ class Counter5Processor extends Model
         $Values = ['type' => "", 'ISBN' => "", 'ISSN' => "", 'eISSN' => "", 'DOI' => "", 'PropID' => "", 'URI' => ""];
         foreach ($Item_ID as $_id) {
             if ($_id->Type == "ISBN") {
-                $Values['ISBN'] = $_id->Value;
+                $Values['ISBN'] = substr($_id->Value, 0, intval(config('ccplus.max_name_length')));
             }
             if ($_id->Type == "Print_ISSN") {
-                $Values['ISSN'] = $_id->Value;
+                $Values['ISSN'] = substr($_id->Value, 0, intval(config('ccplus.max_name_length')));
             }
             if ($_id->Type == "Online_ISSN") {
-                $Values['eISSN'] = $_id->Value;
+                $Values['eISSN'] = substr($_id->Value, 0, intval(config('ccplus.max_name_length')));
             }
             if ($_id->Type == "DOI") {
                 $Values['DOI'] = substr($_id->Value, 0, 256);

@@ -49,7 +49,8 @@
       </v-row>
       <v-row class="d-flex pa-1 align-center" no-gutters>
         <v-col class="d-flex px-2" cols="4" sm="2">
-          <v-select :items='bulk_actions' v-model='bulkAction' @change="processBulk()" label="Bulk Actions"
+          <v-select :items='bulk_actions' v-model='bulkAction' @change="processBulk()"
+                    item-text="action" item-value="status" label="Bulk Actions"
                     :disabled='selectedRows.length==0'></v-select>
         </v-col>
         <v-col v-if="selectedRows.length>0" class="d-flex px-4 align-center" cols="8" sm="4">
@@ -103,7 +104,10 @@
         mutable_options: {},
         statuses: ['Success', 'Fail', 'New', 'Queued', 'Active', 'Pending', 'Stopped', 'ReQueued'],
         status_changeable: ['Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
-        bulk_actions: ['Stop', 'Restart', 'Delete'],
+        bulk_actions: [ { action:'Stop',    status:'Stopped'},
+                        { action:'Restart', status:'Queued'},
+                        { action:'Delete',  status:'Delete'}
+                      ],
         harv: {},
         selectedRows: [],
         minYM: '',

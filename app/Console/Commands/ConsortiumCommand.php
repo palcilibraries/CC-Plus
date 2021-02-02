@@ -42,7 +42,7 @@ class ConsortiumCommand extends Command
     {
       // Get basic info for the new consortium
         $conso_data['name'] = $this->ask('New consortium name?');
-        $conso_data['email'] = $this->ask('Primary email for the cosortium?');
+        $conso_data['email'] = $this->ask('Primary email for the consortium?');
         $conso_data['ccp_key'] = $this->ask('Provide a unique database key for the consortium
   (default creates a random string) []');
         if ($conso_data['ccp_key'] == "") {
@@ -99,15 +99,20 @@ class ConsortiumCommand extends Command
             '--path' => '/database/migrations/con_template',
             '--database' => 'consodb',
         ]);
-        $this->line('<fg=cyan>New database migration completed with status: ' . $exitCode);
+        if ($exitCode == 0) {
+            $this->line('<fg=cyan>New database migration completed successfully.');
+        } else {
+            $this->line('<fg=red>New database migration returned status: ' . $exitCode);
+        }
 
       // Run seeds on the new database
         $exitCode = $this->call('db:seed');
-        $this->line('<fg=cyan>Initial database seeding completed with status: ' . $exitCode);
+        if ($exitCode == 0) {
+            $this->line('<fg=cyan>Database successfully seeded.');
+        } else {
+            $this->line('<fg=red>Database seeding returned status: ' . $exitCode);
+        }
 
-//-->> THIS...
-//     Probably needs to execute as an exec() by the installer's acccount
-//     under the shell... otherwise, the conso_admin account needs GRANT OPTION?
       // Grants for consortia admin and user access to the MySQL database
         $_grant_Adm  = "GRANT ALL on `" . $conso_db . "`.* TO '" . $admin_user . "'@'" . $_host .
                        "' identified by '" . $admin_pass . "'";
@@ -121,12 +126,11 @@ class ConsortiumCommand extends Command
 
       // Update global consortia database table
         DB::table($global_db . '.consortia')->insert($conso_data);
-        $this->line('<fg=cyan>Consortia added to global database.');
+        $this->line('<fg=cyan>Consortium added to global database.');
 
       // Create the Administrator account in the users table
         $this->info('The initial Administrator acccount for a new consortium is always created with');
         $this->info('an email address set to "Administrator".');
-        // $_pass = $this->secret('Enter a password for this Administrator account?');
         // Not sure this should be secret... if they typo it, it's difficult to reset
         $_pass = $this->ask('Enter a password for this Administrator account?');
         DB::table($conso_db . ".users")->insert([

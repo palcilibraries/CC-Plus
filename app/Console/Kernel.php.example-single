@@ -13,13 +13,13 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-      Commands\ConsortiumCommand::class,
-      Commands\C5Test::class,
-      Commands\SushiBatch::class,
-      Commands\SushiQLoader::class,
-      Commands\SushiQWorker::class,
-      Commands\DataArchiveCommand::class,
-      Commands\DataPurgeCommand::class,
+        Commands\ConsortiumCommand::class,
+        Commands\C5Test::class,
+        Commands\SushiBatch::class,
+        Commands\SushiQLoader::class,
+        Commands\SushiQWorker::class,
+        Commands\DataArchiveCommand::class,
+        Commands\DataPurgeCommand::class,
     ];
 
     /**
@@ -31,9 +31,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
     /*----------------------------------------------------------------------------------
-     * Example scheduler setup for a 2-consortia system. Each consortium uses a daily
-     * queue-loading process (:sushiloader) and 2 queue worker processes that execute
-     * every ten minutes (and then exit if there's nothing to do.)
+     * Example scheduler setup for a single consortia setup. A daily queue-loading
+     * process (:sushiloader) and 2 queue worker processes will execute every ten
+     * minutes (and then exit if there's nothing to do.)
      *
      * Note that the *_QW2 workers have a 5-second startup delay to prevent the _QW1 and
      * _QW2 processes from trying to grab the same job when they start.
@@ -42,20 +42,12 @@ class Kernel extends ConsoleKernel
      *----------------------------------------------------------------------------------
      */
       /*
-       * Consortium #1
+       * Settings for Consortium (ID=1)
        */
         $schedule->command('ccplus:sushiloader 1')->daily();
         $schedule->command('ccplus:sushiqw 1 Conso1_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
                                               ->appendOutputTo('/var/log/ccplus/harvests.log');
         $schedule->command('ccplus:sushiqw 1 Conso1_QW2 5')->runInBackground()->everyTenMinutes()->withoutOverlapping()
-                                              ->appendOutputTo('/var/log/ccplus/harvests.log');
-      /*
-       * Consortium #2
-       */
-        $schedule->command('ccplus:sushiloader 2')->daily();
-        $schedule->command('ccplus:sushiqw 2 Conso2_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
-                                              ->appendOutputTo('/var/log/ccplus/harvests.log');
-        $schedule->command('ccplus:sushiqw 2 Conso2_QW2 5')->runInBackground()->everyTenMinutes()->withoutOverlapping()
                                               ->appendOutputTo('/var/log/ccplus/harvests.log');
     }
 

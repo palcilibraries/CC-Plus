@@ -29,7 +29,7 @@
         </template>
       </v-data-table>
     </div>
-    <v-dialog v-model="importDialog" max-width="1200px">
+    <v-dialog v-model="importDialog" persistent max-width="1200px">
       <v-card>
         <v-card-title>Import Institutions</v-card-title>
         <v-spacer></v-spacer>
@@ -76,7 +76,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="instDialog" max-width="500px">
+    <v-dialog v-model="instDialog" persistent max-width="500px">
       <v-card>
         <v-card-title>
           <span>Create a new institution</span>

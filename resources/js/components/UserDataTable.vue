@@ -31,7 +31,7 @@
         </template>
       </v-data-table>
     </div>
-    <v-dialog v-model="importDialog" max-width="1200px">
+    <v-dialog v-model="importDialog" persistent max-width="1200px">
       <v-card>
         <v-card-title>Import Users</v-card-title>
         <v-spacer></v-spacer>
@@ -83,7 +83,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="userDialog" max-width="800px">
+    <v-dialog v-model="userDialog" persistent max-width="800px">
       <v-card>
         <v-card-title>
           <span v-if="dialogType=='edit'">Edit user settings</span>

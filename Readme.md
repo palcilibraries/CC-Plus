@@ -11,17 +11,17 @@ Once the application is installed, the application administrator will need to co
 ## Table of Contents
 * [Prerequisites](#prerequisites)
 * [Installation](#installation)
-    + [Step 1: Apache](#step-1:-apache)
-    + [Step 2: Download the Application](#step-2:-download-the-application)
-    + [Step 3: Setup the Environment](#step-3:-setup-the-environment)
-    + [Step 4: Install the application](#step-4:-install-the-application)
-    + [Step 5: Update the Webserver Directory](#step-5:-update-the-webserver-directory)
-    + [Step 6: Setup Initial Databases](#step-6:-setup-initial-databases)
-    + [Step 7: Migrate Initial Database Tables](#step-7:-migrate-initial-database-tables)
-    + [Step 8: Seed Tables](#step-8:-seed-tables)
-    + [Step 9: Add a Consortium](#step-9:-add-a-consortium)
+    + [Step 1: Apache](#step-1-apache)
+    + [Step 2: Download the Application](#step-2-download-the-application)
+    + [Step 3: Setup the Environment](#step-3-setup-the-environment)
+    + [Step 4: Install the application](#step-4-install-the-application)
+    + [Step 5: Update the Webserver Directory](#step-5-update-the-webserver-directory)
+    + [Step 6: Setup Initial Databases](#step-6-setup-initial-databases)
+    + [Step 7: Migrate Initial Database Tables](#step-7-migrate-initial-database-tables)
+    + [Step 8: Seed Tables](#step-8-seed-tables)
+    + [Step 9: Add a Consortium](#step-9-add-a-consortium)
     + [Step 10: Define Harvesting Schedule (Optional)](#step-10-define-harvesting-schedule-optional)
-    + [Step 11: Add Scheduler to System Cron (Optional)](#step-10-add-scheduler-to-system-cron-optional)
+    + [Step 11: Add Scheduler to System Cron (Optional)](#step-11-add-scheduler-to-system-cron-optional)
 * [CC-Plus Artisan Commands](#cc-plus-artisan-commands)
 * [License](#license)
 
@@ -236,7 +236,7 @@ $
 You should now be able to connect and login to the application using the Administrator credential for your initial consortium!
 
 ### Step 10: Define Harvesting Schedule (Optional)
-Automated harvesting for CC-Plus is defined using the schedule defined in `app/Console/Kernel.php` (which we created in [Step 4, above] (#step-4:-install-the-application)). The initial file is configured to automate harvesting for a single consortium using two queue handler processes (workers) which are scheduled to run every ten minutes. This means that at least one of the workers will wake and check for recently queued jobs every 10-minutes. An example file for a two-consortium configuration is also included, named: `Kernel.php.example-multiple`.
+Automated harvesting for CC-Plus is defined using the schedule defined in `app/Console/Kernel.php` (which we created in [Step 4, above] (#step-4-install-the-application)). The initial file is configured to automate harvesting for a single consortium using two queue handler processes (workers) which are scheduled to run every ten minutes. This means that at least one of the workers will wake and check for recently queued jobs every 10-minutes. An example file for a two-consortium configuration is also included, named: `Kernel.php.example-multiple`.
 
 More details on scheduling tasks in Laravel applications can be found [here: https://laravel.com/docs/8.x/scheduling](https://laravel.com/docs/8.x/scheduling)
 ### Step 11: Add Scheduler to System Cron (Optional)
@@ -257,19 +257,19 @@ $ cd /usr/local/CC-Plus
 $ php artisan help ccplus:addconsortium
 ```
 A brief description for each command is below. See the help screen for each command for complete details on arguments and options.
-* ccplus:addconsortium
+* ccplus:addconsortium  
 	Adds a database and administrator credential to a CC-Plus host system
-* ccplus:data-archive
+* ccplus:data-archive  
 	Exports stored CC-Plus report data, institution/provider configuration, and, optionally, global table data to an importable .SQL file.  
-* ccplus:data-purge
+* ccplus:data-purge  
 	Removes stored CC-Plus report data from the database.
-* ccplus:sushibatch
+* ccplus:sushibatch  
 	Command-line submission to batch-process the submission of report harvests
-* ccplus:sushiloader
+* ccplus:sushiloader  
 	Intended to run nightly by the Kernel.php scheduler, this command scans the SUSHI settings for all institutions and providers within a consortium and loads requests into the gloabl jobs queue (globaldb:jobs table).
-* ccplus:sushiqw
+* ccplus:sushiqw  
 	Intended to run by the Kernel,php scheduler (by default every 10 minutes), this command scans the jobs queue, issues SUSHI requests to report providers, and stores/logs the results.
-* ccplus:C5test
+* ccplus:C5test  
 	This is a command for testing raw report data. Accepts COUNTER-5 JSON report data from a file and attempts to validate and store it in the running system
 
 ## License

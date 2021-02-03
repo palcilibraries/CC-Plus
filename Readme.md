@@ -1,5 +1,5 @@
 # Library Usage Statistics Harvesting and Reporting
-![banner image from documentation folder](img/cc-plus-banner.png?raw=true)
+![banner image from documentation folder](docs/cc-plus-banner.png?raw=true)
 ## A configurable application for collecting library usage data
 This project has been generously supported by funding from the [Institute of Museum and Library Services (IMLS)](https://imls.gov/grants/grant-programs) and the vision, time, and expertise of mulitple consortia and volunteers across North America and Europe. Full details the project partners, funding and objectives can be found [here:  http://www.palci.org/cc-plus-overview/](http://www.palci.org/cc-plus-overview/).
 
@@ -44,7 +44,7 @@ Once the application is installed, the application administrator will need to co
 ### Step 1: Apache
 Make sure you have a working [apache server configured](https://httpd.apache.org/docs/2.4/), including `mod_rewrite`, for serving the pulicly-accessible elements of the CC-Plus application. For the purposes of these instructions, we will refer to this place as: `/var/www/ccplus/`.
 
-Define the public-facing web directory settings something along the lines of: 
+Define the public-facing web directory settings something along the lines of:
 ```bash
         DocumentRoot "/var/www/ccplus"
 		. . . .
@@ -55,7 +55,7 @@ Define the public-facing web directory settings something along the lines of:
             allow from all
         </Directory>
 ```
-Enable mod_rewrite for Apache: 
+Enable mod_rewrite for Apache:
 ```bash
 # mkdir /var/www/ccplus
 # a2enmod rewrite
@@ -140,9 +140,9 @@ Setup `public/index.php` to reflect the installation path for the application. I
 $ cd /usr/local/CC-Plus/public/
 $ mv index.php.example::q ./index.php
 $ vi index.php
-   . . . . 
+   . . . .
 	define('_CCPHOME_','/usr/local/CC-Plus');  // Modify this line if necessary
-   . . . . 
+   . . . .
 $ cd ..
 ```
 Then copy the publicly accessible files to the public webserver folder:
@@ -204,7 +204,7 @@ $ php artisan ccplus:addconsortium
   Provide a unique database key for the consortium
    (default creates a random string) []:
   > MyCon1
-  
+
   Make it active (Y/N) [Y]?:
   > Y
 
@@ -229,7 +229,7 @@ an email address set to "Administrator".
 New consortium: MyConsortium Successfully Created.
 NOTE: app/Console/Kernel.php needs updating in order to automate harvesting!
 $
- 
+
 ```
 
 ** Congratulations **

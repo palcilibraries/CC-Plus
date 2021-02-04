@@ -27,7 +27,7 @@ Once the application is installed, the application administrator will need to co
 
 ## Prerequisites
 * Apache 2.4+
-	* Make sure `mod_rewrite` is enabled (_ # a2enmod rewrite_ )
+	* Make sure `mod_rewrite` is enabled
 * MySQL (5.6+) or MariaDB (10.3+)
 * PHP: 7.3+ including
 	* php-gd

@@ -245,14 +245,18 @@ class HarvestLogController extends Controller
     {
         $thisUser = auth()->user();
         abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
-
-        // Get args from the $input
         $this->validate(
             $request,
-            ['inst' => 'required', 'inst_group_id' => 'required', 'prov' => 'required', 'reports' => 'required',
-             'fromYM' => 'required', 'toYM' => 'required', 'when' => 'required']
+            ['prov' => 'required', 'reports' => 'required', 'fromYM' => 'required', 'toYM' => 'required',
+             'when' => 'required']
         );
         $input = $request->all();
+        if (!isset($input["inst"]) || !isset($input["inst_group_id"])) {
+            return response()->json(['result' => false, 'msg' => 'Error: Missing input arguments!']);
+        }
+        if (sizeof($input["inst"]) == 0 && $input["inst_group_id"] <= 0) {
+            return response()->json(['result' => false, 'msg' => 'Error: Institution/Group invalid in request']);
+        }
         $user_inst =$thisUser->inst_id;
         $is_admin =$thisUser->hasRole('Admin');
 

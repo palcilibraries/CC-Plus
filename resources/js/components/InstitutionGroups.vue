@@ -97,12 +97,12 @@
                   </template>
                 </v-col>
                 <v-col>
-                  <v-select :items="current_group.not_members" v-model="curInst" return-object
-                            item-text="name" item-value="id" label="Add Institution" @change="addInst"
-                            hint="Add institution to the group" persistent-hint></v-select>
-                  <v-select :items="current_group.institutions" v-model="curInst" return-object
-                            item-text="name" item-value="id" label="Remove Institution" @change="delInst"
-                            hint="Remove institution from the group" persistent-hint></v-select>
+                  <v-autocomplete :items="current_group.not_members" v-model="curInst" return-object
+                    item-text="name" item-value="id" label="Add Institution" @change="addInst"
+                    hint="Add institution to the group" persistent-hint></v-autocomplete>
+                  <v-autocomplete :items="current_group.institutions" v-model="curInst" return-object
+                    item-text="name" item-value="id" label="Remove Institution" @change="delInst"
+                    hint="Remove institution from the group" persistent-hint></v-autocomplete>
                 </v-col>
               </v-row>
             </v-container>

@@ -545,10 +545,15 @@ class HarvestLogController extends Controller
             $rec['attempted'] = date("Y-m-d H:i:s", strtotime($harvest->created_at));
             array_unshift($attempts,$rec);
         } else {
-            // Just in case the failed records have been deleted or are missing for some reason
+            // Harvests could have prior failures, but attampes has been reset to zero to requeue ot
             if (sizeof($attempts) == 0) {
-                $attempts[] = array('severity' => "Unknown", 'message' => "Failure records are missing!",
-                                    'attempted' => "Unknown");
+                if ($harvest->attempts == 0) {
+                    $attempts[] = array('severity' => "Unknown", 'message' => "Harvest has not yet been attempted",
+                                        'attempted' => "Unknown");
+                } else {
+                    $attempts[] = array('severity' => "Unknown", 'message' => "Failure records are missing!",
+                                        'attempted' => "Unknown");
+                }
             }
         }
 

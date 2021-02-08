@@ -1,9 +1,13 @@
 <template>
   <div>
     <div>
-      <v-row>
-        <v-col cols="2"><v-btn small color="primary" @click="importForm">Import Groups</v-btn></v-col>
-        <v-col><v-btn small color="primary" @click="createForm">Create a new group</v-btn></v-col>
+      <v-row class="d-flex ma-0">
+        <v-col class="d-flex px-2" cols="4">
+          <v-btn small color="primary" @click="importForm">Import Groups</v-btn>
+        </v-col>
+        <v-col class="d-flex px-2" cols="4">
+          <v-btn small color="primary" @click="createForm">Create a new group</v-btn>
+        </v-col>
       </v-row>
       <v-row>
         <v-col cols="1">Export to:</v-col>

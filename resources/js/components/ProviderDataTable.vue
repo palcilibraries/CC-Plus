@@ -1,9 +1,13 @@
 <template>
   <div>
     <div>
-      <v-row v-if="is_admin">
-        <v-col cols="2"><v-btn small color="primary" @click="importForm">Import Providers</v-btn></v-col>
-        <v-col><v-btn small color="primary" @click="createForm">Create a Provider</v-btn></v-col>
+      <v-row v-if="is_admin" class="d-flex ma-0">
+        <v-col class="d-flex px-2" cols="4">
+          <v-btn small color="primary" @click="importForm">Import Providers</v-btn>
+        </v-col>
+        <v-col class="d-flex px-2" cols="4">
+          <v-btn small color="primary" @click="createForm">Create a Provider</v-btn>
+        </v-col>
       </v-row>
       <v-row>
         <v-col cols="1">Export to:</v-col>

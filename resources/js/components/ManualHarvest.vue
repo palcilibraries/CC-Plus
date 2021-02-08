@@ -8,7 +8,7 @@
       <div v-if="this.is_admin">
         <v-row class="d-flex align-mid">
           <v-col v-if="form.inst_group_id==0" class="d-flex ma-2" cols="3" sm="3">
-            <v-select
+            <v-autocomplete
               :items="institutions"
               v-model="form.inst"
               @change="onInstChange"
@@ -17,13 +17,13 @@
               item-text="name"
               item-value="id"
               hint="Institution(s) to Harvest"
-            ></v-select>
+            ></v-autocomplete>
           </v-col>
           <v-col v-if="form.inst.length==0 && form.inst_group_id==0 " class="d-flex" cols="1" sm="1">
             <strong>OR</strong>
           </v-col>
           <v-col v-if="form.inst.length==0" class="d-flex ma-2" cols="3" sm="3">
-            <v-select
+            <v-autocomplete
                 :items="inst_groups"
                 v-model="form.inst_group_id"
                 @change="onGroupChange"
@@ -31,7 +31,7 @@
                 item-text="name"
                 item-value="id"
                 hint="Institution group to harvest"
-            ></v-select>
+            ></v-autocomplete>
           </v-col>
         </v-row>
       </div>
@@ -42,7 +42,7 @@
       </v-row>
       <v-row v-if="available_providers.length>0">
         <v-col class="ma-2" cols="3" sm="3">
-          <v-select
+          <v-autocomplete
             :items="available_providers"
             v-model="form.prov"
             @change="onProvChange"
@@ -51,7 +51,7 @@
             item-text="name"
             item-value="id"
             hint="Provider(s) to Harvest"
-          ></v-select>
+          ></v-autocomplete>
         </v-col>
       </v-row>
       <v-row v-if="available_reports.length>0">

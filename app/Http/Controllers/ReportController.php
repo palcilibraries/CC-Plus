@@ -232,7 +232,7 @@ class ReportController extends Controller
                                                         ->get(['id','name'])->toArray();
 
             $filter_options['provider'] = Provider::with('reports')->whereIn('id', $provs_with_data)
-                                                  ->where(function ($query) {
+                                                  ->where(function ($query) use ($thisUser) {
                                                       $query->where('inst_id', 1)
                                                             ->orWhere('inst_id', $thisUser->inst_id);
                                                   })

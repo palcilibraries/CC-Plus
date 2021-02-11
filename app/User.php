@@ -29,6 +29,10 @@ class User extends Authenticatable
         'name', 'email', 'email_verified_at', 'password', 'inst_id', 'phone',
         'optin_alerts', 'is_active', 'password_change_required'
     ];
+    protected $casts =[
+        'id'=>'integer', 'inst_id'=>'integer', 'optin_alerts'=>'integer', 'is_active'=>'integer',
+        'password_change_required'=>'integer'
+    ];
 
     /**
      * The attributes that should be hidden for arrays.

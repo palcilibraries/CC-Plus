@@ -23,6 +23,7 @@ class Institution extends Model
          'id', 'name', 'is_active', 'notes', 'type_id', 'password', 'sushiIPRange',
          'shibURL', 'fte'
     ];
+    protected $casts =['id'=>'integer', 'is_active'=>'integer', 'type_id'=>'integer'];
 
     public function canManage()
     {

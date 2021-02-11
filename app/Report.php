@@ -25,6 +25,7 @@ class Report extends Model
     protected $fillable = [
         'name', 'legend', 'type', 'revision', 'parent_id', 'inherited_fields'
     ];
+    protected $casts =['id'=>'integer', 'parent_id'=>'integer'];
 
     // Return the reportField relationship
     public function reportFields()

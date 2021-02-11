@@ -23,6 +23,7 @@ class Role extends Model
      * @var array
      */
     protected $fillable = [ 'id', 'name', 'description' ];
+    protected $casts =['id'=>'integer'];
 
     public function users()
     {

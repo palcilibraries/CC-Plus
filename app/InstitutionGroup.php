@@ -18,6 +18,7 @@ class InstitutionGroup extends Model
    * @var array
    */
     protected $fillable = [ 'id', 'name' ];
+    protected $casts =['id'=>'integer'];
 
     public function institutions()
     {

@@ -269,6 +269,7 @@ class InstitutionTypeController extends Controller
             if (isset($row[0])) {
                 // Ignore bad/missing ID
                 if ($row[0] != "" && is_numeric($row[0]) && $row[0] > 1) {
+                    $_tid = intval($row[0]);
                     // If we're adding and the name already exists, skip it
                     if ($request->input('type') == 'New Additions') {
                         $existing_name = $current_types->where("name", "=", $row[1])->first();
@@ -279,7 +280,7 @@ class InstitutionTypeController extends Controller
                     }
 
                     // Check for an existing ID
-                    $existing_type = $current_types->where("id", "=", $row[0])->first();
+                    $existing_type = $current_types->where("id", "=", $_tid)->first();
                     if (!is_null($existing_type)) {
                         if (!is_null($row[1])) {
                             $existing_type->name = $row[1];
@@ -291,7 +292,7 @@ class InstitutionTypeController extends Controller
                         if (!is_null($row[1])) {
                             $_name = trim($row[1]);
                             if (strlen($_name) > 0) {
-                                $new_type = InstitutionType::create(array('id' => $row[0], 'name' => $_name));
+                                $new_type = InstitutionType::create(array('id' => $_tid, 'name' => $_name));
                                 $num_created++;
                             }
                         }

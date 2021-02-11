@@ -492,7 +492,7 @@ class UserController extends Controller
             if ($row[0] == "" || !is_numeric($row[0]) || sizeof($row) < 7) {
                 continue;
             }
-            $cur_user_id = $row[0];
+            $cur_user_id = intval($row[0]);
 
             // Update/Add the user data/settings
             // Check ID and name columns for silliness or errors
@@ -530,7 +530,7 @@ class UserController extends Controller
             $_name = ($row[3] == '') ? $_email : $row[3];
             $_phone = ($row[4] == '') ? $_email : $row[4];
             $_active = ($row[5] == 'N') ? 0 : 1;
-            $_inst = ($row[7] == '') ? 0 : $row[7];
+            $_inst = ($row[7] == '') ? 0 : intval($row[7]);
             $user_inst = $institutions->where('id', $_inst)->first();
             if (!$user_inst) {
                 $num_skipped++;

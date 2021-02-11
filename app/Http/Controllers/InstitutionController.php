@@ -128,7 +128,7 @@ class InstitutionController extends Controller
             array_push($users, $new_u);
         }
         $_name = array_column($users, "name");
-        array_multisort($_name, SORT_ASC, $users);        
+        array_multisort($_name, SORT_ASC, $users);
 
         // Related models we'll be passing
         $types = InstitutionType::get(['id','name'])->toArray();
@@ -516,7 +516,7 @@ class InstitutionController extends Controller
             if ($row[0] == "" || !is_numeric($row[0])) {
                 continue;
             }
-            $cur_inst_id = $row[0];
+            $cur_inst_id = intval($row[0]);
 
             // Disallow managers from modify settings of other insts
             if ($limit_inst > 0 && $cur_inst_id != $limit_inst || $cur_inst_id < 2) {
@@ -532,7 +532,7 @@ class InstitutionController extends Controller
                 // Check ID and name columns for silliness or errors
                 $_name = trim($row[1]);
                 $current_inst = $institutions->where("id", "=", $cur_inst_id)->first();
-                if (!is_null($current_inst)) {      // found existing ID
+                if ($current_inst) {      // found existing ID
                     if (strlen($_name) < 1) {       // If import-name empty, use current value
                         $_name = trim($current_inst->name);
                     } else {        // trap changing a name to a name that already exists
@@ -576,8 +576,8 @@ class InstitutionController extends Controller
 
                 // Set group membership(s)
                 $_group_ids = preg_split('/,/', $row[5]);
-                $current_inst->institutionGroups()->detach();
                 if (sizeof($_group_ids) > 0) {
+                    $current_inst->institutionGroups()->detach();
                     foreach ($_group_ids as $g) {
                         $g_id = trim($g);
                         if (is_numeric($g_id)) {
@@ -591,9 +591,10 @@ class InstitutionController extends Controller
             }
 
             // Handle Sushi Settings (as long as there's no issue from above and prov_id has a value)
-            $prov_id = trim($row[7]);
-            if (!$skip_sushi && $prov_id > 0 && is_numeric($prov_id)) {
+            $_prov = trim($row[7]);
+            if (!$skip_sushi && intval($_prov) > 0 && is_numeric($_prov)) {
                 // Put settings into an array
+                $prov_id = intval($_prov);
                 $provider = Provider::find($prov_id);
 
                 if (!is_null($provider)) {

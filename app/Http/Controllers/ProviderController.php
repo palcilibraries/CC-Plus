@@ -471,7 +471,7 @@ class ProviderController extends Controller
             if ($row[0] == "" || !is_numeric($row[0]) || sizeof($row) < 7) {
                 continue;
             }
-            $cur_prov_id = $row[0];
+            $cur_prov_id = intval($row[0]);
 
             // Update/Add the provider data/settings
             // Check ID and name columns for silliness or errors
@@ -503,7 +503,7 @@ class ProviderController extends Controller
             if ($row[5] == '') {
                 $_inst = 1;
             } else {
-                $_inst = $row[5];
+                $_inst = intval($row[5]);
                 $prov_inst = $institutions->where('id', $_inst)->first();
                 if (!$prov_inst) {
                     $prov_skipped++;
@@ -514,8 +514,8 @@ class ProviderController extends Controller
             // Enforce defaults
             $_active = ($row[2] == 'N') ? 0 : 1;
             $_url = ($row[3] == '') ? null : $row[3];
-            $_day = ($row[4] == '') ? 15 : $row[4];
-            if (!is_numeric($_day) || $_day < 1 || $_day > 28) {
+            $_day = ($row[4] == '') ? 15 : intval($row[4]);
+            if ($_day < 1 || $_day > 28) {
                 $_day = 15;
             }
 
@@ -538,7 +538,7 @@ class ProviderController extends Controller
             $_report_ids = preg_split('/,/', $row[6]);
             if (sizeof($_report_ids) > 0) {
                 foreach ($_report_ids as $r) {
-                    $r_id = trim($r);
+                    $r_id = intval(trim($r));
                     if (is_numeric($r_id)) {
                         $report = $master_reports->where('id', '=', $r_id)->first();
                         if ($report) {

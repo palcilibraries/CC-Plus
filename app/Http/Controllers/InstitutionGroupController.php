@@ -307,9 +307,10 @@ class InstitutionGroupController extends Controller
             if (isset($row[0])) {
                 // Ignore bad/missing ID
                 if ($row[0] != "" && is_numeric($row[0])) {
+                    $_gid = intval($row[0]);
                     // If we're adding and the name or id already exists, skip it
                     if ($request->input('type') == 'New Additions') {
-                        $existing_id = $current_groups->where("id", "=", $row[0])->first();
+                        $existing_id = $current_groups->where("id", "=", $_gid)->first();
                         $existing_name = $current_groups->where("name", "=", $row[1])->first();
                         if (!is_null($existing_id) || !is_null($existing_name)) {
                             $num_skipped++;
@@ -321,7 +322,7 @@ class InstitutionGroupController extends Controller
                     if (!is_null($row[1])) {
                         $_name = trim($row[1]);
                         if (strlen($_name) > 0) {
-                            $new_group = InstitutionGroup::create(array('id' => $row[0], 'name' => $_name));
+                            $new_group = InstitutionGroup::create(array('id' => $_gid, 'name' => $_name));
                             $num_created++;
                         }
                     }

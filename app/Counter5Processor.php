@@ -161,17 +161,24 @@ class Counter5Processor extends Model
        // Loop through all ReportItems
         foreach ($ReportItems as $reportitem) {
            // Database is required; if Null, skip the record.
-            $_database = (isset($reportitem->Database)) ? $reportitem->Database : "";
-            if ($_database == "") {
+            $_name = (isset($reportitem->Database)) ? $reportitem->Database : "";
+            if ($_name == "") {
                 continue;
+            }
+           // UTF8 Encode name if it isnt already UTF-8
+            $cur_encoding = mb_detect_encoding($_name);
+            if ($cur_encoding == "UTF-8" && mb_check_encoding($_name, "UTF-8")) {
+                $_database = $_name;
+            } else {
+                $_database = utf8_encode($_name);    // force to utf-8
             }
             $database = DataBase::firstOrCreate(['name' => $_database]);
 
-            // Get Publisher
-             $publisher_id = (isset($reportitem->Publisher)) ? self::getPublisher($reportitem->Publisher) : 1;
+           // Get Publisher
+            $publisher_id = (isset($reportitem->Publisher)) ? self::getPublisher($reportitem->Publisher) : 1;
 
-            // Get Platform
-             $platform_id = (isset($reportitem->Platform)) ? self::getPlatform($reportitem->Platform) : 1;
+           // Get Platform
+            $platform_id = (isset($reportitem->Platform)) ? self::getPlatform($reportitem->Platform) : 1;
 
            // Get PropID for this item, and update model if necessary
             $_item_id = (isset($reportitem->Item_ID)) ? $reportitem->Item_ID : array();
@@ -468,7 +475,13 @@ class Counter5Processor extends Model
     {
         $platform_id = 1;   //default is blank
         if ($input_platform != "") {
-            $_plat_name = substr($input_platform, 0, intval(config('ccplus.max_name_length')));
+           // UTF8 Encode name if it isnt already UTF-8
+            $cur_encoding = mb_detect_encoding($input_platform);
+            if ($cur_encoding == "UTF-8" && mb_check_encoding($input_platform, "UTF-8")) {
+                $_plat_name = substr($input_platform, 0, intval(config('ccplus.max_name_length')));
+            } else {        // force to utf-8
+                $_plat_name = substr(utf8_encode($input_platform), 0, intval(config('ccplus.max_name_length')));
+            }
             $platform = Platform::firstOrCreate(['name' => $_plat_name]);
             $platform_id = $platform->id;
         }
@@ -487,7 +500,13 @@ class Counter5Processor extends Model
     {
         $publisher_id = 1;  //default is blank
         if ($input_publisher != "") {
-            $_pub_name = substr($input_publisher, 0, intval(config('ccplus.max_name_length')));
+           // UTF8 Encode name if it isnt already UTF-8
+            $cur_encoding = mb_detect_encoding($input_publisher);
+            if ($cur_encoding == "UTF-8" && mb_check_encoding($input_publisher, "UTF-8")) {
+                $_pub_name = substr($input_publisher, 0, intval(config('ccplus.max_name_length')));
+            } else {        // force to utf-8
+                $_pub_name = substr(utf8_encode($input_publisher), 0, intval(config('ccplus.max_name_length')));
+            }
             $publisher = Publisher::firstOrCreate(['name' => $_pub_name]);
             $publisher_id = $publisher->id;
         }
@@ -506,7 +525,13 @@ class Counter5Processor extends Model
     {
         $accesstype_id = 1;     // Controlled
         if ($input_type != "") {
-            $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+           // UTF8 Encode name if it isnt already UTF-8
+            $cur_encoding = mb_detect_encoding($input_type);
+            if ($cur_encoding == "UTF-8" && mb_check_encoding($input_type, "UTF-8")) {
+                $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+            } else {        // force to utf-8
+                $_type_name = substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
+            }
             $accesstype = AccessType::firstOrCreate(['name' => $_type_name]);
             $accesstype_id = $accesstype->id;
         }
@@ -525,7 +550,13 @@ class Counter5Processor extends Model
     {
         $accessmethod_id = 1;   // Regular
         if ($input_method != "") {
-            $_method_name = substr($input_method, 0, intval(config('ccplus.max_name_length')));
+           // UTF8 Encode name if it isnt already UTF-8
+            $cur_encoding = mb_detect_encoding($input_method);
+            if ($cur_encoding == "UTF-8" && mb_check_encoding($input_method, "UTF-8")) {
+                $_method_name = substr($input_method, 0, intval(config('ccplus.max_name_length')));
+            } else {        // force to utf-8
+                $_method_name = substr(utf8_encode($input_method), 0, intval(config('ccplus.max_name_length')));
+            }
             $accessmethod = AccessMethod::firstOrCreate(['name' => $_method_name]);
             $accessmethod_id = $accessmethod->id;
         }
@@ -545,7 +576,13 @@ class Counter5Processor extends Model
         if ($input_type == "") {
             $input_type = "Unknown";
         }
-        $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+       // UTF8 Encode name if it isnt already UTF-8
+        $cur_encoding = mb_detect_encoding($input_type);
+        if ($cur_encoding == "UTF-8" && mb_check_encoding($input_type, "UTF-8")) {
+            $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+        } else {        // force to utf-8
+            $_type_name = substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
+        }
         $datatype = DataType::firstOrCreate(['name' => $_type_name]);
         return $datatype;
     }
@@ -562,7 +599,13 @@ class Counter5Processor extends Model
     {
         $sectiontype_id = 1;    // default is blank
         if ($input_type != "") {
-            $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+           // UTF8 Encode name if it isnt already UTF-8
+            $cur_encoding = mb_detect_encoding($input_type);
+            if ($cur_encoding == "UTF-8" && mb_check_encoding($input_type, "UTF-8")) {
+                $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+            } else {        // force to utf-8
+                $_type_name = substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
+            }
             $sectiontype = SectionType::firstOrCreate(['name' => $_type_name]);
             $sectiontype_id = $sectiontype->id;
         }

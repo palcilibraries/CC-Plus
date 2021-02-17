@@ -66,7 +66,7 @@
                 ></v-select>
               </v-col>
             </div>
-            <div v-if='!filterInst && filter_data["institutiongroup"].active' cols="3" sm="2">
+            <div v-if='filterGroup && filter_data["institutiongroup"].active' cols="3" sm="2">
               <v-col v-if='filter_data["institutiongroup"].value >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["institutiongroup"].value > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('institutiongroup')"/>&nbsp;
@@ -216,7 +216,6 @@
       return {
         showPreview: false,
         configForm: false,
-        filterInst: false,
         filterGroup: false,
         preview_text: 'Display Preview',
         loading: true,
@@ -276,6 +275,7 @@
                   this.report_data = data.items;
             });
         },
+        // Enable / Disable columns in the preview
         onFieldChange(field) {
           if (typeof(this.filter_data[field.id]) != 'undefined') {    // column has a filter?
               var hasFilter=true;
@@ -284,30 +284,20 @@
               var hasFilter=false;
           }
 
-          // If field is institution, reset flags regardless of enable.vs.disable
-          if (field.id == 'institution') {
-              this.filterInst = false;
-              this.filterGroup = false;
-          }
-
           // Turning on a field...
           if (field.active) {
               // If the field has filter, set it up
               if (hasFilter) {
-                  // Turning on FIELD institution means enabling institution AND inst-group filters,
-                  // but only for admins and managers...
+                  // Turn on institution filter only if admin/manager AND not filtering by-Group
                   if (field.id == 'institution') {
-                      if (this.is_admin || this.is_viewer) {
+                      // Enable institution filtering
+                      if (!this.filterGroup && (this.is_admin || this.is_viewer)) {
                           this.filter_data.institution.active = true;
-                          this.filter_data.institutiongroup.active = true;
                           this.filter_data.institution.value = [];
-                          this.filter_data.institutiongroup.value = 0;
                           this.$store.dispatch(action,[]);
-                          var act2 = this.filter_data.institutiongroup.act+'Filter';
-                          this.$store.dispatch(act2,0);
-                          this.active_filter_count += 2;
+                          this.active_filter_count++;
                       }
-                  // Initialize filter values
+                  // Initialize other filter values
                   } else {
                       this.filter_data[field.id].active = true;
                       if (this.filter_data[field.id].value.constructor === Array) {
@@ -339,16 +329,10 @@
                   }
 
                   // Remove the filter from the list and suppress the column
-                  this.$store.dispatch(action,this.filter_data[field.id].value);
-                  this.updateColumns();
-                  this.active_filter_count--;
-                  // turning off institution means turning off instgroup filter, too
-                  if (field.id == 'institution') {
-                      var act2 = this.filter_data.institutiongroup.act+'Filter';
-                      this.filter_data.institutiongroup.value = -1;
-                      this.$store.dispatch(act2,-1);
+                  if (field.id != 'institution' || !this.filterGroup) {
+                      this.$store.dispatch(action,this.filter_data[field.id].value);
+                      this.updateColumns();
                       this.active_filter_count--;
-                      this.filter_data.institutiongroup.active = false;
                   }
               }
               // Turn off the column(s)
@@ -374,10 +358,6 @@
                 this.filter_data[filter].value = 0;
             }
             this.filter_data[filter].name = '';
-            if (filter == 'institution' || filter == 'institutiongroup') {
-                this.filterInst = false;
-                this.filterGroup = false;
-            }
         },
         setFilter(filter) {
             let method = this.filter_data[filter].act+'Filter';
@@ -386,8 +366,6 @@
                 let idx = this.filter_options[filter].findIndex(f => f.id==this.filter_data[filter].value);
                 this.filter_data[filter].name = this.filter_options[filter][idx].name;
             }
-            if (filter == 'institution') this.filterInst = true;
-            if (filter == 'institutiongroup') this.filterGroup = true;
         },
         setYOP() {
             this.failure = "";
@@ -495,7 +473,7 @@
               var fval = (typeof(this.filter_data[fld.id])=='undefined') ? '' : this.filter_data[fld.id].value;
               _flds[fld.id] = {active: fld.active, limit: fval};
             })
-            if (!this.filterInst) {   // If filtering by-inst-group, add to the cols array
+            if (this.filterGroup) {   // If filtering by-inst-group, add to the cols array
                 _flds['institutiongroup'] = {active: false, limit: this.filter_data.institutiongroup.value};
             }
             let num_months = 1;     // default to lastMonth
@@ -605,18 +583,17 @@
           }
       }
 
+      // Determine which inst-filter applies (by-group or by-inst), and set this.filterGroup
+      // If preset given for group AND inst, we will filter by-group and ignore inst(s).
+      // If no preset provided for either, we will filter-by inst(s).
       if (this.is_admin || this.is_viewer) {
           if (this.preset_filters['institutiongroup_id']>0) {
               this.filterGroup = true;
               // activate manually since instgroup isn't a "column"
               this.filter_data['institutiongroup'].active = true;
           }
-          // filter by inst if preset defined - BUT only if group filtering is inactive (group > inst)
-          if (this.preset_filters['inst_id'].length>0 && !this.filterGroup) {
-              this.filterInst = true;
-          }
           // Since group is not a column (was skipped above), bump the counter if the filter is on
-          if (!this.filterInst && this.filter_data.institutiongroup.value == 0) {
+          if (this.filterGroup && this.filter_data.institutiongroup.value == 0) {
               this.active_filter_count++;
           }
       }

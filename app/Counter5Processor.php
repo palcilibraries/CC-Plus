@@ -101,7 +101,10 @@ class Counter5Processor extends Model
             foreach ($reportitem->Performance as $perf) {
                 if ($perf->Period->Begin_Date == self::$begin  && $perf->Period->End_Date == self::$end) {
                     foreach ($perf->Instance as $instance) {
-                        $ICounts[$instance->Metric_Type] += $instance->Count;
+                        // ignore unrecognized metrics
+                        if (isset($ICounts[$instance->Metric_Type])) {
+                            $ICounts[$instance->Metric_Type] += $instance->Count;
+                        }
                     }
                 }
             }         // foreach performance clause

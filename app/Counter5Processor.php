@@ -67,7 +67,7 @@ class Counter5Processor extends Model
             $platform_id = (isset($reportitem->Platform)) ? self::getPlatform($reportitem->Platform) : 1;
 
            // Get Title and Item_ID fields
-            $_title = (isset($reportitem->Title)) ? substr($reportitem->Title, 0, 256) : "";
+            $_title = (isset($reportitem->Title)) ? mb_substr($reportitem->Title, 0, 256) : "";
 
            // Get the Item_ID fields and store in an array along with the (title)type
            // if $_title is null and Item_ID is missing, skip the record (silently)
@@ -88,7 +88,7 @@ class Counter5Processor extends Model
             $datatype = (isset($reportitem->Data_Type)) ? self::getDataType($reportitem->Data_Type)
                                                         : self::getDataType("Unknown");
             $Item_ID['type'] = ($datatype->name == "Journal" || $datatype->name == "Book") ?
-                               substr($datatype->name, 0, 1) :
+                               mb_substr($datatype->name, 0, 1) :
                                 "I";
 
            // Get or Create Title entry
@@ -348,7 +348,7 @@ class Counter5Processor extends Model
             $platform_id = (isset($reportitem->Platform)) ? self::getPlatform($reportitem->Platform) : 1;
 
            // Get Title and Item_ID fields
-            $Title = (isset($reportitem->Item)) ? substr($reportitem->Item, 0, 256) : "";
+            $Title = (isset($reportitem->Item)) ? mb_substr($reportitem->Item, 0, 256) : "";
 
            // If no Title or Item_ID skip the item..
             if ($Title == "" && !isset($reportitem->Item_ID)) {
@@ -366,7 +366,7 @@ class Counter5Processor extends Model
             $datatype = (isset($reportitem->Data_Type)) ? self::getDataType($reportitem->Data_Type)
                                                         : self::getDataType("Unknown");
             $Item_ID['type'] = ($datatype->name == "Journal" || $datatype->name == "Book") ?
-                                substr($datatype->name, 0, 1) :
+                                mb_substr($datatype->name, 0, 1) :
                                 "I";
 
            // Get publication date and article version
@@ -406,7 +406,7 @@ class Counter5Processor extends Model
             $parent_datatype_id = null;
             $item_parent = (isset($reportitem->Item_Parent)) ? $reportitem->Item_Parent : "";
             if ($item_parent != "") {
-                $_parentTitle = (isset($item_parent->Item_Name)) ? substr($item_parent->Item_Name, 0, 256) : "";
+                $_parentTitle = (isset($item_parent->Item_Name)) ? mb_substr($item_parent->Item_Name, 0, 256) : "";
                 $_parentItemid = (isset($item_parent->Item_ID)) ? $item_parent->Item_ID : array();
                 if (sizeof($_parentItemid) > 0) {
                     $_pitem_ID = self::itemIDValues($_parentItemid);
@@ -415,7 +415,7 @@ class Counter5Processor extends Model
                     $_pdatatype = (isset($item_parent->Data_Type)) ? $item_parent->Data_Type : "Unknown";
                     $parent_datatype = self::getDataType($_pdatatype);
                     $_pitem_ID['type'] = ($parent_datatype->name == "Journal" || $parent_datatype->name == "Book") ?
-                                          substr($parent_datatype->name, 0, 1) :
+                                          mb_substr($parent_datatype->name, 0, 1) :
                                           "I";
 
                    // Get-Create the title for the parent
@@ -482,9 +482,9 @@ class Counter5Processor extends Model
            // UTF8 Encode name if it isnt already UTF-8
             $cur_encoding = mb_detect_encoding($input_platform);
             if ($cur_encoding == "UTF-8" && mb_check_encoding($input_platform, "UTF-8")) {
-                $_plat_name = substr($input_platform, 0, intval(config('ccplus.max_name_length')));
+                $_plat_name = mb_substr($input_platform, 0, intval(config('ccplus.max_name_length')));
             } else {        // force to utf-8
-                $_plat_name = substr(utf8_encode($input_platform), 0, intval(config('ccplus.max_name_length')));
+                $_plat_name = mb_substr(utf8_encode($input_platform), 0, intval(config('ccplus.max_name_length')));
             }
             $platform = Platform::firstOrCreate(['name' => $_plat_name]);
             $platform_id = $platform->id;
@@ -507,9 +507,9 @@ class Counter5Processor extends Model
            // UTF8 Encode name if it isnt already UTF-8
             $cur_encoding = mb_detect_encoding($input_publisher);
             if ($cur_encoding == "UTF-8" && mb_check_encoding($input_publisher, "UTF-8")) {
-                $_pub_name = substr($input_publisher, 0, intval(config('ccplus.max_name_length')));
+                $_pub_name = mb_substr($input_publisher, 0, intval(config('ccplus.max_name_length')));
             } else {        // force to utf-8
-                $_pub_name = substr(utf8_encode($input_publisher), 0, intval(config('ccplus.max_name_length')));
+                $_pub_name = mb_substr(utf8_encode($input_publisher), 0, intval(config('ccplus.max_name_length')));
             }
             $publisher = Publisher::firstOrCreate(['name' => $_pub_name]);
             $publisher_id = $publisher->id;
@@ -532,9 +532,9 @@ class Counter5Processor extends Model
            // UTF8 Encode name if it isnt already UTF-8
             $cur_encoding = mb_detect_encoding($input_type);
             if ($cur_encoding == "UTF-8" && mb_check_encoding($input_type, "UTF-8")) {
-                $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+                $_type_name = mb_substr($input_type, 0, intval(config('ccplus.max_name_length')));
             } else {        // force to utf-8
-                $_type_name = substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
+                $_type_name = mb_substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
             }
             $accesstype = AccessType::firstOrCreate(['name' => $_type_name]);
             $accesstype_id = $accesstype->id;
@@ -557,9 +557,9 @@ class Counter5Processor extends Model
            // UTF8 Encode name if it isnt already UTF-8
             $cur_encoding = mb_detect_encoding($input_method);
             if ($cur_encoding == "UTF-8" && mb_check_encoding($input_method, "UTF-8")) {
-                $_method_name = substr($input_method, 0, intval(config('ccplus.max_name_length')));
+                $_method_name = mb_substr($input_method, 0, intval(config('ccplus.max_name_length')));
             } else {        // force to utf-8
-                $_method_name = substr(utf8_encode($input_method), 0, intval(config('ccplus.max_name_length')));
+                $_method_name = mb_substr(utf8_encode($input_method), 0, intval(config('ccplus.max_name_length')));
             }
             $accessmethod = AccessMethod::firstOrCreate(['name' => $_method_name]);
             $accessmethod_id = $accessmethod->id;
@@ -583,9 +583,9 @@ class Counter5Processor extends Model
        // UTF8 Encode name if it isnt already UTF-8
         $cur_encoding = mb_detect_encoding($input_type);
         if ($cur_encoding == "UTF-8" && mb_check_encoding($input_type, "UTF-8")) {
-            $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+            $_type_name = mb_substr($input_type, 0, intval(config('ccplus.max_name_length')));
         } else {        // force to utf-8
-            $_type_name = substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
+            $_type_name = mb_substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
         }
         $datatype = DataType::firstOrCreate(['name' => $_type_name]);
         return $datatype;
@@ -606,9 +606,9 @@ class Counter5Processor extends Model
            // UTF8 Encode name if it isnt already UTF-8
             $cur_encoding = mb_detect_encoding($input_type);
             if ($cur_encoding == "UTF-8" && mb_check_encoding($input_type, "UTF-8")) {
-                $_type_name = substr($input_type, 0, intval(config('ccplus.max_name_length')));
+                $_type_name = mb_substr($input_type, 0, intval(config('ccplus.max_name_length')));
             } else {        // force to utf-8
-                $_type_name = substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
+                $_type_name = mb_substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
             }
             $sectiontype = SectionType::firstOrCreate(['name' => $_type_name]);
             $sectiontype_id = $sectiontype->id;
@@ -631,22 +631,22 @@ class Counter5Processor extends Model
         $Values = ['type' => "", 'ISBN' => "", 'ISSN' => "", 'eISSN' => "", 'DOI' => "", 'PropID' => "", 'URI' => ""];
         foreach ($Item_ID as $_id) {
             if ($_id->Type == "ISBN") {
-                $Values['ISBN'] = substr($_id->Value, 0, intval(config('ccplus.max_name_length')));
+                $Values['ISBN'] = mb_substr($_id->Value, 0, intval(config('ccplus.max_name_length')));
             }
             if ($_id->Type == "Print_ISSN") {
-                $Values['ISSN'] = substr($_id->Value, 0, intval(config('ccplus.max_name_length')));
+                $Values['ISSN'] = mb_substr($_id->Value, 0, intval(config('ccplus.max_name_length')));
             }
             if ($_id->Type == "Online_ISSN") {
-                $Values['eISSN'] = substr($_id->Value, 0, intval(config('ccplus.max_name_length')));
+                $Values['eISSN'] = mb_substr($_id->Value, 0, intval(config('ccplus.max_name_length')));
             }
             if ($_id->Type == "DOI") {
-                $Values['DOI'] = substr($_id->Value, 0, 256);
+                $Values['DOI'] = mb_substr($_id->Value, 0, 256);
             }
             if ($_id->Type == "Proprietary") {
-                $Values['PropID'] = substr($_id->Value, 0, 256);
+                $Values['PropID'] = mb_substr($_id->Value, 0, 256);
             }
             if ($_id->Type == "URI") {
-                $Values['URI'] = substr($_id->Value, 0, 256);
+                $Values['URI'] = mb_substr($_id->Value, 0, 256);
             }
         }
         return $Values;

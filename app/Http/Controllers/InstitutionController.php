@@ -411,7 +411,7 @@ class InstitutionController extends Controller
                 $inst_sheet->setCellValue('F' . $row, 'NULL');
             }
             $inst_sheet->setCellValue('G' . $row, $inst->notes);
-            if (isset($inst->sushiSettings)) {
+            if (sizeof($inst->sushiSettings) > 0) {
                 foreach ($inst->sushiSettings as $setting) {
                     $inst_sheet->setCellValue('A' . $row, $inst->id);
                     $inst_sheet->setCellValue('H' . $row, $setting->prov_id);

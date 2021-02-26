@@ -127,7 +127,7 @@ class DataArchiveCommand extends Command
             }
         } else {
             $institutionName = "ALL";
-            $institutions = Institution::where('id','<>',1)->get(); // Skip 'consortium' inst
+            $institutions = Institution::get();
         }
 
        // Get master-report-names and setup array of table names to be queried
@@ -150,7 +150,7 @@ class DataArchiveCommand extends Command
             $data_tables = array(strtolower($rept) . '_report_data');
         }
 
-       // Get the filename and initialize it
+        // Get the filename and initialize it
         $outputFile = $this->argument('filename');
         $headerRecs  = "-- CC-Plus Data Archive for Consortium: " . $consortium->name;
         $headerRecs .= ", created: " . date("Y-m-d H:i:s") . "\n";
@@ -159,12 +159,22 @@ class DataArchiveCommand extends Command
         $headerRecs .= "-- Institution: " . $institutionName . "\n";
         $headerRecs .= "-- Master Report(s): " . $rept . "\n";
         $headerRecs .= "--\n";
-        $headerRecs .= "SET FOREIGN_KEY_CHECKS=0;";
-        $headerRecs .= "use " . $conso_db . ";";
+        $headerRecs .= "use " . $conso_db . ";\n";
+        $headerRecs .= "SET FOREIGN_KEY_CHECKS=0;\n";
         $is_created = Storage::put($outputFile,$headerRecs);
         if (!$is_created) {
             $this->error("Error - unable to create file : " . $outputFile);
             return 0;
+        }
+
+        // Get all table names fropm template database
+        $_res = DB::select("show tables from ccplus_con_template");
+        $template_tables = array_column($_res,'Tables_in_ccplus_con_template');
+
+        // Add create table commands for a full set of template tables
+        foreach ($template_tables as $name) {
+            $_com = "--\nCREATE TABLE IF NOT EXISTS " . $name . " LIKE ccplus_con_template." . $name . ";\n--";
+            $_res = Storage::append($outputFile,$_com);
         }
 
        // Loop through data tables; generate SQL Insert commands from each master report table
@@ -255,6 +265,25 @@ class DataArchiveCommand extends Command
 
            // Save failed harvests to the output file
             $_res = self::relatedData('failedharvests', 'Failed Harvests', 'harvest_id', $harvestIDs);
+
+           // Save institution groups
+           $_res = self::relatedData('institutiongroups', 'Institution Groups', null, null);
+
+           // Save institution group membership
+           $_res = self::relatedData('institution_institution_group', 'Institution Group Membership',
+                                     'institution_id', $institution_ids);
+
+           // Save institution types
+           $_res = self::relatedData('institutiontypes', 'Institution Types', null, null);
+
+           // Save users
+           $_res = self::relatedData('users', 'Users', null, null);
+
+           // Save roles
+           $_res = self::relatedData('roles', 'Roles', null, null);
+
+           // Save User->Role table
+           $_res = self::relatedData('role_user', 'User Roles', null, null);
         }
 
         // Save global database records for Titles, Items, Databases, Platforms, and Publishers.
@@ -295,8 +324,10 @@ class DataArchiveCommand extends Command
         if ($table == 'harvestlogs') {
             $records = DB::table($table_name)->whereIn($keyColumn,$whereIn)
                          ->whereIn('report_id',$report_ids)->whereBetween('yearmon',$range)->get();
-        } else {
+        } else if ($keyColumn) {
             $records = DB::table($table_name)->whereIn($keyColumn,$whereIn)->get();
+        } else {
+            $records = DB::table($table_name)->get();
         }
 
        // Loop across the returned records. Save with "INSERT IGNORE" so MySQL won't throw errors on

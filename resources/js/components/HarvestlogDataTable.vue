@@ -85,7 +85,7 @@
             providers: { type:Array, default: () => [] },
             reports: { type:Array, default: () => [] },
             bounds: { type:Array, default: () => [] },
-            filters: { type:Object, default: () => ({fromYM:null,toYM:null,inst:[],prov:[],rept:[],stat:[]}) },
+            filters: { type:Object, default: () => {} },
            },
     data () {
       return {
@@ -274,20 +274,19 @@
         this.$store.dispatch('updatePageName','harvestlogs');
 	},
     mounted() {
-      // Apply any defined prop-based filters (and overwrite existing store values)
-      var count = 0;
-      Object.assign(this.mutable_filters, this.all_filters);
-      Object.keys(this.filters).forEach( (key) =>  {
-        if (this.filters[key] != null) {
-          if (key == 'fromYM' || key == 'toYM') {
+      // Update any null/empty filters w/ store-values
+      Object.keys(this.all_filters).forEach( (key) =>  {
+        if (key == 'fromYM' || key == 'toYM') {
+            if (this.mutable_filters[key] == null || this.mutable_filters[key] == "") {
+                this.mutable_filters[key] = this.all_filters[key];
+                count++;
+            }
+        } else if (this.mutable_filters[key].length == 0) {
+            this.mutable_filters[key] = this.all_filters[key];
             count++;
-            this.mutable_filters[key] = this.filters[key];
-          } else if (this.filters[key].length>0) {
-            count++;
-            this.mutable_filters[key] = this.filters[key];
-          }
         }
-      })
+      });
+
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);
 
@@ -303,7 +302,6 @@
       }
 
       // Update store and apply filters now that they're set
-      if (count>0) this.$store.dispatch('updateAllFilters',this.mutable_filters);
       this.updateLogRecords();
       this.dtKey += 1;           // force re-render of the datatable
 

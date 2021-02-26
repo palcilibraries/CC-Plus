@@ -277,11 +277,13 @@
       // Update any null/empty filters w/ store-values
       Object.keys(this.all_filters).forEach( (key) =>  {
         if (key == 'fromYM' || key == 'toYM') {
-            if (this.mutable_filters[key] == null || this.mutable_filters[key] == "") {
+            if (this.mutable_filters[key] == null || this.mutable_filters[key] == "")
                 this.mutable_filters[key] = this.all_filters[key];
+        } else {
+            if (typeof(this.mutable_filters[key]) != 'undefined') {
+                if (this.mutable_filters[key].length == 0)
+                    this.mutable_filters[key] = this.all_filters[key];
             }
-        } else if (this.mutable_filters[key].length == 0) {
-            this.mutable_filters[key] = this.all_filters[key];
         }
       });
 

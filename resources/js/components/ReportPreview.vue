@@ -568,8 +568,8 @@
       });
       // Assign preset filter values
       for (let [key, data] of Object.entries(this.filter_data)) {
+          let filt = data.act+'Filter';
           if (typeof(this.preset_filters[data.col]) != 'undefined') {
-              let filt = data.act+'Filter';
               this.$store.dispatch(filt,this.preset_filters[data.col]);
               if (this.preset_filters[data.col].constructor === Array) {
                   data.value = this.preset_filters[data.col].slice();
@@ -579,6 +579,13 @@
                     let idx = this.filter_options[key].findIndex(f => f.id==data.value);
                     data.name = this.filter_options[key][idx].name;
                   }
+              }
+          // filter_data column not in preset array, reset it in the store
+          } else {
+              if (data.value.constructor === Array) {
+                  this.$store.dispatch(filt,[]);
+              } else {
+                  this.$store.dispatch(filt,-1);
               }
           }
       }

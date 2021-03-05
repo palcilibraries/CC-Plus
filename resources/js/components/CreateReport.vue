@@ -263,7 +263,24 @@
                  .catch(error => {});
         },
         goRedirect () {
-            let params = {...this.all_filters, dateRange: this.dateRange};
+            // only pass filters that apply to the selected report
+            let report_filters = {
+                                  'report_id': this.selectedReport.id,
+                                  'fromYM': this.all_filters['fromYM'],
+                                  'toYM': this.all_filters['toYM']
+                                };
+            // Institution Group is not a field, but it IS a filter.
+            if (this.inst_group_id > 0) {
+                report_filters['institutiongroup_id'] = this.inst_group_id;
+            }
+            this.fields.forEach(field => {
+                if (field.report_id == this.selectedReport.id && typeof(field.column) != null) {
+                    if (typeof(this.all_filters[field.column] != 'undefined')) {
+                        report_filters[field.column] = this.all_filters[field.column];
+                    }
+                }
+            });
+            let params = {...report_filters, dateRange: this.dateRange};
             window.location.assign("/reports/preview?filters=" + JSON.stringify(params));
         },
     },

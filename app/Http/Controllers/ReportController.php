@@ -133,9 +133,13 @@ class ReportController extends Controller
                                  })
                                  ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
         }
-        $reports = Report::with('reportFields', 'children')->orderBy('id', 'asc')->get()->toArray();
-        $fields = ReportField::orderBy('id', 'asc')->get()->toArray();
-
+        $reports = Report::with('children')->orderBy('id', 'asc')->get()->toArray();
+        $field_data = ReportField::orderBy('id', 'asc')->with('reportFilter')->get();
+        $fields = array();
+        foreach ($field_data as $rec) {
+            $column = ($rec->reportFilter) ? $rec->reportFilter->report_column : null;
+            $fields[] = ['id' => $rec->id, 'qry' => $rec->qry_as, 'report_id' => $rec->report_id, 'column' => $column];
+        }
         return view(
             'reports.create',
             compact('institutions', 'inst_groups', 'providers', 'reports', 'fields')

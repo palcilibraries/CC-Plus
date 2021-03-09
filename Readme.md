@@ -58,7 +58,7 @@ Define the public-facing web directory settings something along the lines of:
 Enable mod_rewrite for Apache:
 ```bash
 # mkdir /var/www/ccplus
-# a2enmod rewrite
+# a2enmod rewrite (Ubuntu, enabling for another O/S will differ)
 # service apache2 restart
 ```
  Firewalls, SSL/HTTPS, or other organizational requirements are not addressed in this document.
@@ -138,7 +138,7 @@ The webserver will need to be able to write to some folders within the applicati
 Setup `public/index.php` to reflect the installation path for the application. If you are installing to a location other than `/usr/local/CC-Plus`, then you'll need to change the value of the `_CCPHOME_` variable to match your installation path:
 ```bash
 $ cd /usr/local/CC-Plus/public/
-$ mv index.php.example::q ./index.php
+$ mv index.php.example ./index.php
 $ vi index.php
    . . . .
 	define('_CCPHOME_','/usr/local/CC-Plus');  // Modify this line if necessary

@@ -64,7 +64,7 @@ Enable mod_rewrite for Apache:
  Firewalls, SSL/HTTPS, or other organizational requirements are not addressed in this document.
 
 ### Step 2: Download the application
-The Laravel application itself, including encryption keys, output, logs, etc. will should exist outside the served Apache folder. We will download repository for the application to `/usr/local` and allow `git` to create the folder: `CC-Plus`.
+The Laravel application itself, including encryption keys, output, logs, etc. will (should) exist outside the served Apache folder. We will download the repository for the application to `/usr/local` and allow `git` to create the folder: `CC-Plus`.
 ```bash
 $ cd /usr/local
 $ git clone https://github.com/palcilibraries/CC-Plus.git

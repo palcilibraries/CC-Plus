@@ -17,11 +17,13 @@ if ( sizeof($consortia) == 0 ) {
 // and keep the select box from being displayed
 //
 $preset_key = "";
+$preset_name = "";
 if ( sizeof(request()->query()) > 0 ) {
   $input_key = array_key_first(request()->query());
   foreach ( $consortia as $con) {
     if ( $con->ccp_key == $input_key) {
       $preset_key = $input_key;
+      $preset_name = $con->name;
     }
   }
 }
@@ -29,8 +31,10 @@ if ( sizeof(request()->query()) > 0 ) {
 // If only one active consortia, force it as the $preset_key
 // (will override any preset attempted in the URI)
 //
-if (sizeof($consortia) == 1 )
+if ($consortia->count() == 1 ) {
   $preset_key = $consortia[0]->ccp_key;
+  $preset_name = $consortia[0]->name;
+}
 ?>
 
 <div class="container">
@@ -55,7 +59,7 @@ if (sizeof($consortia) == 1 )
                         </div>
                         @else
                         <div class="form-group">
-                          {{ Form::Label('consortium', 'Logging into Consortium: ' . $preset_key) }}
+                          {{ Form::Label('consortium', 'Logging into Consortium: ' . $preset_name) }}
                           <input type='hidden' name='consortium' value='{{ $preset_key }}' />
                         </div>
                         @endif

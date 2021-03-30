@@ -267,11 +267,14 @@
             let report_filters = {
                                   'report_id': this.selectedReport.id,
                                   'fromYM': this.all_filters['fromYM'],
-                                  'toYM': this.all_filters['toYM']
+                                  'toYM': this.all_filters['toYM'],
+                                  'prov_id': this.prov
                                 };
             // Institution Group is not a field, but it IS a filter.
-            if (this.inst_group_id > 0) {
+            if (this.inst_group_id > 0) {   // groups gets precedence over individual insts
                 report_filters['institutiongroup_id'] = this.inst_group_id;
+            } else {
+                report_filters['inst_id'] = this.inst;
             }
             this.fields.forEach(field => {
                 if (field.report_id == this.selectedReport.id && typeof(field.column) != null) {

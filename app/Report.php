@@ -67,7 +67,21 @@ class Report extends Model
         $_fields = array();
         foreach (preg_split('/,/', $this->inherited_fields) as $field) {
             $_f = preg_split('/:/', $field);
-            $_fields[$_f[0]] = (isset($_f[1])) ? intval($_f[1]) : null;
+            if (!isset($_f[1])) {
+                $_fields[$_f[0]] = null;
+            } else {
+                // allow for bracketed array of values
+                if (preg_match("/\[(.*)\]/i", $_f[1], $matches)) {
+                    $arr = array();
+                    $values = preg_split("/,/", $matches[1]);
+                    foreach ($values as $val) {
+                        $arr[] = intval($val);
+                    }
+                     $_fields[$_f[0]] = $arr;
+                } else {
+                     $_fields[$_f[0]] = intval($_f[1]);
+                }
+            }
         }
         return $_fields;
     }

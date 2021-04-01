@@ -308,7 +308,7 @@
     mounted() {
       // set dialog starting point
       if (!this.is_admin && !this.is_viewer) {
-          this.inst=[this.institutions[0]];
+          this.inst=[this.institutions[0].id];
       }
 
       // Subscribe to store updates and intialize filters and options

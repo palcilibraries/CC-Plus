@@ -28,7 +28,8 @@ Once the application is installed, the application administrator will need to co
 ## Prerequisites
 * Apache 2.4+
 	* Make sure `mod_rewrite` is enabled
-* MySQL (5.6+) or MariaDB (10.3+)
+* MySQL (5.7.9+) or MariaDB (10.3+)
+    (Note that MySQL 8.x may have installation issues relating to GRANT commands)
 * PHP: 7.3+ including
 	* php-gd
 	* php-xml
@@ -141,7 +142,7 @@ $ cd /usr/local/CC-Plus/public/
 $ mv index.php.example ./index.php
 $ vi index.php
    . . . .
-	define('_CCPHOME_','/usr/local/CC-Plus');  // Modify this line if necessary
+	define('_CCPHOME_','/usr/local/CC-Plus/');  // Modify this line as necessary, and include a trailing slash
    . . . .
 $ cd ..
 ```

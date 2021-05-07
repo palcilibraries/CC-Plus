@@ -58,7 +58,7 @@ class Sushi extends Model
         try {
              $result = $client->request('GET', $uri, $options);
         } catch (\Exception $e) {
-            $this->detail = $e->getMessage();
+            $this->detail = substr($e->getMessage(), 0, intval(config('ccplus.max_name_length')));
             $this->step = "HTTP";
             $this->error_code = 10;
             $this->message = "SUSHI HTTP request failed, verify URL : ";

@@ -162,13 +162,7 @@ class SushiSettingController extends Controller
             $result = 'Service status successfully received';
         } catch (\Exception $e) {
             $result = 'Request for service status failed!';
-            if ($e->hasResponse()) {
-                $response = $e->getResponse();
-                $rows[] = "Error Returned: (" . $response->getStatusCode() . ") ";
-                $rows[] = $response->getReasonPhrase();
-            } else {
-                $rows[] = "No response from provider.";
-            }
+            $rows[] = $e->getMessage();
         }
 
        // return ... something

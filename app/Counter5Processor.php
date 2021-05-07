@@ -102,7 +102,7 @@ class Counter5Processor extends Model
                 if ($perf->Period->Begin_Date == self::$begin  && $perf->Period->End_Date == self::$end) {
                     foreach ($perf->Instance as $instance) {
                         // ignore unrecognized metrics
-                        if (isset($ICounts[$instance->Metric_Type])) {
+                        if (isset($instance->Count) && isset($ICounts[$instance->Metric_Type])) {
                             $ICounts[$instance->Metric_Type] += $instance->Count;
                         }
                     }
@@ -201,7 +201,10 @@ class Counter5Processor extends Model
             foreach ($reportitem->Performance as $perf) {
                 if ($perf->Period->Begin_Date == self::$begin && $perf->Period->End_Date == self::$end) {
                     foreach ($perf->Instance as $instance) {
-                        $ICounts[$instance->Metric_Type] += $instance->Count;
+                        // ignore unrecognized metrics
+                        if (isset($instance->Count) && isset($ICounts[$instance->Metric_Type])) {
+                            $ICounts[$instance->Metric_Type] += $instance->Count;
+                        }
                     }
                 }
             }         // foreach performance clause
@@ -280,7 +283,8 @@ class Counter5Processor extends Model
                     isset($perf->Instance)
                 ) {
                     foreach ($perf->Instance as $instance) {
-                        if (isset($instance->Count) && isset($instance->Metric_Type)) {
+                        // ignore unrecognized metrics
+                        if (isset($instance->Count) && isset($ICounts[$instance->Metric_Type])) {
                             $ICounts[$instance->Metric_Type] += $instance->Count;
                         }
                     }
@@ -444,7 +448,10 @@ class Counter5Processor extends Model
             foreach ($reportitem->Performance as $perf) {
                 if ($perf->Period->Begin_Date == self::$begin  && $perf->Period->End_Date == self::$end) {
                     foreach ($perf->Instance as $instance) {
-                        $ICounts[$instance->Metric_Type] += $instance->Count;
+                        // ignore unrecognized metrics
+                        if (isset($instance->Count) && isset($ICounts[$instance->Metric_Type])) {
+                            $ICounts[$instance->Metric_Type] += $instance->Count;
+                        }
                     }
                 }
             }         // foreach performance clause

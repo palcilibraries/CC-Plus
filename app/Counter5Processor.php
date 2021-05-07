@@ -280,7 +280,7 @@ class Counter5Processor extends Model
                     isset($perf->Instance)
                 ) {
                     foreach ($perf->Instance as $instance) {
-                        if ($instance->Count) {
+                        if (isset($instance->Count) && isset($instance->Metric_Type)) {
                             $ICounts[$instance->Metric_Type] += $instance->Count;
                         }
                     }

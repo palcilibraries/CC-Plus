@@ -267,10 +267,14 @@ class Sushi extends Model
                         $this->message = $header->Exception->Message;
                     }
                     if (property_exists($header, 'Exceptions')) {
-                        $has_exception = true;
-                        $this->error_code = $header->Exceptions[0]->Code;
-                        $this->severity = strtoupper($header->Exceptions[0]->Severity);
-                        $this->message = $header->Exceptions[0]->Message;
+                        if (is_array($header->Exceptions)) {
+                            if (sizeof($header->Exceptions) > 0) {
+                                $has_exception = true;
+                                $this->error_code = $header->Exceptions[0]->Code;
+                                $this->severity = strtoupper($header->Exceptions[0]->Severity);
+                                $this->message = $header->Exceptions[0]->Message;
+                            }
+                        }
                     }
                 }
             }

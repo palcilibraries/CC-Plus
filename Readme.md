@@ -237,11 +237,11 @@ $
 You should now be able to connect and login to the application using the Administrator credential for your initial consortium!
 
 ### Step 10: Define Harvesting Schedule (Optional)
-Automated harvesting for CC-Plus is defined using the schedule defined in `app/Console/Kernel.php` (which we created in [Step 4, above] (#step-4-install-the-application)). The initial file is configured to automate harvesting for a single consortium using two queue handler processes (workers) which are scheduled to run every ten minutes. This means that at least one of the workers will wake and check for recently queued jobs every 10-minutes. An example file for a two-consortium configuration is also included, named: `Kernel.php.example-multiple`.
+Automated harvesting for CC-Plus is defined using the schedule defined in `app/Console/Kernel.php` (which we created in [Step 4, above](#step-4-install-the-application)). The initial file is configured to automate harvesting for a single consortium using two queue handler processes (workers) which are scheduled to run every ten minutes. This means that at least one of the workers will wake and check for recently queued jobs every 10-minutes. An example file for a two-consortium configuration is also included, named: `Kernel.php.example-multiple`.
 
 More details on scheduling tasks in Laravel applications can be found [here: https://laravel.com/docs/8.x/scheduling](https://laravel.com/docs/8.x/scheduling)
 ### Step 11: Add Scheduler to System Cron (Optional)
-The default Kernel.php Scheduler configuration expects to be launched every minutes. If nothing needs to be processed, the scheduler will exit until the next cycle. These lines (or a close approximation) need to be added to the system cron processing to enable unattended harvesting:
+The default Kernel.php Scheduler configuration expects to be launched on a regular interval (for example, every 10 minutes). If nothing needs to be processed, the scheduler will exit until the next cycle. These lines (or a close approximation) need to be added to the system cron processing to enable unattended harvesting:
 ```
 # Run CC+ Laravel scheduler every 10 minutes
 */10 * * * * root cd /usr/local/CC-Plus && php artisan schedule:run >> /dev/null 2>&1

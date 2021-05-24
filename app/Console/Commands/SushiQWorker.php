@@ -364,7 +364,9 @@ class SushiQWorker extends Command
                          ->select($_db . '.prv.server_url_r5')
                          ->get();
             foreach ($_urls as $_url) {
-                if ($_url->server_url_r5 == $job_url) {
+                // Test HOST of url , since https://sushi.prov.com/R5  and https://sushi.prov.com/R5/reports
+                // both WORK , and are the same service. A straight-up compare won't catch it...
+                if (parse_url($_url->server_url_r5, PHP_URL_HOST) == parse_url($job_url, PHP_URL_HOST)) {
                     return true;
                 }
             }

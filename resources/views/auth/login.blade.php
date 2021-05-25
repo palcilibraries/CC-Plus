@@ -111,13 +111,11 @@ if ($consortia->count() == 1 ) {
                                 <button type="submit" class="btn btn-primary">
                                     {{ __('Login') }}
                                 </button>
-<!--
-                                @if (Route::has('password.request'))
-                                    <a class="btn btn-link" href="{{ route('password.request') }}">
+                                @if (Route::has('password.forgot.get'))
+                                    <a class="btn btn-link" href="{{ route('password.forgot.get') }}">
                                         {{ __('Forgot Your Password?') }}
                                     </a>
                                 @endif
--->
                             </div>
                         </div>
                     </form>

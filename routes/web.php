@@ -10,9 +10,19 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-Auth::routes();
 Route::get('/', 'SavedReportController@home')->name('index')->middleware(['auth']);
 Route::get('/home', 'SavedReportController@home')->name('home')->middleware(['auth']);
+// Auth::routes();
+Route::get('login', 'Auth\LoginController@showLoginForm')->name('login');
+Route::post('login', 'Auth\LoginController@login');
+Route::get('logout', 'Auth\LoginController@logout');
+Route::post('logout', 'Auth\LoginController@logout')->name('logout');
+//
+Route::get('/forgot-password','Auth\ForgotPasswordController@showForgotForm')->name('password.forgot.get');
+Route::post('/forgot-password','Auth\ForgotPasswordController@submitForgotForm')->name('password.forgot.post');
+Route::get('/reset-password/{consortium}/{token}','Auth\ForgotPasswordController@showResetForm')
+     ->name('password.reset.get');
+Route::post('/reset-password','Auth\ForgotPasswordController@submitResetForm')->name('password.reset.post');
 //
 Route::resource('/consortia','ConsortiumController')->middleware('can:update,consortium');
 Route::resource('/roles', 'RoleController')->middleware(['auth']);
@@ -28,7 +38,6 @@ Route::resource('/alertsettings', 'AlertSettingController')
      ->middleware(['auth','role:Admin,Manager','cache.headers:no_store']);
 Route::resource('/savedreports', 'SavedReportController')->middleware(['auth']);
 Route::resource('/systemalerts', 'SystemAlertController')->middleware(['auth']);
-Route::get('logout', 'Auth\LoginController@logout');
 //
 // Route::get('/globaladmin', 'GlobalAdminController@index')->middleware('auth','role:GlobalAdmin');
 // Route::get('/', 'ReportController@index')->name('reports')->middleware('auth');

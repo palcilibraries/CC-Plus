@@ -19,9 +19,11 @@ class AssignConsortiumDb
     public function handle($request, Closure $next)
     {
        // Check to ensure that the consortium key session variable is set.
+        $paths = array("/login", "/forgot-password", "/reset-password");
         if (session('ccp_con_key', '') == '') {
            // Set session based on $request for a login request.
-            if ($request->getPathInfo() == "/login" && isset($request['consortium'])) {
+            // if ($request->getPathInfo() == "/login" && isset($request['consortium'])) {
+            if (in_array($request->getPathInfo(),$paths) && isset($request['consortium'])) {
                 session(['ccp_con_key' => $request['consortium']]);
            // Otherwise, logout and reset things
             } else {

@@ -79,8 +79,11 @@ $ cp .env.example .env
 $ vi .env
 ```
 * Assign APP_URL with the URL that your webserver uses connects to your public documents folder (step-1, above)
-* Assign database credentials (a user with rights to create databases and grant privleges):
-	* DB_USERNAME, DB_PASSWORD, DB_USERNAME2, DB_PASSWORD2
+* Assign database credentials (a user with rights to create databases and grant privileges):
+    * DB_USERNAME, DB_PASSWORD, DB_USERNAME2, DB_PASSWORD2
+* Update settings for connecting to email and SMTP services (will vary depending on server environment). These
+  settings are necessary for the system to generate forgotten-password reset links.
+    * MAIL_MAILER, MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, MAIL_ENCRYPTION, MAIL_FROM_ADDRESS, MAIL_FROM_NAME
 
 Note that the entries in `.env`, including the `CCP_*` variables at the bottom, represent **default** values which, if left undefined, can be overridden by values in `./config/*` files.
 

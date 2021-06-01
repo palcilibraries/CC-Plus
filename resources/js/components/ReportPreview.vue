@@ -143,46 +143,6 @@
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
       </v-row>
     </div>
-    <div v-else>
-      <form method="POST" action="" @submit.prevent="saveConfig" @keydown="form.errors.clear($event.target.name)">
-        <v-row class="d-flex pa-2" cols="17" sm="4">
-          <v-col v-if="form.save_id==input_save_id" class="d-flex pa-2" cols="8" sm="4">
-            <h5>Create a new saved configuration</h5>
-          </v-col>
-          <v-col v-if="form.title=='' && saved_reports.length>0" class="d-flex pa-2" cols="1" sm="1">&nbsp;</v-col>
-          <v-col v-if="form.title=='' && saved_reports.length>0" class="d-flex pa-2" cols="8" sm="4">
-            <h5>Overwrite an existing saved configuration</h5>
-          </v-col>
-        </v-row>
-        <v-row class="d-flex">
-          <v-col v-if="form.save_id==input_save_id" class="d-flex pa-2" cols="8" sm="4">
-            <input name="save_id" id="save_id" value=0 type="hidden">
-            <v-text-field v-model="form.title" label="Name" outlined></v-text-field>
-          </v-col>
-          <v-col v-if="form.title=='' && saved_reports.length>0 && form.save_id==input_save_id"
-                 class="d-flex pa-2 justify-center" cols="1" sm="1">
-            <h5>OR</h5>
-          </v-col>
-          <v-col v-if="form.title=='' && saved_reports.length>0" class="d-flex pa-2" cols="8" sm="4">
-            <input id="title" name="title" value="" type="hidden">
-            <v-select :items='saved_reports'
-                      v-model='form.save_id'
-                      label="Saved Report"
-                      item-text="title"
-                      item-value="id"
-            ></v-select>
-          </v-col>
-        </v-row>
-        <v-row class="d-flex">
-          <v-col class="d-flex pa-2" cols="4" sm="2">
-            <v-btn class='btn' small type="submit" color="green" :disabled="form.errors.any()">Save</v-btn>
-          </v-col>
-          <v-col class="d-flex pa-2" cols="4" sm="2">
-            <v-btn class='btn' small type="button" @click="hideForm">Cancel</v-btn>
-          </v-col>
-        </v-row>
-      </form>
-    </div>
     <v-container v-if="showPreview" fluid>
       <v-data-table :headers="filteredHeaders" :items="report_data" :loading="loading" :options="mutable_options"
                     :footer-props="footer_props" dense @update:options="updateOptions" :key="dtKey" class="elevation-1">
@@ -195,6 +155,55 @@
         </template>
       </v-data-table>
     </v-container>
+    <v-dialog v-model="configForm" persistent max-width="900px">
+      <v-card>
+        <v-card-title>
+          <span>Save Report Configuration</span>
+          <v-spacer></v-spacer>
+        </v-card-title>
+        <v-card-text>
+          <v-container fluid grid-list-md>
+            <form method="POST" action="" @submit.prevent="" @keydown="form.errors.clear($event.target.name)">
+              <v-row class="d-flex pa-2">
+                <v-col v-if="form.save_id==input_save_id" class="d-flex px-2" cols="5">
+                  <h5>Create a new saved configuration</h5>
+                </v-col>
+                <v-col v-if="form.title=='' && saved_reports.length>0" class="d-flex px-2" cols="2">&nbsp;</v-col>
+                <v-col v-if="form.title=='' && saved_reports.length>0" class="d-flex px-2" cols="5">
+                  <h5>Overwrite a saved configuration</h5>
+                </v-col>
+              </v-row>
+              <v-row class="d-flex pa-2" width="100%">
+                <v-col v-if="form.save_id==input_save_id" class="d-flex" cols="5">
+                  <input name="save_id" id="save_id" value=0 type="hidden">
+                  <v-text-field v-model="form.title" label="Name" outlined></v-text-field>
+                </v-col>
+                <v-col v-if="form.title=='' && saved_reports.length>0 && form.save_id==input_save_id"
+                       class="d-flex justify-center px-2" cols="2">
+                  <h5>OR</h5>
+                </v-col>
+                <v-col v-if="form.title=='' && saved_reports.length>0" class="d-flex px-2" cols="5">
+                  <input id="title" name="title" value="" type="hidden">
+                  <v-select :items='saved_reports' v-model='form.save_id' label="Saved Report" item-text="title"
+                            item-value="id"></v-select>
+                </v-col>
+              </v-row>
+            </form>
+          </v-container>
+        </v-card-text>
+        <v-spacer></v-spacer>
+        <v-card-actions>
+          <v-row class="d-flex justify-center">
+            <v-col class="d-flex px-2" cols="3">
+              <v-btn class='btn' small type="button" color="green" @click="saveConfig">Save</v-btn>
+            </v-col>
+            <v-col class="d-flex px-2" cols="3">
+              <v-btn class='btn' small type="button" @click="hideForm">Cancel</v-btn>
+            </v-col>
+          </v-row>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 

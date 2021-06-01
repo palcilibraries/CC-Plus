@@ -11,42 +11,46 @@ export const store = new Vuex.Store({
       user_inst_id: 0,
       page_name: 'default',
       page_options: {
+          // default: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
+          //            datatable: {page: 1, itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
+          //                        groupDesc: [], multiSort: false, mustSort: false }
+          //          },
           default: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
-                     datatable: {page: 1, itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
+                     datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                  groupDesc: [], multiSort: false, mustSort: false }
                    },
           users: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
-                   datatable: {page: 1, itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
+                   datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                groupDesc: [], multiSort: false, mustSort: false }
                  },
           providers: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
-                       datatable: {page: 1, itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
+                       datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                    groupDesc: [], multiSort: false, mustSort: false }
                      },
           institutions: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
-                          datatable: {page: 1, itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
+                          datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                       groupDesc: [], multiSort: false, mustSort: false }
                         },
           institutiongroups: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
-                               datatable: {page: 1, itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
+                               datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                            groupDesc: [], multiSort: false, mustSort: false }
                              },
           institutiontypes: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
-                              datatable: {page: 1, itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
+                              datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                           groupDesc: [], multiSort: false, mustSort: false }
                             },
           harvestlogs: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
-                         datatable: {page: 1, itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
+                         datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                      groupDesc: [], multiSort: false, mustSort: false }
                        },
           alerts: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
-                               datatable: {page: 1, itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
+                               datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                            groupDesc: [], multiSort: false, mustSort: false }
                   },
           preview: { filters: {report_id: 1, fromYM: "", toYM: "", inst_id: [], institutiongroup_id: 0, plat_id: [],
                                prov_id: [], yop: [], datatype_id: [], accesstype_id: [], sectiontype_id: [],
                                accessmethod_id: [] },
-                     datatable: {page: 1, itemsPerPage: 10, sortBy: [], sortDesc: [] }
+                     datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [] }
           },
       },
       report_data: [],

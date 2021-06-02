@@ -312,7 +312,7 @@ class SushiQWorker extends Command
                     $job->harvest->attempts++;
 
                    // If we're out of retries, the harvest fails and we set an Alert
-                    if ($job->harvest->attempts >= config('ccplus.max_harvest_retries')) {
+                    if ($job->harvest->attempts >= $setting->provider->max_retries) {
                         $job->harvest->status = 'Fail';
                         Alert::insert(['yearmon' => $yearmon, 'prov_id' => $setting->prov_id,
                                        'harvest_id' => $job->harvest->id, 'status' => 'Active', 'created_at' => $ts]);

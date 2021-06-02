@@ -127,8 +127,9 @@ class SushiQLoader extends Command
                 continue;
             }
 
-           // Loop through all sushisettings for this provider
-            foreach ($provider->sushiSettings as $setting) {
+           // Loop through all (active) sushisettings for this provider
+            $settings = $provider->sushiSettings->where('is_active', '=', true);
+            foreach ($settings as $setting) {
                // If institution is inactive, -or- only processing a single instituution and this isn't it,
                // skip to next setting.
                 if (

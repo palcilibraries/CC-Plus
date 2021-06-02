@@ -21,6 +21,7 @@ class CreateProvidersTable extends Migration
             $table->unsignedInteger('inst_id')->default(1); // inst_id=1 is consorta-wide
             $table->string('server_url_r5')->nullable();
             $table->unsignedInteger('day_of_month')->default(15);
+            $table->unsignedInteger('max_retries')->default(10);
             $table->timestamps();
 
             $table->foreign('inst_id')->references('id')->on('institutions');

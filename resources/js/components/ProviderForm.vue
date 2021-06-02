@@ -41,6 +41,10 @@
   	        <td>Run harvests monthly on day </td>
   	        <td>{{ mutable_prov.day_of_month }}</td>
     	  </tr>
+          <tr>
+  	        <td>Maximum retries </td>
+  	        <td>{{ mutable_prov.max_retries }}</td>
+    	  </tr>
   	      <tr>
   	        <td>Reports to harvest </td>
   	        <td>
@@ -54,7 +58,7 @@
   	    </v-simple-table>
       </div>
       <div v-else>
-        <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)">
+        <v-form v-model="formValid">
           <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
           <v-switch v-model="form.is_active" label="Active?"></v-switch>
           <v-select :items="institutions" v-model="form.inst_id" value="provider.inst_id" label="Serves"
@@ -63,9 +67,14 @@
           <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined></v-text-field>
   		  <div class="field-wrapper has-label">
   	        <v-subheader v-text="'Run Harvests Monthly on Day'"></v-subheader>
-  	        <v-text-field v-model="form.day_of_month" label="Day-of-Month" hide-details single-line type="number"
-	        ></v-text-field>
+  	        <v-text-field v-model="form.day_of_month" label="Day-of-Month" single-line type="number"
+	                      :rules="dayRules"></v-text-field>
 		  </div>
+          <div class="field-wrapper has-label">
+            <v-subheader v-text="'Maximum #-of Retries'"></v-subheader>
+            <v-text-field v-model="form.max_retries" label="Max Retries" hide-details single-line type="number"
+            ></v-text-field>
+          </div>
 	      <div class="field-wrapper has-label">
 	        <v-subheader v-text="'Reports to Harvest'"></v-subheader>
 	        <v-select :items="master_reports" v-model="form.master_reports" value="provider.reports" label="Select"
@@ -73,9 +82,13 @@
                       persistent-hint
 	        ></v-select>
 		  </div>
-          <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Save Provider Settings</v-btn>
+          <br />
+          <v-btn small color="primary" type="button" @click="formSubmit" :disabled="!formValid">
+              Save Provider Settings
+          </v-btn>
+          &nbsp; &nbsp;
           <v-btn small type="button" @click="hideForm">cancel</v-btn>
-        </form>
+        </v-form>
       </div>
     </div>
   </div>
@@ -110,8 +123,15 @@
                     is_active: this.provider.is_active,
                     server_url_r5: this.provider.server_url_r5,
                     day_of_month: this.provider.day_of_month,
+                    max_retries: this.provider.max_retries,
                     master_reports: [],
-                })
+                }),
+                formValid: true,
+                dayRules: [
+                    v => !!v || "Day of month is required",
+                    v => ( v && v >= 1 ) || "Day of month must be > 1",
+                    v => ( v && v <= 28 ) || "Day of month must be < 29",
+                ],
             }
         },
         methods: {
@@ -123,6 +143,7 @@
                     .then( function(response) {
                         if (response.result) {
                             self.mutable_prov = response.provider;
+                            self.form.max_retries = response.provider.max_retries;
                             if (self.is_admin) {
                                 self.inst_name = self.institutions[response.provider.inst_id-1].name;
                             }

@@ -114,9 +114,8 @@ class InstitutionController extends Controller
         }
 
         // Get the institution and most recent harvest
-        $institution = Institution::
-                with('institutionType', 'sushiSettings', 'sushiSettings.provider', 'users', 'users.roles')
-                ->findOrFail($id);
+        $institution = Institution::with('institutionType', 'users', 'users.roles')->findOrFail($id);
+
         $last_harvest = $institution->sushiSettings->max('last_harvest');
         $institution['can_delete'] = ($id > 1 && is_null($last_harvest)) ? true : false;
 
@@ -135,6 +134,12 @@ class InstitutionController extends Controller
         $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
         $institution['groups'] = $institution->institutionGroups()->pluck('institution_group_id')->all();
 
+        // Get sushisettings, map is_active to 'status' and attach settings to the institution object
+        $sushi_settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
+        $institution['sushiSettings'] = $sushi_settings->map(function ($setting) {
+            $setting['status'] = ($setting->is_active) ? 'Active' : 'Suspended';
+            return $setting;
+        });
 
         // Roles are limited to current user's max role
         $all_roles = Role::where('id', '<=', $thisUser->maxRole())->orderBy('name', 'ASC')

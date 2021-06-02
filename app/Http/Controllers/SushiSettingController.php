@@ -108,7 +108,7 @@ class SushiSettingController extends Controller
        // Ensure user is allowed to change the settings
         $institution = Institution::findOrFail($request->inst_id);
         if (!$institution->canManage()) {
-            return response()->json(array('error' => 'Invalid request'));
+            return response()->json(['result' => false, 'msg' => 'Invalid request']);
         }
 
        // Update or create the settings
@@ -116,6 +116,7 @@ class SushiSettingController extends Controller
             ['inst_id' => $request->inst_id, 'prov_id' => $request->prov_id],
             $input
         );
+        return response()->json(['result' => true, 'msg' => 'Setting updated successfully']);
     }
 
     /**

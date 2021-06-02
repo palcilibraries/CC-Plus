@@ -16,13 +16,22 @@
         <v-col cols="4"><strong>Customer ID: </strong>{{ form.customer_id }}</v-col>
       	<v-col cols="4"><strong>Requestor ID: </strong>{{ form.requestor_id }}</v-col>
       	<v-col cols="4"><strong>API Key: </strong>{{ form.API_key }}</v-col>
-        <v-col cols="12">
+      </v-row>
+      <v-row>
+        <v-col v-if="form.is_active" cols="4"><strong><font color='green'>Harvesting is ACTIVE</font></strong></v-col>
+        <v-col v-else  cols="4"><strong><font color='red'>Harvesting SUSPENDED</font></strong></v-col>
+        <v-col cols="8">
           <strong>Support Email: </strong><a :href="'mailto:'+form.support_email">{{ form.support_email }}</a>
         </v-col>
       </v-row>
       <div>
 	  	  <h2>Actions</h2>
-          <v-btn small color="secondary" type="button" @click="testSettings" style="display:inline-block;margin-right:1em;">test</v-btn>
+          <v-btn small color="secondary" type="button" @click="testSettings"
+                 style="display:inline-block;margin-right:1em;">test</v-btn>
+          <v-btn v-if="form.is_active"  small color="secondary" type="button" @click="toggleActive"
+                 style="display:inline-block;margin-right:1em;">suspend</v-btn>
+          <v-btn v-if="!form.is_active" small color="green" type="button" @click="toggleActive"
+                 style="display:inline-block;margin-right:1em;">enable</v-btn>
           <a :href="'/harvestlogs/create?inst='+setting.inst_id+'&prov='+setting.prov_id">
             <v-btn small color="primary" type="button" style="display:inline-block;margin-right:1em;">harvest</v-btn>
           </a>
@@ -88,6 +97,7 @@
                     support_email: this.setting.support_email,
                     inst_id: this.setting.inst_id,
                     prov_id: this.setting.prov_id,
+                    is_active: this.setting.is_active,
                 })
             }
         },
@@ -139,6 +149,23 @@
                   }
                 })
                 .catch({});
+            },
+            toggleActive () {
+                var setting = (this.form.is_active) ? 0 : 1;
+                axios.post('/sushisettings-update', {
+                    inst_id: this.setting.inst_id,
+                    prov_id: this.setting.prov_id,
+                    is_active: setting
+                })
+                .then( (response) => {
+                    if (response.data.result) {
+                        this.form.is_active = setting;
+                    } else {
+                        self.success = '';
+                        self.failure = response.data.msg;
+                    }
+                })
+                .catch(error => {});
             },
             testSettings (event) {
                 var self = this;

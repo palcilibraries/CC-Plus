@@ -7,6 +7,7 @@ use App\Provider;
 use App\Institution;
 use App\Report;
 use App\HarvestLog;
+use App\SushiSetting;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -56,8 +57,9 @@ class ProviderController extends Controller
         }
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
                                  ->get(['id','name'])->toArray();
+        $default_retries = config('ccplus.max_harvest_retries');
 
-        return view('providers.index', compact('providers', 'institutions', 'master_reports'));
+        return view('providers.index', compact('providers', 'institutions', 'master_reports', 'default_retries'));
     }
 
     /**
@@ -117,11 +119,11 @@ class ProviderController extends Controller
     public function show($id)
     {
         $thisUser = auth()->user();
+        $provider = Provider::with(['reports:reports.id,reports.name'])->findOrFail($id);
 
        // Build data to be passed based on whether the user is admin or Manager
         if ($thisUser->hasRole("Admin")) {
-            $provider = Provider::with(['reports:reports.id,reports.name','sushiSettings','sushiSettings.institution'])
-                                ->findOrFail($id);
+            $sushi_settings = SushiSetting::with('institution')->where('prov_id',$provider->id)->get();
 
             // Get last_harvest for the provider (ALL insts) as determinant for whether it can be deleted
             $last_harvest = $provider->sushiSettings->max('last_harvest');
@@ -140,11 +142,8 @@ class ProviderController extends Controller
         } else {  // Managers/Users are limited their own inst
             $user_inst = $thisUser->inst_id;
             $limit_to_insts = array($user_inst);
-            $provider = Provider::with(['reports:reports.id,reports.name',
-                                        'sushiSettings' => function ($query) use ($user_inst) {
-                                            $query->where('inst_id', '=', $user_inst);
-                                        },
-                                        'sushiSettings.institution'])->findOrFail($id);
+            $sushi_settings = SushiSetting::with('institution')
+                                          ->where('prov_id',$provider->id)->where('inst_id', $user_inst)->get();
             $provider['can_delete'] = false;
             $institutions = Institution::where('id', '=', $user_inst)->get(['id','name'])->toArray();
             $unset_institutions = array();
@@ -152,6 +151,14 @@ class ProviderController extends Controller
                 $unset_institutions[] = Institution::where('id', $user_inst)->first()->toArray();
             }
         }
+
+        // map is_active sushisetting to 'status' and attach settings to the provider object
+        $provider['sushiSettings'] = $sushi_settings->map(function ($setting) {
+            $setting['status'] = ($setting->is_active) ? 'Active' : 'Suspended';
+            return $setting;
+        });
+
+        // get master reports and harvestlog records
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
                                  ->get(['id','name'])->toArray();
 
@@ -211,7 +218,9 @@ class ProviderController extends Controller
             'inst_id' => 'required',
         ]);
         $input = $request->all();
-
+        if (!isset($input['max_retries']) || $input['max_retries'] < 0) {
+            $input['max_retries'] = 0;
+        }
       // Update the record and assign reports in master_reports
         $provider->update($input);
         $provider->reports()->detach();
@@ -526,6 +535,7 @@ class ProviderController extends Controller
 
             // Update or create the Provider record
             if (is_null($current_prov)) {      // Create
+                $_prov['max_retries'] = config('ccplus.max_harvest_retries');
                 $current_prov = Provider::create($_prov);
                 $cur_prov_id = $current_prov->id;
                 $prov_created++;

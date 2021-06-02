@@ -24,7 +24,7 @@
     </div>
 	<div class="related-list">
       <h2 class="section-title">Institutions</h2> @if (auth()->user()->hasRole("Admin"))<a href="/institutions/create" class="section-action">add new</a> @endif
-	  <all-sushi-by-prov :settings="{{ json_encode($provider->sushiSettings->toArray()) }}"
+      <all-sushi-by-prov :settings="{{ json_encode($provider->sushiSettings) }}"
 	                     :prov_id="{{ json_encode($provider->id) }}"
                          :unset="{{ json_encode($unset_institutions) }}"
 	  ></all-sushi-by-prov>

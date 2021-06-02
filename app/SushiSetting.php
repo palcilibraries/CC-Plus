@@ -24,9 +24,9 @@ class SushiSetting extends Model
    * @var array
    */
     protected $fillable = [
-      'inst_id', 'prov_id', 'requestor_id', 'customer_id', 'API_key', 'support_email'
+      'inst_id', 'prov_id', 'requestor_id', 'customer_id', 'API_key', 'support_email', 'is_active'
     ];
-    protected $casts =['id'=>'integer', 'inst_id'=>'integer', 'prov_id'=>'integer'];
+    protected $casts =['id'=>'integer', 'inst_id'=>'integer', 'prov_id'=>'integer', 'is_active' => 'integer'];
 
   /**
    * The attributes that should be encrypted on save (password is already hashed)

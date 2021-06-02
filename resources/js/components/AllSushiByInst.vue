@@ -56,6 +56,7 @@
           <td>{{ item.customer_id }}</td>
           <td>{{ item.requestor_id }}</td>
           <td>{{ item.API_key }}</td>
+          <td :class="item.status">{{ item.status }}</td>
           <td v-if="is_manager || is_admin">
             <v-btn class='btn btn-danger' small type="button" @click="destroy(item)">Delete connection</v-btn>
           </td>
@@ -98,6 +99,7 @@
                   { text: 'Customer ID', value: 'customer_id' },
                   { text: 'Requestor ID', value: 'requestor_id' },
                   { text: 'API Key', value: 'API_key' },
+                  { text: 'Status', value: 'status' },
                   { text: '', value: ''},
 				  { text: '', value: ''}
                 ],
@@ -221,5 +223,6 @@
 </script>
 
 <style>
-
+.Active { color: #00dd00; }
+.Suspended { color: #dd0000; }
 </style>

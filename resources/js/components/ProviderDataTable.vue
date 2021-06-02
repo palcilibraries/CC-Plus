@@ -88,7 +88,7 @@
         <v-card-title>
           <span>Create a new provider</span>
         </v-card-title>
-        <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
+        <v-form v-model="formValid">
           <v-card-text>
             <v-container grid-list-md>
               <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
@@ -104,7 +104,13 @@
               <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined></v-text-field>
               <div class="field-wrapper has-label">
                 <v-subheader v-text="'Run Harvests Monthly on Day'"></v-subheader>
-                <v-text-field v-model="form.day_of_month" label="Day-of-Month" hide-details single-line type="number"
+                <v-text-field v-model="form.day_of_month" label="Day-of-Month" single-line type="number"
+                              :rules="dayRules">
+                </v-text-field>
+              </div>
+              <div class="field-wrapper has-label">
+                <v-subheader v-text="'Maximum #-of Retries'"></v-subheader>
+                <v-text-field v-model="form.max_retries" label="Max Retries" hide-details single-line type="number"
                 ></v-text-field>
               </div>
               <div class="field-wrapper has-label">
@@ -118,13 +124,15 @@
           </v-card-text>
           <v-card-actions>
             <v-col class="d-flex">
-              <v-btn class='btn' x-small color="primary" type="submit">Save New Provider</v-btn>
+              <v-btn small color="primary" type="button" @click="formSubmit" :disabled="!formValid">
+                Save New Provider
+              </v-btn>
             </v-col>
             <v-col class="d-flex">
               <v-btn class='btn' x-small type="button" color="primary" @click="provDialog=false">Cancel</v-btn>
             </v-col>
           </v-card-actions>
-        </form>
+      </v-form>
       </v-card>
     </v-dialog>
   </div>
@@ -137,6 +145,7 @@
             providers: { type:Array, default: () => [] },
             institutions: { type:Array, default: () => [] },
             master_reports: { type:Array, default: () => [] },
+            default_retries: { type:Number, default: null },
            },
     data () {
       return {
@@ -159,8 +168,15 @@
             is_active: 1,
             server_url_r5: '',
             day_of_month: 15,
+            max_retries: this.default_retries,
             master_reports: [],
         }),
+        formValid: true,
+        dayRules: [
+            v => !!v || "Day of month is required",
+            v => ( v && v >= 1 ) || "Day of month must be > 1",
+            v => ( v && v <= 28 ) || "Day of month must be < 29",
+        ],
         dtKey: 1,
         mutable_options: {},
         csv_upload: null,

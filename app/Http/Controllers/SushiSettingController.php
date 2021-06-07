@@ -31,6 +31,14 @@ class SushiSettingController extends Controller
         $setting = SushiSetting::with(['institution', 'provider'])->findOrFail($id);
         abort_unless($setting->institution->canManage(), 403);
 
+        // Set next_harvest date
+        if (!$setting->provider->is_active || !$setting->institution->is_active || !$setting->is_active) {
+            $setting['next_harvest'] = null;
+        } else {
+            $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
+            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->day_of_month,date("Y")));
+        }
+
         // Get 10 most recent harvests
         $harvests = HarvestLog::with(
             'report:id,name',
@@ -91,7 +99,15 @@ class SushiSettingController extends Controller
         }
         $setting = SushiSetting::create($input);
         $setting->load('institution', 'provider');
+
+        // Set status string based on is_active and add in a string for next_harvest
         $setting['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';
+        if (!$setting->provider->is_active || !$setting->institution->is_active || !$setting->is_active) {
+            $setting['next_harvest'] = null;
+        } else {
+            $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
+            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->day_of_month,date("Y")));
+        }
         return response()->json(['result' => true, 'msg' => 'Settings successfully created', 'setting' => $setting]);
     }
 

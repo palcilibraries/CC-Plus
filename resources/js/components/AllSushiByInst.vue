@@ -223,6 +223,6 @@
 </script>
 
 <style>
-.Active { color: #00dd00; }
-.Suspended { color: #dd0000; }
+.Enabled { color: #00dd00; }
+.Disabled { color: #dd0000; }
 </style>

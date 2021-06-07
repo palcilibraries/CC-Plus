@@ -18,8 +18,8 @@
       	<v-col cols="4"><strong>API Key: </strong>{{ form.API_key }}</v-col>
       </v-row>
       <v-row>
-        <v-col v-if="form.is_active" cols="4"><strong><font color='green'>Harvesting is ACTIVE</font></strong></v-col>
-        <v-col v-else  cols="4"><strong><font color='red'>Harvesting SUSPENDED</font></strong></v-col>
+        <v-col v-if="form.is_active" cols="4"><strong><font color='green'>Harvesting Enabled</font></strong></v-col>
+        <v-col v-else  cols="4"><strong><font color='red'>Harvesting Disabled</font></strong></v-col>
         <v-col cols="8">
           <strong>Support Email: </strong><a :href="'mailto:'+form.support_email">{{ form.support_email }}</a>
         </v-col>

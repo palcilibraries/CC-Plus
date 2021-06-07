@@ -137,7 +137,7 @@ class InstitutionController extends Controller
         // Get sushisettings, map is_active to 'status' and attach settings to the institution object
         $sushi_settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
         $institution['sushiSettings'] = $sushi_settings->map(function ($setting) {
-            $setting['status'] = ($setting->is_active) ? 'Active' : 'Suspended';
+            $setting['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';
             return $setting;
         });
 

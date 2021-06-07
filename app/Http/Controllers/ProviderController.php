@@ -154,7 +154,7 @@ class ProviderController extends Controller
 
         // map is_active sushisetting to 'status' and attach settings to the provider object
         $provider['sushiSettings'] = $sushi_settings->map(function ($setting) {
-            $setting['status'] = ($setting->is_active) ? 'Active' : 'Suspended';
+            $setting['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';
             return $setting;
         });
 

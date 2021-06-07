@@ -43,7 +43,7 @@ Once the application is installed, the application administrator will need to co
 ## Installation (Un*x)
 
 ### Step 1: Apache
-Make sure you have a working [apache server configured](https://httpd.apache.org/docs/2.4/), including `mod_rewrite`, for serving the pulicly-accessible elements of the CC-Plus application. For the purposes of these instructions, we will refer to this place as: `/var/www/ccplus/`.
+Make sure you have a working [apache server configured](https://httpd.apache.org/docs/2.4/), including `mod_rewrite`, for serving the publicly-accessible elements of the CC-Plus application. For the purposes of these instructions, we will refer to this place as: `/var/www/ccplus/`.
 
 Define the public-facing web directory settings something along the lines of:
 ```bash
@@ -120,7 +120,7 @@ And then install npm:
 ```bash
 $ npm install
 ```
-You also need to generate an encryption key for  the application. This key will be used to encrypt the raw JSON report and application data, **not** passwords. This only needs to be done during installation. Resetting this key later will make any existing saved data unrecoverable unless you maintain a record of all previous key value(s). This command will update the `.env` with a unique value for APP_KEY.
+You also need to generate an encryption key for the application. This key will be used to encrypt the raw JSON report and application data, **not** passwords. This only needs to be done during installation. Resetting this key later will make any existing saved data unrecoverable unless you maintain a record of all previous key value(s). This command will update the `.env` with a unique value for APP_KEY.
 ```bash
 $ php artisan key:generate
    Application key set successfully
@@ -196,7 +196,7 @@ Seeded: Database\Seeders\CcplusErrorsTableSeeder (10.23ms)
 $
 ```
 ### Step 9: Add a Consortium
-The `ccplus:add_consortium` command script prompts for inputs and create the new consortium. **Note:** The "database key" is used to create a consortium-specific database named "ccplus_< database-key-value >".
+The `ccplus:add_consortium` command script prompts for inputs and creates the new consortium. **Note:** The "database key" is used to create a consortium-specific database named "ccplus_< database-key-value >".
 ```bash
 $ php artisan ccplus:addconsortium
   New consortium name?:
@@ -272,7 +272,7 @@ A brief description for each command is below. See the help screen for each comm
 * ccplus:sushiloader  
 	Intended to run nightly by the Kernel.php scheduler, this command scans the SUSHI settings for all institutions and providers within a consortium and loads requests into the gloabl jobs queue (globaldb:jobs table).
 * ccplus:sushiqw  
-	Intended to run by the Kernel,php scheduler (by default every 10 minutes), this command scans the jobs queue, issues SUSHI requests to report providers, and stores/logs the results.
+	Intended to run by the Kernel.php scheduler (by default every 10 minutes), this command scans the jobs queue, issues SUSHI requests to report providers, and stores/logs the results.
 * ccplus:C5test  
 	This is a command for testing raw report data. Accepts COUNTER-5 JSON report data from a file and attempts to validate and store it in the running system
 

@@ -113,10 +113,12 @@ class InstitutionController extends Controller
             abort_unless($thisUser->inst_id == $id, 403);
         }
 
-        // Get the institution and most recent harvest
+        // Get the institution and sushi settings
         $institution = Institution::with('institutionType', 'users', 'users.roles')->findOrFail($id);
+        $sushi_settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
 
-        $last_harvest = $institution->sushiSettings->max('last_harvest');
+        // Get most recent harvest and set can_delete flag
+        $last_harvest = $sushi_settings->max('last_harvest');
         $institution['can_delete'] = ($id > 1 && is_null($last_harvest)) ? true : false;
 
         // Add user's highest role as "permission" as a separate array
@@ -134,8 +136,7 @@ class InstitutionController extends Controller
         $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
         $institution['groups'] = $institution->institutionGroups()->pluck('institution_group_id')->all();
 
-        // Get sushisettings, map is_active to 'status' and attach settings to the institution object
-        $sushi_settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
+        // map is_active to 'status' and attach settings to the institution object
         $institution['sushiSettings'] = $sushi_settings->map(function ($setting) {
             $setting['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';
             return $setting;
@@ -146,7 +147,7 @@ class InstitutionController extends Controller
                          ->get(['name', 'id'])->toArray();
 
         // Get id+name pairs for accessible providers without settings
-        $set_provider_ids = $institution->sushiSettings->pluck('prov_id');
+        $set_provider_ids = $sushi_settings->pluck('prov_id');
         $unset_providers = Provider::whereNotIn('id', $set_provider_ids)
                            ->where(function ($query) use ($id) {
                                $query->where('inst_id', 1)->orWhere('inst_id', $id);

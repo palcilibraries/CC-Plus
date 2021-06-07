@@ -181,9 +181,11 @@
             },
             testSettings (event) {
                 if (!(this.is_admin || this.is_manager)) { return; }
-                this.showTest = true;
+                this.failure = '';
+                this.success = '';
                 this.testData = '';
                 this.testStatus = "... Working ...";
+                this.showTest = true;
                 axios.get('/sushisettings-test'+'?prov_id='+this.form.prov_id+'&'
                                                +'requestor_id='+this.form.requestor_id+'&'
                                                +'customer_id='+this.form.customer_id+'&'
@@ -202,6 +204,10 @@
                 this.form.customer_id = '';
                 this.form.requestor_id = '';
                 this.form.API_key = '';
+                this.failure = '';
+                this.success = '';
+                this.testData = '';
+                this.testStatus = '';
                 this.showForm = true;
             },
             hideForm (event) {

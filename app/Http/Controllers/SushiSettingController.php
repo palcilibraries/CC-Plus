@@ -91,6 +91,7 @@ class SushiSettingController extends Controller
         }
         $setting = SushiSetting::create($input);
         $setting->load('institution', 'provider');
+        $setting['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';
         return response()->json(['result' => true, 'msg' => 'Settings successfully created', 'setting' => $setting]);
     }
 

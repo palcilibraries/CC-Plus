@@ -102,7 +102,8 @@
                     prov_id: this.prov_id,
                     customer_id: '',
                     requestor_id: '',
-                    API_key: ''
+                    API_key: '',
+                    is_active: 1
 				})
             }
         },

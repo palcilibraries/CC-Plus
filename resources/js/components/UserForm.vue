@@ -44,7 +44,7 @@
         <v-text-field outlined required name="email" label="Email" type="email"
                       v-model="form.email" :rules="emailRules">
         </v-text-field>
-        <v-switch v-model="form.is_active" label="Active?"></v-switch>
+        <v-switch v-if="is_manager || is_admin" v-model="form.is_active" label="Active?"></v-switch>
         <v-select v-if="is_admin" outlined required :items="institutions" v-model="form.inst_id"
                   label="Institution" item-text="name" item-value="id"
         ></v-select>

@@ -79,7 +79,9 @@
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-col class="d-flex">
-            <v-btn x-small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+            <v-btn x-small color="primary" type="submit" @click="importSubmit" :disabled="csv_upload==null">
+                Run Import
+            </v-btn>
           </v-col>
           <v-col class="d-flex">
             <v-btn class='btn' x-small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
@@ -132,6 +134,11 @@
               </div>
             </v-container>
           </v-card-text>
+          <v-row class="status-message ma-0 pa-0" v-if="dialogError" no-gutters>
+            <v-col class="d-flex">
+              <span v-if="dialogError" class="fail" role="alert" v-text="dialogError"></span>
+            </v-col>
+          </v-row>
           <v-card-actions>
             <v-col class="d-flex">
               <v-btn class='btn' x-small color="primary" type="submit">Save User</v-btn>
@@ -160,6 +167,7 @@
       return {
         success: '',
         failure: '',
+        dialogError: '',
         inst_name: '',
         mutable_users: this.users,
         current_user: {},
@@ -177,10 +185,6 @@
         emailRules: [
             v => !!v || 'E-mail is required',
             v => /.+@.+/.test(v) || 'E-mail must be valid'
-        ],
-        passwordRules: [
-            v => !!v || 'Password is required',
-            v => v.length >= 8 || 'Password must be at least 8 characters'
         ],
         form: new window.Form({
             name: '',
@@ -200,11 +204,16 @@
         formSubmit (event) {
             this.success = '';
             this.failure = '';
+            this.dialogError = '';
             if (this.form.password != this.form.confirm_pass) {
-                this.failure = 'Passwords do not match! Please re-enter';
+                this.dialogError = 'Passwords do not match! Please re-enter';
                 return;
             }
             if (this.dialogType == 'edit') {
+                if  (this.form.password.length>0 && this.form.password.length<8) {
+                    this.dialogError = 'Password must be at least 8 characters';
+                    return;
+                }
                 this.form.patch('/users/'+this.current_user.id)
                     .then((response) => {
                         if (response.result) {
@@ -273,6 +282,7 @@
         editForm (userid) {
             this.failure = '';
             this.success = '';
+            this.dialogError = '';
             this.dialogType = "edit";
             this.current_user = this.mutable_users[this.mutable_users.findIndex(u=> u.id == userid)];
             this.form.name = this.current_user.name;
@@ -288,25 +298,22 @@
         createForm () {
             this.failure = '';
             this.success = '';
+            this.dialogError = '';
             this.dialogType = "create";
             var _inst = (this.is_admin) ? null : this.institutions[0].id;
-            this.current_user = {roles: [], inst_id: _inst};
+            this.current_user = {roles: [1], inst_id: _inst};
             this.form.name = '';
             this.form.inst_id = _inst;
             this.form.is_active = 1;
             this.form.email = '';
             this.form.password = '';
             this.form.confirm_pass = '';
-            this.form.roles = [];
+            this.form.roles = [1];
             this.userDialog = true;
             this.importDialog = false;
         },
         importSubmit (event) {
             this.success = '';
-            if (this.csv_upload==null) {
-                this.failure = 'A CSV import file is required';
-                return;
-            }
             this.failure = '';
             let formData = new FormData();
             formData.append('csvfile', this.csv_upload);
@@ -339,7 +346,17 @@
         },
     },
     computed: {
-      ...mapGetters(['is_manager','is_admin','datatable_options'])
+      ...mapGetters(['is_manager','is_admin','datatable_options']),
+      passwordRules() {
+          if (this.dialogType == 'create') {
+              return [ v => !!v || 'Password is required',
+                       v => v.length >= 8 || 'Password must be at least 8 characters'
+                     ];
+          // formSubmit handles password validation for edit
+          } else {
+              return [];
+          }
+      }
     },
     beforeCreate() {
         // Load existing store data

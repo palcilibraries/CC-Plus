@@ -7,6 +7,7 @@ use App\User;
 use App\Role;
 use App\Institution;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Writer\Xls;
@@ -124,6 +125,17 @@ class UserController extends Controller
             }
         }
         $user->load(['institution:id,name']);
+
+        // Send email to the user about their new account
+        // Set current consortium name if there are more than 1 active in this system
+        $consortia = \App\Consortium::where('is_active',1)->get();
+        $con_name = "";
+        if ($consortia->count() > 1) {
+            $current = $consortia->where('ccp_key',session('ccp_con_key'))->first();
+            $con_name = ($current) ? $current->name : "";
+        }
+        $data = array('name' => $user->name, 'password' => $input['password']);
+        Mail::to($input['email'])->send(new \App\Mail\NewUser($con_name,$data));
 
         // Setup array to hold new user to match index fields
         $_roles = "";

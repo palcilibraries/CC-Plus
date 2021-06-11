@@ -31,6 +31,10 @@
 	          <td>{{ mutable_inst.name }}</td>
 	        </tr>
 	        <tr>
+	          <td>Type </td>
+	          <td>{{ inst_type }}</td>
+	        </tr>
+	        <tr>
     	      <td>Status </td>
 	          <td>{{ status }}</td>
 	        </tr>
@@ -56,25 +60,50 @@
         <div v-if="showForm=='edit'">
           <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
               <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+              <v-select
+                  :items="types"
+                  v-model="form.type_id"
+                  value="mutable_inst.type_id"
+                  label="Institution Type"
+                  item-text="name"
+                  item-value="id"
+                  outlined
+              ></v-select>
               <v-switch v-model="form.is_active" label="Active?"></v-switch>
-			        <div class="field-wrapper">
+			  <div class="field-wrapper">
 	              <v-subheader v-text="'FTE'"></v-subheader>
-	              <v-text-field v-model="form.fte" label="FTE" hide-details single-line type="number"
+	              <v-text-field v-model="form.fte"
+	                            label="FTE"
+	                            hide-details
+	                            single-line
+	                            type="number"
 	              ></v-text-field>
-			        </div>
-              <div class="field-wrapper has-label">
+			  </div>
+			  <div class="field-wrapper has-label">
 	              <v-subheader v-text="'Belongs To'"></v-subheader>
-	              <v-select :items="all_groups" v-model="form.institutiongroups" value="mutable_groups"
-	                        item-text="name" item-value="id" label="Institution Group(s)" multiple
-	                        chips hint="Assign group membership for this institution" persistent-hint
+	              <v-select
+	                  :items="all_groups"
+	                  v-model="form.institutiongroups"
+	                  value="mutable_groups"
+	                  item-text="name"
+	                  item-value="id"
+	                  label="Institution Group(s)"
+	                  multiple
+	                  chips
+	                  hint="Assign group membership for this institution"
+	                  persistent-hint
 	              ></v-select>
-              </div>
-              <v-textarea v-model="form.notes" value="mutable_inst.notes" label="Notes" auto-grow
+			  </div>
+              <v-textarea
+                  v-model="form.notes"
+                  value="mutable_inst.notes"
+                  label="Notes"
+                  auto-grow
               ></v-textarea>
               <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
                 Save Institution Settings
               </v-btn>
-              <v-btn small type="button" @click="hideForm">cancel</v-btn>
+			  <v-btn small type="button" @click="hideForm">cancel</v-btn>
           </form>
         </div>
         <div v-if="showForm=='import'">
@@ -120,6 +149,7 @@
     export default {
         props: {
                 institution: { type:Object, default: () => {} },
+                types: { type:Array, default: () => [] },
                 all_groups: { type:Array, default: () => [] },
                },
 
@@ -128,6 +158,7 @@
                 success: '',
                 failure: '',
                 status: '',
+                inst_type: '',
                 statusvals: ['Inactive','Active'],
 				showForm: '',
                 mutable_inst: this.institution,
@@ -136,6 +167,7 @@
                     name: this.institution.name,
                     is_active: this.institution.is_active,
                     fte: this.institution.fte,
+                    type_id: this.institution.type_id,
                     institutiongroups: this.institution.groups,
                     notes: this.institution.notes,
                 }),
@@ -158,6 +190,9 @@
                         if (response.result) {
                             this.success = response.msg;
                             this.mutable_inst.name = this.form.name;
+                            this.mutable_inst.type_id = this.form.type_id;
+                            const instType = this.types.find(t => t.id === this.form.type_id);
+                            this.inst_type = instType.name;
                             this.mutable_inst.is_active = this.form.is_active;
                             this.status = this.statusvals[this.form.is_active];
                             this.mutable_inst.fte = this.form.fte;
@@ -192,6 +227,9 @@
                          if (response.data.result) {
                              // Replace values in mutable array with response data
                              this.mutable_inst.name = response.data.inst_data['name'];
+                             this.mutable_inst.type_id = response.data.inst_data['type_id'];
+                             const instType = this.types.find(t => t.id === this.mutable_inst.type_id);
+                             this.inst_type = instType.name;
                              this.mutable_inst.is_active = response.data.inst_data['is_active'];
                              this.status = this.statusvals[this.mutable_inst.is_active];
                              this.mutable_inst.fte = response.data.inst_data['fte'];
@@ -246,6 +284,8 @@
         mounted() {
             this.showForm = '';
             this.status=this.statusvals[this.institution.is_active];
+            const instType = this.types.find(t => t.id === this.institution.type_id);
+            this.inst_type = instType.name;
             console.log('Institution Component mounted.');
         }
     }

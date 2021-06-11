@@ -156,7 +156,7 @@ class InstitutionGroupController extends Controller
     }
 
     /**
-     * Export institution types from the database.
+     * Export institution groups from the database.
      *
      * @param  string  $type    // 'xls' or 'xlsx'
      */

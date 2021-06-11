@@ -25,6 +25,7 @@
         <template v-slot:item="{ item }">
           <tr>
             <td><a :href="'/institutions/'+item.id">{{ item.name }}</a></td>
+            <td>{{ item.type }}</td>
             <td v-if="item.is_active">Active</td>
             <td v-else>Inactive</td>
             <td>{{ item.groups }}</td>
@@ -89,6 +90,9 @@
           <v-card-text>
             <v-container grid-list-md>
               <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+              <v-select :items="types" v-model="form.type_id" item-text="name" item-value="id"
+                        label="Institution Type" outlined
+              ></v-select>
               <v-switch v-model="form.is_active" label="Active?"></v-switch>
               <div class="field-wrapper">
                 <v-subheader v-text="'FTE'"></v-subheader>
@@ -124,6 +128,7 @@
   export default {
     props: {
             institutions: { type:Array, default: () => [] },
+            types: { type:Array, default: () => [] },
             all_groups: { type:Array, default: () => [] },
            },
     data () {
@@ -134,6 +139,7 @@
         importDialog: false,
         headers: [
           { text: 'Institution ', value: 'name', align: 'start' },
+          { text: 'Type', value: 'type' },
           { text: 'Status', value: 'is_active' },
           { text: 'Group(s)', value: 'groups' },
         ],
@@ -142,6 +148,7 @@
             name: '',
             is_active: 1,
             fte: 0,
+            type_id: 1,
             institutiongroups: [],
             notes: '',
         }),
@@ -165,6 +172,7 @@
             this.form.name = '';
             this.form.is_active = 1;
             this.form.fte = 0;
+            this.form.type_id = 1;
             this.form.institutiongroups = [];
             this.form.notes = '';
             this.instDialog = true;

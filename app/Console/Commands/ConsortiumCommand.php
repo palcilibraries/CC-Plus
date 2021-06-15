@@ -129,7 +129,7 @@ class ConsortiumCommand extends Command
         $this->line('<fg=cyan>Consortium added to global database.');
 
       // Create the Administrator account in the users table
-        $this->info('The initial Administrator acccount for a new consortium is always created with');
+        $this->info('The initial Administrator account for a new consortium is always created with');
         $this->info('an email address set to "Administrator".');
         // Not sure this should be secret... if they typo it, it's difficult to reset
         $_pass = $this->ask('Enter a password for this Administrator account?');

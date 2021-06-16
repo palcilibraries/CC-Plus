@@ -78,7 +78,7 @@ Next, the local `.env` needs to be modified to match the current host environmen
 $ cp .env.example .env
 $ vi .env
 ```
-* Assign APP_URL with the URL that your webserver uses connects to your public documents folder (step-1, above)
+* Assign APP_URL with the URL that your webserver uses to connect to your public documents folder (step-1, above)
 * Assign database credentials (a user with rights to create databases and grant privileges):
     * DB_USERNAME, DB_PASSWORD, DB_USERNAME2, DB_PASSWORD2
 * Update settings for connecting to email and SMTP services (will vary depending on server environment). These

@@ -116,11 +116,11 @@ export default {
                       name: "Institution Groups",
                       role: "Admin",
                   },
-                  {
-                      url: "/institutiontypes",
-                      name: "Institution Types",
-                      role: "Admin",
-                  },
+                  // {
+                  //     url: "/institutiontypes",
+                  //     name: "Institution Types",
+                  //     role: "Admin",
+                  // },
                 ]
               },
               {

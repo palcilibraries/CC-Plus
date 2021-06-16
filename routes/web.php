@@ -70,9 +70,11 @@ Route::get('/providers/export/{type}', 'ProviderController@export');
 Route::get('/institutions/export/{type}', 'InstitutionController@export');
 Route::get('/institutiontypes/export/{type}', 'InstitutionTypeController@export');
 Route::get('/institutiongroups/export/{type}', 'InstitutionGroupController@export');
+Route::get('/sushisettings/export/{type}/{inst?}/{prov?}', 'SushiSettingController@export');
 //
 Route::post('/users/import', 'UserController@import');
 Route::post('/providers/import', 'ProviderController@import');
 Route::post('/institutions/import', 'InstitutionController@import');
 Route::post('/institutiontypes/import', 'InstitutionTypeController@import');
 Route::post('/institutiongroups/import', 'InstitutionGroupController@import');
+Route::post('/sushisettings/import', 'SushiSettingController@import');

@@ -1,19 +1,28 @@
 <template>
   <div>
     <div>
-      <v-row v-if="is_admin" class="d-flex ma-0">
-        <v-col class="d-flex px-2" cols="4">
-          <v-btn small color="primary" @click="importForm">Import Providers</v-btn>
-        </v-col>
-        <v-col class="d-flex px-2" cols="4">
+      <v-row class="d-flex ma-0">
+        <v-col v-if="is_admin" class="d-flex px-2" cols="3">
           <v-btn small color="primary" @click="createForm">Create a Provider</v-btn>
         </v-col>
+        <v-col v-if="is_admin" class="d-flex px-2" cols="3">
+          <v-btn small color="primary" @click="providerImportForm">Import Providers</v-btn>
+        </v-col>
+        <v-col class="d-flex px-2" cols="3">
+          <v-btn small color="primary" @click="settingsImportForm">Import Sushi Settings</v-btn>
+        </v-col>
       </v-row>
-      <v-row>
-        <v-col cols="1">Export to:</v-col>
-        <v-col>
+      <v-row class="d-flex ma-0">
+        <v-col v-if="is_admin" class="d-flex px-2" cols="3">&nbsp;</v-col>
+        <v-col v-if="is_admin" class="d-flex px-2" cols="3">
+            Export providers to: &nbsp;
             <a :href="'/providers/export/xls'">.xls</a> &nbsp; &nbsp;
             <a :href="'/providers/export/xlsx'">.xlsx</a>
+        </v-col>
+        <v-col class="d-flex px-2" cols="3">
+            Export sushi settings to: &nbsp;
+            <a :href="'/sushisettings/export/xls'">.xls</a> &nbsp; &nbsp;
+            <a :href="'/sushisettings/export/xlsx'">.xlsx</a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">
@@ -38,47 +47,85 @@
         </template>
       </v-data-table>
     </div>
-    <v-dialog v-model="importDialog" persistent max-width="1200px">
+    <v-dialog v-model="providerImportDialog" persistent max-width="1200px">
       <v-card>
         <v-card-title>Import Providers</v-card-title>
-        <v-spacer></v-spacer>
-        <v-card-subtitle><strong>Providers cannot be deleted during an import operation.</strong>
         </v-card-subtitle>
         <v-card-text>
           <v-container grid-list-md>
-            <v-layout wrap>
-              <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
-              ></v-file-input>
-              <p>
-                <strong>NOTE: </strong>Provider imports always function as full-replacement updates. Any settings for
-                columns C-G which are NULL, blank, or missing in the import file will cause the import to overwrite the
-                field(s) for the provider with the blank, empty, or NULL value.
-              </p>
-              <p>
-                Provider-IDs (column-A) should be sequential, but this is not required. Importing rows with new, unique
-                ID values will create new providers. Provider names (column-B) must be unique. Attempting to renamed a
-                provider to an existing name will be ignored.
-              </p>
-              <p>
-                Providers can be renamed via import by giving the ID in column-A and the replacement name in column-B.
-                Be aware that the new name takes effect immediately, and will be associated with all harvested usage
-                data that may have been collected using the OLD name (data is stored by the ID, not the name.)
-              </p>
-              <p>
-                For these reasons, use caution when using this import function. Generating a Provider export FIRST will
-                supply detailed instructions for importing on the "How to Import" tab. Generating a new Provider export
-                following an import operation is a good way to confirm that all the settings are as-desired.
-              </p>
-            </v-layout>
+            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+            ></v-file-input>
+            <p>
+              <strong>Note:&nbsp; Provider imports function exclusively as Updates. No existing provider records will
+              be deleted.</strong>
+            </p>
+            <p>
+              The import process overwrites existing settings whenever a match for a Provider-ID is found in column-A
+              of the import file. If no existing setting is found for the specified Provider-ID, a NEW provider will
+              be created with the fields specified. Provider names (column-B) must be unique. Attempting to create
+              a provider (or rename one) using an existing name will be ignored.
+            </p>
+            <p>
+              Providers can be renamed via import by giving the ID in column-A and the replacement name in column-B.
+              Be aware that the new name takes effect immediately, and will be associated with all harvested usage
+              data that may have been collected using the OLD name (data is stored by the ID, not the name.)
+            </p>
+            <p>
+              For these reasons, use caution when using this import function. Generating a Provider export FIRST will
+              supply detailed instructions for importing on the "How to Import" tab. Generating a new Provider export
+              AFTER an import operation is a good way to confirm that all the settings are as-desired.
+            </p>
           </v-container>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-col class="d-flex">
-            <v-btn x-small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+            <v-btn x-small color="primary" type="submit" @click="providerImportSubmit">Run Import</v-btn>
           </v-col>
           <v-col class="d-flex">
-            <v-btn class='btn' x-small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
+            <v-btn class='btn' x-small type="button" color="primary" @click="providerImportDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="settingsImportDialog" persistent max-width="1200px">
+      <v-card>
+        <v-card-title>Import Sushi Settings</v-card-title>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+            ></v-file-input><br />
+            <p>
+              <strong>Note:&nbsp; The Import Type below determines whether the settings in the input file should
+              be treated as an <em>Update</em> or as a <em>Full Replacement</em> for any existing settings.</strong>
+            </p>
+            <p>
+              When "Full Replacement" is chosen, any EXISTING SETTINGS omitted from the import file will be deleted!
+              This will also remove all associated harvest and failed-harvest records connected to the settings!
+            </p>
+            <p>
+              The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings
+              whenever a match for an Institution-ID and Provider-ID are found in the import file. If no setting
+              exists for a given valid provider-institution pair, a new setting will be created and saved. Any values
+              in columns C-G which are NULL, blank, or missing for a valid provider-institution pair, will result
+              in a NULL value being stored for that field.
+            </p>
+            <p>
+              For these reasons, exercise caution using this import function, especially when requesting a Full
+              Replacement import. Generating an export of the existing settings FIRST will provide detailed
+              instructions for importing on the "How to Import" tab and will help ensure that the desired
+              end-state is achieved.
+            </p>
+            <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-col class="d-flex">
+            <v-btn x-small color="primary" type="submit" @click="settingsImportSubmit">Run Import</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small type="button" color="primary" @click="settingsImportDialog=false">Cancel</v-btn>
           </v-col>
         </v-card-actions>
       </v-card>
@@ -152,7 +199,10 @@
         success: '',
         failure: '',
         provDialog: false,
-        importDialog: false,
+        providerImportDialog: false,
+        settingsImportDialog: false,
+        import_type: '',
+        import_types: ['Add or Update', 'Full Replacement'],
         inst_name: '',
         headers: [
           { text: 'Provider ', value: 'prov_name', align: 'start' },
@@ -183,10 +233,17 @@
       }
     },
     methods:{
-        importForm () {
+        providerImportForm () {
+            this.csv_upload = null;
+            this.providerImportDialog = true;
+            this.settingsImportDialog = false;
+            this.provDialog = false;
+        },
+        settingsImportForm () {
             this.csv_upload = null;
             this.import_type = '';
-            this.importDialog = true;
+            this.settingsImportDialog = true;
+            this.providerImportDialog = false;
             this.provDialog = false;
         },
         createForm () {
@@ -199,9 +256,10 @@
             this.form.day_of_month = 15;
             this.form.master_reports = [];
             this.provDialog = true;
-            this.importDialog = false;
+            this.providerImportDialog = false;
+            this.settingsImportDialog = false;
         },
-        importSubmit (event) {
+        providerImportSubmit (event) {
             this.success = '';
             if (this.csv_upload==null) {
                 this.failure = 'A CSV import file is required';
@@ -226,7 +284,33 @@
                          this.failure = response.data.msg;
                      }
                  });
-             this.importDialog = false;
+             this.providerImportDialog = false;
+        },
+        settingsImportSubmit (event) {
+            this.success = '';
+            if (this.csv_upload==null) {
+                this.failure = 'A CSV import file is required';
+                return;
+            }
+            this.failure = '';
+            let formData = new FormData();
+            formData.append('csvfile', this.csv_upload);
+            formData.append('type', this.import_type);
+            axios.post('/sushisettings/import', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                  })
+                 .then( (response) => {
+                     if (response.data.result) {
+                         this.failure = '';
+                         this.success = response.data.msg;
+                     } else {
+                         this.success = '';
+                         this.failure = response.data.msg;
+                     }
+                 });
+             this.settingsImportDialog = false;
         },
         formSubmit (event) {
             this.success = '';

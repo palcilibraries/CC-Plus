@@ -35,7 +35,7 @@ class ProviderController extends Controller
                       ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
                       ->orderBy('prov_name', 'ASC')
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
-                             'prv.inst_id','inst.name as inst_name','day_of_month']);
+                             'prv.inst_id','inst.name as inst_name','day_of_month','max_retries']);
        // Otherwise, get all consortia-wide providers and those that match user's inst_id
        // (exclude providers assigned to institutions.)
         } else {
@@ -45,7 +45,7 @@ class ProviderController extends Controller
                       ->orWhere('prv.inst_id', $thisUser->inst_id)
                       ->orderBy('prov_name', 'ASC')
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
-                             'prv.inst_id','inst.name as inst_name','day_of_month']);
+                             'prv.inst_id','inst.name as inst_name','day_of_month','max_retries']);
         }
 
        // $institutions depends on whether current user is admin or Manager
@@ -103,7 +103,7 @@ class ProviderController extends Controller
                   ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
                   ->where('prv.id', $provider->id)
                   ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
-                         'prv.inst_id','inst.name as inst_name','day_of_month'])
+                         'prv.inst_id','inst.name as inst_name','day_of_month','max_retries'])
                   ->first();
 
         return response()->json(['result' => true, 'msg' => 'Provider successfully created',
@@ -276,7 +276,7 @@ class ProviderController extends Controller
                       ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
                       ->orderBy('prov_name', 'ASC')
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','server_url_r5',
-                             'inst.name as inst_name','day_of_month']);
+                             'inst.name as inst_name','day_of_month','max_retries']);
        // Managers get all consortia-wide providers and those that match user's inst_id
        // (excludes providers assigned to institutions.)
         } else {
@@ -286,7 +286,7 @@ class ProviderController extends Controller
                       ->orWhere('prv.inst_id', $thisUser->inst_id)
                       ->orderBy('prov_name', 'ASC')
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','server_url_r5',
-                             'inst.name as inst_name','day_of_month']);
+                             'inst.name as inst_name','day_of_month','max_retries']);
         }
 
         // Get all providers, with reports
@@ -307,60 +307,63 @@ class ProviderController extends Controller
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:C8');
-        $info_sheet->getStyle('A1:C8')->applyFromArray($info_style);
-        $info_sheet->getStyle('A1:C8')->getAlignment()->setWrapText(true);
+        $info_sheet->mergeCells('A1:C7');
+        $info_sheet->getStyle('A1:C7')->applyFromArray($info_style);
+        $info_sheet->getStyle('A1:C7')->getAlignment()->setWrapText(true);
         $top_txt  = "The Providers tab represents a starting place for updating or importing settings. The table\n";
         $top_txt .= "below describes the datatype and order that the import expects. Any Import rows without an\n";
-        $top_txt .= "ID value in column 1 and a name in column 2 will be ignored. If values are missing/invalid\n";
-        $top_txt .= "for columns (B-G), but not required, they will be set to the 'Default'.\n\n";
-        $top_txt .= "Only Admins can use the CC-Plus import for adding or updating providers and their settings.\n";
-        $top_txt .= "Any header row or columns beyond 'G' will be ignored. Once the data sheet contains everything\n";
+        $top_txt .= "ID value in column A and a name in column B will be ignored. If values are missing or invalid\n";
+        $top_txt .= "for columns (B-H), but not required, they will be set to the 'Default'.\n\n";
+        $top_txt .= "Any header row or columns beyond 'H' will be ignored. Once the data sheet contains everything\n";
         $top_txt .= "to be updated or inserted, save the sheet as a CSV and import it into CC-Plus.";
         $info_sheet->setCellValue('A1', $top_txt);
-        $info_sheet->getStyle('A10')->applyFromArray($head_style);
-        $info_sheet->setCellValue('A10', "NOTE:");
-        $info_sheet->mergeCells('B10:C12');
-        $info_sheet->getStyle('B10:C12')->applyFromArray($info_style);
-        $info_sheet->getStyle('B10:C12')->getAlignment()->setWrapText(true);
-        $note_txt  = "When performing full-replacement imports, be VERY careful about modifying\n";
-        $note_txt .= "existing ID value(s). The best approach is to add to, or modify, a full export\n";
-        $note_txt .= "to ensure that existing provider IDs are not accidently overwritten.";
-        $info_sheet->setCellValue('B10', $note_txt);
-        $info_sheet->getStyle('A14:D14')->applyFromArray($head_style);
-        $info_sheet->setCellValue('A14', 'Column Name');
-        $info_sheet->setCellValue('B14', 'Data Type');
-        $info_sheet->setCellValue('C14', 'Description');
-        $info_sheet->setCellValue('D14', 'Default');
-        $info_sheet->setCellValue('A15', 'Id');
-        $info_sheet->setCellValue('B15', 'Integer');
-        $info_sheet->setCellValue('C15', 'Unique CC-Plus Provider ID - required');
-        $info_sheet->setCellValue('A16', 'Name');
+        $info_sheet->getStyle('A8')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A8', "NOTE:");
+        $info_sheet->mergeCells('B8:C10');
+        $info_sheet->getStyle('B8:C10')->applyFromArray($info_style);
+        $info_sheet->getStyle('B8:C10')->getAlignment()->setWrapText(true);
+        $note_txt  = "Provider imports cannot be used to delete existing providers; only additions and updates are\n";
+        $note_txt .= "supported. The recommended approach is to add to, or modify, a previously run full export\n";
+        $note_txt .= "to ensure that desired end result is achieved.";
+        $info_sheet->setCellValue('B8', $note_txt);
+        $info_sheet->getStyle('A12:D12')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A12', 'Column Name');
+        $info_sheet->setCellValue('B12', 'Data Type');
+        $info_sheet->setCellValue('C12', 'Description');
+        $info_sheet->setCellValue('D12', 'Default');
+        $info_sheet->setCellValue('A13', 'Id');
+        $info_sheet->setCellValue('B13', 'Integer');
+        $info_sheet->setCellValue('C13', 'Unique CC-Plus Provider ID - required');
+        $info_sheet->setCellValue('A14', 'Name');
+        $info_sheet->setCellValue('B14', 'String');
+        $info_sheet->setCellValue('C14', 'Provider name - required');
+        $info_sheet->setCellValue('A15', 'Active');
+        $info_sheet->setCellValue('B15', 'String (Y or N)');
+        $info_sheet->setCellValue('C15', 'Make the provider active?');
+        $info_sheet->setCellValue('D15', 'Y');
+        $info_sheet->setCellValue('A16', 'Server URL');
         $info_sheet->setCellValue('B16', 'String');
-        $info_sheet->setCellValue('C16', 'Provider name - required');
-        $info_sheet->setCellValue('A17', 'Active');
-        $info_sheet->setCellValue('B17', 'String (Y or N)');
-        $info_sheet->setCellValue('C17', 'Make the provider active?');
-        $info_sheet->setCellValue('D17', 'Y');
-        $info_sheet->setCellValue('A18', 'Server Url');
-        $info_sheet->setCellValue('B18', 'String');
-        $info_sheet->setCellValue('C18', 'URL for Provider SUSHI service');
-        $info_sheet->setCellValue('D18', 'NULL');
-        $info_sheet->setCellValue('A19', 'harvest_day');
+        $info_sheet->setCellValue('C16', 'URL for Provider SUSHI service');
+        $info_sheet->setCellValue('D16', 'NULL');
+        $info_sheet->setCellValue('A17', 'harvest_day');
+        $info_sheet->setCellValue('B17', 'Integer');
+        $info_sheet->setCellValue('C17', 'Day of the month provider reports are ready (1-28)');
+        $info_sheet->setCellValue('D17', '15');
+        $info_sheet->setCellValue('A18', 'max_retries');
+        $info_sheet->setCellValue('B18', 'Integer');
+        $info_sheet->setCellValue('C18', 'The number of times to re-attempt failed harvests');
+        $info_sheet->setCellValue('D18', '10');
+        $info_sheet->setCellValue('A19', 'Institution ID');
         $info_sheet->setCellValue('B19', 'Integer');
-        $info_sheet->setCellValue('C19', 'Day of the month provider reports are ready (1-28)');
-        $info_sheet->setCellValue('D19', '15');
-        $info_sheet->setCellValue('A20', 'Institution ID');
+        $info_sheet->setCellValue('C19', 'Institution ID (see above)');
+        $info_sheet->setCellValue('D19', '1');
+        $info_sheet->setCellValue('A20', 'Master Reports');
         $info_sheet->setCellValue('B20', 'Integer');
-        $info_sheet->setCellValue('C20', 'Institution ID (see above)');
-        $info_sheet->setCellValue('D20', '1');
-        $info_sheet->setCellValue('A21', 'Master Reports');
-        $info_sheet->setCellValue('B21', 'Integer');
-        $info_sheet->setCellValue('C21', 'CSV list of Master Report IDs (see above)');
-        $info_sheet->setCellValue('D21', 'NULL');
+        $info_sheet->setCellValue('C20', 'CSV list of Master Report IDs (see above)');
+        $info_sheet->setCellValue('D20', 'NULL');
 
         // Set row height and auto-width columns for the sheet
-        for ($r = 1; $r < 22; $r++) {
+        for ($r = 1; $r < 21; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
         $info_columns = array('A','B','C','D');
@@ -376,10 +379,11 @@ class ProviderController extends Controller
         $providers_sheet->setCellValue('C1', 'Active');
         $providers_sheet->setCellValue('D1', 'Server URL');
         $providers_sheet->setCellValue('E1', 'Harvest Day');
-        $providers_sheet->setCellValue('F1', 'Institution ID');
-        $providers_sheet->setCellValue('G1', 'Master Reports');
-        $providers_sheet->setCellValue('I1', 'Institution Name');
-        $providers_sheet->setCellValue('J1', 'Report Names');
+        $providers_sheet->setCellValue('F1', 'Max Retries');
+        $providers_sheet->setCellValue('G1', 'Institution ID');
+        $providers_sheet->setCellValue('H1', 'Master Reports');
+        $providers_sheet->setCellValue('J1', 'Institution Name');
+        $providers_sheet->setCellValue('K1', 'Report Names');
         $row = 2;
         foreach ($providers as $provider) {
             $providers_sheet->getRowDimension($row)->setRowHeight(15);
@@ -389,7 +393,8 @@ class ProviderController extends Controller
             $providers_sheet->setCellValue('C' . $row, $_stat);
             $providers_sheet->setCellValue('D' . $row, $provider->server_url_r5);
             $providers_sheet->setCellValue('E' . $row, $provider->day_of_month);
-            $providers_sheet->setCellValue('F' . $row, $provider->inst_id);
+            $providers_sheet->setCellValue('F' . $row, $provider->max_retries);
+            $providers_sheet->setCellValue('G' . $row, $provider->inst_id);
             $_name = ($provider->inst_id == 1) ? "Entire Consortium" : $provider->inst_name;
             $this_prov = $all_providers->where('id', '=', $provider->prov_id)->first();
             if (isset($this_prov->reports)) {
@@ -401,17 +406,17 @@ class ProviderController extends Controller
                 }
                 $_report_ids = rtrim(trim($_report_ids), ',');
                 $_report_names = rtrim(trim($_report_names), ',');
-                $providers_sheet->setCellValue('G' . $row, $_report_ids);
-                $providers_sheet->setCellValue('J' . $row, $_report_names);
+                $providers_sheet->setCellValue('H' . $row, $_report_ids);
+                $providers_sheet->setCellValue('K' . $row, $_report_names);
             } else {
-                $providers_sheet->setCellValue('G' . $row, 'NULL');
+                $providers_sheet->setCellValue('H' . $row, 'NULL');
             }
-            $providers_sheet->setCellValue('I' . $row, $_name);
+            $providers_sheet->setCellValue('J' . $row, $_name);
             $row++;
         }
 
         // Auto-size the columns
-        $columns = array('A','B','C','D','E','F','G','H','I','J');
+        $columns = array('A','B','C','D','E','F','G','H','I','J','K');
         foreach ($columns as $col) {
             $providers_sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -444,8 +449,8 @@ class ProviderController extends Controller
      */
     public function import(Request $request)
     {
-        // Only Admins can import institution data
-        abort_unless(auth()->user()->hasAnyRole(['Admin']), 403);
+        // Only Admins can import provider data
+        abort_unless(auth()->user()->hasRole('Admin'), 403);
 
         // Handle and validate inputs
         $this->validate($request, ['csvfile' => 'required']);
@@ -472,7 +477,7 @@ class ProviderController extends Controller
         $prov_skipped = 0;
         $prov_updated = 0;
         $prov_created = 0;
-        $reports_to_keep = array();    // only used for full-replacements
+        $seen_provs = array();          // keep track of provider already processed while looping
         foreach ($rows as $row) {
             // Ignore bad/missing/invalid IDs and/or headers
             if (!isset($row[0])) {
@@ -482,6 +487,9 @@ class ProviderController extends Controller
                 continue;
             }
             $cur_prov_id = intval($row[0]);
+            if (in_array($cur_prov_id, $seen_provs)) {
+              continue;
+            }
 
             // Update/Add the provider data/settings
             // Check ID and name columns for silliness or errors
@@ -510,10 +518,10 @@ class ProviderController extends Controller
             }
 
             // Confirm that the import::institution_id exists; otherwise, skip it
-            if ($row[5] == '') {
+            if ($row[6] == '') {
                 $_inst = 1;
             } else {
-                $_inst = intval($row[5]);
+                $_inst = intval($row[6]);
                 $prov_inst = $institutions->where('id', $_inst)->first();
                 if (!$prov_inst) {
                     $prov_skipped++;
@@ -522,16 +530,18 @@ class ProviderController extends Controller
             }
 
             // Enforce defaults
+            $seen_provs[] = $cur_prov_id;
             $_active = ($row[2] == 'N') ? 0 : 1;
             $_url = ($row[3] == '') ? null : $row[3];
             $_day = ($row[4] == '') ? 15 : intval($row[4]);
             if ($_day < 1 || $_day > 28) {
                 $_day = 15;
             }
+            $_retries = ($row[5] == '') ? 10 : intval($row[5]);
 
             // Put provider data columns into an array
             $_prov = array('id' => $cur_prov_id, 'name' => $_name, 'is_active' => $_active, 'server_url_r5' => $_url,
-                           'day_of_month' => $_day, 'inst_id' => $_inst);
+                           'day_of_month' => $_day, 'max_retries' => $_retries, 'inst_id' => $_inst);
 
             // Update or create the Provider record
             if (is_null($current_prov)) {      // Create
@@ -566,7 +576,7 @@ class ProviderController extends Controller
                        ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
                        ->orderBy('prov_name', 'ASC')
                        ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active',
-                              'prv.inst_id','inst.name as inst_name','day_of_month']);
+                              'prv.inst_id','inst.name as inst_name','day_of_month','max_retries']);
 
         // return the current full list of groups with a success message
         $detail = "";

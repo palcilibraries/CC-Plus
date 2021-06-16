@@ -1,19 +1,28 @@
 <template>
   <div>
     <div>
-      <v-row class="d-flex ma-0">
-        <v-col class="d-flex px-2" cols="4">
-          <v-btn small color="primary" @click="importForm">Import Institutions</v-btn>
-        </v-col>
-        <v-col class="d-flex px-2" cols="4">
+      <v-row v-if="is_admin" class="d-flex ma-0">
+        <v-col class="d-flex px-2" cols="3">
           <v-btn small color="primary" @click="createForm">Create an Institution</v-btn>
         </v-col>
+        <v-col class="d-flex px-2" cols="3">
+          <v-btn small color="primary" @click="institutionImportForm">Import Institutions</v-btn>
+        </v-col>
+        <v-col class="d-flex px-2" cols="3">
+          <v-btn small color="primary" @click="settingsImportForm">Import Sushi Settings</v-btn>
+        </v-col>
       </v-row>
-      <v-row>
-        <v-col cols="1">Export to:</v-col>
-        <v-col>
+      <v-row v-if="is_admin" class="d-flex ma-0">
+        <v-col class="d-flex px-2" cols="3">&nbsp;</v-col>
+        <v-col class="d-flex px-2" cols="3">
+            Export institutions to: &nbsp;
             <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp;
             <a :href="'/institutions/export/xlsx'">.xlsx</a>
+        </v-col>
+        <v-col class="d-flex px-2" cols="3">
+          Export sushi settings to: &nbsp;
+          <a :href="'/sushisettings/export/xls'">.xls</a> &nbsp; &nbsp;
+          <a :href="'/sushisettings/export/xlsx'">.xlsx</a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">
@@ -25,7 +34,6 @@
         <template v-slot:item="{ item }">
           <tr>
             <td><a :href="'/institutions/'+item.id">{{ item.name }}</a></td>
-            <td>{{ item.type }}</td>
             <td v-if="item.is_active">Active</td>
             <td v-else>Inactive</td>
             <td>{{ item.groups }}</td>
@@ -33,37 +41,76 @@
         </template>
       </v-data-table>
     </div>
-    <v-dialog v-model="importDialog" persistent max-width="1200px">
+    <v-dialog v-model="institutionImportDialog" persistent max-width="1200px">
       <v-card>
         <v-card-title>Import Institutions</v-card-title>
         <v-spacer></v-spacer>
-        <v-card-subtitle><strong>Institutions cannot be deleted during an import operation.</strong>
-        </v-card-subtitle>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+            ></v-file-input>
+            <p>
+              <strong>Note:&nbsp; Institution imports function exclusively as Updates. No existing institution
+              records will be deleted.</strong>
+            </p>
+            <p>
+              The import process overwrites existing settings whenever a match for a Institution-ID is found in column-A
+              of the import file. If no existing setting is found for the specified Institution-ID, a NEW institution
+              will be created with the fields specified. Institution names (column-B) must be unique. Attempting to
+              create an institution (or rename one) using an existing name will be ignored.
+            </p>
+            <p>
+              Institutions can be renamed via import by giving the ID in column-A and the replacement name in column-B.
+              Be aware that the new name takes effect immediately, and will be associated with all harvested usage
+              data that may have been collected using the OLD name (data is stored by the ID, not the name.)
+            </p>
+            <p>
+              For these reasons, use caution when using this import function. Generating an Institution export FIRST
+              will supply detailed instructions for importing on the "How to Import" tab. Generating a new Institution
+              export AFTER an import operation is a good way to confirm that all the settings are as-desired.
+            </p>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-col class="d-flex">
+            <v-btn x-small color="primary" type="submit" @click="institutionImportSubmit">Run Import</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small type="button" color="primary" @click="institutionImportDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="settingsImportDialog" persistent max-width="1200px">
+      <v-card>
+        <v-card-title>Import Sushi Settings</v-card-title>
+        <v-spacer></v-spacer>
         <v-card-text>
           <v-container grid-list-md>
             <v-layout wrap>
               <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
               ></v-file-input>
               <p>
-                <strong>NOTE:</strong> Import Type below refers to the row(s) of Sushi Settings which may, or may not,
-                follow an institution record in the input CSV file. When "Full Replacement" is chosen, the existing
-                settings for any provider not included in the import file will be deleted! This will also remove all
-                associated harvest and failed-harvest records connected to the settings.
+                <strong>Note:&nbsp; The Import Type below determines whether the settings in the input file should
+                be treated as an <em>Update</em> or as a <em>Full Replacement</em> for any existing settings.</strong>
               </p>
               <p>
-                Regardless of the Import Type, the first record in the import file for any institution (based on ID or
-                name) will be used to update the institution's record (columns B through G). These values, including the
-                group assignments in column-F, will replace whatever is currently defined for the given institution.
-              </p>
-              <p>
-                For these reasons, use caution when using this import function, especially when requesting a Full
-                Replacement import. Generating an institution export FIRST will provide detailed instructions for
-                importing on the "How to Import" tab and help ensure that the desired end-state is achieved.
+                When "Full Replacement" is chosen, any EXISTING SETTINGS omitted from the import file will be deleted!
+                This will also remove all associated harvest and failed-harvest records connected to the settings!
               </p>
               <p>
                 The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings
-                whenever a match for an institution-ID and Provider-ID are found in the import file. If no setting for
-                a given Institution-ID and Provider-ID currently exist, the setting will be added.
+                whenever a match for an Institution-ID and Provider-ID are found in the import file. If no setting
+                exists for a given valid provider-institution pair, a new setting will be created and saved. Any values
+                in columns C-G which are NULL, blank, or missing for a valid provider-institution pair, will result
+                in a NULL value being stored for that field.
+              </p>
+              <p>
+                For these reasons, exercise caution using this import function, especially when requesting a Full
+                Replacement import. Generating an export of the existing settings FIRST will provide detailed
+                instructions for importing on the "How to Import" tab and will help ensure that the desired
+                end-state is achieved.
               </p>
               <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
             </v-layout>
@@ -72,10 +119,10 @@
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-col class="d-flex">
-            <v-btn x-small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+            <v-btn x-small color="primary" type="submit" @click="settingsImportSubmit">Run Import</v-btn>
           </v-col>
           <v-col class="d-flex">
-            <v-btn class='btn' x-small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
+            <v-btn class='btn' x-small type="button" color="primary" @click="settingsImportDialog=false">Cancel</v-btn>
           </v-col>
         </v-card-actions>
       </v-card>
@@ -90,9 +137,6 @@
           <v-card-text>
             <v-container grid-list-md>
               <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-              <v-select :items="types" v-model="form.type_id" item-text="name" item-value="id"
-                        label="Institution Type" outlined
-              ></v-select>
               <v-switch v-model="form.is_active" label="Active?"></v-switch>
               <div class="field-wrapper">
                 <v-subheader v-text="'FTE'"></v-subheader>
@@ -128,7 +172,6 @@
   export default {
     props: {
             institutions: { type:Array, default: () => [] },
-            types: { type:Array, default: () => [] },
             all_groups: { type:Array, default: () => [] },
            },
     data () {
@@ -136,10 +179,10 @@
         success: '',
         failure: '',
         instDialog: false,
-        importDialog: false,
+        institutionImportDialog: false,
+        settingsImportDialog: false,
         headers: [
           { text: 'Institution ', value: 'name', align: 'start' },
-          { text: 'Type', value: 'type' },
           { text: 'Status', value: 'is_active' },
           { text: 'Group(s)', value: 'groups' },
         ],
@@ -148,7 +191,6 @@
             name: '',
             is_active: 1,
             fte: 0,
-            type_id: 1,
             institutiongroups: [],
             notes: '',
         }),
@@ -160,11 +202,18 @@
       }
     },
     methods: {
-        importForm () {
+        institutionImportForm () {
+            this.csv_upload = null;
+            this.instDialog = false;
+            this.institutionImportDialog = true;
+            this.settingsImportDialog = false;
+        },
+        settingsImportForm () {
             this.csv_upload = null;
             this.import_type = '';
-            this.instDialog = false;
-            this.importDialog = true;
+            this.settingsImportDialog = true;
+            this.institutionImportDialog = false;
+            this.provDialog = false;
         },
         createForm () {
             this.failure = '';
@@ -172,18 +221,14 @@
             this.form.name = '';
             this.form.is_active = 1;
             this.form.fte = 0;
-            this.form.type_id = 1;
             this.form.institutiongroups = [];
             this.form.notes = '';
             this.instDialog = true;
-            this.importDialog = false;
+            this.settingsImportDialog = false;
+            this.institutionImportDialog = false;
         },
-        importSubmit (event) {
+        institutionImportSubmit (event) {
             this.success = '';
-            if (this.import_type == '') {
-                this.failure = 'An import type is required';
-                return;
-            }
             if (this.csv_upload==null) {
                 this.failure = 'A CSV import file is required';
                 return;
@@ -191,7 +236,6 @@
             this.failure = '';
             let formData = new FormData();
             formData.append('csvfile', this.csv_upload);
-            formData.append('type', this.import_type);
             axios.post('/institutions/import', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
@@ -208,7 +252,33 @@
                          this.failure = response.data.msg;
                      }
                  });
-             this.importDialog = false;
+             this.institutionImportDialog = false;
+        },
+        settingsImportSubmit (event) {
+            this.success = '';
+            if (this.csv_upload==null) {
+                this.failure = 'A CSV import file is required';
+                return;
+            }
+            this.failure = '';
+            let formData = new FormData();
+            formData.append('csvfile', this.csv_upload);
+            formData.append('type', this.import_type);
+            axios.post('/sushisettings/import', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                  })
+                 .then( (response) => {
+                     if (response.data.result) {
+                         this.failure = '';
+                         this.success = response.data.msg;
+                     } else {
+                         this.success = '';
+                         this.failure = response.data.msg;
+                     }
+                 });
+             this.settingsImportDialog = false;
         },
         formSubmit (event) {
             this.success = '';
@@ -243,7 +313,7 @@
         },
     },
     computed: {
-      ...mapGetters(['datatable_options'])
+      ...mapGetters(['is_admin','datatable_options'])
     },
     beforeCreate() {
         // Load existing store data

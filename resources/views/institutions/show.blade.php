@@ -3,7 +3,6 @@
 @section('content')
 <v-app institutionform>
     <institution-form :institution="{{ json_encode($institution) }}"
-                      :types="{{ json_encode($types) }}"
                       :all_groups="{{ json_encode($all_groups) }}"
     ></institution-form>
 

@@ -2,37 +2,25 @@
   <div>
     <div class="page-header"><h1>{{ form.name }}</h1></div>
     <div class="details">
-  	  <h2 class="section-title">Details</h2>
-      <div v-if="is_manager && showForm==''" style="display:inline-block;">
-        <v-row>
-          <v-col>
-            <v-btn small color="primary" type="button" @click="editForm" class="section-action">edit</v-btn>
-          </v-col>
-          <v-col v-if="!is_admin">
-            <v-btn small color="primary" type="button" @click="importForm" class="section-action">
-              Import Settings
-            </v-btn>
-          </v-col>
-          <v-col v-if="is_admin && mutable_inst.can_delete">
-            <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_inst.id)">Delete</v-btn>
-          </v-col>
-        </v-row>
-      </div>
-	  <div class="status-message" v-if="success || failure">
+  	  <v-row v-if="(is_admin || is_manager) && showForm==''" class="d-flex ma-0" no-gutters>
+        <v-col class="d-flex pa-0"><h2 class="section-title">Details</h2></v-col>
+        <v-col class="d-flex px-2">
+          <v-btn small color="primary" type="button" @click="editForm" class="section-action">edit</v-btn>
+        </v-col>
+        <v-col v-if="is_admin && mutable_inst.can_delete" class="d-flex px-2">
+          <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_inst.id)">Delete</v-btn>
+        </v-col>
+      </v-row>
+	    <div class="status-message" v-if="success || failure">
 	      <span v-if="success" class="good" role="alert" v-text="success"></span>
 	      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-	  </div>
-      <div>
-        <!-- Values-only when form not active -->
-        <div v-if="showForm==''">
+	    </div>
+      <!-- Values-only when form not active -->
+      <div v-if="showForm==''">
 	      <v-simple-table dense>
 	        <tr>
 	          <td>Name </td>
 	          <td>{{ mutable_inst.name }}</td>
-	        </tr>
-	        <tr>
-	          <td>Type </td>
-	          <td>{{ inst_type }}</td>
 	        </tr>
 	        <tr>
     	      <td>Status </td>
@@ -55,86 +43,58 @@
 	          <td>{{ mutable_inst.notes }}</td>
 	        </tr>
 	      </v-simple-table>
-        </div>
-        <!-- display form if manager has activated it. onSubmit function closes and resets showForm -->
-        <div v-if="showForm=='edit'">
-          <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
-              <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-              <v-select
-                  :items="types"
-                  v-model="form.type_id"
-                  value="mutable_inst.type_id"
-                  label="Institution Type"
-                  item-text="name"
-                  item-value="id"
-                  outlined
-              ></v-select>
-              <v-switch v-model="form.is_active" label="Active?"></v-switch>
-			  <div class="field-wrapper">
-	              <v-subheader v-text="'FTE'"></v-subheader>
-	              <v-text-field v-model="form.fte"
-	                            label="FTE"
-	                            hide-details
-	                            single-line
-	                            type="number"
-	              ></v-text-field>
-			  </div>
-			  <div class="field-wrapper has-label">
-	              <v-subheader v-text="'Belongs To'"></v-subheader>
-	              <v-select
-	                  :items="all_groups"
-	                  v-model="form.institutiongroups"
-	                  value="mutable_groups"
-	                  item-text="name"
-	                  item-value="id"
-	                  label="Institution Group(s)"
-	                  multiple
-	                  chips
-	                  hint="Assign group membership for this institution"
-	                  persistent-hint
-	              ></v-select>
-			  </div>
-              <v-textarea
-                  v-model="form.notes"
-                  value="mutable_inst.notes"
-                  label="Notes"
-                  auto-grow
-              ></v-textarea>
-              <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
-                Save Institution Settings
-              </v-btn>
-			  <v-btn small type="button" @click="hideForm">cancel</v-btn>
-          </form>
-        </div>
-        <div v-if="showForm=='import'">
-          <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined></v-file-input>
-          <p>
-            <strong>You are restricted to importing settings that affect only your institution.</strong>
-            <br />
-            <strong>Note:</strong> Import Type below refers to the row(s) of Sushi Settings which may, or may not, follow
-            an institution record in the input CSV file. When "Full Replacement" is chosen, the existing settings for any
-            provider not included in the import file will be deleted! This will also remove all associated harvest and
-            failed-harvest records connected to the settings.
-          </p>
-          <p>
-            Regardless of the Import Type, the first record in the import file for any institution (based on ID or name)
-            will be used to update the institution's record (columns B through G). These values, including the group
-            assignments in column-F, will replace whatever is currently defined for the given institution.
-          </p>
-          <p>
-            For these reasons, use caution when using this import function, especially when requesting a Full Replacement
-            import. Generating an institution export FIRST will provide detailed instructions for importing on the "How
-            to Import" tab and help ensure that the desired end-state is achieved.
-          </p>
-          <p>
-            The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings whenever
-            a match for an institution-ID and Provider-ID are found in the import file. If no setting for a given
-            Institution-ID and Provider-ID currently exist, the setting will be added.
-          </p>
-          <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
-          <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
-          <v-btn small type="button" @click="hideForm">cancel</v-btn>
-        </div>
+      </div>
+      <!-- display form if manager has activated it. onSubmit function closes and resets showForm -->
+      <div v-if="showForm=='edit'">
+        <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
+          <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+          <v-switch v-model="form.is_active" label="Active?"></v-switch>
+			      <div class="field-wrapper">
+	            <v-subheader v-text="'FTE'"></v-subheader>
+	            <v-text-field v-model="form.fte" label="FTE" hide-details single-line type="number"
+	            ></v-text-field>
+			      </div>
+            <div class="field-wrapper has-label">
+	            <v-subheader v-text="'Belongs To'"></v-subheader>
+	            <v-select :items="all_groups" v-model="form.institutiongroups" value="mutable_groups"
+	                      item-text="name" item-value="id" label="Institution Group(s)" multiple
+	                      chips hint="Assign group membership for this institution" persistent-hint
+	            ></v-select>
+            </div>
+            <v-textarea v-model="form.notes" value="mutable_inst.notes" label="Notes" auto-grow
+            ></v-textarea>
+            <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
+              Save Institution Settings
+            </v-btn>
+            <v-btn small type="button" @click="hideForm">cancel</v-btn>
+        </form>
+      </div>
+      <div v-if="showForm=='import'">
+        <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined></v-file-input>
+        <p>
+          <strong>Note:&nbsp; The Import Type below determines whether the settings in the input file should
+          be treated as an <em>Update</em> or as a <em>Full Replacement</em> for any existing settings.</strong>
+        </p>
+        <p>
+          When "Full Replacement" is chosen, any EXISTING SETTINGS omitted from the import file will be deleted!
+          This will also remove all associated harvest and failed-harvest records connected to the settings!
+        </p>
+        <p>
+          The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings
+          whenever a match for an Institution-ID and Provider-ID are found in the import file. If no setting
+          exists for a given valid provider-institution pair, a new setting will be created and saved. Any values
+          in columns C-G which are NULL, blank, or missing for a valid provider-institution pair, will result
+          in a NULL value being stored for that field.
+        </p>
+        <p>
+          For these reasons, exercise caution using this import function, especially when requesting a Full
+          Replacement import. Generating an export of the existing settings FIRST will provide detailed
+          instructions for importing on the "How to Import" tab and will help ensure that the desired
+          end-state is achieved.
+        </p>
+        <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
+        <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+        <v-btn small type="button" @click="hideForm">cancel</v-btn>
       </div>
     </div>
   </div>
@@ -149,7 +109,6 @@
     export default {
         props: {
                 institution: { type:Object, default: () => {} },
-                types: { type:Array, default: () => [] },
                 all_groups: { type:Array, default: () => [] },
                },
 
@@ -158,16 +117,14 @@
                 success: '',
                 failure: '',
                 status: '',
-                inst_type: '',
                 statusvals: ['Inactive','Active'],
-				showForm: '',
+				        showForm: '',
                 mutable_inst: this.institution,
                 mutable_groups: this.institution.groups,
                 form: new window.Form({
                     name: this.institution.name,
                     is_active: this.institution.is_active,
                     fte: this.institution.fte,
-                    type_id: this.institution.type_id,
                     institutiongroups: this.institution.groups,
                     notes: this.institution.notes,
                 }),
@@ -190,9 +147,6 @@
                         if (response.result) {
                             this.success = response.msg;
                             this.mutable_inst.name = this.form.name;
-                            this.mutable_inst.type_id = this.form.type_id;
-                            const instType = this.types.find(t => t.id === this.form.type_id);
-                            this.inst_type = instType.name;
                             this.mutable_inst.is_active = this.form.is_active;
                             this.status = this.statusvals[this.form.is_active];
                             this.mutable_inst.fte = this.form.fte;
@@ -218,23 +172,13 @@
                 let formData = new FormData();
                 formData.append('csvfile', this.csv_upload);
                 formData.append('type', this.import_type);
-                axios.post('/institutions/import', formData, {
+                axios.post('/sushisettings/import', formData, {
                         headers: {
                             'Content-Type': 'multipart/form-data'
                         }
                       })
                      .then( (response) => {
                          if (response.data.result) {
-                             // Replace values in mutable array with response data
-                             this.mutable_inst.name = response.data.inst_data['name'];
-                             this.mutable_inst.type_id = response.data.inst_data['type_id'];
-                             const instType = this.types.find(t => t.id === this.mutable_inst.type_id);
-                             this.inst_type = instType.name;
-                             this.mutable_inst.is_active = response.data.inst_data['is_active'];
-                             this.status = this.statusvals[this.mutable_inst.is_active];
-                             this.mutable_inst.fte = response.data.inst_data['fte'];
-                             this.mutable_inst.notes = response.data.inst_data['notes'];
-                             this.mutable_groups = response.data.inst_data['groups'];
                              this.success = response.data.msg;
                          } else {
                              this.failure = response.data.msg;
@@ -244,10 +188,10 @@
             },
             editForm (event) {
                 this.showForm = 'edit';
-			},
+			      },
             hideForm (event) {
                 this.showForm = '';
-			},
+			      },
             destroy (instid) {
                 var self = this;
                 Swal.fire({
@@ -284,8 +228,6 @@
         mounted() {
             this.showForm = '';
             this.status=this.statusvals[this.institution.is_active];
-            const instType = this.types.find(t => t.id === this.institution.type_id);
-            this.inst_type = instType.name;
             console.log('Institution Component mounted.');
         }
     }

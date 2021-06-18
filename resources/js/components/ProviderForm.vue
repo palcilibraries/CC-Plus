@@ -58,7 +58,7 @@
   	    </v-simple-table>
       </div>
       <div v-else>
-        <v-form v-model="formValid">
+        <v-form v-model="formValid" class="in-page-form">
           <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
           <v-switch v-model="form.is_active" label="Active?"></v-switch>
           <v-select :items="institutions" v-model="form.inst_id" value="provider.inst_id" label="Serves"

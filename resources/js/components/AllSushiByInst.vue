@@ -145,7 +145,7 @@
                 ],
                 form: new window.Form({
                     inst_id: this.inst_id,
-                    prov_id: '0',
+                    prov_id: null,
                     customer_id: '',
                     requestor_id: '',
                     API_key: '',
@@ -286,7 +286,8 @@
             },
             hideForm (event) {
                 this.showForm = false;
-			      },
+                this.form.prov_id = null;
+			},
         },
         computed: {
           ...mapGetters(['is_admin','is_manager'])

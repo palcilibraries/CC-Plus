@@ -98,7 +98,7 @@
 				  { text: '', value: ''}
                 ],
                 form: new window.Form({
-                    inst_id: '0',
+                    inst_id: null,
                     prov_id: this.prov_id,
                     customer_id: '',
                     requestor_id: '',
@@ -206,6 +206,7 @@
             },
             hideForm (event) {
                 this.showForm = false;
+                this.form.inst_id = null;
 			},
         },
         computed: {

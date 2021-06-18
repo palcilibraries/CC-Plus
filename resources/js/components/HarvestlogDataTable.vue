@@ -7,14 +7,35 @@
       </div>
       <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM" :key="rangeKey"
       ></date-range>
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <v-btn class='btn' x-small type="button" @click="clearAllFilters()">Clear Filters</v-btn>
+      </v-col>
     </div>
     <v-row no-gutters>
-      <v-col v-if='institutions.length>1' class="d-flex px-2 align-center" cols="2" sm="2">
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if="mutable_filters['updated']!=null && mutable_filters['updated']!=''" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('updated')"/>&nbsp;
+        </div>
+        <v-select :items="mutable_updated" v-model="mutable_filters['updated']" @change="updateFilters()"
+                  label="Updated"
+        ></v-select>
+      </v-col>
+      <v-col v-if="institutions.length>1 && (inst_filter==null || inst_filter=='I')"
+             class="d-flex px-2 align-center" cols="2" sm="2">
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
         <v-select :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters()" multiple
                   label="Institution(s)"  item-text="name" item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col v-if="groups.length>1 && (inst_filter==null || inst_filter=='G') && (is_admin || is_viewer)"
+             class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if="mutable_filters['group'].length>0" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('group')"/>&nbsp;
+        </div>
+        <v-select :items="groups" v-model="mutable_filters['group']" @change="updateFilters()" multiple
+                  label="Institution Group(s)"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
@@ -82,6 +103,7 @@
     props: {
             harvests: { type:Array, default: () => [] },
             institutions: { type:Array, default: () => [] },
+            groups: { type:Array, default: () => [] },
             providers: { type:Array, default: () => [] },
             reports: { type:Array, default: () => [] },
             bounds: { type:Array, default: () => [] },
@@ -101,7 +123,9 @@
         ],
         mutable_harvests: this.harvests,
         mutable_filters: this.filters,
+        inst_filter: null,
         mutable_options: {},
+        mutable_updated: [],
         statuses: ['Success', 'Fail', 'New', 'Queued', 'Active', 'Pending', 'Stopped', 'ReQueued'],
         status_changeable: ['Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
         bulk_actions: [ { action:'Stop',    status:'Stopped'},
@@ -143,14 +167,33 @@
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             this.updateLogRecords();
             this.selectedRows = [];
+            if (this.mutable_filters['inst'].length>0 || this.mutable_filters['group'].length>0) {
+                this.inst_filter = (this.mutable_filters['inst'].length>0) ? "I" : "G";
+            }
+        },
+        clearAllFilters() {
+            Object.keys(this.mutable_filters).forEach( (key) =>  {
+              if (key == 'fromYM' || key == 'toYM' || key == 'updated') {
+                  this.mutable_filters[key] = '';
+              } else {
+                  this.mutable_filters[key] = [];
+              }
+            });
+            this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            this.updateLogRecords();
+            this.inst_filter = null;
+            this.rangeKey += 1;           // force re-render of the date-range component
         },
         clearFilter(filter) {
             if (filter == 'date_range') {
                 this.mutable_filters['toYM'] = '';
                 this.mutable_filters['fromYM'] = '';
                 this.rangeKey += 1;           // force re-render of the date-range component
+            } else if (filter == 'updated') {
+                this.mutable_filters['updated'] = '';
             } else {
                 this.mutable_filters[filter] = [];
+                if (filter=='inst' || filter=='group') this.inst_filter = null;
             }
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             this.updateLogRecords();
@@ -166,6 +209,7 @@
             axios.get("/harvestlogs?json=1&filters="+_filters)
                  .then((response) => {
                      this.mutable_harvests = response.data.harvests;
+                     this.mutable_updated = response.data.updated;
                      this.numRows = this.mutable_harvests.length;
                  })
                  .catch(err => console.log(err));
@@ -276,7 +320,7 @@
     mounted() {
       // Update any null/empty filters w/ store-values
       Object.keys(this.all_filters).forEach( (key) =>  {
-        if (key == 'fromYM' || key == 'toYM') {
+        if (key == 'fromYM' || key == 'toYM' || key == 'updated') {
             if (this.mutable_filters[key] == null || this.mutable_filters[key] == "")
                 this.mutable_filters[key] = this.all_filters[key];
         } else {

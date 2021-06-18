@@ -38,7 +38,8 @@ class HarvestLogController extends Controller
         $conso_db = config('database.connections.consodb.database');
 
         // Assign optional inputs to $filters array
-        $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'stat' => [], 'fromYM' => null, 'toYM' => null);
+        $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'stat' => [], 'updated' => null, 'group' => [],
+                         'fromYM' => null, 'toYM' => null);
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
@@ -50,7 +51,7 @@ class HarvestLogController extends Controller
             $keys = array_keys($filters);
             foreach ($keys as $key) {
                 if ($request->input($key)) {
-                    if ($key == 'fromYM' || $key == 'toYM') {
+                    if ($key == 'fromYM' || $key == 'toYM' || $key == 'updated') {
                         $filters[$key] = $request->input($key);
                     } elseif (is_numeric($request->input($key))) {
                         $filters[$key] = array(intval($request->input($key)));
@@ -74,6 +75,9 @@ class HarvestLogController extends Controller
                 $filters['toYM'] = $filters['fromYM'];
             }
         }
+
+        // Get all groups regardless of JSON or not
+        $groups = InstitutionGroup::with('institutions:id')->orderBy('name', 'ASC')->get(['id','name']);
 
         // Build arrays for the filter-options. Skip if returning JSON
         if (!$json) {
@@ -117,17 +121,40 @@ class HarvestLogController extends Controller
         // Skip querying for records unless we're returning json
         // The vue-component will run a request for JSON data once it is mounted
         if ($json) {
+            // Setup limit_to_insts with the instID's we'll pull settings for
+            $limit_to_insts = array();
+            if ($show_all) {
+                if (sizeof($filters['group']) > 0) {
+                    foreach ($filters['group'] as $group_id) {
+                        // $group = InstitutionGroup::with('institutions:id')->where('id',$group_id)->first();
+                        $group = $groups->where('id',$group_id)->first();
+                        if ($group) {
+                            $_insts = $group->institutions->pluck('id')->toArray();
+                            $limit_to_insts =  array_merge(
+                                  array_intersect($limit_to_insts, $_insts),
+                                  array_diff($limit_to_insts, $_insts),
+                                  array_diff($_insts, $limit_to_insts)
+                            );
+                        }
+                    }
+                } else if (sizeof($filters['inst']) > 0) {
+                    $limit_to_insts = $filters['inst'];
+                }
+            } else {
+                $limit_to_insts[] = $thisUser->inst_id;
+            }
 
             // Get the harvest rows based on sushisettings
-            $settings = SushiSetting::when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
-                                          return $qry->whereIn('inst_id', $filters['inst']);
+            $settings = SushiSetting::when(sizeof($limit_to_insts) > 0, function ($qry) use ($limit_to_insts) {
+                                          return $qry->whereIn('inst_id', $limit_to_insts);
                                       })
                                       ->when(sizeof($filters['prov']) > 0, function ($qry) use ($filters) {
                                           return $qry->whereIn('prov_id', $filters['prov']);
                                       })
                                       ->pluck('id')->toArray();
             $harvest_data = HarvestLog::
-                with('report:id,name','sushiSetting','sushiSetting.institution:id,name','sushiSetting.provider:id,name')
+                with('report:id,name','sushiSetting','sushiSetting.institution:id,name','sushiSetting.provider:id,name',
+                     'failedHarvests','failedHarvests.ccplusError')
                 ->whereIn('sushisettings_id', $settings)
                 ->orderBy('updated_at', 'DESC')
                 ->when(sizeof($filters['rept']) > 0, function ($qry) use ($filters) {
@@ -142,18 +169,55 @@ class HarvestLogController extends Controller
                 ->when($filters['toYM'], function ($qry) use ($filters) {
                     return $qry->where('yearmon', '<=', $filters['toYM']);
                 })
+                ->when($filters['updated'], function ($qry) use ($filters) {
+                    return $qry->where('updated_at', 'like', '%' . $filters['updated'] . '%');
+                })
                 ->get();
-            $harvests = $harvest_data->map(function ($harvest) {
-                $rec = array('id' => $harvest->id, 'yearmon' => $harvest->yearmon, 'attempts' => $harvest->attempts,
-                             'status' => $harvest->status);
+            $harvests = array();
+            $updated_ym = array();
+            foreach ($harvest_data as $harvest) {
+                $rec = array('id' => $harvest->id, 'yearmon' => $harvest->yearmon, 'attempts' => $harvest->attempts);
                 $rec['updated_at'] = substr($harvest->updated_at,0,10);
+                if (!in_array(substr($harvest->updated_at,0,7), $updated_ym)) {
+                    $updated_ym[] = substr($harvest->updated_at,0,7);
+                    $rec['updated_at'];
+                }
                 $rec['inst_name'] = $harvest->sushiSetting->institution->name;
                 $rec['prov_name'] = $harvest->sushiSetting->provider->name;
                 $rec['report_name'] = $harvest->report->name;
-                return $rec;
+                $rec['status'] = $harvest->status;
+                if ($harvest->status != 'Success' && $harvest->failedHarvests) {
+                    $max_id = $harvest->failedHarvests->max('id');
+                    $last = $harvest->failedHarvests->where('id',$max_id)->first();
+                    if ($last) {
+                        // Try to keep the minimize the length of the status-string. May want to add a
+                        // 'brief_message' column to the global ccplus_errors table at some point...
+                        if ($last->ccplusError->id > 1000) {
+                            $rec['status'] .= " (SUSHI Error: " . $last->ccplusError->id . ")";
+                        } else if ($last->ccplusError->id == 100) {
+                            $rec['status'] .= " (COUNTER validation failed)";
+                        } else if ($last->ccplusError->id == 10) {
+                            $rec['status'] .= " (HTTP/URL request failure)";
+                        } else {
+                            $rec['status'] .= " (" . $last->ccplusError->message . ")";
+                        }
+                    }
+                }
+                $harvests[] = $rec;
+            }
+
+            // sort updated_ym options descending
+            usort($updated_ym, function ($time1, $time2) {
+                if (strtotime($time1) < strtotime($time2)) {
+                    return 1;
+                } else if (strtotime($time1) > strtotime($time2)) {
+                    return -1;
+                } else {
+                    return 0;
+                }
             });
 
-            return response()->json(['harvests' => $harvests], 200);
+            return response()->json(['harvests' => $harvests, 'updated' => $updated_ym], 200);
 
         // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {
@@ -161,6 +225,7 @@ class HarvestLogController extends Controller
             return view('harvestlogs.index', compact(
                 'harvests',
                 'institutions',
+                'groups',
                 'providers',
                 'reports',
                 'bounds',
@@ -676,5 +741,17 @@ class HarvestLogController extends Controller
             $start = strtotime("+1 month", $start);
         }
         return $range;
+    }
+
+    // user-defined comparison function to sort based on timestamp
+    static function sortTimeStamp($time1, $time2)
+    {
+        if (strtotime($time1) < strtotime($time2)) {
+            return 1;
+        } else if (strtotime($time1) > strtotime($time2)) {
+            return -1;
+        } else {
+            return 0;
+        }
     }
 }

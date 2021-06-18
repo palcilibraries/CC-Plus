@@ -39,7 +39,7 @@ export const store = new Vuex.Store({
                               datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                           groupDesc: [], multiSort: false, mustSort: false }
                             },
-          harvestlogs: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
+          harvestlogs: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: [], group: [], updated:""},
                          datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                      groupDesc: [], multiSort: false, mustSort: false }
                        },

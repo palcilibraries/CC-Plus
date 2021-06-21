@@ -272,7 +272,7 @@ class SushiSettingController extends Controller
         $top_txt .= "Creating an export of providers and institutions will supply the reference values for the\n";
         $top_txt .= "for the Provider-ID and Institution-ID columns.\n\n";
         $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
-        $top_txt .= "Any header row or columns beyond 'G' will be ignored.";
+        $top_txt .= "Any header row or columns beyond 'G' will be ignored. Columns I-J are informational only.";
         $info_sheet->setCellValue('A1', $top_txt);
         $info_sheet->mergeCells('B11:D11');
         $info_sheet->getStyle('A11:A11')->applyFromArray($head_style);
@@ -335,6 +335,8 @@ class SushiSettingController extends Controller
         $inst_sheet->setCellValue('E1', 'Requestor ID');
         $inst_sheet->setCellValue('F1', 'API Key');
         $inst_sheet->setCellValue('G1', 'Support Email');
+        $inst_sheet->setCellValue('I1', 'Institution-Name');
+        $inst_sheet->setCellValue('J1', 'Provider-Name');
         $row = 2;
         foreach ($settings as $setting) {
             $inst_sheet->getRowDimension($row)->setRowHeight(15);
@@ -346,11 +348,13 @@ class SushiSettingController extends Controller
             $inst_sheet->setCellValue('E' . $row, $setting->requestor_id);
             $inst_sheet->setCellValue('F' . $row, $setting->API_key);
             $inst_sheet->setCellValue('G' . $row, $setting->support_email);
+            $inst_sheet->setCellValue('I' . $row, $setting->institution->name);
+            $inst_sheet->setCellValue('J' . $row, $setting->provider->name);
             $row++;
         }
 
         // Auto-size the columns
-        $columns = array('A','B','C','D','E','F','G');
+        $columns = array('A','B','C','D','E','F','G','H','I','J');
         foreach ($columns as $col) {
             $inst_sheet->getColumnDimension($col)->setAutoSize(true);
         }

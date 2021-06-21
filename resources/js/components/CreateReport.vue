@@ -199,6 +199,7 @@
             this.prov = 0;
             this.masterId = 0;
             this.inst_group_id = 0;
+            this.selectedReport = {};
             // Reset the data store
             this.$store.dispatch('updateInstitutionFilter',[]);
             this.$store.dispatch('updateInstGroupFilter',0);
@@ -284,6 +285,7 @@
                 }
             });
             let params = {...report_filters, dateRange: this.dateRange};
+            this.resetForm();
             window.location.assign("/reports/preview?filters=" + JSON.stringify(params));
         },
     },

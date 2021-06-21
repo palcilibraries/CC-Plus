@@ -177,10 +177,9 @@ class HarvestLogController extends Controller
             $updated_ym = array();
             foreach ($harvest_data as $harvest) {
                 $rec = array('id' => $harvest->id, 'yearmon' => $harvest->yearmon, 'attempts' => $harvest->attempts);
-                $rec['updated_at'] = substr($harvest->updated_at,0,10);
+                $rec['updated'] = substr($harvest->updated_at,0,10);
                 if (!in_array(substr($harvest->updated_at,0,7), $updated_ym)) {
                     $updated_ym[] = substr($harvest->updated_at,0,7);
-                    $rec['updated_at'];
                 }
                 $rec['inst_name'] = $harvest->sushiSetting->institution->name;
                 $rec['prov_name'] = $harvest->sushiSetting->provider->name;

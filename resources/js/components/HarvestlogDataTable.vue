@@ -112,7 +112,7 @@
     data () {
       return {
         headers: [
-          { text: 'Last Update', value: 'updated_at' },
+          { text: 'Last Update', value: 'updated' },
           { text: 'Institution', value: 'inst_name' },
           { text: 'Provider', value: 'prov_name' },
           { text: 'Report', value: 'report_name' },
@@ -298,6 +298,7 @@
                 }
               }
               self.bulkAction = '';
+              this.dtKey += 1;           // force re-render of the datatable
           })
           .catch({});
         },

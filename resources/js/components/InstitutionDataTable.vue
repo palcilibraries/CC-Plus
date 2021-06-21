@@ -88,32 +88,30 @@
         <v-spacer></v-spacer>
         <v-card-text>
           <v-container grid-list-md>
-            <v-layout wrap>
-              <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
-              ></v-file-input>
-              <p>
-                <strong>Note:&nbsp; The Import Type below determines whether the settings in the input file should
-                be treated as an <em>Update</em> or as a <em>Full Replacement</em> for any existing settings.</strong>
-              </p>
-              <p>
-                When "Full Replacement" is chosen, any EXISTING SETTINGS omitted from the import file will be deleted!
-                This will also remove all associated harvest and failed-harvest records connected to the settings!
-              </p>
-              <p>
-                The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings
-                whenever a match for an Institution-ID and Provider-ID are found in the import file. If no setting
-                exists for a given valid provider-institution pair, a new setting will be created and saved. Any values
-                in columns C-G which are NULL, blank, or missing for a valid provider-institution pair, will result
-                in a NULL value being stored for that field.
-              </p>
-              <p>
-                For these reasons, exercise caution using this import function, especially when requesting a Full
-                Replacement import. Generating an export of the existing settings FIRST will provide detailed
-                instructions for importing on the "How to Import" tab and will help ensure that the desired
-                end-state is achieved.
-              </p>
-              <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
-            </v-layout>
+            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+            ></v-file-input>
+            <p>
+              <strong>Note:&nbsp; The Import Type below determines whether the settings in the input file should
+              be treated as an <em>Update</em> or as a <em>Full Replacement</em> for any existing settings.</strong>
+            </p>
+            <p>
+              When "Full Replacement" is chosen, any EXISTING SETTINGS omitted from the import file will be deleted!
+              This will also remove all associated harvest and failed-harvest records connected to the settings!
+            </p>
+            <p>
+              The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings
+              whenever a match for an Institution-ID and Provider-ID are found in the import file. If no setting
+              exists for a given valid provider-institution pair, a new setting will be created and saved. Any values
+              in columns C-G which are NULL, blank, or missing for a valid provider-institution pair, will result
+              in a NULL value being stored for that field.
+            </p>
+            <p>
+              For these reasons, exercise caution using this import function, especially when requesting a Full
+              Replacement import. Generating an export of the existing settings FIRST will provide detailed
+              instructions for importing on the "How to Import" tab and will help ensure that the desired
+              end-state is achieved.
+            </p>
+            <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
           </v-container>
         </v-card-text>
         <v-card-actions>

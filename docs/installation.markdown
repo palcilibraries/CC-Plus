@@ -4,9 +4,7 @@ layout: default
 nav_order: 2
 ---
 
-# Library Usage Statistics Harvesting and Reporting
-[//]: (![banner image from documentation folder](docs/cc-plus-banner.png?raw=true))
-## A configurable application for collecting library usage data
+# CC-PLUS Installation Instructions
 
 CC-Plus is currently designed to run as a standalone web-based Laravel application connected to a MySQL database and a web server.  It allows for multiple, or just a single, consortia to be managed within a host system.  The report harvesting system uses the SUSHI protocol, and expects to receive valid and conformant COUNTER-5 usage reports.
 

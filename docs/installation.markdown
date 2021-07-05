@@ -65,6 +65,17 @@ Enable mod_rewrite for Apache:
 # a2enmod rewrite (Ubuntu, enabling for another O/S will differ)
 # service apache2 restart
 ```
+ PHP memory settings need to be generous to support large the harvesting and decoding of large JSON reports. The initial
+ recommendation is to set the memory limit to 1024Mb and increase from there, if necessary:
+ ```bash
+ #!  /etc/php.ini  ,   /etc/php/V.v/apache2/php.ini, or equivalent
+    ...
+    ; Maximum amount of memory a script may consume (128MB)
+    ; http://php.net/memory-limit
+    ; memory_limit = 128M
+    memory_limit = 1024M
+
+```
  Firewalls, SSL/HTTPS, or other organizational requirements are not addressed in this document.
 
 ### Step 2: Download the application
@@ -249,7 +260,7 @@ More details on scheduling tasks in Laravel applications can be found [here: htt
 The default Kernel.php Scheduler configuration expects to be launched on a regular interval (for example, every 10 minutes). If nothing needs to be processed, the scheduler will exit until the next cycle. These lines (or a close approximation) need to be added to the system cron processing to enable unattended harvesting:
 ```
 # Run CC+ Laravel scheduler every 10 minutes
-*/10 * * * * root cd /usr/local/CC-Plus && php artisan schedule:run >> /dev/null 2>&1
+*/10 * * * * root cd /usr/local/CC-Plus && /usr/bin/php /usr/local/CC-Plus/artisan schedule:run >> /dev/null 2>&1
 ```
 ## CC-Plus Artisan Commands
 The Laravel environment for CC-Plus includes a set of Console Commands for use at the system-level to manage or operate certain parts of the application. A list of the commands themselves can be displayed via:

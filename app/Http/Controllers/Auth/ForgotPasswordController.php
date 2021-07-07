@@ -32,6 +32,9 @@ class ForgotPasswordController extends Controller
     */
     public function showForgotForm()
     {
+        if (env('MAIL_HOST') == "smtp.mailtrap.io" || is_null(env('MAIL_USERNAME')) ) {
+            return back()->withInput()->with('error', 'Email service has not yet been properly configured.');
+        }
        return view('auth.forgotPassword');
     }
 
@@ -60,7 +63,7 @@ class ForgotPasswordController extends Controller
      * @return response()
      */
     public function showResetForm($consortium, $token) {
-       return view('auth.forgotPasswordLink', ['token' => $token, 'consortium' => $consortium]);
+        return view('auth.forgotPasswordLink', ['token' => $token, 'consortium' => $consortium]);
     }
 
     /**

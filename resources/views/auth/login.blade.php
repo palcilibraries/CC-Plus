@@ -44,6 +44,11 @@ if ($consortia->count() == 1 ) {
                 <div class="card-header">{{ __('Login') }}</div>
 
                 <div class="card-body">
+                    @if (Session::has('error'))
+                        <div class="alert text-danger" role="alert">
+                            {{ Session::get('error') }}
+                        </div>
+                    @endif
                     <form method="POST" action="{{ route('login') }}">
                         @csrf
 

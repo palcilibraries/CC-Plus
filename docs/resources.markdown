@@ -16,9 +16,9 @@ nav_order: 8
 | Users         | [usrTemp](resources/Users_template.xls)  | [usrEx](resources/Users_example.xls)   |
 
 ## SUSHI connection tools
-* SUSHI URL connection tester [resources/SUSHI_URL_template.xlsx](SUSHI_URL_template.xlsx)
-* CC-PLUS list of providers [resources/CC-PLUS_Providers.xlsx](CC-PLUS_Providers.xlsx)
-* SUSHI error codes list [resources/SUSHI_error_codes.xlsx](SUSHI_error_codes.xlsx)
+* SUSHI URL connection tester [SUSHI_URL_template.xlsx](resources/SUSHI_URL_template.xlsx)
+* CC-PLUS list of providers [CC-PLUS_Providers.xlsx](resources/CC-PLUS_Providers.xlsx)
+* SUSHI error codes list [SUSHI_error_codes.xlsx](resources/SUSHI_error_codes.xlsx)
 * [COUNTER Registry](https://www.projectcounter.org/about/register/)
 * [Ex Libris SUSHI Vendor List](https://knowledge.exlibrisgroup.com/Alma/Product_Documentation/010Alma_Online_Help_(English)/020Acquisitions/090Acquisitions_Infrastructure/010Managing_Vendors/SUSHI_Vendor_Lists)
 

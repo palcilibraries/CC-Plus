@@ -6,7 +6,7 @@ nav_order: 2
 
 # CC-PLUS Installation Instructions
 
-CC-Plus is currently designed to run as a standalone web-based Laravel application connected to a MySQL database and a web server.  It allows for multiple, or just a single, consortia to be managed within a host system.  The report harvesting system uses the SUSHI protocol, and expects to receive valid and conformant COUNTER-5 usage reports.
+CC-Plus is currently designed to run as a standalone web-based Laravel application connected to a MySQL database and a web server.  It allows for multiple, or just a single, consortia to be managed within a host system.  The report harvesting system uses the SUSHI protocol, and expects to receive valid and conformant COUNTER-5 usage reports. The code repository and this documentation can be downloaded at: [http://github.com/palcilibraries/CC-PLUS](http://github.com/palcilibraries/CC-PLUS).
 
 Once the application is installed, the application administrator will need to configure the membership of the consortia, users who will be using the data and their roles, and the report providers.  The schedule of data harvesting is also configurable and involves validation and storage in the database.  The raw data can be saved as it is received as JSON (encrypted in the filesystem).  Harvested data stored in the database can then be queried to build, display, and/or download faceted reports.
 

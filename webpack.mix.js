@@ -1,3 +1,4 @@
+const path = require('path');
 const mix = require('laravel-mix');
 
 const VuetifyLoaderPlugin = require('vuetify-loader/lib/plugin');
@@ -28,6 +29,5 @@ mix.webpackConfig(webpackConfig);
  | file for the application as well as bundling up all the JS files.
  |
  */
-
-mix.js('resources/js/app.js', 'public/js')
+mix.js('resources/js/app.js', 'public/js').vue()
     .sass('resources/sass/app.scss', 'public/css');

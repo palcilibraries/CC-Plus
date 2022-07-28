@@ -38,11 +38,6 @@
                         {{ user["name"] }}<span class="caret"></span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-<!--
-                        <div v-if="is_manager">
-                            <a class="dropdown-item" href="/admin">Dashboard</a>
-                        </div>
--->
                         <a class="dropdown-item" :href="profile_url">Profile</a>
                         <a class="dropdown-item" href="/logout"
                            onclick="event.preventDefault();
@@ -71,66 +66,49 @@ export default {
               { url: "/", name: "Home", role: "All" },
               {
                 url: "#",
-                name: "Reports",
-                role: "All",
-                children: [
-                  {
-                    url: "/reports",
-                    name: "List",
-                    role: "Manager",
-                  },
-                  {
-                    url: "/reports/create",
-                    name: "Create",
-                    role: "All",
-                  },
-                  {
-                    url: "/harvestlogs/create",
-                    name: "Manual Harvest",
-                    role: "Manager",
-                  },
-                ]
-              },
-              {
-                url: "#",
-                name: "Settings",
-                role: "All",
+                name: "Admin",
+                role: "Admin",
                 children: [
                   {
                     url: "/users",
                     name: "Users",
-                    role: "Manager",
+                    role: "Admin",
                   },
                   {
-                      url: "/providers",
-                      name: "Providers",
-                      role: "All",
+                    url: "/institutions",
+                    name: "Institutions",
+                    role: "Admin",
                   },
                   {
-                      url: "/institutions",
-                      name: "My Institution",
-                      role: "All",
+                    url: "/institutiongroups",
+                    name: "Groups",
+                    role: "Admin",
                   },
                   {
-                      url: "/institutiongroups",
-                      name: "Institution Groups",
-                      role: "Admin",
+                    url: "/providers",
+                    name: "Providers",
+                    role: "Admin",
                   },
-                  // {
-                  //     url: "/institutiontypes",
-                  //     name: "Institution Types",
-                  //     role: "Admin",
-                  // },
                 ]
               },
               {
                 url: "#",
-                name: "Activity",
+                name: "Harvests",
                 role: "All",
                 children: [
                   {
+                    url: "/harvestlogs/create",
+                    name: "Manual Harvest",
+                    role: "All",
+                  },
+                  {
+                    url: "/harvestlogs/create",
+                    name: "Scheduled",
+                    role: "All",
+                  },
+                  {
                     url: "/harvestlogs",
-                    name: "Harvests",
+                    name: "Logs",
                     role: "All",
                   },
                   {
@@ -138,11 +116,23 @@ export default {
                     name: "Alerts",
                     role: "All",
                   },
-                  // {
-                  //   url: "/failedharvests",
-                  //   name: "Failed Harvests",
-                  //   role: "Manager",
-                  // }
+                ]
+              },
+              {
+                url: "#",
+                name: "Reports",
+                role: "All",
+                children: [
+                  {
+                    url: "/reports/create",
+                    name: "Configure",
+                    role: "All",
+                  },
+                  {
+                    url: "/reports",
+                    name: "Types",
+                    role: "All",
+                  },
                 ]
               },
             ]

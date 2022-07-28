@@ -38,6 +38,7 @@ Once the application is installed, the application administrator will need to co
 	* php-xml
 	* php-zip
 	* php-mysql
+  * php-mbstring
 	* libapache2-mod-php
 * Node.js and npm
 * Composer
@@ -93,7 +94,7 @@ $ cp .env.example .env
 $ vi .env
 ```
 * Assign APP_URL with the URL that your webserver uses to connect to your public documents folder (step-1, above)
-* Assign database credentials (a user with rights to create databases and grant privileges):
+* Assign database credentials (a user with rights to create databases and grant privileges) for BOTH the globaldb and con_template "DB_CONNECTION" groups:
     * DB_USERNAME, DB_PASSWORD, DB_USERNAME2, DB_PASSWORD2
 * Update settings for connecting to email and SMTP services (will vary depending on server environment). These settings are necessary for the system to generate forgotten-password reset links.
     * MAIL_MAILER, MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, MAIL_ENCRYPTION, MAIL_FROM_ADDRESS, MAIL_FROM_NAME

@@ -165,12 +165,11 @@ export default {
         this.$store.dispatch('updateAccess', max_role);
         this.$store.dispatch('updateUserInst', this.user["inst_id"]);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
-        if (this.is_admin || this.is_viewer) {
-            var idx1 = this.navList.findIndex(nav => nav.name == "Settings");
-            var idx2 = this.navList[idx1].children.findIndex(nav => nav.url == '/institutions');
-            this.navList[idx1].children[idx2].name = "Institutions";
-        }
-
+//        if (this.is_admin || this.is_viewer) {
+//            var idx1 = this.navList.findIndex(nav => nav.name == "Settings");
+//            var idx2 = this.navList[idx1].children.findIndex(nav => nav.url == '/institutions');
+//            this.navList[idx1].children[idx2].name = "Institutions";
+//        }
         console.log('Navbar Component mounted.');
     }
 }

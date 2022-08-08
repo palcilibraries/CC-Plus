@@ -20,6 +20,7 @@ class CreateSushiSettingsTable extends Migration
             $table->text('customer_id')->nullable();
             $table->text('requestor_id')->nullable();
             $table->text('API_key')->nullable();
+            $table->text('extra_args')->nullable();
             $table->text('support_email')->nullable();
             $table->string('last_harvest', 7)->nullable();   // YYYY-MM , last successful
             $table->boolean('is_active')->default(1);

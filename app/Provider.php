@@ -87,4 +87,11 @@ class Provider extends Model
     {
         return $this->hasMany('App\ItemReport');
     }
+
+    public function connectors()
+    {
+        $_db = config('database.connections.consodb.database');
+        return $this
+          ->belongsToMany('App\ConnectionField', $_db . '.provider_connectors');
+    }
 }

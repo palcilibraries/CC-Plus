@@ -8,6 +8,7 @@ use App\Institution;
 use App\Report;
 use App\HarvestLog;
 use App\SushiSetting;
+use App\ConnectionField;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -119,7 +120,7 @@ class ProviderController extends Controller
     public function show($id)
     {
         $thisUser = auth()->user();
-        $provider = Provider::with(['reports:reports.id,reports.name'])->findOrFail($id);
+        $provider = Provider::with(['reports:reports.id,reports.name','connectors'])->findOrFail($id);
 
        // Build data to be passed based on whether the user is admin or Manager
         if ($thisUser->hasRole("Admin")) {
@@ -162,13 +163,15 @@ class ProviderController extends Controller
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
                                  ->get(['id','name'])->toArray();
 
+        // Get connection fields
+        $all_fields = ConnectionField::get(['id','name'])->toArray();
+
         // Get 10 most recent harvests
-        $harvests = HarvestLog::with(
-            'report:id,name',
-            'sushiSetting',
-            'sushiSetting.institution:id,name',
-            'sushiSetting.provider:id,name'
-        )
+        $harvests = HarvestLog::with('report:id,name',
+                                     'sushiSetting',
+                                     'sushiSetting.institution:id,name',
+                                     'sushiSetting.provider:id,name'
+                                    )
                               ->join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
                               ->when($limit_to_insts, function ($query, $limit_to_insts) {
                                     return $query->whereIn('sushisettings.inst_id', $limit_to_insts);
@@ -182,6 +185,7 @@ class ProviderController extends Controller
             'institutions',
             'unset_institutions',
             'master_reports',
+            'all_fields',
             'harvests'
         ));
     }
@@ -221,12 +225,22 @@ class ProviderController extends Controller
         if (!isset($input['max_retries']) || $input['max_retries'] < 0) {
             $input['max_retries'] = 0;
         }
+        $prov_input = array_except($input,array('connectors','master_reports'));
+
       // Update the record and assign reports in master_reports
-        $provider->update($input);
+        $provider->update($prov_input);
         $provider->reports()->detach();
         if (!is_null($request->input('master_reports'))) {
             foreach ($request->input('master_reports') as $r) {
                 $provider->reports()->attach($r);
+            }
+        }
+
+      // Update the provider_connectors
+        $provider->connectors()->detach();
+        if (!is_null($request->input('connectors'))) {
+            foreach ($request->input('connectors') as $cnx) {
+                $provider->connectors()->attach($cnx);
             }
         }
 

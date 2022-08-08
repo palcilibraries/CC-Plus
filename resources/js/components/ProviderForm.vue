@@ -21,12 +21,12 @@
       <!-- Values-only when form not active -->
       <div v-if="!showForm">
   	    <v-simple-table dense>
-    	  <tr>
+          <tr>
   	        <td>Name </td>
   	        <td>{{ mutable_prov.name }}</td>
   	      </tr>
           <tr>
-    	    <td>Status </td>
+            <td>Status </td>
    	        <td>{{ status }}</td>
   	      </tr>
   	      <tr>
@@ -37,14 +37,22 @@
   	        <td>SUSHI service URL </td>
   	        <td>{{ mutable_prov.server_url_r5 }}</td>
   	      </tr>
+          <tr>
+  	        <td>Connection Fields</td>
+  	        <td>
+  	          <template v-for="cnx in provider.connectors">
+                <v-chip>{{ cnx.name }}</v-chip>
+              </template>
+  	        </td>
+  	      </tr>
   	      <tr>
   	        <td>Run harvests monthly on day </td>
   	        <td>{{ mutable_prov.day_of_month }}</td>
-    	  </tr>
+          </tr>
           <tr>
   	        <td>Maximum retries </td>
   	        <td>{{ mutable_prov.max_retries }}</td>
-    	  </tr>
+          </tr>
   	      <tr>
   	        <td>Reports to harvest </td>
   	        <td>
@@ -65,23 +73,29 @@
                     item-text="name" item-value="id" outlined
           ></v-select>
           <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined></v-text-field>
-  		  <div class="field-wrapper has-label">
+          <div v-if="is_admin" class="field-wrapper has-label">
+            <v-subheader v-text="'Required Connection Fields'"></v-subheader>
+            <v-select :items="all_fields" v-model="form.connectors" value="provider.connectors" label="Select"
+                      item-text="name" item-value="id" multiple chips
+            ></v-select>
+          </div>
+  		    <div class="field-wrapper has-label">
   	        <v-subheader v-text="'Run Harvests Monthly on Day'"></v-subheader>
   	        <v-text-field v-model="form.day_of_month" label="Day-of-Month" single-line type="number"
 	                      :rules="dayRules"></v-text-field>
-		  </div>
+          </div>
           <div class="field-wrapper has-label">
             <v-subheader v-text="'Maximum #-of Retries'"></v-subheader>
             <v-text-field v-model="form.max_retries" label="Max Retries" hide-details single-line type="number"
             ></v-text-field>
           </div>
-	      <div class="field-wrapper has-label">
-	        <v-subheader v-text="'Reports to Harvest'"></v-subheader>
-	        <v-select :items="master_reports" v-model="form.master_reports" value="provider.reports" label="Select"
-	                  item-text="name" item-value="id" multiple chips hint="Choose which reports to harvest"
+          <div class="field-wrapper has-label">
+	          <v-subheader v-text="'Reports to Harvest'"></v-subheader>
+	          <v-select :items="master_reports" v-model="form.master_reports" value="provider.reports" label="Select"
+	                    item-text="name" item-value="id" multiple chips hint="Choose which reports to harvest"
                       persistent-hint
-	        ></v-select>
-		  </div>
+	          ></v-select>
+		      </div>
           <br />
           <v-btn small color="primary" type="button" @click="formSubmit" :disabled="!formValid">
               Save Provider Settings
@@ -105,6 +119,7 @@
                 provider: { type:Object, default: () => {} },
                 institutions: { type:Array, default: () => [] },
                 master_reports: { type:Array, default: () => [] },
+                all_fields: { type:Array, default: () => [] },
                },
 
         data() {
@@ -124,6 +139,7 @@
                     server_url_r5: this.provider.server_url_r5,
                     day_of_month: this.provider.day_of_month,
                     max_retries: this.provider.max_retries,
+                    connectors: [],
                     master_reports: [],
                 }),
                 formValid: true,
@@ -147,20 +163,20 @@
                             if (self.is_admin) {
                                 self.inst_name = self.institutions[response.provider.inst_id-1].name;
                             }
-							self.status = self.statusvals[response.provider.is_active];
+                            self.status = self.statusvals[response.provider.is_active];
                             self.success = response.msg;
                         } else {
                             self.failure = response.msg;
                         }
-                    });
-				self.showForm = false;
+                });
+                self.showForm = false;
             },
             swapForm (event) {
                 this.showForm = true;
-			},
+            },
             hideForm (event) {
                 this.showForm = false;
-			},
+            },
             destroy (provid) {
                 var self = this;
                 Swal.fire({
@@ -195,7 +211,7 @@
           ...mapGetters(['is_manager','is_admin','user_inst_id'])
         },
         mounted() {
-			this.showForm = false;
+            this.showForm = false;
             if ( this.provider.inst_id==1 ) {
                 this.inst_name="Entire Consortium";
             } else {
@@ -209,9 +225,12 @@
                 this.can_edit = true;
             }
             this.status=this.statusvals[this.provider.is_active];
-            // Setup form:master_reports
+            // Setup form:master_reports and form:connectors
             for(var i=0;i<this.provider.reports.length;i++){
                this.form.master_reports.push(this.provider.reports[i].id);
+            }
+            for(var i=0;i<this.provider.connectors.length;i++){
+               this.form.connectors.push(this.provider.connectors[i].id);
             }
             console.log('Provider Component mounted.');
         }
@@ -219,5 +238,8 @@
 </script>
 
 <style>
-
+.wrap-column-boxes {
+    flex-flow: row wrap;
+    align-items: flex-end;
+ }
 </style>

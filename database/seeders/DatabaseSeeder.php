@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
           SectionTypesTableSeeder::class,
           SeveritiesTableSeeder::class,
           CcplusErrorsTableSeeder::class,
+          ConnectionFieldSeeder::class,
         ]);
     }
 }

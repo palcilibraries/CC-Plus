@@ -29,7 +29,7 @@ class SushiSettingController extends Controller
     public function edit($id)
     {
         // User must be able to manage the settings
-        $setting = SushiSetting::with(['institution', 'provider'])->findOrFail($id);
+        $setting = SushiSetting::with(['institution', 'provider', 'provider.connectors'])->findOrFail($id);
         abort_unless($setting->institution->canManage(), 403);
 
         // Set next_harvest date
@@ -42,11 +42,11 @@ class SushiSettingController extends Controller
 
         // Get 10 most recent harvests
         $harvests = HarvestLog::with(
-            'report:id,name',
-            'sushiSetting',
-            'sushiSetting.institution:id,name',
-            'sushiSetting.provider:id,name'
-        )
+                                  'report:id,name',
+                                  'sushiSetting',
+                                  'sushiSetting.institution:id,name',
+                                  'sushiSetting.provider:id,name'
+                              )
                               ->where('sushisettings_id', $id)
                               ->orderBy('updated_at', 'DESC')->limit(10)
                               ->get()->toArray();
@@ -144,9 +144,15 @@ class SushiSettingController extends Controller
      */
     public function test(Request $request)
     {
-       // Validate form inputs
-        $this->validate($request, ['prov_id' => 'required']);
-        $provider = Provider::findOrFail($request->prov_id);
+
+      // Validate form inputs
+      // Get and verify input or bail with error in json response
+        try {
+            $input = json_decode($request->getContent(), true);
+        } catch (\Exception $e) {
+            return response()->json(['result' => false, 'msg' => 'Error decoding input!']);
+        }
+        $provider = Provider::findOrFail($input['prov_id']);
 
         // ASME (there may be others) checks the Agent and returns 403 if it doesn't like what it sees
         $options = [
@@ -160,14 +166,25 @@ class SushiSettingController extends Controller
         $_url = preg_replace('/\/?members\/?/i', '', $_url); //   "   "   "     "      "   "     "        "
         $_uri = rtrim($_url, '/');                           // remove any remaining trailing slashes
 
-       // Construct and execute the test request
-        $_uri .= '/status';
-        $uri_auth = "?customer_id=" . urlencode($request->customer_id);
-        if (!is_null($request->requestor_id)) {
-            $uri_auth .= "&requestor_id=" . urlencode($request->requestor_id);
+       // If we got extra_args, try to clean it up and strip any leading "&" or "?"
+        if (isset($input['extra_args'])) {
+          $input['extra_args'] = trim($input['extra_args']);
+          $input['extra_args'] = ltrim($input['extra_args'], "&?");
         }
-        if (!is_null($request->apikey)) {
-            $uri_auth .= "&api_key=" . urlencode($request->apikey);
+
+       // Construct and execute the test request
+        $_uri .= '/status?';
+        $uri_auth = "";
+        $fields = array('customer_id', 'requestor_id', 'api_key', 'extra_args');
+        foreach ($fields as $fld) {
+          if (isset($input[$fld])) {
+              $uri_auth .= ($uri_auth == '') ? "" : "&";
+              if ($fld == 'extra_args') {
+                  $uri_auth .= urlencode($input['extra_args']);
+              } else {
+                  $uri_auth .= $fld . '=' . urlencode($input[$fld]);
+              }
+          }
         }
         $request_uri = $_uri . $uri_auth;
 

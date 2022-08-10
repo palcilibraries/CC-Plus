@@ -13,9 +13,18 @@
       <!-- form display control and confirmations  -->
       <!-- Values-only when form not active -->
       <v-row>
-        <v-col cols="4"><strong>Customer ID: </strong>{{ form.customer_id }}</v-col>
-      	<v-col cols="4"><strong>Requestor ID: </strong>{{ form.requestor_id }}</v-col>
-      	<v-col cols="4"><strong>API Key: </strong>{{ form.API_key }}</v-col>
+        <v-col v-if="setting.provider.connectors.some(c => c.name === 'customer_id')" cols="3">
+          <strong>Customer ID: </strong>{{ form.customer_id }}
+        </v-col>
+      	<v-col v-if="setting.provider.connectors.some(c => c.name === 'requestor_id')" cols="3">
+          <strong>Requestor ID: </strong>{{ form.requestor_id }}
+        </v-col>
+      	<v-col v-if="setting.provider.connectors.some(c => c.name === 'API_key')" cols="3">
+          <strong>API Key: </strong>{{ form.API_key }}
+        </v-col>
+        <v-col v-if="setting.provider.connectors.some(c => c.name === 'extra_args')" cols="3">
+          <strong>Extra Args: </strong>{{ form.extra_args }}
+        </v-col>
       </v-row>
       <v-row>
         <v-col cols="12">
@@ -56,14 +65,17 @@
       <v-row>
         <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)"
               class="in-page-form">
-          <v-col>
+          <v-col v-if="setting.provider.connectors.some(c => c.name === 'customer_id')">
             <v-text-field v-model="form.customer_id" label="Customer ID" outlined></v-text-field>
           </v-col>
-          <v-col>
+          <v-col v-if="setting.provider.connectors.some(c => c.name === 'requestor_id')">
             <v-text-field v-model="form.requestor_id" label="Requestor ID" outlined></v-text-field>
           </v-col>
-          <v-col>
+          <v-col v-if="setting.provider.connectors.some(c => c.name === 'API_key')">
             <v-text-field v-model="form.API_key" label="API_key" outlined></v-text-field>
+          </v-col>
+          <v-col v-if="setting.provider.connectors.some(c => c.name === 'extra_args')">
+            <v-text-field v-model="form.extra_args" label="Extra Arguments" outlined></v-text-field>
           </v-col>
           <v-col>
             <v-text-field v-model="form.support_email" label="Support Email" outlined></v-text-field>
@@ -99,6 +111,7 @@
                     customer_id: this.setting.customer_id,
                     requestor_id: this.setting.requestor_id,
                     API_key: this.setting.API_key,
+                    extra_args: this.setting.extra_args,
                     support_email: this.setting.support_email,
                     inst_id: this.setting.inst_id,
                     prov_id: this.setting.prov_id,
@@ -114,13 +127,13 @@
 	                    this.confirm = 'Settings successfully updated.';
 	                });
                 this.showForm = false;
-	        },
+            },
             swapForm (event) {
                 this.showForm = true;
-			},
+            },
             hideForm (event) {
                 this.showForm = false;
-			},
+            },
             destroy (settingid) {
                 var self = this;
                 let message = "Deleting these settings cannot be reversed, only manually recreated.";
@@ -144,6 +157,7 @@
                                    self.form.customer_id = '';
                                    self.form.requestor_id = '';
                                    self.form.API_key = '';
+                                   self.form.extra_args = '';
                                    self.form.support_email = '';
                                } else {
                                    self.success = '';
@@ -177,11 +191,13 @@
                 self.showTest = true;
                 self.testData = '';
                 self.testStatus = "... Working ...";
-                axios.get('/sushisettings-test'+'?prov_id='+self.setting.prov_id+'&'
-                                               +'requestor_id='+this.form.requestor_id+'&'
-                                               +'customer_id='+this.form.customer_id+'&'
-                                               +'apikey='+this.form.API_key)
-                     .then( function(response) {
+                var testArgs = {'prov_id' : this.form.prov_id};
+                if (this.connectors.some(c => c.name === 'requestor_id')) testArgs['requestor_id'] = this.form.requestor_id;
+                if (this.connectors.some(c => c.name === 'customer_id')) testArgs['customer_id'] = this.form.customer_id;
+                if (this.connectors.some(c => c.name === 'API_key')) testArgs['API_key'] = this.form.API_key;
+                if (this.connectors.some(c => c.name === 'extra_args')) testArgs['extra_args'] = this.form.extra_args;
+                axios.post('/sushisettings-test', testArgs)
+                     .then((response) => {
                         if ( response.data.result == '') {
                             self.testStatus = "No results!";
                         } else {

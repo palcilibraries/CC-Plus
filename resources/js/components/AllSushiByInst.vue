@@ -22,20 +22,18 @@
                   placeholder="Connect a Provider" item-text="name" item-value="id" color="primary"
         ></v-select>
         <div v-if="showForm" class="form-fields">
-          <v-text-field v-model="form.customer_id" label="Customer ID" id="customer_id" outlined
-          ></v-text-field>
-          <v-text-field v-model="form.requestor_id" label="Requestor ID" id="requestor_id" outlined
-          ></v-text-field>
-          <v-text-field v-model="form.API_key" label="API Key" id="API_key" outlined
-          ></v-text-field>
-		      <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Connect</v-btn>
-		      <v-btn small color="secondary" type="button" @click="testSettings">Test Settings</v-btn>
-		      <v-btn small type="button" @click="hideForm">cancel</v-btn>
-  		    <div v-if="showTest">
-          	<div>{{ testStatus }}</div>
-          	<div v-for="row in testData">{{ row }}</div>
-		      </div>
-	      </div>
+          <template v-for="cnx in connectors">
+            <v-text-field v-model="form[cnx.name]" :label='cnx.label' :id='cnx.name' outlined></v-text-field>
+            &nbsp; &nbsp;
+          </template>
+          <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Connect</v-btn>
+          <v-btn small color="secondary" type="button" @click="testSettings">Test Settings</v-btn>
+          <v-btn small type="button" @click="hideForm">cancel</v-btn>
+          <div v-if="showTest">
+            <div>{{ testStatus }}</div>
+            <div v-for="row in testData">{{ row }}</div>
+          </div>
+        </div>
 	    </form>
       <div class="status-message" v-if="success || failure">
         <span v-if="success" class="good" role="alert" v-text="success"></span>
@@ -86,9 +84,10 @@
         <template v-slot:item="{ item }" >
           <tr>
             <td><a :href="'/providers/'+item.provider.id">{{ item.provider.name }}</a></td>
-            <td>{{ item.customer_id }}</td>
-            <td>{{ item.requestor_id }}</td>
-            <td>{{ item.API_key }}</td>
+            <td v-if="all_connectors.some(c => (c.name == 'customer_id'))">{{ item.customer_id }}</td>
+            <td v-if="all_connectors.some(c => (c.name == 'requestor_id'))">{{ item.requestor_id }}</td>
+            <td v-if="all_connectors.some(c => (c.name == 'API_key'))">{{ item.API_key }}</td>
+            <td v-if="all_connectors.some(c => (c.name == 'extra_args'))">{{ item.extra_args }}</td>
             <td :class="item.status">{{ item.status }}</td>
             <td v-if="is_manager || is_admin">
               <v-btn class='btn btn-danger' small type="button" @click="destroy(item)">Delete connection</v-btn>
@@ -118,7 +117,8 @@
         props: {
                 settings: { type:Array, default: () => [] },
                 unset: { type:Array, default: () => [] },
-                inst_id: { type:Number, default: 0 }
+                inst_id: { type:Number, default: 0 },
+                all_connectors: { type:Array, default: () => [] }
                },
         data() {
             return {
@@ -134,21 +134,26 @@
                 import_types: ['Add or Update', 'Full Replacement'],
                 mutable_settings: this.settings,
                 mutable_unset: this.unset,
-                headers: [
-                  { text: 'Name ', value: 'name' },
-                  { text: 'Customer ID', value: 'customer_id' },
-                  { text: 'Requestor ID', value: 'requestor_id' },
-                  { text: 'API Key', value: 'API_key' },
-                  { text: 'Status', value: 'status' },
-                  { text: '', value: ''},
-				          { text: '', value: ''}
+                connectors: [],
+                // Actual headers are built from these in mounted()
+                header_fields: [
+                  { label: 'Name ', name: 'name' },
+                  { label: '', name: 'customer_id' },
+                  { label: '', name: 'requestor_id' },
+                  { label: '', name: 'API_key' },
+                  { label: '', name: 'extra_args' },
+                  { label: 'Status', name: 'status' },
+                  { label: '', name: ''},
+				          { label: '', name: ''}
                 ],
+                headers: [],
                 form: new window.Form({
                     inst_id: this.inst_id,
                     prov_id: null,
                     customer_id: '',
                     requestor_id: '',
                     API_key: '',
+                    extra_args: '',
                     is_active: 1
 				        })
             }
@@ -180,6 +185,7 @@
                             this.form.customer_id = '';
                             this.form.requestor_id = '';
                             this.form.API_key = '';
+                            this.form.extra_args = '';
                             this.showForm = false;
                         } else {
                             this.success = '';
@@ -260,10 +266,12 @@
                 this.testData = '';
                 this.testStatus = "... Working ...";
                 this.showTest = true;
-                axios.get('/sushisettings-test'+'?prov_id='+this.form.prov_id+'&'
-                                               +'requestor_id='+this.form.requestor_id+'&'
-                                               +'customer_id='+this.form.customer_id+'&'
-                                               +'apikey='+this.form.API_key)
+                var testArgs = {'prov_id' : this.form.prov_id};
+                if (this.connectors.some(c => c.name === 'requestor_id')) testArgs['requestor_id'] = this.form.requestor_id;
+                if (this.connectors.some(c => c.name === 'customer_id')) testArgs['customer_id'] = this.form.customer_id;
+                if (this.connectors.some(c => c.name === 'API_key')) testArgs['API_key'] = this.form.API_key;
+                if (this.connectors.some(c => c.name === 'extra_args')) testArgs['extra_args'] = this.form.extra_args;
+                axios.post('/sushisettings-test', testArgs)
                      .then((response) => {
                         if (response.data.result == '') {
                             this.testStatus = "No results!";
@@ -278,19 +286,23 @@
                 this.form.customer_id = '';
                 this.form.requestor_id = '';
                 this.form.API_key = '';
+                this.form.extra_args = '';
                 this.failure = '';
                 this.success = '';
                 this.testData = '';
                 this.testStatus = '';
                 this.showForm = true;
+                let provider = this.unset.find(p => p.id == prov);
+                this.connectors = provider.connectors;
             },
             hideForm (event) {
                 this.showForm = false;
                 this.form.prov_id = null;
-			},
+                this.connectors = [];
+            },
         },
         computed: {
-          ...mapGetters(['is_admin','is_manager'])
+          ...mapGetters(['is_admin','is_manager']),
         },
         mounted() {
             // Sort the settings by provider name
@@ -298,6 +310,19 @@
                 if ( a.provider.name < b.provider.name ) return -1;
                 if ( a.provider.name > b.provider.name ) return 1;
                 return 0;
+            });
+            // Setup DataTable headers array based on the provider connectors
+            this.header_fields.forEach((fld) => {
+                // Connection fields are setup in "header_fields" as names without labels
+                if (fld.label == '' && fld.name != '') {
+                    // any provider using the field means we make a column for it
+                    let cnx = this.all_connectors.find(c => c.name == fld.name);
+                    if (typeof(cnx) != 'undefined') {
+                        this.headers.push({ text: cnx.label, value: cnx.name});
+                    }
+                } else {
+                    this.headers.push({ text: fld.label, value: fld.name });
+                }
             });
             console.log('Providers-by-Inst Component mounted.');
         }

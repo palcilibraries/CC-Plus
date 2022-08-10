@@ -33,6 +33,7 @@
 	  <all-sushi-by-inst :settings="{{ json_encode($institution->sushiSettings->toArray()) }}"
 		  				 :inst_id="{{ json_encode($institution->id) }}"
 		  				 :unset="{{ json_encode($unset_providers) }}"
+               :all_connectors="{{ json_encode($all_connectors) }}"
 	  ></all-sushi-by-inst>
     </div>
 

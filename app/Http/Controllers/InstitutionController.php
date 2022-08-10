@@ -141,13 +141,29 @@ class InstitutionController extends Controller
         $all_roles = Role::where('id', '<=', $thisUser->maxRole())->orderBy('name', 'ASC')
                          ->get(['name', 'id'])->toArray();
 
-        // Get id+name pairs for accessible providers without settings
-        $set_provider_ids = $sushi_settings->pluck('prov_id');
-        $unset_providers = Provider::whereNotIn('id', $set_provider_ids)
-                           ->where(function ($query) use ($id) {
-                               $query->where('inst_id', 1)->orWhere('inst_id', $id);
-                           })
-                           ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+        // Build an array of providers not yet connected to this inst and another that holds
+        // the connection_fields used across all providers (whether connected or not)
+        $set_provider_ids = $sushi_settings->pluck('prov_id')->values()->toArray();
+        $all_providers = Provider::with('connectors')->whereIn('inst_id', [1,$id])
+                                 ->orderBy('name', 'ASC')->get(['id','name','inst_id']);
+        $unset_providers = array();
+        $all_connectors = array();
+        $seen_connectors = array();
+        foreach ($all_providers as $prov) {
+            if (!in_array($prov->id,$set_provider_ids)) {
+                $unset_providers[] = array('id' => $prov->id, 'name' => $prov->name,
+                                           'connectors' => $prov->connectors->toArray());
+            }
+            // There are only 4... if they're all set, skip checking
+            if (sizeof($seen_connectors) < 4) {
+              foreach($prov->connectors as $cnx) {
+                  if (!in_array($cnx->name,$seen_connectors)) {
+                      $all_connectors[] = array('name' => $cnx->name, 'label' => $cnx->label);
+                      $seen_connectors[] = $cnx->name;
+                  }
+              }
+            }
+        }
 
         // Get 10 most recent harvests
         $harvests = HarvestLog::with(
@@ -162,7 +178,7 @@ class InstitutionController extends Controller
                               ->get('harvestlogs.*')->toArray();
         return view(
             'institutions.show',
-            compact('institution', 'users', 'unset_providers', 'all_groups', 'all_roles', 'harvests')
+            compact('institution', 'users', 'unset_providers', 'all_connectors', 'all_groups', 'all_roles', 'harvests')
         );
     }
 

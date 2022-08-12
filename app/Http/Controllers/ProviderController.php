@@ -164,7 +164,18 @@ class ProviderController extends Controller
                                  ->get(['id','name'])->toArray();
 
         // Get connection fields
-        $all_fields = ConnectionField::get(['id','name'])->toArray();
+        $connection_fields = ConnectionField::get(['id','name']);
+        $all_fields = $connection_fields->toArray();
+
+        // if the provider has NO connectors required, update it to at least require customer_id
+        if ($provider->connectors->count() == 0) {
+            $cf = $connection_fields->where('name','customer_id')->first();
+            if ($cf) {
+                $provider->unsetRelation('connectors');
+                $provider->connectors()->attach($cf->id);
+                $provider->load('connectors');
+            }
+        }
 
         // Get 10 most recent harvests
         $harvests = HarvestLog::with('report:id,name',

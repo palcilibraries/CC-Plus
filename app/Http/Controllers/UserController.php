@@ -43,6 +43,8 @@ class UserController extends Controller
         // Make user role names one string, role IDs into an array, and status to a string for the view
         $data = array();
         foreach ($user_data as $rec) {
+            // exclude any users that cannot be managed by thisUser from the displayed list
+            if (!$rec->canManage()) continue; 
             $_roles = "";
             $user = $rec->toArray();
             $user['status'] = ($rec->is_active == 1) ? 'Active' : 'Inactive';

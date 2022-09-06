@@ -6,11 +6,10 @@ use Illuminate\Http\Request;
 
 class GlobalAdminController extends Controller
 {
-    
+
     public function __construct()
     {
-        $this->middleware('auth');
-        $this->middleware('role:GlobalAdmin');
+        $this->middleware(['auth','role:SuperUser']);
     }
 
     //Index method for GlobalAdmin Controller

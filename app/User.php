@@ -65,12 +65,18 @@ class User extends Authenticatable
 
     public function canManage()
     {
-      // Admin can manage any user
-        if (auth()->user()->hasRole("Admin")) {
+      // SuperUser can manage any user and is only changeable by another SuperUser
+        if (auth()->user()->hasRole("SuperUser")) {
             return true;
+        } else {
+            if ($this->hasRole("SuperUser")) return false;
         }
+
+      // Admin can manage any non-SuperUser user
+        if (auth()->user()->hasRole("Admin")) return true;
+
       // Managers can manage users at their own inst, but not Admins
-        if (auth()->user()->hasRole("Manager") && !$this->hasRole("Admin")) {
+        if (auth()->user()->hasRole("Manager") && !$this->hasRole("Admin") && !$this->hasRole("SuperUser")) {
             return auth()->user()->inst_id == $this->inst_id;
         }
       // Users can manage themselves

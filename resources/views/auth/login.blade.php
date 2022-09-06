@@ -55,7 +55,7 @@ if ($consortia->count() == 1 ) {
                         @if( $preset_key == "" )
                         <div class="form-group">
                           {{ Form::Label('consortium', 'Consortium:') }}
-                          <select class="form-control" name="consortium" required autofocus>
+                          <select class="form-control" name="consortium" autofocus>
                             <option value="">Select a Consortium</option>
                             @foreach($consortia as $con)
                               <option value="{{$con->ccp_key}}">{{$con->name}}</option>

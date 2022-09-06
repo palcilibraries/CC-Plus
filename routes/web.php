@@ -39,7 +39,7 @@ Route::resource('/alertsettings', 'AlertSettingController')
 Route::resource('/savedreports', 'SavedReportController')->middleware(['auth']);
 Route::resource('/systemalerts', 'SystemAlertController')->middleware(['auth']);
 //
-// Route::get('/globaladmin', 'GlobalAdminController@index')->middleware('auth','role:GlobalAdmin');
+Route::get('/globaladmin', 'GlobalAdminController@index')->middleware('auth','role:SuperUser');
 // Route::get('/', 'ReportController@index')->name('reports')->middleware('auth');
 Route::get('/admin', 'AdminController@index')->name('admin')->middleware(['auth','role:Admin,Manager']);
 Route::get('/alerts', 'AlertController@index')->name('alerts')->middleware('auth');

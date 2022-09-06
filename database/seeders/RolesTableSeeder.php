@@ -29,10 +29,8 @@ class RolesTableSeeder extends Seeder
             ['id' =>  1, 'name' => 'User'],
             ['id' => 25, 'name' => 'Manager'],
             ['id' => 50, 'name' => 'Viewer'],
-            ['id' => 99, 'name' => 'Admin']
-            // For if/when there's a need for a global admin
-            //
-            // ['id' => 999, 'name' => 'GlobalAdmin']
+            ['id' => 99, 'name' => 'Admin'],
+            ['id' => 999, 'name' => 'SuperUser']
             ]);
         }
     }

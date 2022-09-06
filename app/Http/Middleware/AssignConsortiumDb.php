@@ -18,11 +18,23 @@ class AssignConsortiumDb
      */
     public function handle($request, Closure $next)
     {
+       // Enforce consortium selection here instead of in view to permit superadmin to login without
+       // having to chooee (which would connect them to the con_template database)
+        if ($request->isMethod('post') && $request->getPathInfo() == "/login") {
+            if (is_null($request['consortium'])) {
+                if ($request->email == config('ccplus.server_admin')) {
+                    $request['consortium'] = "con_template";
+                    session(['ccp_con_key' => "con_template"]);
+                } else {
+                    return back()->with('error',' A consortium selection is required');
+                }
+            }
+        }
+
        // Check to ensure that the consortium key session variable is set.
         $paths = array("/login", "/forgot-password", "/reset-password");
+       // Set consortium key variable for the session based on $request for a login request.
         if (session('ccp_con_key', '') == '') {
-           // Set session based on $request for a login request.
-            // if ($request->getPathInfo() == "/login" && isset($request['consortium'])) {
             if (in_array($request->getPathInfo(),$paths) && isset($request['consortium'])) {
                 session(['ccp_con_key' => $request['consortium']]);
            // Otherwise, logout and reset things

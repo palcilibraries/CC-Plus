@@ -1,8 +1,9 @@
   <template>
     <nav class="navbar navbar-expand navbar-light bg-white shadow-sm">
       <div class="container">
-        <!--<a class="navbar-brand" href="/">CC+</a>-->
-		<a class="navbar-brand" href="/"><img src="/images/CC_Plus_Logo.png" alt="CC plus" height="50px" width="103px" /></a>
+	      <a class="navbar-brand" :href="homeURL">
+          <img src="/images/CC_Plus_Logo.png" alt="CC plus" height="50px" width="103px" />
+        </a>
         <div id="navbarSupportedContent" class="collapse navbar-collapse">
             <!-- Left Side Of Navbar -->
             <ul class="navbar-nav mr-auto">
@@ -61,8 +62,10 @@ export default {
     },
     data() {
         return {
+            homeURL: '/',
             profile_url: '',
             navList: [
+              { url: "/globaladmin", name: "Server Admin", role: "SuperUser" },
               { url: "/", name: "Home", role: "All" },
               {
                 url: "#",
@@ -140,14 +143,15 @@ export default {
     },
     methods: {
       isVisible(item) {
-        if (this.is_admin) return true;
-        if (this.is_manager && (item.role != 'Admin')) return true;
+        if (this.is_superuser) return true;
+        if (this.is_admin && (item.role != 'SuperUser')) return true;
+        if (this.is_manager && (item.role != 'Admin' && item.role != 'SuperUser')) return true;
         if (item.role == 'All') return true;
         return false;
       }
     },
     computed: {
-      ...mapGetters(['is_manager','is_admin','is_viewer'])
+      ...mapGetters(['is_manager','is_admin','is_viewer','is_superuser'])
     },
     mounted() {
         // Get user's max role
@@ -165,11 +169,7 @@ export default {
         this.$store.dispatch('updateAccess', max_role);
         this.$store.dispatch('updateUserInst', this.user["inst_id"]);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
-//        if (this.is_admin || this.is_viewer) {
-//            var idx1 = this.navList.findIndex(nav => nav.name == "Settings");
-//            var idx2 = this.navList[idx1].children.findIndex(nav => nav.url == '/institutions');
-//            this.navList[idx1].children[idx2].name = "Institutions";
-//        }
+        if (this.is_superuser) this.homeURL = "/globaladmin";
         console.log('Navbar Component mounted.');
     }
 }

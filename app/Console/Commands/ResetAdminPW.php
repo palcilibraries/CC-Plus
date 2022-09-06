@@ -52,10 +52,9 @@ class ResetAdminPW extends Command
         $update_con_template = false;
 
        // If ID or Key given as input, go get it
+        $databases = array();
         $conarg = $this->argument('consortium');
         if ($conarg) {
-            $consortia = array();
-            $databases = array();
            // Allo update to just the template database
             if ($conarg == 'template') {
                 $update_con_template = true;
@@ -68,7 +67,6 @@ class ResetAdminPW extends Command
                     $this->line('Cannot Find Consortium: ' . $conarg);
                     return 0;
                 }
-                $consortia[] = $consortium;
                 $databases[] = "ccplus_" . $consortium->ccp_key;
             }
        // User wants to update all the consortia?
@@ -84,7 +82,7 @@ class ResetAdminPW extends Command
             // Get all the IDs as an array
             $consortia = Consortium::get();
             foreach ($consortia as $con) {
-                $databases = "ccplus_" . $con->con_key;
+                $databases[] = "ccplus_" . $con->ccp_key;
             }
             $update_con_template = true;
         }

@@ -40,6 +40,13 @@ class ConsortiumCommand extends Command
      */
     public function handle()
     {
+      // The email (username) and password for the global admin account have to be set in .env
+        $server_admin = config('ccplus.server_admin');
+        $server_admin_pass = config('ccplus.server_admin_pass');
+        if (strlen($server_admin) == 0 || strlen($server_admin_pass) == 0) {
+            $this->error('Global Admin credential in .env is undefined!');
+            return 0;
+        }
       // Get basic info for the new consortium
         $conso_data['name'] = $this->ask('New consortium name?');
         $conso_data['email'] = $this->ask('Primary email for the consortium?');
@@ -128,6 +135,20 @@ class ConsortiumCommand extends Command
         DB::table($global_db . '.consortia')->insert($conso_data);
         $this->line('<fg=cyan>Consortium added to global database.');
 
+      // Create the SuperUser account in the users table using values from the .env file
+        DB::table($conso_db . ".users")->insert([
+        ['name' => 'Server Administrator',
+         'password' => Hash::make($server_admin_pass),
+         'email' => $server_admin,
+         'inst_id' => 1,
+         'is_active' => 1]
+        ]);
+
+      // Update the ServerAdmin password in the con_template databaase to be sure it matches the .env file
+        $pw_qry  = "UPDATE ccplus_con_template.users SET password = '" . Hash::make($server_admin_pass);
+        $pw_qry .= "' where email='ServerAdmin'";
+        $result = DB::statement($pw_qry);
+
       // Create the Administrator account in the users table
         $this->info('The initial Administrator account for a new consortium is always created with');
         $this->info('an email address set to "Administrator".');
@@ -141,8 +162,9 @@ class ConsortiumCommand extends Command
          'is_active' => 1]
         ]);
 
-      // Set Admin role for 'Administrator'
-        DB::table($conso_db . ".role_user")->insert(['role_id' =>  99, 'user_id' => 1]);
+      // Set roles for SuperUser and 'Administrator'
+        DB::table($conso_db . ".role_user")->insert(['role_id' =>  999, 'user_id' => 1]);
+        DB::table($conso_db . ".role_user")->insert(['role_id' =>  99, 'user_id' => 2]);
 
         $this->line('<fg=cyan>New consortium : ' . $conso_data['name'] . ' Successfully Created.');
 

@@ -6,6 +6,7 @@ use Hash;
 use App\User;
 use App\Role;
 use App\Institution;
+use App\InstitutionGroup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -40,20 +41,34 @@ class UserController extends Controller
                              ->where('inst_id', '=', $thisUser->inst_id)->get();
         }
 
+        // Set current user's max role and get all roles
+        $all_roles = Role::orderBy('name', 'ASC')->get(['name', 'id']);
+        $viewRoleId = $all_roles->where('name', 'Viewer')->first()->id;
+
         // Make user role names one string, role IDs into an array, and status to a string for the view
         $data = array();
         foreach ($user_data as $rec) {
             // exclude any users that cannot be managed by thisUser from the displayed list
-            if (!$rec->canManage()) continue; 
+            if (!$rec->canManage()) continue;
             $_roles = "";
             $user = $rec->toArray();
             $user['status'] = ($rec->is_active == 1) ? 'Active' : 'Inactive';
-            $user['roles'] = array();
-            foreach ($rec->roles as $role) {
-                $user['roles'][] = $role->id;
-                $_roles .= $role->name . ", ";
+
+            // Put role IDs in an array for the user object
+            $role_ids = $rec->roles->pluck('id')->toArray();
+            $user['roles'] = $role_ids;
+
+            // Set role_string to hold user's highest access right (other than viewer)
+            $access_role_ids = $rec->roles->where('id','<>',$viewRoleId)->pluck('id')->toArray();
+            $user['role_string'] = $all_roles->where('id', max($access_role_ids))->first()->name;
+            if ($user['role_string'] == 'Admin') $user['role_string'] = "Consortium Admin";
+
+            // Users and Managers with Viewer get it tacked onto their role_string
+            if ( $rec->roles->where('name', 'Viewer')->first() ) {
+                if ($user['role_string'] != 'SuperUser' && $user['role_string'] != 'Admin') {
+                    $user['role_string'] .= ", Consortium Viewer";
+                }
             }
-            $user['role_string'] = rtrim(trim($_roles), ',');
             $data[] = $user;
         }
 
@@ -64,12 +79,12 @@ class UserController extends Controller
             $institutions = Institution::where('id', '=', $thisUser->inst_id)
                                        ->get(['id','name'])->toArray();
         }
+        $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
 
         // Set choices for roles; disallow choosing roles higher current user's max role
-        $all_roles = Role::where('id', '<=', $thisUser->maxRole())->orderBy('name', 'ASC')
-                         ->get(['name', 'id'])->toArray();
+        $allowed_roles = $all_roles->where('id', '<=', $thisUser->maxRole())->toArray();
 
-        return view('users.index', compact('data', 'institutions', 'all_roles'));
+        return view('users.index', compact('data', 'institutions', 'allowed_roles', 'all_groups'));
     }
 
     /**
@@ -128,7 +143,6 @@ class UserController extends Controller
         }
         $user->load(['institution:id,name']);
 
-        // Send email to the user about their new account
         // Set current consortium name if there are more than 1 active in this system
         $consortia = \App\Consortium::where('is_active',1)->get();
         $con_name = "";
@@ -136,8 +150,12 @@ class UserController extends Controller
             $current = $consortia->where('ccp_key',session('ccp_con_key'))->first();
             $con_name = ($current) ? $current->name : "";
         }
+
+        // Send email to the user about their new account, but fail silently
         $data = array('name' => $user->name, 'password' => $input['password']);
-        Mail::to($input['email'])->send(new \App\Mail\NewUser($con_name,$data));
+        try {
+            Mail::to($input['email'])->send(new \App\Mail\NewUser($con_name,$data));
+        } catch (\Exception $e) { }
 
         // Setup array to hold new user to match index fields
         $_roles = "";

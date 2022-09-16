@@ -15,7 +15,8 @@
 <v-app>
   <user-data-table :users="{{ json_encode($data) }}"
                    :institutions="{{ json_encode($institutions) }}"
-                   :all_roles="{{ json_encode($all_roles) }}"
+                   :allowed_roles="{{ json_encode($allowed_roles) }}"
+                   :all_groups="{{ json_encode($all_groups) }}"
   ></user-data-table>
 </v-app>
 @endsection

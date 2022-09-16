@@ -21,7 +21,7 @@
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
       </div>
       <v-data-table :headers="headers" :items="mutable_users" item-key="id" :options="mutable_options"
-                    :key="dtKey" @update:options="updateOptions">
+                    :key="'DT'+dtKey" @update:options="updateOptions">
         <template v-slot:item="{ item }">
           <tr>
             <td><a @click="editForm(item.id)">{{ item.name }}</a></td>
@@ -95,18 +95,24 @@
           <span v-if="dialogType=='edit'">Edit user settings</span>
           <span v-else>Create a new user</span>
         </v-card-title>
-        <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
-              @keydown="form.errors.clear($event.target.name)">
+        <v-form class="in-page-form" :key="'UFrm'+form_key">
           <v-card-text>
             <v-container grid-list-md>
               <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
               <v-text-field outlined required name="email" label="Email" type="email"
                             v-model="form.email" :rules="emailRules">
               </v-text-field>
-              <v-switch v-model="form.is_active" label="Active?"></v-switch>
+              <v-row class="d-flex ma-0" no-gutters>
+                  <v-col class="d-flex pa-0" cols="3">
+                      <v-switch v-model="form.is_active" label="Active?"></v-switch>
+                  </v-col>
+                  <v-col class="d-flex pa-0" cols="3">
+                      <v-btn small color="primary" @click="createInst">Create an Institution</v-btn>
+                  </v-col>
+              </v-row>
               <div v-if="is_admin">
-                  <v-select outlined required :items="institutions" v-model="form.inst_id" item-value="id"
-                            item-text="name" value="current_user.inst_id" label="Institution"
+                  <v-select outlined required :items="mutable_institutions" v-model="form.inst_id" item-value="id"
+                            item-text="name" value="current_user.inst_id" label="Institution" @change="changeInst"
                   ></v-select>
               </div>
               <div v-else>
@@ -120,7 +126,7 @@
               </v-text-field>
               <div v-if="is_manager || is_admin" class="field-wrapper">
       	        <v-subheader v-text="'User Roles'"></v-subheader>
-        	    <v-select :items="all_roles" v-model="form.roles" :value="current_user.roles" item-text="name"
+        	    <v-select :items="allowed_roles" v-model="form.roles" :value="current_user.roles" item-text="name"
          	              item-value="id" label="User Role(s)" multiple chips hint="Define roles for user"
          	              persistent-hint
         	    ></v-select>
@@ -141,13 +147,49 @@
           </v-row>
           <v-card-actions>
             <v-col class="d-flex">
-              <v-btn class='btn' x-small color="primary" type="submit">Save User</v-btn>
+              <v-btn small color="primary" type="button" @click="formSubmit">Save User</v-btn>
             </v-col>
             <v-col class="d-flex">
               <v-btn class='btn' x-small type="button" color="primary" @click="userDialog=false">Cancel</v-btn>
             </v-col>
           </v-card-actions>
-        </form>
+        </v-form>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="instDialog" persistent max-width="500px">
+      <v-card>
+        <v-card-title>
+          <span>Create a new institution</span>
+        </v-card-title>
+        <v-form class="in-page-form">
+          <v-card-text>
+            <v-container grid-list-md>
+              <v-text-field v-model="instForm.name" label="Name" outlined></v-text-field>
+              <v-switch v-model="instForm.is_active" label="Active?"></v-switch>
+              <div class="field-wrapper">
+                <v-subheader v-text="'FTE'"></v-subheader>
+                <v-text-field v-model="instForm.fte" label="FTE" hide-details single-line type="number"></v-text-field>
+              </div>
+              <div class="field-wrapper has-label">
+                <v-subheader v-text="'Belongs To'"></v-subheader>
+                <v-select :items="all_groups" v-model="instForm.institutiongroups" item-text="name" item-value="id"
+                          label="Institution Group(s)" multiple chips persistent-hint
+                          hint="Assign group membership for this institution"
+                ></v-select>
+              </div>
+              <v-textarea v-model="instForm.notes" label="Notes" auto-grow></v-textarea>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-col class="d-flex">
+              <v-btn small color="primary" type="button" @click="submitNewInst">Save Institution</v-btn>
+            </v-col>
+            <v-col class="d-flex">
+              <v-btn class='btn' x-small type="button" color="primary" @click="instDialog=false">Cancel</v-btn>
+            </v-col>
+          </v-card-actions>
+        </v-form>
       </v-card>
     </v-dialog>
   </div>
@@ -160,8 +202,9 @@
   export default {
     props: {
             users: { type:Array, default: () => [] },
-            all_roles: { type:Array, default: () => [] },
+            allowed_roles: { type:Object, default: () => {} },
             institutions: { type:Array, default: () => [] },
+            all_groups: { type:Array, default: () => [] },
            },
     data () {
       return {
@@ -169,11 +212,14 @@
         failure: '',
         dialogError: '',
         inst_name: '',
-        mutable_users: this.users,
+        mutable_users: [ ...this.users ],
+        mutable_institutions: [ ...this.institutions ],
         current_user: {},
         dialogType: 'create',
         userDialog: false,
+        instDialog: false,
         importDialog: false,
+        form_key: 1,
         headers: [
           { text: 'User Name ', value: 'name' },
           { text: 'Institution', value: 'institution.name' },
@@ -194,6 +240,13 @@
             password: '',
             confirm_pass: '',
             roles: []
+        }),
+        instForm: new window.Form({
+            name: '',
+            is_active: 1,
+            fte: 0,
+            institutiongroups: [],
+            notes: '',
         }),
         dtKey: 1,
         mutable_options: {},
@@ -238,6 +291,7 @@
                               if ( a.name > b.name ) return 1;
                               return 0;
                             });
+                            this.dtKey += 1;           // force re-render of the datatable
                         } else {
                             this.success = '';
                             this.failure = response.msg;
@@ -273,6 +327,33 @@
               }
             })
             .catch({});
+        },
+        submitNewInst (event) {
+            this.success = '';
+            this.failure = '';
+            this.instForm.post('/institutions')
+                .then( (response) => {
+                    if (response.result) {
+                        this.failure = '';
+                        this.success = response.msg;
+                        // Add the new institution onto the mutable array and re-sort it
+                        this.mutable_institutions.push(response.institution);
+                        this.mutable_institutions.sort((a,b) => {
+                          if ( a.name < b.name ) return -1;
+                          if ( a.name > b.name ) return 1;
+                          return 0;
+                        });
+                        // apply new new institution ID to the user form; don't change if already set
+                        if (this.form.inst_id == null) {
+                            this.form.inst_id = response.institution.id;
+                            this.form_key += 1;
+                        }
+                    } else {
+                        this.success = '';
+                        this.failure = response.msg;
+                    }
+                });
+            this.instDialog = false;
         },
         importForm () {
             this.csv_upload = null;
@@ -312,6 +393,16 @@
             this.userDialog = true;
             this.importDialog = false;
         },
+        createInst () {
+            this.failure = '';
+            this.success = '';
+            this.instForm.name = '';
+            this.instForm.is_active = 1;
+            this.instForm.fte = 0;
+            this.instForm.institutiongroups = [];
+            this.instForm.notes = '';
+            this.instDialog = true;
+        },
         importSubmit (event) {
             this.success = '';
             this.failure = '';
@@ -343,6 +434,24 @@
                 }
             });
             this.$store.dispatch('updateDatatableOptions',this.mutable_options);
+        },
+        changeInst () {
+            let view_role = this.allowed_roles.find(r => r.name == "Viewer");
+            if (!view_role) return;
+
+            // Assigning to consortium staff turns on Viewer role
+            if (this.form.inst_id == 1) {
+                if (!this.form.roles.includes(view_role.id)) this.form.roles.push(view_role.id);
+            // Assigning to a non-consortium staff inst turns Viewer role OFF in the form if the user does not have it already
+            // (in case set to consortium staff and then change to another before submitting)
+            } else {
+                let _user = this.users.find(u => u.id == this.current_user.id);
+                if (_user) {
+                    if (!_user.roles.includes(view_role.id) && this.form.roles.includes(view_role.id)) {
+                        this.form.roles.splice(this.form.roles.indexOf(view_role.id), 1);
+                    }
+                }
+            }
         },
     },
     computed: {

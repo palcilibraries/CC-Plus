@@ -29,6 +29,11 @@
 
             <!-- Right Side Of Navbar -->
             <ul class="navbar-nav ml-auto">
+                <li v-if="is_superuser && ccp_key!=''" class="nav-item">
+                    <v-select :items="consortia" v-model="cur_key" label="Instance" item-text="name"
+                              item-value="ccp_key" @change="changeInstance" dense outlined
+                    ></v-select>
+                </li>
                 <!-- Authentication Links -->
                 <li v-if="this.user['id']==0" class="nav-item">
                     <a class="nav-link" href="/login">Login</a>
@@ -59,13 +64,31 @@ import { mapGetters } from 'vuex'
 export default {
     props: {
         user: { type:Object, default: () => {} },
+        consortia: { type:Array, default: () => [] },
+        ccp_key: { type:String, default: '' },
     },
     data() {
         return {
             homeURL: '/',
             profile_url: '',
+            cur_key: '',
             navList: [
-              { url: "/globaladmin", name: "Server Admin", role: "SuperUser" },
+              { url: "/globaladmin",
+                name: "Server Admin",
+                role: "SuperUser",
+                children: [
+                  {
+                    url: "/globalvendors",
+                    name: "Global Vendor Settings",
+                    role: "SuperUser",
+                  },
+                  {
+                    url: "/globalsettings",
+                    name: "Global Environment Settings",
+                    role: "SuperUser",
+                  },
+                ]
+              },
               { url: "/", name: "Home", role: "All" },
               {
                 url: "#",
@@ -148,6 +171,9 @@ export default {
         if (this.is_manager && (item.role != 'Admin' && item.role != 'SuperUser')) return true;
         if (item.role == 'All') return true;
         return false;
+      },
+      changeInstance() {
+        console.log(this.cur_key);
       }
     },
     computed: {
@@ -169,7 +195,11 @@ export default {
         this.$store.dispatch('updateAccess', max_role);
         this.$store.dispatch('updateUserInst', this.user["inst_id"]);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
-        if (this.is_superuser) this.homeURL = "/globaladmin";
+        if (this.is_superuser) {
+            this.homeURL = "/globaladmin";
+            this.consortia.push({'ccp_key': 'con_template', 'name': 'Template'});
+            if (this.consortia.some(con => con.ccp_key == this.ccp_key)) this.cur_key = this.ccp_key;
+        }
         console.log('Navbar Component mounted.');
     }
 }

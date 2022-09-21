@@ -18,11 +18,18 @@
 </head>
 
 <body class="container-fluid">
-    <div id="app">
+    <div id="app" data-app>
         <!-- Skip <topnav> if auth()->user() is undefined... -->
         @if ( auth()->check() )
-        <topnav :user="{{ json_encode(App\User::with('roles')->where('id',auth()->id())->first()->toArray()) }}"
-        ></topnav>
+            @if ( auth()->user()->hasRole('SuperUser') )
+                <topnav :user="{{ json_encode(App\User::with('roles')->where('id',auth()->id())->first()->toArray()) }}"
+                        :consortia="{{ json_encode(\App\Consortium::get(['name','ccp_key'])->toArray() ) }}"
+                        :ccp_key="{{ json_encode( Session::get('ccp_con_key') ) }}"
+                ></topnav>
+            @else
+                <topnav :user="{{ json_encode(App\User::with('roles')->where('id',auth()->id())->first()->toArray()) }}"
+                ></topnav>
+            @endif
         @endif
         <main class="py-4">
             @yield('content')

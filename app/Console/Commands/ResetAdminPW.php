@@ -5,8 +5,10 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use App\Consortium;
+use App\GlobalSetting;
 use DB;
 use Hash;
+use Route;
 
 class ResetAdminPW extends Command
 {
@@ -40,11 +42,16 @@ class ResetAdminPW extends Command
      */
     public function handle()
     {
-       // Make sure the password is set in .env
+       // Make sure the username is set
         $server_admin = config('ccplus.server_admin');
-        $server_admin_pass = config('ccplus.server_admin_pass');
-        if (strlen($server_admin) == 0 || strlen($server_admin_pass) == 0) {
-            $this->error('Global Administrator credential not properly defined!');
+        if (strlen($server_admin) == 0 ) {
+            $this->error('Global Administrator username is not properly defined (verify or reseed the global settings) !');
+            return 0;
+        }
+        // Prompt for a new password value
+        $server_admin_pass = $this->ask("Enter a new password for the '" . $server_admin . "' user (required) ", false);
+        if (!$server_admin_pass) {
+            $this->error('A new password value is required.');
             return 0;
         }
 
@@ -87,12 +94,22 @@ class ResetAdminPW extends Command
             $update_con_template = true;
         }
 
+       // Update the value in the global_settings table
+        $hashed_password = Hash::make($server_admin_pass);
+        $_setting = GlobalSetting::where('name', 'server_admin_pass')->first();
+        if (!$_setting) {
+            $this->error('Cannot load global admin setting from database!');
+            return 0;
+        }
+        $_setting->value = $hashed_password;
+        $_setting->save();
+
        // If we're updating the template, add it the list of databases
         if ($update_con_template) $databases[] = "ccplus_con_template";
 
        // Update all passwords for the requested databases
         foreach ($databases as $_db) {
-           $pw_qry  = "UPDATE " . $_db . ".users SET password = '" . Hash::make($server_admin_pass);
+           $pw_qry  = "UPDATE " . $_db . ".users SET password = '" . $hashed_password;
            $pw_qry .= "' where email='" . $server_admin . "'";
            $result = DB::statement($pw_qry);
            $this->line('<fg=cyan>' . $_db . ' Successfully Updated.');
@@ -109,6 +126,9 @@ class ResetAdminPW extends Command
                 $user->roles()->attach($super_role->id);
             }
         }
+
+        //Clear config cache:
+        $exitCode = Artisan::call('config:cache');
 
         return 1;
     }

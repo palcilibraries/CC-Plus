@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Hash;
 
 class LoginController extends Controller
 {
@@ -65,7 +66,7 @@ class LoginController extends Controller
         if (!is_null(config('ccplus.server_admin')) &&
             !is_null(config('ccplus.server_admin_pass')) &&
             $request->email == config('ccplus.server_admin') &&
-            $request->password == config('ccplus.server_admin_pass')
+            Hash::check($request->password, config('ccplus.server_admin_pass'))
            ) {
             if ($this->attemptLogin($request)) {
                 return $this->sendLoginResponse($request);

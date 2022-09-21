@@ -17,9 +17,6 @@ import { store } from '@/js/plugins/store.js';
  *
  * Eg. ./components/ExampleComponent.vue -> <example-component></example-component>
  */
-// const files = require.context('./', true, /\.vue$/i);
-// const files = require.context('./components/filters/', true, /\.vue$/i);
-// files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default));
 Vue.component('topnav', require('./components/Navbar.vue').default);
 Vue.component('flash', require('./components/Flash.vue').default);
 Vue.component('user-form', require('./components/UserForm.vue').default);
@@ -27,8 +24,6 @@ Vue.component('users-by-inst', require('./components/UsersByInst.vue').default);
 Vue.component('user-data-table', require('./components/UserDataTable.vue').default);
 Vue.component('all-sushi-by-inst', require('./components/AllSushiByInst.vue').default);
 Vue.component('all-sushi-by-prov', require('./components/AllSushiByProv.vue').default);
-Vue.component('sushi-by-inst', require('./components/SushiByInst.vue').default);
-Vue.component('sushi-by-prov', require('./components/SushiByProv.vue').default);
 Vue.component('sushi-setting-form', require('./components/SushiSettingForm.vue').default);
 Vue.component('provider-form', require('./components/ProviderForm.vue').default);
 Vue.component('provider-data-table', require('./components/ProviderDataTable.vue').default);
@@ -52,6 +47,8 @@ Vue.component('home-saved-reports', require('./components/HomeSavedReports.vue')
 Vue.component('manual-harvest', require('./components/ManualHarvest.vue').default);
 Vue.component('alert-data-table', require('./components/AlertDataTable.vue').default);
 Vue.component('alert-summary-table', require('./components/AlertSummaryTable.vue').default);
+Vue.component('superuser-dashboard', require('./components/SuperUserDashboard.vue').default);
+Vue.component('globalsettings', require('./components/GlobalSettings.vue').default);
 
 /**
  * Create a fresh Vue application instance with Vuetify.

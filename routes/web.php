@@ -24,7 +24,6 @@ Route::get('/reset-password/{consortium}/{token}','Auth\ForgotPasswordController
      ->name('password.reset.get');
 Route::post('/reset-password','Auth\ForgotPasswordController@submitResetForm')->name('password.reset.post');
 //
-Route::resource('/consortia','ConsortiumController')->middleware('can:update,consortium');
 Route::resource('/roles', 'RoleController')->middleware(['auth']);
 Route::resource('/users', 'UserController')->middleware(['auth','cache.headers:no_store']);
 Route::resource('/institutions', 'InstitutionController')->middleware(['auth','cache.headers:no_store']);
@@ -38,9 +37,10 @@ Route::resource('/alertsettings', 'AlertSettingController')
      ->middleware(['auth','role:Admin,Manager','cache.headers:no_store']);
 Route::resource('/savedreports', 'SavedReportController')->middleware(['auth']);
 Route::resource('/systemalerts', 'SystemAlertController')->middleware(['auth']);
-//
+// Global admin routes
 Route::get('/globaladmin', 'GlobalAdminController@index')->middleware('auth','role:SuperUser');
-// Route::get('/', 'ReportController@index')->name('reports')->middleware('auth');
+Route::resource('/globalsettings', 'GlobalSettingController')->middleware('auth','role:SuperUser');
+//
 Route::get('/admin', 'AdminController@index')->name('admin')->middleware(['auth','role:Admin,Manager']);
 Route::get('/alerts', 'AlertController@index')->name('alerts')->middleware('auth');
 Route::get('/reports', 'ReportController@index')->name('reports.index')->middleware('auth');

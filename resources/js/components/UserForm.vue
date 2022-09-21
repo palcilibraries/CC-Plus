@@ -46,7 +46,7 @@
         </v-text-field>
         <v-switch v-if="is_manager || is_admin" v-model="form.is_active" label="Active?"></v-switch>
         <v-select v-if="is_admin" outlined required :items="institutions" v-model="form.inst_id"
-                  label="Institution" item-text="name" item-value="id"
+                  label="Institution" item-text="name" item-value="id" @change="changeInst"
         ></v-select>
         <v-text-field v-else outlined readonly label="Institution" :value="inst_name"></v-text-field>
         <input type="hidden" id="inst_id" name="inst_id" :value="user.inst_id">
@@ -98,7 +98,7 @@
                 inst_name: '',
                 email: '',
                 password: '',
-                mutable_user: this.user,
+                mutable_user: { ...this.user },
                 emailRules: [
                     v => !!v || 'E-mail is required',
                     v => /.+@.+/.test(v) || 'E-mail must be valid'
@@ -114,7 +114,7 @@
                     email: this.user.email,
                     password: '',
                     confirm_pass: '',
-                    roles: this.user.roles
+                    roles: [ ...this.user.roles]
                 })
             }
         },
@@ -135,7 +135,7 @@
                             this.failure = response.msg;
                         }
                     });
-					this.showForm = false;
+                this.showForm = false;
             },
             destroy (userid) {
                 var self = this;
@@ -163,12 +163,26 @@
                 })
                 .catch({});
             },
-	        swapForm (event) {
-	            this.showForm = true;
-			},
-	        hideForm (event) {
-	            this.showForm = false;
-			},
+            swapForm (event) {
+                this.showForm = true;
+            },
+            hideForm (event) {
+                this.showForm = false;
+            },
+            changeInst () {
+                let view_role = this.all_roles.find(r => r.name == "Viewer");
+                if (!view_role) return;
+                // Assigning to consortium staff turns on Viewer role
+                if (this.form.inst_id == 1) {
+                    if (!this.form.roles.includes(view_role.id)) this.form.roles.push(view_role.id);
+                // Assigning to a non-consortium staff inst turns Viewer role OFF in the form if the user does not have it already
+                // (in case set to consortium staff and then change to another before submitting)
+                } else {
+                    if (!this.user.roles.includes(view_role.id) && this.form.roles.includes(view_role.id)) {
+                        this.form.roles.splice(this.form.roles.indexOf(view_role.id), 1);
+                    }
+                }
+            },
         },
         computed: {
           ...mapGetters(['is_manager','is_admin'])

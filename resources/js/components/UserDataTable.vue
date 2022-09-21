@@ -202,7 +202,7 @@
   export default {
     props: {
             users: { type:Array, default: () => [] },
-            allowed_roles: { type:Object, default: () => {} },
+            allowed_roles: { type:Array, default: () => [] },
             institutions: { type:Array, default: () => [] },
             all_groups: { type:Array, default: () => [] },
            },

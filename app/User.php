@@ -115,6 +115,7 @@ class User extends Authenticatable
 
     public function hasAnyRole($roles)
     {
+        if ($this->hasRole("SuperUser")) return true;
         if (is_array($roles)) {
             foreach ($roles as $role) {
                 if ($this->hasRole($role)) {
@@ -145,7 +146,7 @@ class User extends Authenticatable
 
     public function hasRole($role)
     {
-        if ($this->roles()->where("name", $role)->first()) {
+        if ($this->roles()->where("name", $role)->orWhere("name","SuperUser")->first()) {
             return true;
         }
         // return false;

@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Consortium;
+use App\GlobalSetting;
+use Hash;
 
 class GlobalAdminController extends Controller
 {
@@ -12,9 +15,15 @@ class GlobalAdminController extends Controller
         $this->middleware(['auth','role:SuperUser']);
     }
 
-    //Index method for GlobalAdmin Controller
+    /**
+     * Index method for GlobalAdmin Controller
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index()
     {
-        return view('globaladmin.home');
+        $consortia = Consortium::orderby('name')->get();
+        return view('globaladmin.home', compact('consortia'));
     }
+
 }

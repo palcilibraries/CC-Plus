@@ -18,7 +18,7 @@
 </head>
 
 <body class="container-fluid">
-    <div id="app" data-app>
+    <v-app id="app">
         <!-- Skip <topnav> if auth()->user() is undefined... -->
         @if ( auth()->check() )
             @if ( auth()->user()->hasRole('SuperUser') )
@@ -34,7 +34,7 @@
         <main class="py-4">
             @yield('content')
         </main>
-    </div>
+    </v-app>
     <!-- Scripts -->
     <script src="{{ asset('js/app.js') }}"></script>
 </body>

@@ -138,16 +138,11 @@ class ConsortiumCommand extends Command
       // Create the SuperUser account in the users table using values from the .env file
         DB::table($conso_db . ".users")->insert([
         ['name' => 'Server Administrator',
-         'password' => Hash::make($server_admin_pass),
+         'password' => $server_admin_pass,
          'email' => $server_admin,
          'inst_id' => 1,
          'is_active' => 1]
         ]);
-
-      // Update the ServerAdmin password in the con_template databaase to be sure it matches the .env file
-        $pw_qry  = "UPDATE ccplus_con_template.users SET password = '" . Hash::make($server_admin_pass);
-        $pw_qry .= "' where email='ServerAdmin'";
-        $result = DB::statement($pw_qry);
 
       // Create the Administrator account in the users table
         $this->info('The initial Administrator account for a new consortium is always created with');

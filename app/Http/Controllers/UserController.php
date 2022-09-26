@@ -82,8 +82,8 @@ class UserController extends Controller
         $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
 
         // Set choices for roles; disallow choosing roles higher current user's max role
-        $allowed_roles = $all_roles->where('id', '<=', $thisUser->maxRole())->toArray();
-
+        // $allowed_roles = $all_roles->where('id', '<=', $thisUser->maxRole())->toArray();
+        $allowed_roles = $all_roles->where('id', '<=', $thisUser->maxRole())->values()->toArray();
         return view('users.index', compact('data', 'institutions', 'allowed_roles', 'all_groups'));
     }
 

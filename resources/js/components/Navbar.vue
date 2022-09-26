@@ -172,9 +172,18 @@ export default {
         if (item.role == 'All') return true;
         return false;
       },
-      changeInstance() {
-        console.log(this.cur_key);
-      }
+      changeInstance (event) {
+          var _args = {'ccp_key' : this.cur_key};
+          axios.post('/change-instance', _args)
+               .then((response) => {
+                  if (response.data.result == 'success') {
+                      console.log("Consortium instance changed to: "+this.cur_key);
+                  } else {
+                      console.log("Change instance failed! : "+response.data.result);
+                  }
+              })
+             .catch(error => {});
+      },
     },
     computed: {
       ...mapGetters(['is_manager','is_admin','is_viewer','is_superuser'])

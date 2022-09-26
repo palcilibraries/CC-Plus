@@ -53,7 +53,7 @@ class Handler extends ExceptionHandler
             foreach ($exception->errorInfo as $data) {
                 $msg .= " : " . $data;
             }
-            return response()->json(['result' => false, 'msg' => $msg]);
+            return response()->json(['result' => false, 'msg' => $msg, 'ccp_key' => session('ccp_con_key')]);
         }
         return parent::render($request, $exception);
     }

@@ -11,7 +11,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Writer\Xls;
+// use PhpOffice\PhpSpreadsheet\Writer\Xls;
 
 class SushiSettingController extends Controller
 {
@@ -390,9 +390,9 @@ class SushiSettingController extends Controller
         if ($type == 'xlsx') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        } elseif ($type == 'xls') {
-            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
-            header('Content-Type: application/vnd.ms-excel');
+        // } elseif ($type == 'xls') {
+        //     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
+        //     header('Content-Type: application/vnd.ms-excel');
         }
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');

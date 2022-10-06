@@ -69,14 +69,15 @@ class User extends Authenticatable
         if (auth()->user()->hasRole("SuperUser")) {
             return true;
         } else {
-            if ($this->hasRole("SuperUser")) return false;
+            if ($this->roles()->where("name", "SuperUser")->first()) return false;
         }
 
       // Admin can manage any non-SuperUser user
         if (auth()->user()->hasRole("Admin")) return true;
 
       // Managers can manage users at their own inst, but not Admins
-        if (auth()->user()->hasRole("Manager") && !$this->hasRole("Admin") && !$this->hasRole("SuperUser")) {
+        if (auth()->user()->hasRole("Manager") &&
+            !$this->roles()->where("name", "Admin")->orWhere("name", "SuperUser")->first()) {
             return auth()->user()->inst_id == $this->inst_id;
         }
       // Users can manage themselves
@@ -115,20 +116,12 @@ class User extends Authenticatable
 
     public function hasAnyRole($roles)
     {
-        if ($this->hasRole("SuperUser")) return true;
+        if ($this->roles()->where("name", "SuperUser")->first()) return true;
         if (is_array($roles)) {
-            foreach ($roles as $role) {
-                if ($this->hasRole($role)) {
-                    return true;
-                }
-            }
+            if ($this->roles()->whereIn('name', $roles)->first()) return true;
         } else {
-            if ($this->hasRole($roles)) {
-                return true;
-            }
+            if ($this->roles()->where('name', $roles)->first()) return true;
         }
-        // return false;
-        // return zero so Vue navbar gets a value instead of ""
         return 0;
     }
 
@@ -146,10 +139,8 @@ class User extends Authenticatable
 
     public function hasRole($role)
     {
-        if ($this->roles()->where("name", $role)->orWhere("name","SuperUser")->first()) {
-            return true;
-        }
-        // return false;
+        if ($this->roles()->where("name", "SuperUser")->first()) return true;
+        if ($this->roles()->where("name", $role)->first()) return true;
         return 0;
     }
 }

@@ -28,26 +28,23 @@ class InstitutionController extends Controller
     public function index(Request $request)
     {
         $thisUser = auth()->user();
-        if ($thisUser->hasRole("Admin")) { // show them all
-            $institutions = Institution::with('institutionGroups')->orderBy('name', 'ASC')
-                                       ->get(['id','name','is_active']);
+        abort_unless($thisUser->hasAnyRole(['Admin','Viewer']), 403);
 
-            $data = array();
-            foreach ($institutions as $inst) {
-                $_groups = "";
-                foreach ($inst->institutionGroups as $group) {
-                    $_groups .= $group->name . ", ";
-                }
-                $i_data = $inst->toArray();
-                $i_data['groups'] = rtrim(trim($_groups), ',');
-                $data[] = $i_data;
+        $institutions = Institution::with('institutionGroups')->orderBy('name', 'ASC')
+                                   ->get(['id','name','is_active']);
+
+        $data = array();
+        foreach ($institutions as $inst) {
+            $_groups = "";
+            foreach ($inst->institutionGroups as $group) {
+                $_groups .= $group->name . ", ";
             }
-            $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
-
-            return view('institutions.index', compact('data', 'all_groups'));
-        } else {    // not admin, load the edit view for user's inst
-            return redirect()->route('institutions.show', $thisUser->inst_id);
+            $i_data = $inst->toArray();
+            $i_data['groups'] = rtrim(trim($_groups), ',');
+            $data[] = $i_data;
         }
+        $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
+        return view('institutions.index', compact('data', 'all_groups'));
     }
 
     /**

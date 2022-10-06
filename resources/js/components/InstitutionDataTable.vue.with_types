@@ -10,10 +10,8 @@
         </v-col>
       </v-row>
       <v-row>
-        <v-col cols="1">Export to:</v-col>
         <v-col>
-            <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp;
-            <a :href="'/institutions/export/xlsx'">.xlsx</a>
+            <a :href="'/institutions/export/xlsx'">Export institutions to Excel</a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">

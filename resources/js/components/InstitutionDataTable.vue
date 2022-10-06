@@ -15,14 +15,10 @@
       <v-row v-if="is_admin" class="d-flex ma-0">
         <v-col class="d-flex px-2" cols="3">&nbsp;</v-col>
         <v-col class="d-flex px-2" cols="3">
-            Export institutions to: &nbsp;
-            <a :href="'/institutions/export/xls'">.xls</a> &nbsp; &nbsp;
-            <a :href="'/institutions/export/xlsx'">.xlsx</a>
+          <a :href="'/institutions/export/xlsx'">Export institutions to Excel</a>
         </v-col>
         <v-col class="d-flex px-2" cols="3">
-          Export sushi settings to: &nbsp;
-          <a :href="'/sushisettings/export/xls'">.xls</a> &nbsp; &nbsp;
-          <a :href="'/sushisettings/export/xlsx'">.xlsx</a>
+          <a :href="'/sushisettings/export/xlsx'">Export sushi settings to Excel</a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">

@@ -93,17 +93,17 @@ export default {
               {
                 url: "#",
                 name: "Admin",
-                role: "Admin",
+                role: "Manager",
                 children: [
                   {
                     url: "/users",
                     name: "Users",
-                    role: "Admin",
+                    role: "Manager",
                   },
                   {
                     url: "/institutions",
                     name: "Institutions",
-                    role: "Admin",
+                    role: "Manager",
                   },
                   {
                     url: "/institutiongroups",
@@ -210,6 +210,13 @@ export default {
             this.homeURL = "/globaladmin";
             this.consortia.push({'ccp_key': 'con_template', 'name': 'Template'});
             if (this.consortia.some(con => con.ccp_key == this.ccp_key)) this.cur_key = this.ccp_key;
+        }
+        // Managers (without view or Admin rights) get a modified "insitutions" link and label
+        if (this.is_manager && !(this.is_superuser || this.is_admin || this.is_viewer)) {
+            var idx1 = this.navList.findIndex(nav => nav.name == "Admin");
+            var idx2 = this.navList[idx1].children.findIndex(nav => nav.url == '/institutions');
+            this.navList[idx1].children[idx2].name = "My Institution";
+            this.navList[idx1].children[idx2].url = "/institutions/"+this.user.inst_id;
         }
         console.log('Navbar Component mounted.');
     }

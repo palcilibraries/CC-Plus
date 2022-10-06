@@ -178,6 +178,8 @@ export default {
                .then((response) => {
                   if (response.data.result == 'success') {
                       console.log("Consortium instance changed to: "+this.cur_key);
+                      // Reload whatever page we're on from the server
+                      window.location.reload(true);
                   } else {
                       console.log("Change instance failed! : "+response.data.result);
                   }

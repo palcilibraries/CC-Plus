@@ -9,11 +9,9 @@
           <v-btn small color="primary" @click="createForm">Create a User</v-btn>
         </v-col>
       </v-row>
-      <v-row>
-        <v-col cols="1">Export to:</v-col>
-        <v-col>
-            <a :href="'/users/export/xls'">.xls</a> &nbsp; &nbsp;
-            <a :href="'/users/export/xlsx'">.xlsx</a>
+      <v-row class="d-flex ma-0">
+        <v-col v-if="is_admin" class="d-flex px-2" cols="4">
+          <a :href="'/users/export/xlsx'">Export to Excel</a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">

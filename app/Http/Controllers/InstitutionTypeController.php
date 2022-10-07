@@ -7,7 +7,7 @@ use App\Institution;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Writer\Xls;
+// use PhpOffice\PhpSpreadsheet\Writer\Xls;
 
 class InstitutionTypeController extends Controller
 {
@@ -206,9 +206,9 @@ class InstitutionTypeController extends Controller
         if ($output_type == 'xlsx') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        } elseif ($output_type == 'xls') {
-            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
-            header('Content-Type: application/vnd.ms-excel');
+        // } elseif ($output_type == 'xls') {
+        //     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
+        //     header('Content-Type: application/vnd.ms-excel');
         }
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');

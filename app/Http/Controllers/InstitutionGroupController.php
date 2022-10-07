@@ -7,7 +7,7 @@ use App\Institution;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Writer\Xls;
+// use PhpOffice\PhpSpreadsheet\Writer\Xls;
 
 class InstitutionGroupController extends Controller
 {
@@ -72,17 +72,7 @@ class InstitutionGroupController extends Controller
      */
     public function show($id)
     {
-    //     $data = InstitutionGroup::with('institutions')->findOrFail($id);
-    //     $members = $data->institutions->sortBy('name')->values()->toArray();
-    //     $member_ids = $data->institutions->pluck('id');
-    //     $not_members = Institution::whereNotIn('id', $member_ids)
-    //                        ->where(function ($query) use ($id) {
-    //                            $query->where('id', '<>', 1)->where('is_active', true);
-    //                        })
-    //                        ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
-    //     $group = $data->toArray();
-    //     $group['institutions'] = $members;
-    //     return view('institutiongroups.edit', compact('group', 'not_members'));
+      //
     }
 
     /**
@@ -93,17 +83,7 @@ class InstitutionGroupController extends Controller
      */
     public function edit($id)
     {
-    //     $data = InstitutionGroup::with('institutions')->findOrFail($id);
-    //     $members = $data->institutions->sortBy('name')->values()->toArray();
-    //     $member_ids = $data->institutions->pluck('id');
-    //     $not_members = Institution::whereNotIn('id', $member_ids)
-    //                        ->where(function ($query) use ($id) {
-    //                            $query->where('id', '<>', 1)->where('is_active', true);
-    //                        })
-    //                        ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
-    //     $group = $data->toArray();
-    //     $group['institutions'] = $members;
-    //     return view('institutiongroups.edit', compact('group', 'not_members'));
+      //
     }
 
     /**
@@ -245,9 +225,9 @@ class InstitutionGroupController extends Controller
         if ($type == 'xlsx') {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        } elseif ($type == 'xls') {
-            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
-            header('Content-Type: application/vnd.ms-excel');
+        // } elseif ($type == 'xls') {
+        //     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
+        //     header('Content-Type: application/vnd.ms-excel');
         }
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');

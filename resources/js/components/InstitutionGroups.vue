@@ -9,11 +9,9 @@
           <v-btn small color="primary" @click="createForm">Create a new group</v-btn>
         </v-col>
       </v-row>
-      <v-row>
-        <v-col cols="1">Export to:</v-col>
-        <v-col>
-            <a :href="'/institutiongroups/export/xls'">.xls</a> &nbsp; &nbsp;
-            <a :href="'/institutiongroups/export/xlsx'">.xlsx</a>
+      <v-row class="d-flex ma-0">
+        <v-col class="d-flex px-2" cols="4">
+          <a :href="'/institutiongroups/export/xlsx'">Export to Excel</a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">

@@ -72,6 +72,18 @@ class InstitutionController extends Controller
           'name' => 'required',
         ]);
         $input = $request->all();
+        // Make sure that internal ID is unique if not set null
+        $internalID = (isset($input['internal_id'])) ? trim($input['internal_id']) : null;
+        if ($internalID && strlen($internalID) > 0) {
+            $existing_inst = Institution::where('internal_id',$internalID)->first();
+            if ($existing_inst) {
+                return response()->json(['result' => false,
+                                         'msg' => 'Internal ID already assigned to another institution.']);
+            }
+            $input['internal_id'] = $internalID;
+        } else {
+            $input['internal_id'] = null;
+        }
         $institution = Institution::create($input);
         $new_id = $institution->id;
 
@@ -207,6 +219,22 @@ class InstitutionController extends Controller
        // Validate form inputs
         $this->validate($request, ['name' => 'required', 'is_active' => 'required']);
         $input = $request->all();
+
+        // Make sure that internal ID is unique if not set null
+        $newID = (isset($input['internal_id'])) ? trim($input['internal_id']) : null;
+        if ($institution->internal_id != $newID) {
+            if (strlen($newID) > 0) {
+                $existing_inst = Institution::where('internal_id',$newID)->first();
+                if ($existing_inst) {
+                    return response()->json(['result' => false,
+                                             'msg' => 'Internal ID already assigned to another institution.']);
+                }
+                $input['internal_id'] = $newID;
+            } else {
+                $input['internal_id'] = null;
+            }
+        }
+
 
        // Update the record and assign groups
         $institution->update($input);

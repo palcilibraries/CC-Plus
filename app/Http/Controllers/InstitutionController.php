@@ -31,7 +31,7 @@ class InstitutionController extends Controller
         abort_unless($thisUser->hasAnyRole(['Admin','Viewer']), 403);
 
         $institutions = Institution::with('institutionGroups')->orderBy('name', 'ASC')
-                                   ->get(['id','name','is_active']);
+                                   ->get(['id','name','internal_id','is_active']);
 
         $data = array();
         foreach ($institutions as $inst) {

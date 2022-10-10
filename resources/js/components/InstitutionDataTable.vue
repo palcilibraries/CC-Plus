@@ -30,6 +30,7 @@
         <template v-slot:item="{ item }">
           <tr>
             <td><a :href="'/institutions/'+item.id">{{ item.name }}</a></td>
+            <td>{{ item.internal_id }}</a></td>
             <td v-if="item.is_active">Active</td>
             <td v-else>Inactive</td>
             <td>{{ item.groups }}</td>
@@ -177,6 +178,7 @@
         settingsImportDialog: false,
         headers: [
           { text: 'Institution ', value: 'name', align: 'start' },
+          { text: 'Internal ID ', value: 'internal_id', align: 'start' },
           { text: 'Status', value: 'is_active' },
           { text: 'Group(s)', value: 'groups' },
         ],

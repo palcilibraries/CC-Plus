@@ -95,6 +95,10 @@
         </v-card-title>
         <v-form class="in-page-form" :key="'UFrm'+form_key">
           <v-card-text>
+            <div class="status-message" v-if="user_success || user_failure">
+              <span v-if="user_success" class="good" role="alert" v-text="user_success"></span>
+              <span v-if="user_failure" class="fail" role="alert" v-text="user_failure"></span>
+            </div>
             <v-container grid-list-md>
               <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
               <v-text-field outlined required name="email" label="Email" type="email"
@@ -138,11 +142,6 @@
               </div>
             </v-container>
           </v-card-text>
-          <v-row class="status-message ma-0 pa-0" v-if="dialogError" no-gutters>
-            <v-col class="d-flex">
-              <span v-if="dialogError" class="fail" role="alert" v-text="dialogError"></span>
-            </v-col>
-          </v-row>
           <v-card-actions>
             <v-col class="d-flex">
               <v-btn small color="primary" type="button" @click="formSubmit">Save User</v-btn>
@@ -161,8 +160,12 @@
         </v-card-title>
         <v-form class="in-page-form">
           <v-card-text>
+            <div class="status-message" v-if="inst_failure">
+              <span v-if="inst_failure" class="fail" role="alert" v-text="inst_failure"></span>
+            </div>
             <v-container grid-list-md>
               <v-text-field v-model="instForm.name" label="Name" outlined></v-text-field>
+              <v-text-field v-model="instForm.internal_id" label="Internal Identifier" outlined></v-text-field>
               <v-switch v-model="instForm.is_active" label="Active?"></v-switch>
               <div class="field-wrapper">
                 <v-subheader v-text="'FTE'"></v-subheader>
@@ -208,7 +211,9 @@
       return {
         success: '',
         failure: '',
-        dialogError: '',
+        user_success: '',
+        user_failure: '',
+        inst_failure: '',
         inst_name: '',
         mutable_users: [ ...this.users ],
         mutable_institutions: [ ...this.institutions ],
@@ -241,6 +246,7 @@
         }),
         instForm: new window.Form({
             name: '',
+            internal_id: '',
             is_active: 1,
             fte: 0,
             institutiongroups: [],
@@ -255,14 +261,14 @@
         formSubmit (event) {
             this.success = '';
             this.failure = '';
-            this.dialogError = '';
+            this.user_failure = '';
             if (this.form.password != this.form.confirm_pass) {
-                this.dialogError = 'Passwords do not match! Please re-enter';
+                this.user_failure = 'Passwords do not match! Please re-enter';
                 return;
             }
             if (this.dialogType == 'edit') {
                 if  (this.form.password.length>0 && this.form.password.length<8) {
-                    this.dialogError = 'Password must be at least 8 characters';
+                    this.user_failure = 'Password must be at least 8 characters';
                     return;
                 }
                 this.form.patch('/users/'+this.current_user.id)
@@ -272,15 +278,15 @@
                             var idx = this.mutable_users.findIndex(u => u.id == this.current_user.id);
                             Object.assign(this.mutable_users[idx], response.user);
                             this.success = response.msg;
+                            this.userDialog = false;
                         } else {
-                            this.failure = response.msg;
+                            this.user_failure = response.msg;
                         }
                     });
             } else if (this.dialogType == 'create') {
                 this.form.post('/users')
                     .then((response) => {
                         if (response.result) {
-                            this.failure = '';
                             this.success = response.msg;
                             // Add the new user to the mutable array and re-sort it
                             this.mutable_users.push(response.user);
@@ -290,13 +296,13 @@
                               return 0;
                             });
                             this.dtKey += 1;           // force re-render of the datatable
+                            this.userDialog = false;
                         } else {
                             this.success = '';
-                            this.failure = response.msg;
+                            this.user_failure = response.msg;
                         }
                     });
             }
-            this.userDialog = false;
         },
         destroy (userid) {
             var self = this;
@@ -327,13 +333,14 @@
             .catch({});
         },
         submitNewInst (event) {
-            this.success = '';
-            this.failure = '';
+            // report errors to the inst-dialog and success to the user-dialog
+            this.user_success = '';
+            this.inst_failure = '';
             this.instForm.post('/institutions')
                 .then( (response) => {
                     if (response.result) {
-                        this.failure = '';
-                        this.success = response.msg;
+                        this.inst_failure = '';
+                        this.user_success = response.msg;
                         // Add the new institution onto the mutable array and re-sort it
                         this.mutable_institutions.push(response.institution);
                         this.mutable_institutions.sort((a,b) => {
@@ -346,12 +353,12 @@
                             this.form.inst_id = response.institution.id;
                             this.form_key += 1;
                         }
+                        this.instDialog = false;
                     } else {
-                        this.success = '';
-                        this.failure = response.msg;
+                        this.user_success = '';
+                        this.inst_failure = response.msg;
                     }
                 });
-            this.instDialog = false;
         },
         importForm () {
             this.csv_upload = null;
@@ -361,7 +368,8 @@
         editForm (userid) {
             this.failure = '';
             this.success = '';
-            this.dialogError = '';
+            this.user_success = '';
+            this.user_failure = '';
             this.dialogType = "edit";
             this.current_user = this.mutable_users[this.mutable_users.findIndex(u=> u.id == userid)];
             this.form.name = this.current_user.name;
@@ -377,7 +385,8 @@
         createForm () {
             this.failure = '';
             this.success = '';
-            this.dialogError = '';
+            this.user_success = '';
+            this.user_failure = '';
             this.dialogType = "create";
             var _inst = (this.is_admin) ? null : this.institutions[0].id;
             this.current_user = {roles: [1], inst_id: _inst};
@@ -395,6 +404,7 @@
             this.failure = '';
             this.success = '';
             this.instForm.name = '';
+            this.instForm.internal_id = '';
             this.instForm.is_active = 1;
             this.instForm.fte = 0;
             this.instForm.institutiongroups = [];

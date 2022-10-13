@@ -8,8 +8,7 @@
           </v-btn>
         </v-col>
         <v-col class="d-flex px-1" cols="3">
-          Export settings to
-          <a :href="'/sushisettings/export/xlsx/'+inst_id"> Excel</a>
+          <a :href="'/sushisettings/export/xlsx/'+inst_id">Export to Excel</a>
         </v-col>
       </v-row>
     </div>

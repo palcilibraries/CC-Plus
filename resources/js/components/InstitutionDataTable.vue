@@ -51,15 +51,22 @@
               records will be deleted.</strong>
             </p>
             <p>
-              The import process overwrites existing settings whenever a match for a Institution-ID is found in column-A
-              of the import file. If no existing setting is found for the specified Institution-ID, a NEW institution
-              will be created with the fields specified. Institution names (column-B) must be unique. Attempting to
-              create an institution (or rename one) using an existing name will be ignored.
+              The import process relies on an Internal-ID (in column-A), or a database ID-# (in column-B). Whether a
+              match is found for an Institution is based on matching the Internal-ID. If the Internal-ID is missing
+              or empty, a match will be based on the ID-# in column-B. Any Import rows with no Internal-ID in column
+              A and no ID-# in column B will be ignored. If no matches are found by searching for an existing
+              institution using column-A and column-B, the import row will be treated as a NEW institution.
             </p>
             <p>
-              Institutions can be renamed via import by giving the ID in column-A and the replacement name in column-B.
-              Be aware that the new name takes effect immediately, and will be associated with all harvested usage
-              data that may have been collected using the OLD name (data is stored by the ID, not the name.)
+              New institutions being added via the import function must contain a unique name. If the import row
+              also contains a value for Internal-ID, this value must also be unique. Attempting to create an
+              institution (or rename one) using an existing name will be ignored.
+            </p>
+            <p>
+              Institutions can be renamed via import by giving the Internal-ID (in column-A) or database ID-# in
+              column-B and the replacement name in column-C. Be aware that the new name takes effect immediately,
+              and will be associated with all harvested usage data that may have been collected using the OLD name
+              (data is stored by the ID, not the name.)
             </p>
             <p>
               For these reasons, use caution when using this import function. Generating an Institution export FIRST

@@ -301,47 +301,50 @@ class InstitutionController extends Controller
         $info_sheet->mergeCells('A1:D7');
         $info_sheet->getStyle('A1:D7')->applyFromArray($info_style);
         $info_sheet->getStyle('A1:D7')->getAlignment()->setWrapText(true);
-        $top_txt  = "The Institutions tab represents a starting place for updating or importing settings. The table\n";
-        $top_txt .= "below describes the datatype and order that the import expects. Any Import rows without an ID\n";
-        $top_txt .= "in column A will be ignored. Missing or invalid invalid values in the other columns, which are\n";
-        $top_txt .= "not required, will be set to the 'Default'.\n\n";
+        $top_txt  = "The Institutions tab represents a starting place for updating or importing settings.\n";
+        $top_txt .= "The table below describes the datatype and order that the import expects. Any Import rows";
+        $top_txt .= " with no InternalID in column A and no (database) ID in column B will be ignored.\n\n";
+        $top_txt .= "Missing or invalid, but not required, values in the other columns will be set to the 'Default'.\n\n";
         $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
-        $top_txt .= "Any header row or columns beyond 'E' will be ignored.";
+        $top_txt .= "Any header row or columns beyond 'F' will be ignored.";
         $info_sheet->setCellValue('A1', $top_txt);
-        $info_sheet->mergeCells('B9:D9');
-        $info_sheet->getStyle('A9:B9')->applyFromArray($head_style);
-        $info_sheet->setCellValue('A9', "NOTE: ");
-        $info_sheet->setCellValue('B9', "Institution ID=1 is reserved for system use.");
+        $info_sheet->setCellValue('A8', "NOTES: ");
+        $info_sheet->mergeCells('B8:D9');
+        $info_sheet->getStyle('A8:B9')->applyFromArray($head_style);
+        $info_sheet->setCellValue('B8', "Internal ID takes precedence over ID\nInstitution ID=1 is reserved for system use.");
         $info_sheet->mergeCells('B10:D12');
         $info_sheet->getStyle('B10:D12')->applyFromArray($info_style);
         $info_sheet->getStyle('B10:D12')->getAlignment()->setWrapText(true);
-        $note_txt  = "Institution imports cannot be used to delete existing institutions; only additions and updates\n";
-        $note_txt .= "are supported. The recommended approach is to add to, or modify, a previously run full export\n";
-        $note_txt .= "to ensure that desired end result is achieved.";
+        $note_txt  = "Institution imports cannot be used to delete existing institutions; only additions and";
+        $note_txt .= " updates are supported. The recommended approach is to add to, or modify, a previously";
+        $note_txt .= " generated full export to ensure that desired end result is achieved.";
         $info_sheet->setCellValue('B10', $note_txt);
         $info_sheet->getStyle('A14:D14')->applyFromArray($head_style);
         $info_sheet->setCellValue('A14', 'Column Name');
         $info_sheet->setCellValue('B14', 'Data Type');
         $info_sheet->setCellValue('C14', 'Description');
         $info_sheet->setCellValue('D14', 'Default');
-        $info_sheet->setCellValue('A15', 'Id');
-        $info_sheet->setCellValue('B15', 'Integer > 1');
-        $info_sheet->setCellValue('C15', 'Unique CC-Plus Institution ID - required');
-        $info_sheet->setCellValue('A16', 'Name');
-        $info_sheet->setCellValue('B16', 'String');
-        $info_sheet->setCellValue('C16', 'Institution Name - required');
-        $info_sheet->setCellValue('A17', 'Active');
-        $info_sheet->setCellValue('B17', 'String (Y or N)');
-        $info_sheet->setCellValue('C17', 'Make the institution active?');
-        $info_sheet->setCellValue('D17', 'Y');
-        $info_sheet->setCellValue('A18', 'FTE');
-        $info_sheet->setCellValue('B18', 'Integer');
-        $info_sheet->setCellValue('C18', 'FTE count for the institution');
-        $info_sheet->setCellValue('D18', 'NULL');
-        $info_sheet->setCellValue('A19', 'Notes');
-        $info_sheet->setCellValue('B19', 'Text-blob');
-        $info_sheet->setCellValue('C19', 'Notes or other details');
+        $info_sheet->setCellValue('A15', 'InternalID');
+        $info_sheet->setCellValue('B15', 'String');
+        $info_sheet->setCellValue('C15', 'Internal institution identifier');
+        $info_sheet->setCellValue('A16', 'ID');
+        $info_sheet->setCellValue('B16', 'Integer > 1');
+        $info_sheet->setCellValue('C16', 'Institution ID (database ID)');
+        $info_sheet->setCellValue('A17', 'Name');
+        $info_sheet->setCellValue('B17', 'String');
+        $info_sheet->setCellValue('C17', 'Institution Name - required');
+        $info_sheet->setCellValue('A18', 'Active');
+        $info_sheet->setCellValue('B18', 'String (Y or N)');
+        $info_sheet->setCellValue('C18', 'Make the institution active?');
+        $info_sheet->setCellValue('D18', 'Y');
+        $info_sheet->setCellValue('A19', 'FTE');
+        $info_sheet->setCellValue('B19', 'Integer');
+        $info_sheet->setCellValue('C19', 'FTE count for the institution');
         $info_sheet->setCellValue('D19', 'NULL');
+        $info_sheet->setCellValue('A20', 'Notes');
+        $info_sheet->setCellValue('B20', 'Text-blob');
+        $info_sheet->setCellValue('C20', 'Notes or other details');
+        $info_sheet->setCellValue('D20', 'NULL');
 
         // Set row height and auto-width columns for the sheet
         for ($r = 1; $r < 20; $r++) {
@@ -355,25 +358,27 @@ class InstitutionController extends Controller
         // Load the institution data into a new sheet
         $inst_sheet = $spreadsheet->createSheet();
         $inst_sheet->setTitle('Institutions');
-        $inst_sheet->setCellValue('A1', 'Id');
-        $inst_sheet->setCellValue('B1', 'Name');
-        $inst_sheet->setCellValue('C1', 'Active');
-        $inst_sheet->setCellValue('D1', 'FTE');
-        $inst_sheet->setCellValue('E1', 'Notes');
+        $inst_sheet->setCellValue('A1', 'Internal ID');
+        $inst_sheet->setCellValue('B1', 'ID');
+        $inst_sheet->setCellValue('C1', 'Name');
+        $inst_sheet->setCellValue('D1', 'Active');
+        $inst_sheet->setCellValue('E1', 'FTE');
+        $inst_sheet->setCellValue('F1', 'Notes');
         $row = 2;
         foreach ($institutions as $inst) {
             $inst_sheet->getRowDimension($row)->setRowHeight(15);
-            $inst_sheet->setCellValue('A' . $row, $inst->id);
-            $inst_sheet->setCellValue('B' . $row, $inst->name);
+            $inst_sheet->setCellValue('A' . $row, $inst->internal_id);
+            $inst_sheet->setCellValue('B' . $row, $inst->id);
+            $inst_sheet->setCellValue('C' . $row, $inst->name);
             $_stat = ($inst->is_active) ? "Y" : "N";
-            $inst_sheet->setCellValue('C' . $row, $_stat);
-            $inst_sheet->setCellValue('D' . $row, $inst->fte);
-            $inst_sheet->setCellValue('E' . $row, $inst->notes);
+            $inst_sheet->setCellValue('D' . $row, $_stat);
+            $inst_sheet->setCellValue('E' . $row, $inst->fte);
+            $inst_sheet->setCellValue('F' . $row, $inst->notes);
             $row++;
         }
 
         // Auto-size the columns (skip notes in 'G')
-        $columns = array('A','B','C','D','E');
+        $columns = array('A','B','C','D','E','F');
         foreach ($columns as $col) {
             $inst_sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -430,21 +435,30 @@ class InstitutionController extends Controller
         $seen_insts = array();          // keep track of institutions seen while looping
         foreach ($rows as $row) {
             // Ignore bad/missing/invalid IDs and/or headers
-            if (!isset($row[0])) {
+            if ($row[0] == "Internal ID" || (!isset($row[0]) && !isset($row[1]))) {
                 continue;
-            }
-            if ($row[0] == "" || !is_numeric($row[0])) {
-                continue;
-            }
-            $cur_inst_id = intval($row[0]);
-            if (in_array($cur_inst_id, $seen_insts)) {
-              continue;
             }
 
-            // Check ID and name columns for silliness or errors
-            $_name = trim($row[1]);
-            $current_inst = $institutions->where("id", "=", $cur_inst_id)->first();
+            // Set name from input and locate existing inst, if possible.
+            // Internal_ID (column-0) takes precedence over database ID in column-1
+            $internalID = (strlen(trim($row[0])) > 0) ? trim($row[0]) : null;
+            $_name = trim($row[2]);
+            if ($internalID) {
+                $current_inst = $institutions->where("internal_id", $internalID)->first();
+            } else {
+              if ($row[1] == "" || !is_numeric($row[1])) {
+                  $inst_skipped++;
+                  continue;
+              }
+              $current_inst = $institutions->where("id", $row[1])->first();
+            }
+
             if ($current_inst) {      // found existing ID
+                // If we already processed this inst, skip doing it again
+                if (in_array($current_inst->id, $seen_insts)) {
+                    $inst_skipped++;
+                    continue;
+                }
                 if (strlen($_name) < 1) {       // If import-name empty, use current value
                     $_name = trim($current_inst->name);
                 } else {        // trap changing a name to a name that already exists
@@ -467,22 +481,26 @@ class InstitutionController extends Controller
             }
 
             // Enforce defaults and put institution data columns into an array
-            $seen_insts[] = $cur_inst_id;
-            $_active = ($row[2] == 'N') ? 0 : 1;
-            $_fte = ($row[3] == '') ? null : $row[3];
-            $_notes = ($row[4] == '') ? null : $row[4];
-            $_inst = array('id' => $cur_inst_id, 'name' => $_name, 'is_active' => $_active,  'fte' => $_fte,
-                           'notes' => $_notes);
+            $_active = ($row[3] == 'N') ? 0 : 1;
+            $_fte = ($row[4] == '') ? null : $row[4];
+            $_notes = ($row[5] == '') ? null : $row[5];
+            $_inst = array('name' => $_name, 'is_active' => $_active,  'internal_id' => $internalID,
+                           'fte' => $_fte, 'notes' => $_notes);
 
             // Update or create the Institution record
-            if (is_null($current_inst)) {      // Create
+            if (!$current_inst) {      // Create
+                // input row had explicit ID? If so, assign it, otherwise, omit from create input array
+                if ($row[1] != "" && is_numeric($row[1])) {
+                    $_inst['id'] = $row[1];
+                }
                 $current_inst = Institution::create($_inst);
-                $cur_inst_id = $current_inst->id;
                 $inst_created++;
             } else {                            // Update
+                $_inst['id'] = $current_inst->id;
                 $current_inst->update($_inst);
                 $inst_updated++;
             }
+            $seen_insts[] = $current_inst->id;
         }
 
         // Recreate the institutions list (like index does) to be returned to the caller
@@ -508,7 +526,7 @@ class InstitutionController extends Controller
         if ($inst_skipped > 0) {
             $i_msg .= ($i_msg != "") ? ", " . $inst_skipped . " skipped" : $inst_skipped . " skipped";
         }
-        $msg  = 'Import successful, Institutions : ' . $i_msg;
+        $msg  = 'Institution Import successful : ' . $i_msg;
 
         return response()->json(['result' => true, 'msg' => $msg, 'inst_data' => $inst_data]);
     }

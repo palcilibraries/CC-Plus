@@ -22,6 +22,10 @@
 	          <td>Name </td>
 	          <td>{{ mutable_inst.name }}</td>
 	        </tr>
+          <tr>
+	          <td>Internal ID </td>
+	          <td>{{ mutable_inst.internal_id }}</td>
+	        </tr>
 	        <tr>
     	      <td>Status </td>
 	          <td>{{ status }}</td>
@@ -48,6 +52,7 @@
       <div v-if="showForm=='edit'">
         <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
           <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+          <v-text-field v-model="form.internal_id" label="Internal Identifier" outlined></v-text-field>
           <v-switch v-model="form.is_active" label="Active?"></v-switch>
 			      <div class="field-wrapper">
 	            <v-subheader v-text="'FTE'"></v-subheader>
@@ -123,6 +128,7 @@
                 mutable_groups: this.institution.groups,
                 form: new window.Form({
                     name: this.institution.name,
+                    internal_id: this.institution.internal_id,
                     is_active: this.institution.is_active,
                     fte: this.institution.fte,
                     institutiongroups: this.institution.groups,
@@ -147,6 +153,7 @@
                         if (response.result) {
                             this.success = response.msg;
                             this.mutable_inst.name = this.form.name;
+                            this.mutable_inst.internal_id = this.form.internal_id;
                             this.mutable_inst.is_active = this.form.is_active;
                             this.status = this.statusvals[this.form.is_active];
                             this.mutable_inst.fte = this.form.fte;

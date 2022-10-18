@@ -17,8 +17,8 @@ class CreateInstitutionsTable extends Migration
             $table->Increments('id');
             $table->string('name')->unique();
             $table->boolean('is_active')->default(1);
-            // internal_id can be null, but IF SET,  must be unique - enforced in controller
-            $table->string('internal_id')->nullable();
+            // local_id can be null, but IF SET,  must be unique - enforced in controller
+            $table->string('local_id')->nullable();
             $table->string('notes')->nullable();
             $table->string('sushiIPRange')->nullable();
             $table->string('shibURL')->nullable();

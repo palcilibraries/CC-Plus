@@ -31,7 +31,7 @@ class InstitutionController extends Controller
         abort_unless($thisUser->hasAnyRole(['Admin','Viewer']), 403);
 
         $institutions = Institution::with('institutionGroups')->orderBy('name', 'ASC')
-                                   ->get(['id','name','internal_id','is_active']);
+                                   ->get(['id','name','local_id','is_active']);
 
         $data = array();
         foreach ($institutions as $inst) {
@@ -72,17 +72,17 @@ class InstitutionController extends Controller
           'name' => 'required',
         ]);
         $input = $request->all();
-        // Make sure that internal ID is unique if not set null
-        $internalID = (isset($input['internal_id'])) ? trim($input['internal_id']) : null;
-        if ($internalID && strlen($internalID) > 0) {
-            $existing_inst = Institution::where('internal_id',$internalID)->first();
+        // Make sure that local ID is unique if not set null
+        $localID = (isset($input['local_id'])) ? trim($input['local_id']) : null;
+        if ($localID && strlen($localID) > 0) {
+            $existing_inst = Institution::where('local_id',$localID)->first();
             if ($existing_inst) {
                 return response()->json(['result' => false,
-                                         'msg' => 'Internal ID already assigned to another institution.']);
+                                         'msg' => 'Local ID already assigned to another institution.']);
             }
-            $input['internal_id'] = $internalID;
+            $input['local_id'] = $localID;
         } else {
-            $input['internal_id'] = null;
+            $input['local_id'] = null;
         }
         $institution = Institution::create($input);
         $new_id = $institution->id;
@@ -220,18 +220,18 @@ class InstitutionController extends Controller
         $this->validate($request, ['name' => 'required', 'is_active' => 'required']);
         $input = $request->all();
 
-        // Make sure that internal ID is unique if not set null
-        $newID = (isset($input['internal_id'])) ? trim($input['internal_id']) : null;
-        if ($institution->internal_id != $newID) {
+        // Make sure that local ID is unique if not set null
+        $newID = (isset($input['local_id'])) ? trim($input['local_id']) : null;
+        if ($institution->local_id != $newID) {
             if (strlen($newID) > 0) {
-                $existing_inst = Institution::where('internal_id',$newID)->first();
+                $existing_inst = Institution::where('local_id',$newID)->first();
                 if ($existing_inst) {
                     return response()->json(['result' => false,
-                                             'msg' => 'Internal ID already assigned to another institution.']);
+                                             'msg' => 'Local ID already assigned to another institution.']);
                 }
-                $input['internal_id'] = $newID;
+                $input['local_id'] = $newID;
             } else {
-                $input['internal_id'] = null;
+                $input['local_id'] = null;
             }
         }
 
@@ -293,64 +293,79 @@ class InstitutionController extends Controller
                             'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
                            ],
         ];
+        $centered_style = [
+          'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,],
+        ];
 
         // Setup the spreadsheet and build the static ReadMe sheet
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:D7');
-        $info_sheet->getStyle('A1:D7')->applyFromArray($info_style);
-        $info_sheet->getStyle('A1:D7')->getAlignment()->setWrapText(true);
+        $info_sheet->mergeCells('A1:E7');
+        $info_sheet->getStyle('A1:E7')->applyFromArray($info_style);
+        $info_sheet->getStyle('A1:E7')->getAlignment()->setWrapText(true);
         $top_txt  = "The Institutions tab represents a starting place for updating or importing settings.\n";
-        $top_txt .= "The table below describes the datatype and order that the import expects. Any Import rows";
-        $top_txt .= " with no InternalID in column A and no (database) ID in column B will be ignored.\n\n";
+        $top_txt .= "The table below describes the datatype and order that the import process requires.\n\n";
+        $top_txt .= "Any Import rows without a CC+ System ID in column-A or a Local ID in column-B will be ignored.\n";
+        $top_txt .= "Imports row with a new ID in column-A or a new Local ID in column-B are added as new institutions.\n";
         $top_txt .= "Missing or invalid, but not required, values in the other columns will be set to the 'Default'.\n\n";
         $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
         $top_txt .= "Any header row or columns beyond 'F' will be ignored.";
         $info_sheet->setCellValue('A1', $top_txt);
         $info_sheet->setCellValue('A8', "NOTES: ");
-        $info_sheet->mergeCells('B8:D9');
+        $info_sheet->mergeCells('B8:E9');
         $info_sheet->getStyle('A8:B9')->applyFromArray($head_style);
-        $info_sheet->setCellValue('B8', "Internal ID takes precedence over ID\nInstitution ID=1 is reserved for system use.");
-        $info_sheet->mergeCells('B10:D12');
-        $info_sheet->getStyle('B10:D12')->applyFromArray($info_style);
-        $info_sheet->getStyle('B10:D12')->getAlignment()->setWrapText(true);
+        $info_sheet->getStyle('A8:B9')->getAlignment()->setWrapText(true);
+        $precedence_note  = "CC+ System ID values (A) take precedence over Local ID values (B) when processing import";
+        $precedence_note .= " records. If a match is found for column-A, all other values in the row are treated as";
+        $precedence_note .= " updates. CC+ System ID=1 is reserved for system use.";
+        $info_sheet->setCellValue('B8', $precedence_note);
+        $info_sheet->mergeCells('B10:E12');
+        $info_sheet->getStyle('B10:E12')->applyFromArray($info_style);
+        $info_sheet->getStyle('B10:E12')->getAlignment()->setWrapText(true);
         $note_txt  = "Institution imports cannot be used to delete existing institutions; only additions and";
         $note_txt .= " updates are supported. The recommended approach is to add to, or modify, a previously";
         $note_txt .= " generated full export to ensure that desired end result is achieved.";
         $info_sheet->setCellValue('B10', $note_txt);
-        $info_sheet->getStyle('A14:D14')->applyFromArray($head_style);
+        $info_sheet->getStyle('A14:E14')->applyFromArray($head_style);
         $info_sheet->setCellValue('A14', 'Column Name');
         $info_sheet->setCellValue('B14', 'Data Type');
         $info_sheet->setCellValue('C14', 'Description');
-        $info_sheet->setCellValue('D14', 'Default');
-        $info_sheet->setCellValue('A15', 'InternalID');
-        $info_sheet->setCellValue('B15', 'String');
-        $info_sheet->setCellValue('C15', 'Internal institution identifier');
-        $info_sheet->setCellValue('A16', 'ID');
-        $info_sheet->setCellValue('B16', 'Integer > 1');
-        $info_sheet->setCellValue('C16', 'Institution ID (database ID)');
+        $info_sheet->setCellValue('D14', 'Required');
+        $info_sheet->setCellValue('E14', 'Default');
+        $info_sheet->setCellValue('A15', 'CC+ System ID');
+        $info_sheet->setCellValue('B15', 'Integer > 1');
+        $info_sheet->setCellValue('C15', 'Institution ID (CC+ System ID)');
+        $info_sheet->setCellValue('D15', 'Yes - If LocalID not given');
+        $info_sheet->setCellValue('A16', 'LocalID');
+        $info_sheet->setCellValue('B16', 'String');
+        $info_sheet->setCellValue('C16', 'Local institution identifier');
+        $info_sheet->setCellValue('D16', 'Yes - If CC+ System ID not given');
         $info_sheet->setCellValue('A17', 'Name');
         $info_sheet->setCellValue('B17', 'String');
         $info_sheet->setCellValue('C17', 'Institution Name - required');
+        $info_sheet->setCellValue('D17', 'Yes');
         $info_sheet->setCellValue('A18', 'Active');
         $info_sheet->setCellValue('B18', 'String (Y or N)');
         $info_sheet->setCellValue('C18', 'Make the institution active?');
-        $info_sheet->setCellValue('D18', 'Y');
+        $info_sheet->setCellValue('D18', 'No');
+        $info_sheet->setCellValue('E18', 'Y');
         $info_sheet->setCellValue('A19', 'FTE');
         $info_sheet->setCellValue('B19', 'Integer');
         $info_sheet->setCellValue('C19', 'FTE count for the institution');
-        $info_sheet->setCellValue('D19', 'NULL');
+        $info_sheet->setCellValue('D19', 'No');
+        $info_sheet->setCellValue('E19', 'NULL');
         $info_sheet->setCellValue('A20', 'Notes');
         $info_sheet->setCellValue('B20', 'Text-blob');
         $info_sheet->setCellValue('C20', 'Notes or other details');
-        $info_sheet->setCellValue('D20', 'NULL');
+        $info_sheet->setCellValue('D20', 'No');
+        $info_sheet->setCellValue('E20', 'NULL');
 
         // Set row height and auto-width columns for the sheet
         for ($r = 1; $r < 20; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
-        $info_columns = array('A','B','C','D');
+        $info_columns = array('A','B','C','D','E');
         foreach ($info_columns as $col) {
             $info_sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -358,17 +373,23 @@ class InstitutionController extends Controller
         // Load the institution data into a new sheet
         $inst_sheet = $spreadsheet->createSheet();
         $inst_sheet->setTitle('Institutions');
-        $inst_sheet->setCellValue('A1', 'Internal ID');
-        $inst_sheet->setCellValue('B1', 'ID');
+        $inst_sheet->setCellValue('A1', 'CC+ System ID');
+        $inst_sheet->setCellValue('B1', 'Local ID');
         $inst_sheet->setCellValue('C1', 'Name');
         $inst_sheet->setCellValue('D1', 'Active');
         $inst_sheet->setCellValue('E1', 'FTE');
         $inst_sheet->setCellValue('F1', 'Notes');
         $row = 2;
+
+        // Align column-D for the data sheet on center
+        $active_column_cells = "D2:D" . strval($institutions->count()+1);
+        $inst_sheet->getStyle($active_column_cells)->applyFromArray($centered_style);
+
+        // Process all institutions, 1-per-row
         foreach ($institutions as $inst) {
             $inst_sheet->getRowDimension($row)->setRowHeight(15);
-            $inst_sheet->setCellValue('A' . $row, $inst->internal_id);
-            $inst_sheet->setCellValue('B' . $row, $inst->id);
+            $inst_sheet->setCellValue('A' . $row, $inst->id);
+            $inst_sheet->setCellValue('B' . $row, $inst->local_id);
             $inst_sheet->setCellValue('C' . $row, $inst->name);
             $_stat = ($inst->is_active) ? "Y" : "N";
             $inst_sheet->setCellValue('D' . $row, $_stat);
@@ -431,45 +452,62 @@ class InstitutionController extends Controller
         $inst_skipped = 0;
         $inst_updated = 0;
         $inst_created = 0;
-        $cur_inst_id = 0;
         $seen_insts = array();          // keep track of institutions seen while looping
-        foreach ($rows as $row) {
-            // Ignore bad/missing/invalid IDs and/or headers
-            if ($row[0] == "Internal ID" || (!isset($row[0]) && !isset($row[1]))) {
+        foreach ($rows as $rowNum => $row) {
+            // Ignore header row and rows with bad/missing/invalid IDs
+            if ($rowNum == 0 || !isset($row[0]) && !isset($row[1])) continue;
+
+            // Look for a matching existing institution based on ID or local-ID
+            $current_inst = null;
+            $cur_inst_id = (isset($row[0])) ? strval(trim($row[0])) : null;
+            $localID = (strlen(trim($row[1])) > 0) ? trim($row[1]) : null;
+
+            // empty/missing/invalid ID and no localID?  skip the row
+            if (!$localID && ($row[0] == "" || !is_numeric($row[0]))) {
+                $inst_skipped++;
                 continue;
             }
 
-            // Set name from input and locate existing inst, if possible.
-            // Internal_ID (column-0) takes precedence over database ID in column-1
-            $internalID = (strlen(trim($row[0])) > 0) ? trim($row[0]) : null;
-            $_name = trim($row[2]);
-            if ($internalID) {
-                $current_inst = $institutions->where("internal_id", $internalID)->first();
-            } else {
-              if ($row[1] == "" || !is_numeric($row[1])) {
-                  $inst_skipped++;
-                  continue;
-              }
-              $current_inst = $institutions->where("id", $row[1])->first();
+            // Set current_inst based on system-ID (column-0) or local-ID in column-1
+            // column-0 takes precedence over column-1
+            if ($cur_inst_id) {
+                $current_inst = $institutions->where("id", $cur_inst_id)->first();
+            }
+            if (!$current_inst && $localID) {
+                $current_inst = $institutions->where("local_id", $localID)->first();
             }
 
+            // Confirm name and check for conflicts against existing records
+            $_name = trim($row[2]);
             if ($current_inst) {      // found existing ID
                 // If we already processed this inst, skip doing it again
                 if (in_array($current_inst->id, $seen_insts)) {
                     $inst_skipped++;
                     continue;
                 }
-                if (strlen($_name) < 1) {       // If import-name empty, use current value
+                // If import-name empty, use current value
+                if (strlen($_name) < 1) {
                     $_name = trim($current_inst->name);
-                } else {        // trap changing a name to a name that already exists
-                    $existing_inst = $institutions->where("name", "=", $_name)->first();
-                    if (!is_null($existing_inst)) {
-                        $_name = trim($current_inst->name);     // override, use current - no change
+                }
+                // Override name change if new-name already assigned to another inst
+                if ($current_inst->name != $_name) {
+                    $existing_inst = $institutions->where("name", $_name)->first();
+                    if ($existing_inst) {
+                        $_name = trim($current_inst->name);
                     }
                 }
+                // Override localID change if new-localID already assigned to another inst
+                if ($current_inst->local_id != $localID && strlen($localID) > 0) {
+                    $existing_inst = $institutions->where("local_id", $localID)->first();
+                    if ($existing_inst) {
+                        $localID = trim($current_inst->local_id);
+                    }
+                }
+            // If we get here and current_inst is still null, it is PROBABLY a NEW record .. but
+            // if an exact-match on institution name is found, USE IT instead of inserting
             } else {           // existing ID not found, try to find by name
-                $current_inst = $institutions->where("name", "=", $_name)->first();
-                if (!is_null($current_inst)) {
+                $current_inst = $institutions->where("name", $_name)->first();
+                if ($current_inst) {
                     $_name = trim($current_inst->name);
                 }
             }
@@ -484,16 +522,17 @@ class InstitutionController extends Controller
             $_active = ($row[3] == 'N') ? 0 : 1;
             $_fte = ($row[4] == '') ? null : $row[4];
             $_notes = ($row[5] == '') ? null : $row[5];
-            $_inst = array('name' => $_name, 'is_active' => $_active,  'internal_id' => $internalID,
+            $_inst = array('name' => $_name, 'is_active' => $_active,  'local_id' => $localID,
                            'fte' => $_fte, 'notes' => $_notes);
 
             // Update or create the Institution record
             if (!$current_inst) {      // Create
                 // input row had explicit ID? If so, assign it, otherwise, omit from create input array
-                if ($row[1] != "" && is_numeric($row[1])) {
-                    $_inst['id'] = $row[1];
+                if ($row[0] != "" && is_numeric($row[0])) {
+                    $_inst['id'] = $row[0];
                 }
                 $current_inst = Institution::create($_inst);
+                $institutions->push($current_inst);
                 $inst_created++;
             } else {                            // Update
                 $_inst['id'] = $current_inst->id;
@@ -506,7 +545,7 @@ class InstitutionController extends Controller
         // Recreate the institutions list (like index does) to be returned to the caller
         $inst_data = array();
         $institutions = Institution::with('institutionGroups')->orderBy('name', 'ASC')
-                                   ->get(['id','name','is_active']);
+                                   ->get(['id','name','local_id','is_active']);
         foreach ($institutions as $inst) {
             $_groups = "";
             foreach ($inst->institutionGroups as $group) {

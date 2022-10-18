@@ -30,7 +30,7 @@
         <template v-slot:item="{ item }">
           <tr>
             <td><a :href="'/institutions/'+item.id">{{ item.name }}</a></td>
-            <td>{{ item.internal_id }}</a></td>
+            <td>{{ item.local_id }}</a></td>
             <td v-if="item.is_active">Active</td>
             <td v-else>Inactive</td>
             <td>{{ item.groups }}</td>
@@ -51,22 +51,23 @@
               records will be deleted.</strong>
             </p>
             <p>
-              The import process relies on an Internal-ID (in column-A), or a database ID-# (in column-B). Whether a
-              match is found for an Institution is based on matching the Internal-ID. If the Internal-ID is missing
-              or empty, a match will be based on the ID-# in column-B. Any Import rows with no Internal-ID in column
-              A and no ID-# in column B will be ignored. If no matches are found by searching for an existing
-              institution using column-A and column-B, the import row will be treated as a NEW institution.
+              The import process evaluates input rows to determine if a row defines an existing, or new, institution.
+              A match for an existing institution depends (first) on matching a System-ID in column-A. If column-A is
+              missing or empty, a match will be based on the Local-ID in column-B. Any Import rows with no System-ID in
+              in column A and no Local-ID in column B will be ignored. If no matches are found by searching for an
+              existing institution using column-A and column-B, the import row will be treated as a NEW institution.
             </p>
             <p>
-              New institutions being added via the import function must contain a unique name. If the import row
-              also contains a value for Internal-ID, this value must also be unique. Attempting to create an
-              institution (or rename one) using an existing name will be ignored.
+              New institutions being added via the import function must also contain a unique name. If the import
+              row also contains a value for Local-ID, this value must also be unique since a match for Local-ID will
+              result in an UPDATE and not an INSERT operation (this will modify the matching institition data to
+              match the cells in the row possibly intended as a new institution.)
             </p>
             <p>
-              Institutions can be renamed via import by giving the Internal-ID (in column-A) or database ID-# in
-              column-B and the replacement name in column-C. Be aware that the new name takes effect immediately,
+              Institutions can be renamed via import by giving a CC+ System ID-# in column-A and/or a Local-ID (in
+              column-B) with a replacement name in column-C. Be aware that the new name takes effect immediately,
               and will be associated with all harvested usage data that may have been collected using the OLD name
-              (data is stored by the ID, not the name.)
+              (data is stored by the System ID, not the name.)
             </p>
             <p>
               For these reasons, use caution when using this import function. Generating an Institution export FIRST
@@ -185,7 +186,7 @@
         settingsImportDialog: false,
         headers: [
           { text: 'Institution ', value: 'name', align: 'start' },
-          { text: 'Internal ID ', value: 'internal_id', align: 'start' },
+          { text: 'Local ID ', value: 'local_id', align: 'start' },
           { text: 'Status', value: 'is_active' },
           { text: 'Group(s)', value: 'groups' },
         ],

@@ -165,7 +165,7 @@
             </div>
             <v-container grid-list-md>
               <v-text-field v-model="instForm.name" label="Name" outlined></v-text-field>
-              <v-text-field v-model="instForm.internal_id" label="Internal Identifier" outlined></v-text-field>
+              <v-text-field v-model="instForm.local_id" label="Local Identifier" outlined></v-text-field>
               <v-switch v-model="instForm.is_active" label="Active?"></v-switch>
               <div class="field-wrapper">
                 <v-subheader v-text="'FTE'"></v-subheader>
@@ -246,7 +246,7 @@
         }),
         instForm: new window.Form({
             name: '',
-            internal_id: '',
+            local_id: '',
             is_active: 1,
             fte: 0,
             institutiongroups: [],
@@ -404,7 +404,7 @@
             this.failure = '';
             this.success = '';
             this.instForm.name = '';
-            this.instForm.internal_id = '';
+            this.instForm.local_id = '';
             this.instForm.is_active = 1;
             this.instForm.fte = 0;
             this.instForm.institutiongroups = [];

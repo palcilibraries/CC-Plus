@@ -130,7 +130,11 @@ class InstitutionController extends Controller
         $users = array();
         foreach ($institution->users as $inst_user) {
             $new_u = $inst_user->toArray();
-            $new_u['permission'] = $inst_user->maxRoleName();
+            $max_role = $inst_user->maxRoleName();
+            if ($max_role == "Admin") $max_role = "Consortium Admin";
+            if ($max_role == "Manager") $max_role = "Local Admin";
+            if ($max_role == "Viewer") $max_role = "Consortium Viewer";
+            $new_u['permission'] = $max_role;
             array_push($users, $new_u);
         }
         $_name = array_column($users, "name");

@@ -41,8 +41,8 @@ class UserController extends Controller
                              ->where('inst_id', '=', $thisUser->inst_id)->get();
         }
 
-        // Set current user's max role and get all roles
-        $all_roles = Role::orderBy('name', 'ASC')->get(['name', 'id']);
+        // Get all roles
+        $all_roles = Role::orderBy('id', 'ASC')->get(['name', 'id']);
         $viewRoleId = $all_roles->where('name', 'Viewer')->first()->id;
 
         // Make user role names one string, role IDs into an array, and status to a string for the view
@@ -61,11 +61,12 @@ class UserController extends Controller
             // Set role_string to hold user's highest access right (other than viewer)
             $access_role_ids = $rec->roles->where('id','<>',$viewRoleId)->pluck('id')->toArray();
             $user['role_string'] = $all_roles->where('id', max($access_role_ids))->first()->name;
+            if ($user['role_string'] == 'Manager') $user['role_string'] = "Local Admin";
             if ($user['role_string'] == 'Admin') $user['role_string'] = "Consortium Admin";
 
-            // Users and Managers with Viewer get it tacked onto their role_string
+            // non-admins with Viewer get it tacked onto their role_string
             if ( $rec->roles->where('name', 'Viewer')->first() ) {
-                if ($user['role_string'] != 'SuperUser' && $user['role_string'] != 'Admin') {
+                if (!$rec->roles->whereIn('name', ['SuperUser','Admin'])->first() ) {
                     $user['role_string'] .= ", Consortium Viewer";
                 }
             }
@@ -82,8 +83,15 @@ class UserController extends Controller
         $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
 
         // Set choices for roles; disallow choosing roles higher current user's max role
-        // $allowed_roles = $all_roles->where('id', '<=', $thisUser->maxRole())->toArray();
-        $allowed_roles = $all_roles->where('id', '<=', $thisUser->maxRole())->values()->toArray();
+        $allowed_roles = array();
+        foreach ($all_roles as $role) {
+            if ($role->id > $thisUser->maxRole()) continue;
+            $_role = $role;
+            if ($_role->name == "Manager") $_role->name = "Local Admin";
+            if ($_role->name == 'Admin') $_role->name = "Consortium Admin";
+            if ($_role->name == 'Viewer') $_role->name = "Consortium Viewer";
+            $allowed_roles[] = $_role;
+        }
         return view('users.index', compact('data', 'institutions', 'allowed_roles', 'all_groups'));
     }
 
@@ -229,14 +237,18 @@ class UserController extends Controller
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
 
-        // Validate form inputs
-        $this->validate($request, [
+        // Set form fields to be validated
+        $fields = array(
             'name' => 'required',
-            'email' => 'required|email|unique:consodb.users,email,' . $id,
             'password' => 'same:confirm_pass',
             'roles' => 'required',
             'inst_id' => 'required'
-        ]);
+        );
+        //  Validate email address if it is NOT 'Administrator'(users table require unique anyway)
+        if ($request->email != 'Administrator') {
+            $fields['email'] = 'required|email|unique:consodb.users,email,' . $id;
+        }
+        $this->validate($request, $fields);
         $input = $request->all();
         if (empty($input['password'])) {
             $input = array_except($input, array('password'));
@@ -260,6 +272,7 @@ class UserController extends Controller
         $user->update($input);
 
         // Update roles (silently ignore roles if user saving their own record)
+        $all_roles = Role::orderBy('id', 'ASC')->get(['name', 'id']);
         $viewer_role_id = Role::where('name', '=', 'Viewer')->value('id');
         if (auth()->id() != $id) {
             $user->roles()->detach();
@@ -274,20 +287,25 @@ class UserController extends Controller
                 }
             }
         }
-        $user->load(['institution:id,name']);
+        $user->load(['institution:id,name','roles']);
 
         // Setup array to hold updated user record
-        $_roles = "";
         $updated_user = $user->toArray();
         $updated_user['inst_name'] = $user->institution->name;
         $updated_user['status'] = ($user->is_active == 1) ? 'Active' : 'Inactive';
-        foreach ($user->roles as $role) {
-            $_roles .= $role->name . ", ";
+        $updated_user['roles'] = $user->roles->toArray();
+
+        // Set role_string to hold user's highest access right (other than viewer)
+        $access_role_ids = $user->roles->where('id','<>',$viewer_role_id)->pluck('id')->toArray();
+        $updated_user['role_string'] = $all_roles->where('id', max($access_role_ids))->first()->name;
+        if ($updated_user['role_string'] == 'Manager') $updated_user['role_string'] = "Local Admin";
+        if ($updated_user['role_string'] == 'Admin') $updated_user['role_string'] = "Consortium Admin";
+        // non-admins with Viewer get it tacked onto their role_string
+        if ( $user->roles->where('name', 'Viewer')->first() ) {
+            if (!$user->roles->whereIn('name', ['SuperUser','Admin'])->first() ) {
+                $updated_user['role_string'] .= ", Consortium Viewer";
+            }
         }
-        $_roles = rtrim(trim($_roles), ',');
-        $updated_user['permission'] = $user->maxRoleName();
-        $updated_user['role_string'] = $_roles;
-        $updated_user['roles'] = $new_roles;
 
         return response()->json(['result' => true, 'msg' => 'User settings successfully updated',
                                  'user' => $updated_user]);

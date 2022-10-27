@@ -1,5 +1,12 @@
 @extends('layouts.app')
 
+@push('scripts')
+<script>
+  // Clear any existing data in the datastore
+  window.localStorage.clear();
+</script>
+@endpush
+
 @section('content')
 <?php
 // Pull the list of consortia from the database for the dropdown

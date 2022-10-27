@@ -96,6 +96,10 @@ class ConsortiumController extends Controller
             // Zap any AUTO_INCREMENT value in the create command
             $command = preg_replace("/ AUTO_INCREMENT=(\d+)/", "", $raw_command);
             $data_query = str_replace('ZZZZ', $table, $_qry2);
+            // Copy just the SuperUser credential from the template.. no other users
+            if ($table == "users") {
+                $data_query .= " WHERE id=1";
+            }
             try {
                 DB::connection('consodb')->statement($command);
                 DB::connection('consodb')->statement($data_query);

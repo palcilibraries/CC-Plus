@@ -1,7 +1,7 @@
   <template>
     <nav class="navbar navbar-expand navbar-light bg-white shadow-sm">
       <div class="container">
-	      <a class="navbar-brand" :href="homeURL">
+	      <a class="navbar-brand" href="/">
           <img src="/images/CC_Plus_Logo.png" alt="CC plus" height="50px" width="103px" />
         </a>
         <div id="navbarSupportedContent" class="collapse navbar-collapse">
@@ -69,14 +69,19 @@ export default {
     },
     data() {
         return {
-            homeURL: '/',
             profile_url: '',
             cur_key: '',
             navList: [
+              { url: "/", name: "Home", role: "All" },
               { url: "/globaladmin",
                 name: "Server Admin",
                 role: "SuperUser",
                 children: [
+                  {
+                    url: "/globaladmin",
+                    name: "Instances",
+                    role: "SuperUser",
+                  },
                   {
                     url: "/globalvendors",
                     name: "Global Vendor Settings",
@@ -89,7 +94,6 @@ export default {
                   },
                 ]
               },
-              { url: "/", name: "Home", role: "All" },
               {
                 url: "#",
                 name: "Admin",
@@ -207,7 +211,6 @@ export default {
         this.$store.dispatch('updateUserInst', this.user["inst_id"]);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
         if (this.is_superuser) {
-            this.homeURL = "/globaladmin";
             this.consortia.push({'ccp_key': 'con_template', 'name': 'Template'});
             if (this.consortia.some(con => con.ccp_key == this.ccp_key)) this.cur_key = this.ccp_key;
         }

@@ -1,0 +1,426 @@
+<template>
+  <div>
+    <v-row class="d-flex mb-4" no-gutters>
+      <v-col class="d-flex pa-0" cols="3">
+        <v-btn small color="primary" type="button" @click="importForm" class="section-action">
+          Import Sushi Settings
+        </v-btn>
+      </v-col>
+      <v-col class="d-flex px-1" cols="3">
+        <a @click="doExport">Export to Excel</a>
+      </v-col>
+    </v-row>
+    <v-row no-gutters>
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if="mutable_filters['inst'].length>0" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
+        </div>
+        <v-select :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters()" multiple
+                  label="Institution(s)"  item-text="name" item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if="mutable_filters['prov'].length>0" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
+        </div>
+        <v-select :items="providers" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
+                  label="Provider(s)" item-text="name" item-value="id"
+        ></v-select>
+      </v-col>
+    </v-row>
+    <v-row class="d-flex pa-1 align-center" no-gutters>
+      <v-col class="d-flex px-2" cols="4" sm="2">
+        <v-select :items='bulk_actions' v-model='bulkAction' @change="processBulk()"
+                  item-text="action" item-value="status" label="Bulk Actions"
+                  :disabled='selectedRows.length==0'></v-select>
+      </v-col>
+      <v-col v-if="selectedRows.length>0" class="d-flex px-4 align-center" cols="8" sm="4">
+        <span class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
+      </v-col>
+    </v-row>
+    <div class="status-message" v-if="success || failure">
+      <span v-if="success" class="good" role="alert" v-text="success"></span>
+      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+    </div>
+    <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_settings" :loading="loading" show-select
+                  item-key="id" :options="mutable_options" @update:options="updateOptions" :key="'setdt_'+dtKey">
+      <template v-slot:item.status="{ item }">
+        <span :class="item.status">{{ item.status }}</span>
+      </template>
+      <template v-slot:item.action="{ item }">
+        <a :href="'/sushisettings/'+item.id+'/edit'">
+           <img src="/images/edit-pencil.svg" width="24" alt="Settings & harvests"/>
+        </a>
+        &nbsp;
+        <img src="/images/trash-can.svg" width="24" alt="Delete connection" @click="destroy(item)"/>
+      </template>
+    </v-data-table>
+    <v-dialog v-model="importDialog" persistent max-width="1200px">
+      <v-card>
+        <v-card-title>Import Sushi Settings</v-card-title>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+            ></v-file-input>
+            <p>
+              <strong>Note:&nbsp; Sushi Settings imports function exclusively as Updates. No existing settings
+              will be deleted.</strong>
+            </p>
+            <p>
+              Imports will overwrite existing settings whenever a match for an Institution-ID and Provider-ID are
+              found in the import file. If no setting exists for a given valid provider-institution pair, a new
+              setting will be created and saved. Any values in columns D-H which are NULL, blank, or missing for
+              a valid provider-institution pair, will result in the Default value being stored for that field.
+            </p>
+            <p>
+              Generating an export of the existing settings FIRST will provide detailed instructions for
+              importing on the "How to Import" tab and will help ensure that the desired end-state is achieved.
+            </p>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-col class="d-flex">
+            <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </div>
+</template>
+
+<script>
+    import { mapGetters } from 'vuex'
+    import Swal from 'sweetalert2';
+    import Form from '@/js/plugins/Form';
+    import axios from 'axios';
+    window.Form = Form;
+
+    export default {
+        props: {
+                all_connectors: { type:Array, default: () => [] },
+                providers: { type:Array, default: () => [] },
+                institutions: { type:Array, default: () => [] },
+                filters: { type:Object, default: () => {} }
+               },
+        data() {
+            return {
+                success: '',
+                failure: '',
+                testData: '',
+                testStatus: '',
+				        showForm: false,
+                showTest: false,
+                importDialog: false,
+                csv_upload: null,
+                mutable_settings: [],
+                mutable_filters: this.filters,
+                mutable_options: {},
+                loading: true,
+                connectors: [],
+                // Actual headers array is built from these in mounted()
+                header_fields: [
+                  { label: 'Institution ', name: 'inst_name' },
+                  { label: 'Provider ', name: 'prov_name' },
+                  { label: '', name: 'customer_id' },
+                  { label: '', name: 'requestor_id' },
+                  { label: '', name: 'API_key' },
+                  { label: '', name: 'extra_args' },
+                  { label: 'Status', name: 'status' },
+                  { label: ' ', name: 'action' },
+                ],
+                headers: [],
+                bulk_actions: [ 'Enable', 'Disable', 'Delete' ],
+                bulkAction: null,
+                selectedRows: [],
+                dtKey: 1,
+                form: new window.Form({
+                    inst_id: null,
+                    prov_id: null,
+                    customer_id: '',
+                    requestor_id: '',
+                    API_key: '',
+                    extra_args: '',
+                    is_active: 1
+				        })
+            }
+        },
+        methods: {
+          importForm () {
+              this.csv_upload = null;
+              this.importDialog = true;
+          },
+          doExport () {
+              let url = "/sushi-export";
+              if (this.mutable_filters['inst'].length > 0 || this.mutable_filters['prov'].length > 0) {
+                  url += "?filters="+JSON.stringify(this.mutable_filters);
+              }
+              window.location.assign(url);
+          },
+          updateFilters() {
+              this.$store.dispatch('updateAllFilters',this.mutable_filters);
+              this.updateSettings();
+          },
+          clearFilter(filter) {
+              this.mutable_filters[filter] = [];
+              this.$store.dispatch('updateAllFilters',this.mutable_filters);
+              this.updateSettings();
+          },
+          updateSettings() {
+              this.success = "";
+              this.failure = "";
+              this.loading = true;
+              let _filters = JSON.stringify(this.mutable_filters);
+              axios.get("/sushisettings?json=1&filters="+_filters)
+                   .then((response) => {
+                       this.mutable_settings = response.data.settings;
+                   })
+                   .catch(err => console.log(err));
+               this.loading = false;
+          },
+          updateOptions(options) {
+              Object.keys(this.mutable_options).forEach( (key) =>  {
+                  if (options[key] !== this.mutable_options[key]) {
+                      this.mutable_options[key] = options[key];
+                  }
+              });
+              this.$store.dispatch('updateDatatableOptions',this.mutable_options);
+          },
+          importSubmit (event) {
+              this.success = '';
+              if (this.csv_upload==null) {
+                  this.failure = 'A CSV import file is required';
+                  return;
+              }
+              this.failure = '';
+              let formData = new FormData();
+              formData.append('csvfile', this.csv_upload);
+              formData.append('inst_id', this.prov_id);
+              axios.post('/sushisettings/import', formData, {
+                      headers: {
+                          'Content-Type': 'multipart/form-data'
+                      }
+                    })
+                   .then( (response) => {
+                       if (response.data.result) {
+                           // Load settings
+                           this.updateSettings();
+                           this.dtKey += 1;           // re-render of the datatable
+                           this.success = response.data.msg;
+                       } else {
+                           this.failure = response.data.msg;
+                       }
+                   });
+              this.importDialog = false;
+          },
+          processBulk() {
+              this.success = "";
+              this.failure = "";
+              let msg = "Bulk processing will process each requested setting sequentially.<br><br>";
+              if (this.bulkAction == 'Enable') {
+                  msg += "Enabling the selected setting(s) will cause them to be added to the harvesting queue";
+                  msg += " according to the harvest day defined for the provider(s).";
+              } else if (this.bulkAction == 'Disable') {
+                  msg += "Disabling the selected setting(s) will leave the attempts counter intact, and will";
+                  msg += " prevent future harvesting attempts. Any queued harvests related to the settings";
+                  msg += " will be cancelled; harvests that are 'Active', or 'Pending' will not be changed.";
+              } else if (this.bulkAction == 'Delete') {
+                  msg += "Deleting the selected settings records is not reversible! No harvested data will be removed or";
+                  msg += " changed. <br><br><strong>NOTE:</strong> all harvest log records connected to these settings";
+                  msg += " will also be deleted!";
+              } else {
+                  this.failure = "Unrecognized Bulk Action in processBulk!";
+                  return;
+              }
+              Swal.fire({
+                title: 'Are you sure?', html: msg, icon: 'warning', showCancelButton: true,
+                confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, Proceed!'
+              })
+              .then((result) => {
+                if (result.value) {
+                  this.success = "Working...";
+                  if (this.bulkAction == 'Delete') {
+                      for (let idx=0; idx<this.selectedRows.length; idx++) {
+                        var setting=this.selectedRows[idx];
+                        axios.delete('/sushisettings/'+setting.id)
+                          .then( (response) => {
+                              if (response.data.result) {
+                                  this.mutable_settings.splice(this.mutable_settings.findIndex(h=>h.id == setting.id),1);
+                                  this.selectedRows.splice(idx,1);
+                              } else {
+                                  this.success = '';
+                                  this.failure = response.data.msg;
+                                  return false;
+                              }
+                          }).catch({});
+                      }
+                      this.success = "Selected settings successfully deleted.";
+                  } else {
+                      var state = (this.bulkAction == 'Enable') ? 1 : 0;
+                      var new_status = this.bulkAction+'d';
+                      this.selectedRows.forEach( (setting) => {
+                          axios.post('/sushisettings-update', {
+                            inst_id: setting.inst_id,
+                            prov_id: setting.prov_id,
+                            is_active: state
+                          })
+                          .then( (response) => {
+                              if (response.data.result) {
+                                  var _idx = this.mutable_settings.findIndex(h=>h.id == setting.id);
+                                  this.mutable_settings[_idx].is_active = state;
+                                  this.mutable_settings[_idx].status = new_status;
+                              } else {
+                                  this.success = '';
+                                  this.failure = response.data.msg;
+                                  return false;
+                              }
+                          }).catch(error => {});
+                      });
+                      this.success = "Selected settings successfully updated.";
+                  }
+                }
+                this.bulkAction = '';
+                this.dtKey += 1;           // update the datatable
+                return true;
+            })
+            .catch({});
+          },
+          destroy (setting) {
+              let msg = "Deleting this setting is not reversible!<br /><br />No harvested data will be removed";
+              msg += " or changed. <br><br><strong>NOTE:</strong> all harvest log records connected to this";
+              msg += " setting will also be deleted!";
+              Swal.fire({
+                title: 'Are you sure?', html: msg, icon: 'warning', showCancelButton: true,
+                confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, proceed'
+              }).then((result) => {
+                if (result.value) {
+                    axios.delete('/sushisettings/'+setting.id)
+                         .then( (response) => {
+                             if (response.data.result) {
+                                 this.failure = '';
+                                 this.success = response.data.msg;
+                             } else {
+                                 this.success = '';
+                                 this.failure = response.data.msg;
+                             }
+                         })
+                         .catch({});
+                     // Add the entry to the "unset" list and res-sort it
+                     this.mutable_unset.push({'id': setting.prov_id, 'name': setting.provider.name});
+                     this.mutable_unset.sort((a,b) => {
+                       if ( a.name < b.name ) return -1;
+                       if ( a.name > b.name ) return 1;
+                       return 0;
+                     });
+                     // Remove the setting from the "set" list
+                     this.mutable_settings.splice(this.mutable_settings.findIndex(s=> s.id == setting.id),1);
+                     this.form.prov_id = 0;
+                }
+              })
+              .catch({});
+          },
+          testSettings (event) {
+              this.failure = '';
+              this.success = '';
+              this.testData = '';
+              this.testStatus = "... Working ...";
+              this.showTest = true;
+              var testArgs = {'prov_id' : this.form.prov_id};
+              if (this.connectors.some(c => c.name === 'requestor_id')) testArgs['requestor_id'] = this.form.requestor_id;
+              if (this.connectors.some(c => c.name === 'customer_id')) testArgs['customer_id'] = this.form.customer_id;
+              if (this.connectors.some(c => c.name === 'API_key')) testArgs['API_key'] = this.form.API_key;
+              if (this.connectors.some(c => c.name === 'extra_args')) testArgs['extra_args'] = this.form.extra_args;
+              axios.post('/sushisettings-test', testArgs)
+                   .then((response) => {
+                      if (response.data.result == '') {
+                          this.testStatus = "No results!";
+                      } else {
+                          this.testStatus = response.data.result;
+                          this.testData = response.data.rows;
+                      }
+                  })
+                 .catch(error => {});
+          },
+          onUnsetChange (prov) {
+              this.form.customer_id = '';
+              this.form.requestor_id = '';
+              this.form.API_key = '';
+              this.form.extra_args = '';
+              this.failure = '';
+              this.success = '';
+              this.testData = '';
+              this.testStatus = '';
+              this.showForm = true;
+              let provider = this.unset.find(p => p.id == prov);
+              this.connectors = provider.connectors;
+          },
+          hideForm (event) {
+              this.showForm = false;
+              this.form.prov_id = null;
+              this.connectors = [];
+          },
+        },
+        computed: {
+          ...mapGetters(['all_filters','page_name']),
+        },
+        beforeCreate() {
+          // Load existing store data
+          this.$store.commit('initialiseStore');
+          // Subscribe to store updates
+          this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
+        },
+        beforeMount() {
+          // Set page name in the store
+          this.$store.dispatch('updatePageName','sushi');
+        },
+        mounted() {
+          // Apply any defined prop-based filters (and overwrite existing store values)
+          var count = 0;
+          Object.assign(this.mutable_filters, this.all_filters);
+          Object.keys(this.filters).forEach( (key) =>  {
+            if (this.filters[key] != null) {
+              if (this.filters[key].length>0) {
+                count++;
+                this.mutable_filters[key] = this.filters[key];
+              }
+            }
+          });
+
+          // Set datatable options with store-values
+          Object.assign(this.mutable_options, this.datatable_options);
+
+          // Update store and apply filters if some have been set
+          if (count>0) this.$store.dispatch('updateAllFilters',this.mutable_filters);
+
+          // Setup DataTable headers array based on the provider connectors
+          this.header_fields.forEach((fld) => {
+              // Connection fields are setup in "header_fields" as names without labels
+              if (fld.label == '' && fld.name != '') {
+                  // any provider using the field means we make a column for it
+                  let cnx = this.all_connectors.find(c => c.name == fld.name);
+                  if (typeof(cnx) != 'undefined') {
+                      this.headers.push({ text: cnx.label, value: cnx.name});
+                  }
+              } else {
+                  this.headers.push({ text: fld.label, value: fld.name });
+              }
+          });
+
+          // Load settings
+          this.updateSettings();
+          this.dtKey += 1;           // update the datatable
+
+          // Subscribe to store updates
+          this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
+
+          console.log('SushiSettings Datatable Component mounted.');
+      }
+    }
+</script>
+
+<style>
+.Enabled { color: #00dd00; }
+.Disabled { color: #dd0000; }
+</style>

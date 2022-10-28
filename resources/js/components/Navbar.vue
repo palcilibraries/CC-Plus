@@ -119,6 +119,11 @@ export default {
                     name: "Providers",
                     role: "Admin",
                   },
+                  {
+                    url: "/sushisettings",
+                    name: "Sushi Settings",
+                    role: "Admin",
+                  },
                 ]
               },
               {

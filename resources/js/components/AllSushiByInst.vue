@@ -8,7 +8,8 @@
           </v-btn>
         </v-col>
         <v-col class="d-flex px-1" cols="3">
-          <a :href="'/sushisettings/export/xlsx/'+inst_id">Export to Excel</a>
+          <a @click="doExport">Export to Excel</a>
+          <!-- <a :href="'/sushisettings/export/xlsx/'+inst_id">Export to Excel</a> -->
         </v-col>
       </v-row>
     </div>
@@ -46,11 +47,13 @@
               ></v-file-input>
               <p>
                 <strong>Note:&nbsp; The Import Type below determines whether the settings in the input file should
-                be treated as an <em>Update</em> or as a <em>Full Replacement</em> for any existing settings.</strong>
+                be treated as an <em>Update</em> or as a <em>Full Replacement</em> for all existing settings defined
+                for this institution.</strong>
               </p>
               <p>
-                When "Full Replacement" is chosen, any EXISTING SETTINGS omitted from the import file will be deleted!
-                This will also remove all associated harvest and failed-harvest records connected to the settings!
+                When "Full Replacement" is chosen, any EXISTING settings for THIS INSTITUTION omitted from the import
+                file will be deleted! All havest and failed-harvest log entries associated with the settings being
+                deleted will also be deleted from the database!
               </p>
               <p>
                 The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings
@@ -130,6 +133,7 @@
                 csv_upload: null,
                 import_type: '',
                 import_types: ['Add or Update', 'Full Replacement'],
+                export_filters: { 'inst': [this.inst_id], 'prov': [] },
                 mutable_settings: this.settings,
                 mutable_unset: this.unset,
                 connectors: [],
@@ -161,6 +165,10 @@
               this.csv_upload = null;
               this.import_type = '';
               this.importDialog = true;
+          },
+          doExport () {
+              let url = "/sushi-export?filters="+JSON.stringify(this.export_filters);
+              window.location.assign(url);
           },
 	        formSubmit (event) {
                 this.form.post('/sushisettings')
@@ -205,6 +213,7 @@
                 let formData = new FormData();
                 formData.append('csvfile', this.csv_upload);
                 formData.append('type', this.import_type);
+                formData.append('inst_id', this.prov_id);
                 axios.post('/sushisettings/import', formData, {
                         headers: {
                             'Content-Type': 'multipart/form-data'

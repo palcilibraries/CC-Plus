@@ -52,18 +52,25 @@ export const store = new Vuex.Store({
                                prov_id: [], yop: [], datatype_id: [], accesstype_id: [], sectiontype_id: [],
                                accessmethod_id: [] },
                      datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [] }
-          },
+                   },
+          sushi: { filters: {inst: [], prov: []},
+                           datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
+                                       groupDesc: [], multiSort: false, mustSort: false }
+                         },
       },
       report_data: [],
   },
   mutations: {
     initialiseStore(state) {
-      // Check if the ID exists
+      // Check if the store exists in local storage
       if (localStorage.getItem('store')) {
           // Replace the state object with the stored item
           this.replaceState(
               Object.assign(state, JSON.parse(localStorage.getItem('store')))
           );
+      } else {
+          // Create the store object in local storage
+          localStorage.setItem("store", JSON.stringify(state));
       }
     },
     SET_ACCESS(state, access) {

@@ -21,6 +21,94 @@ class SushiSettingController extends Controller
     }
 
     /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request)
+    {
+        $thisUser = auth()->user();
+        if (!$thisUser->hasRole("Admin")) {
+            return response()->json(['result' => false, 'msg' => 'Request failed (403) - Forbidden']);
+        }
+        $json = ($request->input('json')) ? true : false;
+
+        // Assign optional inputs to $filters array
+        $filters = array('inst' => [], 'prov' => []);
+        if ($request->input('filters')) {
+            $filter_data = json_decode($request->input('filters'));
+            foreach ($filter_data as $key => $val) {
+                if ($val != 0) {
+                    $filters[$key] = $val;
+                }
+            }
+        } else {
+            $keys = array_keys($filters);
+            foreach ($keys as $key) {
+                if ($request->input($key)) {
+                    if (is_numeric($request->input($key))) {
+                        $filters[$key] = array(intval($request->input($key)));
+                    }
+                }
+            }
+        }
+
+        // Skip querying for records unless we're returning json
+        // The vue-component will run a request for initial data once it is mounted
+        if ($json) {
+
+            // Get sushi settings
+            $data = SushiSetting::with('institution:id,name','provider:id,name')
+                                  ->when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
+                                      return $qry->whereIn('inst_id', $filters['inst']);
+                                  })
+                                  ->when(sizeof($filters['prov']) > 0, function ($qry) use ($filters) {
+                                      return $qry->whereIn('prov_id', $filters['prov']);
+                                  })
+                                  ->get();
+
+            // Add stuff to simplify the datatable
+            $settings = array();
+            foreach ($data as $setting) {
+                $rec = $setting->toArray();
+                $rec['inst_name'] = $setting->institution->name;
+                $rec['prov_name'] = $setting->provider->name;
+                $rec['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';
+                $settings[] = $rec;
+            }
+
+            return response()->json(['settings' => $settings], 200);
+
+        // Not returning JSON, the index/vue-component still needs these to setup the page
+        } else {
+            // Get all institutions
+            $institutions = Institution::where('id', '<>', 1)->orderBy('name', 'ASC')->get(['id', 'name']);
+
+            // Get all providers
+            $providers = Provider::with('connectors')->orderBy('name', 'ASC')->get(['id','name','inst_id']);
+
+            // Build an array of connection_fields used across all providers (whether connected or not)
+            $all_connectors = array();
+            $seen_connectors = array();
+            foreach ($providers as $prov) {
+                // There are only 4... if they're all set, skip checking
+                if (sizeof($seen_connectors) < 4) {
+                  foreach($prov->connectors as $cnx) {
+                      if (!in_array($cnx->name,$seen_connectors)) {
+                          $all_connectors[] = array('name' => $cnx->name, 'label' => $cnx->label);
+                          $seen_connectors[] = $cnx->name;
+                      }
+                  }
+                }
+            }
+
+            return view('sushisettings.index',
+                        compact('all_connectors','institutions','providers','filters'));
+        }
+
+    }
+
+    /**
      * Get and show the requested resource.
      *
      * @param  \Illuminate\Http\Request  $request

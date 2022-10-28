@@ -41,6 +41,7 @@ Route::resource('/systemalerts', 'SystemAlertController')->middleware(['auth']);
 Route::get('/globaladmin', 'GlobalAdminController@index')->middleware('auth','role:SuperUser');
 Route::post('/change-instance', 'GlobalAdminController@changeInstance')->middleware('auth','role:SuperUser');
 Route::resource('/globalsettings', 'GlobalSettingController')->middleware('auth','role:SuperUser');
+Route::resource('/globalvendors', 'GlobalVendorController')->middleware('auth','role:SuperUser');
 Route::resource('/consortia', 'ConsortiumController')->middleware('auth','role:SuperUser');
 //
 Route::get('/admin', 'AdminController@index')->name('admin')->middleware(['auth','role:Admin,Manager']);
@@ -51,7 +52,6 @@ Route::get('/reports/preview', 'ReportController@preview')->name('reports.previe
 Route::get('/reports/{id}', 'ReportController@show')->name('reports.show')->middleware('auth');
 Route::get('/reports-available', 'ReportController@getAvailable')->middleware(['auth']);
 Route::get('/usage-report-data', 'ReportController@getReportData')->middleware(['auth']);
-Route::post('/export-report-data', 'ReportController@exportReportData')->middleware(['auth']);
 Route::post('/update-report-columns', 'ReportController@updateReportColumns')->middleware(['auth']);
 Route::post('/save-report-config', 'SavedReportController@saveReportConfig')->middleware(['auth']);
 //
@@ -72,7 +72,7 @@ Route::get('/providers/export/{type}', 'ProviderController@export');
 Route::get('/institutions/export/{type}', 'InstitutionController@export');
 Route::get('/institutiontypes/export/{type}', 'InstitutionTypeController@export');
 Route::get('/institutiongroups/export/{type}', 'InstitutionGroupController@export');
-Route::get('/sushisettings/export/{type}/{inst?}/{prov?}', 'SushiSettingController@export');
+Route::get('/sushi-export', 'SushiSettingController@export');
 //
 Route::post('/users/import', 'UserController@import');
 Route::post('/providers/import', 'ProviderController@import');

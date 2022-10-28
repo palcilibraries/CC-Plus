@@ -1,6 +1,19 @@
 <template>
   <div>
-    <template v-if="(is_manager || is_admin) && mutable_unset.length > 0">
+    <div v-if="is_manager">
+      <v-row class="d-flex mb-4" no-gutters>
+        <v-col class="d-flex pa-0" cols="3">
+          <v-btn small color="primary" type="button" @click="importForm" class="section-action">
+            Import Sushi Settings
+          </v-btn>
+        </v-col>
+        <v-col class="d-flex px-1" cols="3">
+          <a @click="doExport">Export to Excel</a>
+          <!-- <a :href="'/sushisettings/export/xlsx/0/'+prov_id">Export to Excel</a> -->
+        </v-col>
+      </v-row>
+    </div>
+    <div v-if="(is_manager || is_admin) && mutable_unset.length > 0">
       <form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
             @keydown="form.errors.clear($event.target.name)">
         <input v-model="form.prov_id" id="prov_id" type="hidden">
@@ -21,11 +34,44 @@
           </div>
         </div>
   	  </form>
-    </template>
+    </div>
     <div class="status-message" v-if="success || failure">
       <span v-if="success" class="good" role="alert" v-text="success"></span>
       <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
+    <v-dialog v-model="importDialog" persistent max-width="1200px">
+      <v-card>
+        <v-card-title>Import Sushi Settings</v-card-title>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+            ></v-file-input>
+            <p>
+              <strong>Note:&nbsp; Sushi Settings imports function exclusively as Updates. No existing settings
+              will be deleted.</strong>
+            </p>
+            <p>
+              Imports will overwrite existing settings whenever a match for an Institution-ID and Provider-ID are
+              found in the import file. If no setting exists for a given valid provider-institution pair, a new
+              setting will be created and saved. Any values in columns D-H which are NULL, blank, or missing for
+              a valid provider-institution pair, will result in the Default value being stored for that field.
+            </p>
+            <p>
+              Generating an export of the existing settings FIRST will provide detailed instructions for
+              importing on the "How to Import" tab and will help ensure that the desired end-state is achieved.
+            </p>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-col class="d-flex">
+            <v-btn small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-data-table :headers="headers" :items="mutable_settings" item-key="id" class="elevation-1">
       <template v-slot:item="{ item }" >
         <tr>
@@ -71,6 +117,9 @@
                 testStatus: '',
                 showForm: false,
                 showTest: false,
+                importDialog: false,
+                csv_upload: null,
+                export_filters: { 'inst': [], 'prov': [this.prov_id] },
                 mutable_settings: this.settings,
                 mutable_unset: this.unset,
                 // Actual headers are built from these in mounted()
@@ -97,6 +146,14 @@
             }
         },
         methods: {
+          importForm () {
+              this.csv_upload = null;
+              this.importDialog = true;
+          },
+          doExport () {
+              let url = "/sushi-export?filters="+JSON.stringify(this.export_filters);
+              window.location.assign(url);
+          },
 	        formSubmit (event) {
                 this.form.post('/sushisettings')
 	                .then((response) => {
@@ -125,6 +182,31 @@
                             this.failure = response.msg;
                         }
 	                });
+            },
+            importSubmit (event) {
+                this.success = '';
+                if (this.csv_upload==null) {
+                    this.failure = 'A CSV import file is required';
+                    return;
+                }
+                this.failure = '';
+                let formData = new FormData();
+                formData.append('csvfile', this.csv_upload);
+                formData.append('prov_id', this.prov_id);
+                axios.post('/sushisettings/import', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                      })
+                     .then( (response) => {
+                         if (response.data.result) {
+                             this.mutable_settings = response.data.settings;
+                             this.success = response.data.msg;
+                         } else {
+                             this.failure = response.data.msg;
+                         }
+                     });
+                this.importDialog = false;
             },
             destroy (setting) {
                 var self = this;

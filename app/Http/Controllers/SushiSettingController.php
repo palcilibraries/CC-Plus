@@ -312,42 +312,63 @@ class SushiSettingController extends Controller
     /**
      * Export sushi settings records from the database.
      *
-     * @param  string  $type    // 'xls' or 'xlsx'
-     * @param  integer $inst    // (Optional) - limit to an institutionID
-     * @param  integer $prov    // (Optional) - limit to a providerID
+     * @param  array $inst    // (Optional) - limit to an institutionID, missing or zero means all
+     * @param  array $prov    // (Optional) - limit to a providerID, missing or zero means all
      */
-    public function export($type, $inst=null, $prov=null)
+    public function export(Request $request)
     {
-        $thisUser = auth()->user();
-
         // Only Admins and Managers can export institution data
+        $thisUser = auth()->user();
         abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
 
-        // Get institution record(s)
+        // Handle input filters
+        $filters = null;
+        if ($request->filters) {
+            $filters = json_decode($request->filters, true);
+        } else {
+            $filters = array('inst' => [], 'prov' => []);
+        }
         if (!$thisUser->hasRole("Admin")) {
-          $inst = $thisUser->inst_id;
+            $filters['inst'] = array($thisUser->inst_id);
         }
-        $institutions = Institution::
-                          when($inst, function ($query, $inst) {
-                            return $query->where('id', $inst);
-                          })->get();
 
-        // If limiting to just one provider, get the record
-        if ($prov) {
-            $provider = Provider::where('id', $prov)->first();
-            if (!$provider) {
-                $msg = "Export failed : could not load record for requested provider.";
-                return response()->json(['result' => false, 'msg' => $msg]);
-            }
+        // Get institution record(s)
+        $inst_filters = null;
+        if (sizeof($filters['inst']) == 0) {
+            $institutions = Institution::get(['id', 'name']);
+        } else {
+            $institutions = Institution::whereIn('id', $filters['inst'])->get(['id', 'name']);
+            $inst_filters = $filters['inst'];
         }
+        if (!$institutions) {
+            $msg = "Export failed : could not find requested institution(s).";
+            return response()->json(['result' => false, 'msg' => $msg]);
+        }
+        // Set name if only one inst being exported
+        $inst_name = ($institutions->count() == 1) ? $institution[0]->name : "";
+
+        // Get provider record(s)
+        $prov_filters = null;
+        if (sizeof($filters['prov']) == 0) {
+            $providers = Provider::get(['id', 'name']);
+        } else {
+            $providers = Provider::whereIn('id', $filters['prov'])->get(['id', 'name']);
+            $prov_filters = $filters['prov'];
+        }
+        if (!$providers) {
+            $msg = "Export failed : could not find requested provider(s).";
+            return response()->json(['result' => false, 'msg' => $msg]);
+        }
+        // Set name if only one provider being exported
+        $prov_name = ($providers->count() == 1) ? $providers[0]->name : "";
 
         // Get sushi settings
-        $settings = SushiSetting::with('institution:id,name','provider:id,name')
-                      ->when($inst, function ($query, $inst) {
-                        return $query->where('inst_id', $inst);
+        $settings = SushiSetting::with('institution:id,name,local_id','provider:id,name')
+                      ->when($inst_filters, function ($query, $inst_filters) {
+                        return $query->whereIn('inst_id', $inst_filters);
                       })
-                      ->when($prov, function ($query, $prov) {
-                        return $query->where('prov_id', $prov);
+                      ->when($prov_filters, function ($query, $prov_filters) {
+                        return $query->whereIn('prov_id', $prov_filters);
                       })
                       ->get();
 
@@ -361,65 +382,85 @@ class SushiSettingController extends Controller
                             'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
                            ],
         ];
+        $centered_style = [
+          'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,],
+        ];
 
         // Setup the spreadsheet and build the static ReadMe sheet
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:C9');
-        $info_sheet->getStyle('A1:C9')->applyFromArray($info_style);
-        $info_sheet->getStyle('A1:C9')->getAlignment()->setWrapText(true);
-        $top_txt  = "The Settings tab represents a starting place for updating or importing sushi settings. The\n";
-        $top_txt .= "table below describes the datatype and order that the import expects. Any Import rows without\n";
-        $top_txt .= "an Institution-ID in column-A and a Provider-ID in column-B will be ignored. If values for\n";
-        $top_txt .= "the other columns are optional and are missing, null, or invalid, they will be set to the";
-        $top_txt .= " 'Default'.\n\n";
-        $top_txt .= "Creating an export of providers and institutions will supply the reference values for the\n";
-        $top_txt .= "for the Provider-ID and Institution-ID columns.\n\n";
+        $info_sheet->mergeCells('A1:E8');
+        $info_sheet->getStyle('A1:E8')->applyFromArray($info_style);
+        $info_sheet->getStyle('A1:E8')->getAlignment()->setWrapText(true);
+        $top_txt  = "The Settings tab represents a starting place for updating or importing sushi settings.\n";
+        $top_txt .= "The table below describes the datatype and order that the import process requires.\n\n";
+        $top_txt .= "Any Import rows without an existing (institution) CC+ System ID in column-A or Local ID";
+        $top_txt .= " in column-B AND a valid (provider) ID in column-C will be ignored. If values for the other";
+        $top_txt .= " columns are optional and are missing, null, or invalid, they will be set to the 'Default'.\n";
+        $top_txt .= "The data rows on the 'Settings' tab provide reference values for the Provider-ID and";
+        $top_txt .= " Institution-ID columns.\n\n";
         $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
-        $top_txt .= "Any header row or columns beyond 'G' will be ignored. Columns I-J are informational only.";
+        $top_txt .= "Any header row or columns beyond 'H' will be ignored. Columns J-K are informational only.";
         $info_sheet->setCellValue('A1', $top_txt);
-        $info_sheet->mergeCells('B11:D11');
-        $info_sheet->getStyle('A11:A11')->applyFromArray($head_style);
-        $info_sheet->setCellValue('A11', "NOTE: ");
-        $info_sheet->mergeCells('B11:D13');
-        $info_sheet->getStyle('B11:D13')->applyFromArray($info_style);
-        $info_sheet->getStyle('B11:D13')->getAlignment()->setWrapText(true);
-        $note_txt  = "When performing full-replacement imports, be VERY careful about changing or \n";
-        $note_txt .= "overwriting existing ID value(s). The best approach is to add to, or modify, \n";
-        $note_txt .= "a full export to keep from accidentally overwriting an existing institution ID.\n";
-        $info_sheet->setCellValue('B11', $note_txt);
-        $info_sheet->getStyle('A15:D15')->applyFromArray($head_style);
-        $info_sheet->setCellValue('A15', 'Column Name');
-        $info_sheet->setCellValue('B15', 'Data Type');
-        $info_sheet->setCellValue('C15', 'Description');
-        $info_sheet->setCellValue('D15', 'Default');
-        $info_sheet->setCellValue('A16', 'Institution ID');
-        $info_sheet->setCellValue('B16', 'Integer > 1');
-        $info_sheet->setCellValue('C16', 'Unique CC-Plus Institution ID - required');
-        $info_sheet->setCellValue('A17', 'Provider ID');
+        $info_sheet->setCellValue('A10', "NOTES: ");
+        $info_sheet->mergeCells('B10:E12');
+        $info_sheet->getStyle('A10:B12')->applyFromArray($head_style);
+        $info_sheet->getStyle('A10:B12')->getAlignment()->setWrapText(true);
+        $precedence_note  = "CC+ System ID values (A) take precedence over Local ID values (B) when processing import";
+        $precedence_note .= " records. If a match is found for column-A, column-B is ignored. If no match is found for";
+        $precedence_note .= " (A) or (B), the row is ignored. CC+ System ID=1 is reserved for system use.";
+        $info_sheet->setCellValue('B10', $precedence_note);
+        $info_sheet->mergeCells('B13:E14');
+        $info_sheet->getStyle('B13:E14')->applyFromArray($info_style);
+        $info_sheet->getStyle('B13:E14')->getAlignment()->setWrapText(true);
+        $note_txt  = "When performing imports, be mindful about changing or overwriting existing (system) ID value(s).";
+        $note_txt .= "The best approach is to add to, or modify, a full export avoid accidentally overwriting or";
+        $note_txt .= " deleting existing settings.";
+        $info_sheet->setCellValue('B13', $note_txt);
+        $info_sheet->getStyle('A16:E16')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A16', 'Column Name');
+        $info_sheet->setCellValue('B16', 'Data Type');
+        $info_sheet->setCellValue('C16', 'Description');
+        $info_sheet->setCellValue('D16', 'Required');
+        $info_sheet->setCellValue('E16', 'Default');
+        $info_sheet->setCellValue('A17', 'CC+ System ID');
         $info_sheet->setCellValue('B17', 'Integer > 1');
-        $info_sheet->setCellValue('C17', 'Unique CC-Plus Provider ID - required');
-        $info_sheet->setCellValue('A18', 'Active');
-        $info_sheet->setCellValue('B18', 'String (Y or N)');
-        $info_sheet->setCellValue('C18', 'Make the setting active?');
-        $info_sheet->setCellValue('D18', 'Y');
-        $info_sheet->setCellValue('A19', 'Customer ID');
-        $info_sheet->setCellValue('B19', 'String');
-        $info_sheet->setCellValue('C19', 'SUSHI customer ID , provider-specific');
-        $info_sheet->setCellValue('D19', 'NULL');
-        $info_sheet->setCellValue('A20', 'Requestor ID');
-        $info_sheet->setCellValue('B20', 'String');
-        $info_sheet->setCellValue('C20', 'SUSHI requestor ID , provider-specific');
-        $info_sheet->setCellValue('D20', 'NULL');
-        $info_sheet->setCellValue('A21', 'API Key');
+        $info_sheet->setCellValue('C17', 'Institution ID (CC+ System ID)');
+        $info_sheet->setCellValue('D17', 'Yes - If LocalID not given');
+        $info_sheet->setCellValue('A18', 'LocalID');
+        $info_sheet->setCellValue('B18', 'String');
+        $info_sheet->setCellValue('C18', 'Local institution identifier');
+        $info_sheet->setCellValue('D18', 'Yes - If CC+ System ID not given');
+        $info_sheet->setCellValue('A19', 'Provider ID');
+        $info_sheet->setCellValue('B19', 'Integer > 1');
+        $info_sheet->setCellValue('C19', 'Unique CC-Plus Provider ID - required');
+        $info_sheet->setCellValue('D19', 'Yes');
+        $info_sheet->setCellValue('A20', 'Active');
+        $info_sheet->setCellValue('B20', 'String (Y or N)');
+        $info_sheet->setCellValue('C20', 'Make the setting active?');
+        $info_sheet->setCellValue('D20', 'No');
+        $info_sheet->setCellValue('E20', 'Y');
+        $info_sheet->setCellValue('A21', 'Customer ID');
         $info_sheet->setCellValue('B21', 'String');
-        $info_sheet->setCellValue('C21', 'SUSHI API Key , provider-specific');
-        $info_sheet->setCellValue('D21', 'NULL');
-        $info_sheet->setCellValue('A21', 'Support Email');
-        $info_sheet->setCellValue('B21', 'String');
-        $info_sheet->setCellValue('C21', 'Support email address, per-provider');
-        $info_sheet->setCellValue('D21', 'NULL');
+        $info_sheet->setCellValue('C21', 'SUSHI customer ID , provider-specific');
+        $info_sheet->setCellValue('D21', 'No');
+        $info_sheet->setCellValue('E21', 'NULL');
+        $info_sheet->setCellValue('A22', 'Requestor ID');
+        $info_sheet->setCellValue('B22', 'String');
+        $info_sheet->setCellValue('C22', 'SUSHI requestor ID , provider-specific');
+        $info_sheet->setCellValue('D22', 'No');
+        $info_sheet->setCellValue('E22', 'NULL');
+        $info_sheet->setCellValue('A23', 'API Key');
+        $info_sheet->setCellValue('B23', 'String');
+        $info_sheet->setCellValue('C23', 'SUSHI API Key , provider-specific');
+        $info_sheet->setCellValue('D23', 'No');
+        $info_sheet->setCellValue('E23', 'NULL');
+        $info_sheet->setCellValue('A24', 'Support Email');
+        $info_sheet->setCellValue('B24', 'String');
+        $info_sheet->setCellValue('C24', 'Support email address, per-provider');
+        $info_sheet->setCellValue('D24', 'No');
+        $info_sheet->setCellValue('E24', 'NULL');
 
         // Set row height and auto-width columns for the sheet
         for ($r = 1; $r < 22; $r++) {
@@ -432,56 +473,65 @@ class SushiSettingController extends Controller
 
         // Load the settings data into a new sheet
         $inst_sheet = $spreadsheet->createSheet();
+
+        // Align column-D for the data sheet on center
+        $active_column_cells = "D2:D" . strval($settings->count()+1);
+        $inst_sheet->getStyle($active_column_cells)->applyFromArray($centered_style);
         $inst_sheet->setTitle('Settings');
-        $inst_sheet->setCellValue('A1', 'Institution ID');
-        $inst_sheet->setCellValue('B1', 'Provider ID');
-        $inst_sheet->setCellValue('C1', 'Active');
-        $inst_sheet->setCellValue('D1', 'Customer ID');
-        $inst_sheet->setCellValue('E1', 'Requestor ID');
-        $inst_sheet->setCellValue('F1', 'API Key');
-        $inst_sheet->setCellValue('G1', 'Support Email');
-        $inst_sheet->setCellValue('I1', 'Institution-Name');
-        $inst_sheet->setCellValue('J1', 'Provider-Name');
+        $inst_sheet->setCellValue('A1', 'CC+ System ID');
+        $inst_sheet->setCellValue('B1', 'Local ID');
+        $inst_sheet->setCellValue('C1', 'Provider ID');
+        $inst_sheet->setCellValue('D1', 'Active');
+        $inst_sheet->setCellValue('E1', 'Customer ID');
+        $inst_sheet->setCellValue('F1', 'Requestor ID');
+        $inst_sheet->setCellValue('G1', 'API Key');
+        $inst_sheet->setCellValue('H1', 'Support Email');
+        $inst_sheet->setCellValue('J1', 'Institution-Name');
+        $inst_sheet->setCellValue('K1', 'Provider-Name');
         $row = 2;
         foreach ($settings as $setting) {
             $inst_sheet->getRowDimension($row)->setRowHeight(15);
             $inst_sheet->setCellValue('A' . $row, $setting->inst_id);
-            $inst_sheet->setCellValue('B' . $row, $setting->prov_id);
+            $inst_sheet->setCellValue('B' . $row, $setting->institution->local_id);
+            $inst_sheet->setCellValue('C' . $row, $setting->prov_id);
             $_stat = ($setting->is_active) ? "Y" : "N";
-            $inst_sheet->setCellValue('C' . $row, $_stat);
-            $inst_sheet->setCellValue('D' . $row, $setting->customer_id);
-            $inst_sheet->setCellValue('E' . $row, $setting->requestor_id);
-            $inst_sheet->setCellValue('F' . $row, $setting->API_key);
-            $inst_sheet->setCellValue('G' . $row, $setting->support_email);
-            $inst_sheet->setCellValue('I' . $row, $setting->institution->name);
-            $inst_sheet->setCellValue('J' . $row, $setting->provider->name);
+            $inst_sheet->setCellValue('D' . $row, $_stat);
+            $inst_sheet->setCellValue('E' . $row, $setting->customer_id);
+            $inst_sheet->setCellValue('F' . $row, $setting->requestor_id);
+            $inst_sheet->setCellValue('G' . $row, $setting->API_key);
+            $inst_sheet->setCellValue('H' . $row, $setting->support_email);
+            $inst_sheet->setCellValue('J' . $row, $setting->institution->name);
+            $inst_sheet->setCellValue('K' . $row, $setting->provider->name);
             $row++;
         }
 
         // Auto-size the columns
-        $columns = array('A','B','C','D','E','F','G','H','I','J');
+        $columns = array('A','B','C','D','E','F','G','H','I','J','K');
         foreach ($columns as $col) {
             $inst_sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
         // Give the file a meaningful filename
-        $fileName = "CCplus_";
-        if (!$inst) {
-            $fileName .= session('ccp_con_key', '') . "_";
+        $fileName = "CCplus";
+        if (!$inst_filters && !$prov_filters) {
+            $fileName .= "_" . session('ccp_con_key', '') . "_All";
         } else {
-            $fileName .= preg_replace('/ /', '', $institutions[0]->name) . "_";
+            if (!$inst_filters) {
+                $fileName .= "_AllInstitutions";
+            } else {
+                $fileName .= ($inst_name == "") ? "_SomeInstitutions": "_" . $inst_name;
+            }
+            if (!$prov_filters) {
+                $fileName .= "_AllProviders";
+            } else {
+                $fileName .= ($prov_name == "") ? "_SomeProviders": "_" . $prov_name;
+            }
         }
-        $fileName .= ($prov) ? preg_replace('/ /', '', $provider->name) : "AllProviders";
-        $fileName .= "_SushiSettings." . $type;
+        $fileName .= "_SushiSettings.xlsx";
 
         // redirect output to client
-        if ($type == 'xlsx') {
-            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        // } elseif ($type == 'xls') {
-        //     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
-        //     header('Content-Type: application/vnd.ms-excel');
-        }
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');
         $writer->save('php://output');
@@ -500,15 +550,12 @@ class SushiSettingController extends Controller
         // Only Admins and Managers can import institution data
         abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
         $is_admin = $thisUser->hasRole('Admin');
+        $usersInst = $thisUser->inst_id;
 
         // Handle and validate inputs
-        $this->validate($request, ['type' => 'required', 'csvfile' => 'required']);
+        $this->validate($request, ['csvfile' => 'required']);
         if (!$request->hasFile('csvfile')) {
             return response()->json(['result' => false, 'msg' => 'Error accessing CSV import file']);
-        }
-        $type = $request->input('type');
-        if ($type != 'Full Replacement' && $type != 'Add or Update') {
-            return response()->json(['result' => false, 'msg' => 'Error - unrecognized import type.']);
         }
 
         // Get the CSV data
@@ -520,62 +567,60 @@ class SushiSettingController extends Controller
         }
 
         // Setup arrays of "allowable" institution and provider IDs
+        $institutions= Institution::get();
         if ($is_admin) {
-            $inst_ids = Institution::pluck('id')->toArray();
+            $inst_ids = $institutions->pluck('id')->toArray();
             $prov_ids = Provider::pluck('id')->toArray();
         } else {
-            $inst_ids = array($thisUser->inst_id);
-            $prov_ids = Provider::whereIn('inst_id', [ 1, $thisUser->inst_id ])->pluck('id')->toArray();
-        }
-
-        // For Full-Replacement, get all the current IDs and setup an array to track the IDs being kept
-        if ($type == 'Full Replacement') {
-            $cur_setting_ids = array();
-            $old_setting_ids = SushiSetting::whereIn('prov_id',$prov_ids)->whereIn('inst_id',$inst_ids)
-                                            ->pluck('id')->toArray();
+            $inst_ids = array($usersInst);
+            $prov_ids = Provider::whereIn('inst_id', [ 1, $usersInst ])->pluck('id')->toArray();
         }
 
         // Process the input rows
         $updated = 0;
         $deleted = 0;
         $skipped = 0;
-        foreach ($rows as $row) {
-            // Ignore bad/missing/invalid IDs and/or headers
-            if (!isset($row[0])) {
+        foreach ($rows as $rowNum => $row) {
+            // Ignore header row and rows with bad/missing/invalid IDs
+            if ($rowNum == 0 || !isset($row[0]) && !isset($row[1])) continue;
+
+            // Look for a matching existing institution based on ID or local-ID
+            $current_inst = null;
+            $cur_inst_id = (isset($row[0])) ? strval(trim($row[0])) : null;
+            $localID = (strlen(trim($row[1])) > 0) ? trim($row[1]) : null;
+
+            // empty/missing/invalid ID and no localID?  skip the row
+            if (!$localID && ($row[0] == "" || !is_numeric($row[0]))) {
+                $inst_skipped++;
                 continue;
             }
-            if ($row[0] == "" || !is_numeric($row[0])) {
-                continue;
+            // If no ID and $localID not found, skip the row
+            if (!$current_inst && $localID) {
+                $current_inst = $institutions->where("local_id", $localID)->first();
+                if (!$current_inst) {
+                    $skipped++;
+                    continue;
+                }
+                $cur_inst_id = $current_inst->id;
             }
-            // Accept only Inst_ids and prov_ids found in the "allowed" arrays created above
-            if ( !in_array($row[0], $inst_ids) || !in_array($row[1], $prov_ids) ) {
+            // Process only Inst_ids and prov_ids found in the "allowed" arrays created above
+            if ( !in_array($cur_inst_id, $inst_ids) || !in_array($row[2], $prov_ids) ) {
                 $skipped++;
                 continue;
             }
 
             // Update or create the settings
-            $_active = ($row[2] == 'N') ? 0 : 1;
-            $_args = array('is_active' => $_active, 'customer_id' => $row[3], 'requestor_id' => $row[4],
-                           'API_key' => $row[5], 'support_email' => $row[6]);
+            $_active = ($row[3] == 'N') ? 0 : 1;
+            $_args = array('is_active' => $_active, 'customer_id' => $row[4], 'requestor_id' => $row[5],
+                           'API_key' => $row[6], 'support_email' => $row[7]);
             $current_setting = SushiSetting::
-                updateOrCreate(['inst_id' => $row[0], 'prov_id' => $row[1]], $_args);
-            if ($type == 'Full Replacement') {
-                $cur_setting_ids[] = $current_setting->id;
-            }
+                updateOrCreate(['inst_id' => $cur_inst_id, 'prov_id' => $row[2]], $_args);
             $updated++;
         }
 
         // Setup return info message
         $msg = "";
         $msg .= ($updated > 0) ? $updated . " added or updated" : "";
-        // If this is a Full-Replacement, delete current Settings not present in the import
-        if ($type == 'Full Replacement') {
-            $ids_to_delete = array_diff($old_setting_ids, $cur_setting_ids);
-            $deleted = SushiSetting::whereIn('id',$ids_to_delete)->delete();
-            if ($deleted > 0) {
-                $msg .= ($msg != "") ? ", " . $deleted . " deleted" : $deleted . " deleted";
-            }
-        }
         if ($skipped > 0) {
             $msg .= ($msg != "") ? ", " . $skipped . " skipped" : $skipped . " skipped";
         }
@@ -585,8 +630,9 @@ class SushiSettingController extends Controller
         // settings to be returned. The manager has run the import via the
         // AllSushiByInst component - and the settings array needs to be updated.
         // Admins run imports from the datatable and need no updated settings.
-        if (!$thisUser->hasRole('Admin')) {
-           $data = SushiSetting::with('provider')->where('inst_id',$thisUser->inst_id)->get();
+        if (!$is_admin) {
+           $data = SushiSetting::with('institution:id,name','provider:id,name')
+                               ->where('inst_id',$usersInst)->get();
            // map is_active to 'status'
            $settings = $data->map(function ($setting) {
                $setting['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';

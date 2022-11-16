@@ -34,23 +34,47 @@ class SushiSettingController extends Controller
         $json = ($request->input('json')) ? true : false;
 
         // Assign optional inputs to $filters array
-        $filters = array('inst' => [], 'prov' => []);
+        $filters = array('inst' => [], 'prov' => [], 'stat' => 'ALL');
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
-                if ($val != 0) {
+                if ($key == 'stat') {
                     $filters[$key] = $val;
+                } else {
+                    if ($val != 0) $filters[$key] = $val;
                 }
             }
         } else {
             $keys = array_keys($filters);
             foreach ($keys as $key) {
                 if ($request->input($key)) {
-                    if (is_numeric($request->input($key))) {
-                        $filters[$key] = array(intval($request->input($key)));
+                    if ($key == 'stat') {
+                        $filters[$key] = $request->input($key);
+                    } else {
+                        if (is_numeric($request->input($key))) {
+                            $filters[$key] = array(intval($request->input($key)));
+                        }
                     }
                 }
             }
+        }
+        // If limiting to only active providers and insts, set or update the filters
+        // so the query is limited to only active
+        if ($filters['stat'] != 'ALL') {
+            // Set/update insts to filter by
+            if (sizeof($filters['inst']) > 0) {
+                $_insts = Institution::whereIn('id',$filters['inst'])->where('is_active',1)->get();
+            } else {
+                $_insts = Institution::where('is_active',1)->get();
+            }
+            $filters['inst'] = $_insts->pluck('id')->toArray();
+            // Set/update provs to filter by
+            if (sizeof($filters['prov']) > 0) {
+                $_provs = Provider::whereIn('id',$filters['prov'])->where('is_active',1)->get();
+            } else {
+                $_provs = Provider::where('is_active',1)->get();
+            }
+            $filters['prov'] = $_provs->pluck('id')->toArray();
         }
 
         // Skip querying for records unless we're returning json
@@ -81,11 +105,13 @@ class SushiSettingController extends Controller
 
         // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {
-            // Get all institutions
-            $institutions = Institution::where('id', '<>', 1)->orderBy('name', 'ASC')->get(['id', 'name']);
+            // Get ALL institutions, regardless of is_active
+            $institutions = Institution::where('id', '<>', 1)->orderBy('name', 'ASC')
+                                       ->get(['id', 'name', 'is_active']);
 
-            // Get all providers
-            $providers = Provider::with('connectors')->orderBy('name', 'ASC')->get(['id','name','inst_id']);
+            // Get all providers, regardless of is_active
+            $providers = Provider::with('connectors')->orderBy('name', 'ASC')
+                                 ->get(['id', 'name', 'inst_id', 'is_active']);
 
             // Build an array of connection_fields used across all providers (whether connected or not)
             $all_connectors = array();

@@ -6,8 +6,12 @@
           Import Sushi Settings
         </v-btn>
       </v-col>
-      <v-col class="d-flex px-1" cols="3">
+      <v-col class="d-flex px-1" cols="5">
         <a @click="doExport">Export to Excel</a>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
+        ></v-text-field>
       </v-col>
     </v-row>
     <v-row no-gutters>
@@ -15,7 +19,7 @@
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-select :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters()" multiple
+        <v-select :items="mutable_institutions" v-model="mutable_filters['inst']" @change="updateFilters('inst')" multiple
                   label="Institution(s)"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
@@ -23,9 +27,14 @@
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
-        <v-select :items="providers" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
+        <v-select :items="mutable_providers" v-model="mutable_filters['prov']" @change="updateFilters('prov')" multiple
                   label="Provider(s)" item-text="name" item-value="id"
         ></v-select>
+      </v-col>
+      <v-col class="d-flex px-4 align-center" cols="3">
+        <v-select :items="statuses" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
+                  label="Institution and Provider Status" item-text="name" item-value="name"
+        ></v-select> &nbsp;
       </v-col>
     </v-row>
     <v-row class="d-flex pa-1 align-center" no-gutters>
@@ -43,17 +52,21 @@
       <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
     <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_settings" :loading="loading" show-select
-                  item-key="id" :options="mutable_options" @update:options="updateOptions" :key="'setdt_'+dtKey">
+                  item-key="id" :options="mutable_options" @update:options="updateOptions"
+                  :footer-props="footer_props" :search="search" :key="'setdt_'+dtKey">
       <template v-slot:item.status="{ item }">
         <span :class="item.status">{{ item.status }}</span>
       </template>
       <template v-slot:item.action="{ item }">
         <a :href="'/sushisettings/'+item.id+'/edit'">
-           <img src="/images/edit-pencil.svg" width="24" alt="Settings & harvests"/>
+          <v-icon title="Settings and harvests">mdi-cog-outline</v-icon>
         </a>
-        &nbsp;
-        <img src="/images/trash-can.svg" width="24" alt="Delete connection" @click="destroy(item)"/>
+        &nbsp; &nbsp;
+        <v-icon title="Delete connection" @click="destroy(item)">mdi-trash-can-outline</v-icon>
       </template>
+      <v-alert slot="no-results" :value="true" color="error" icon="warning">
+        Your search for "{{ search }}" found no results.
+      </v-alert>
     </v-data-table>
     <v-dialog v-model="importDialog" persistent max-width="1200px">
       <v-card>
@@ -111,6 +124,7 @@
                 failure: '',
                 testData: '',
                 testStatus: '',
+                search: '',
 				        showForm: false,
                 showTest: false,
                 importDialog: false,
@@ -118,6 +132,9 @@
                 mutable_settings: [],
                 mutable_filters: this.filters,
                 mutable_options: {},
+                statuses: ['ALL','Active Only'],
+                mutable_institutions: [ ...this.institutions ],
+                mutable_providers: [ ...this.providers ],
                 loading: true,
                 connectors: [],
                 // Actual headers array is built from these in mounted()
@@ -132,6 +149,7 @@
                   { label: ' ', name: 'action' },
                 ],
                 headers: [],
+                footer_props: { 'items-per-page-options': [10,50,100,-1] },
                 bulk_actions: [ 'Enable', 'Disable', 'Delete' ],
                 bulkAction: null,
                 selectedRows: [],

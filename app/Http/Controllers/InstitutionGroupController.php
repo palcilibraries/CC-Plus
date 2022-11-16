@@ -57,9 +57,24 @@ class InstitutionGroupController extends Controller
           'name' => 'required|unique:consodb.institutiongroups,name',
         ]);
 
+        // Create the group
         $group = InstitutionGroup::create(['name' => $request->input('name')]);
-        $group->institutions = array();
-        $group->not_members = Institution::get(['id','name'])->toArray();
+
+        // if institutions are passed in, go ahead and attach them now
+        $new_members = array();
+        if (isset($request->institutions)) {
+            foreach ($request->institutions as $inst) {
+                $group->institutions()->attach($inst['id']);
+                $new_members[] = $inst['id'];
+            }
+            $group->load('institutions');
+
+        // otherwise send back an empty array
+        } else {
+            $group->institutions = array();
+        }
+
+        $group->not_members = Institution::whereNotIn('id', $new_members)->get(['id','name'])->toArray();
 
         return response()->json(['result' => true, 'msg' => 'Group created successfully', 'group' => $group]);
     }
@@ -120,6 +135,34 @@ class InstitutionGroupController extends Controller
         $data['institutions'] = $request->institutions;
 
         return response()->json(['result' => true, 'msg' => 'Group updated successfully', 'group' => $data]);
+    }
+
+    /**
+     * Add institutiomns to an existing group
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function extend(Request $request)
+    {
+        $this->validate($request, [
+          'id' => 'required', 'institutions' => 'required'
+        ]);
+
+        // Build returned group data the way index() does
+        $group = InstitutionGroup::with('institutions:id,name')->findOrFail($request->input('id'));
+        $member_institutions = $group->institutions->pluck('id')->toArray();
+
+        // Add membership assignments
+        $count = 0;
+        foreach ($request->institutions as $inst) {
+            if (in_array($inst['id'], $member_institutions)) continue;
+            $group->institutions()->attach($inst['id']);
+            $count++;
+        }
+
+        // Build returned group data the way index() does
+        return response()->json(['result' => true, 'msg' => 'Group updated successfully', 'count' => $count, 'group' => $group]);
     }
 
     /**

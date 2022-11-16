@@ -28,7 +28,7 @@ export const store = new Vuex.Store({
                        datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                    groupDesc: [], multiSort: false, mustSort: false }
                      },
-          institutions: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
+          institutions: { filters: {stat: '', groups: []},
                           datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                       groupDesc: [], multiSort: false, mustSort: false }
                         },

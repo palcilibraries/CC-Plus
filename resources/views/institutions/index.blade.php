@@ -9,8 +9,8 @@
   </div>
 </div>
 <v-app>
-  <institution-data-table :institutions="{{ json_encode($data) }}"
-                          :all_groups="{{ json_encode($all_groups) }}"
+  <institution-data-table :all_groups="{{ json_encode($all_groups) }}"
+                          :filters="{{ json_encode($filters) }}"
   ></institution-data-table>
 </v-app>
 @endsection

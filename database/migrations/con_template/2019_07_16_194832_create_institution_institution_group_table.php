@@ -20,6 +20,7 @@ class CreateInstitutionInstitutiongroupTable extends Migration
               $table->timestamps();
 
               $table->foreign('institution_id')->references('id')->on('institutions')->onDelete('cascade');
+              $table->foreign('institution_group_id')->references('id')->on('institutiongroups')->onDelete('cascade');
         });
     }
 

@@ -30,21 +30,87 @@ class InstitutionController extends Controller
         $thisUser = auth()->user();
         abort_unless($thisUser->hasAnyRole(['Admin','Viewer']), 403);
 
-        $institutions = Institution::with('institutionGroups')->orderBy('name', 'ASC')
-                                   ->get(['id','name','local_id','is_active']);
+        $json = ($request->input('json')) ? true : false;
 
-        $data = array();
-        foreach ($institutions as $inst) {
-            $_groups = "";
-            foreach ($inst->institutionGroups as $group) {
-                $_groups .= $group->name . ", ";
+        // Assign optional inputs to $filters array
+        $filters = array('stat' => 'ALL', 'groups' => []);
+        if ($request->input('filters')) {
+            $filter_data = json_decode($request->input('filters'));
+            foreach ($filter_data as $key => $val) {
+                if ($key == 'stat' && (is_null($val) || $val == '')) continue;
+                if ($key == 'groups' && sizeof($val) == 0) continue;
+                $filters[$key] = $val;
             }
-            $i_data = $inst->toArray();
-            $i_data['groups'] = rtrim(trim($_groups), ',');
-            $data[] = $i_data;
+        } else {
+            $keys = array_keys($filters);
+            foreach ($keys as $key) {
+                if ($request->input($key)) {
+                    if ($key == 'stat') {
+                        if (is_null($request->input('stat')) || $request->input('stat') == '') continue;
+                    } else if ($key == 'groups') {
+                        if (sizeof($request->input('groups')) == 0) continue;
+                    }
+                    $filters[$key] = $request->input($key);
+                }
+            }
         }
-        $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
-        return view('institutions.index', compact('data', 'all_groups'));
+        // Get all groups regardless of JSON or not
+        $all_groups = InstitutionGroup::with('institutions:id')->orderBy('name', 'ASC')->get(['id','name']);
+
+        // Skip querying for records unless we're returning json
+        // The vue-component will run a request for initial data once it is mounted
+        if ($json) {
+
+            // Prep variables for use in querying
+            $filter_stat = null;
+            if ($filters['stat'] != 'ALL'){
+                $filter_stat = ($filters['stat'] == 'Active') ? 1 : 0;
+            }
+
+            // Handle filter-by-group by limiting to specific inst_ids
+            $limit_to_insts = array();
+            if (sizeof($filters['groups']) > 0) {
+                foreach ($filters['groups'] as $group_id) {
+                    $group = $all_groups->where('id',$group_id)->first();
+                    if ($group) {
+                        $_insts = $group->institutions->pluck('id')->toArray();
+                        $limit_to_insts =  array_merge(
+                              array_intersect($limit_to_insts, $_insts),
+                              array_diff($limit_to_insts, $_insts),
+                              array_diff($_insts, $limit_to_insts)
+                        );
+                    }
+                }
+            }
+
+            // Get institution records
+            $inst_data = Institution::with('institutionGroups:id,name')
+                                       ->when(!is_null($filter_stat), function ($qry) use ($filter_stat) {
+                                           return $qry->where('is_active', $filter_stat);
+                                       })
+                                       ->when(sizeof($limit_to_insts) > 0 , function ($qry) use ($limit_to_insts) {
+                                           return $qry->whereIn('id', $limit_to_insts);
+                                       })
+                                       ->orderBy('name', 'ASC')
+                                       ->get(['id','name','local_id','is_active']);
+
+            // Add group memberships and status as strings
+            $institutions = $inst_data->map( function($inst) {
+                $inst->groups = "";
+                foreach ($inst->institutionGroups as $group) {
+                    $inst->groups .= ($inst->groups == "") ? "" : ", ";
+                    $inst->groups .= $group->name;
+                }
+                $inst->status = ($inst->is_active) ? 'Active' : 'Inactive';
+                return $inst;
+            });
+
+            return response()->json(['institutions' => $institutions], 200);
+
+        // Not returning JSON, pass only what the index/vue-component needs to initialize the page
+        } else {
+          return view('institutions.index', compact('all_groups', 'filters'));
+        }
     }
 
     /**
@@ -242,8 +308,8 @@ class InstitutionController extends Controller
 
        // Update the record and assign groups
         $institution->update($input);
-        $institution->institutionGroups()->detach();
         if (isset($input['institutiongroups'])) {
+            $institution->institutionGroups()->detach();
             foreach ($request->input('institutiongroups') as $g) {
                 $institution->institutionGroups()->attach($g);
             }

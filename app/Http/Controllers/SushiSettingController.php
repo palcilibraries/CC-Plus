@@ -34,47 +34,19 @@ class SushiSettingController extends Controller
         $json = ($request->input('json')) ? true : false;
 
         // Assign optional inputs to $filters array
-        $filters = array('inst' => [], 'prov' => [], 'stat' => 'ALL');
+        $filters = array('inst' => [], 'prov' => [], 'stat' => []);
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
-                if ($key == 'stat') {
-                    $filters[$key] = $val;
-                } else {
-                    if ($val != 0) $filters[$key] = $val;
-                }
+                $filters[$key] = $val;
             }
         } else {
             $keys = array_keys($filters);
             foreach ($keys as $key) {
                 if ($request->input($key)) {
-                    if ($key == 'stat') {
-                        $filters[$key] = $request->input($key);
-                    } else {
-                        if (is_numeric($request->input($key))) {
-                            $filters[$key] = array(intval($request->input($key)));
-                        }
-                    }
+                    $filters[$key] = $request->input($key);
                 }
             }
-        }
-        // If limiting to only active providers and insts, set or update the filters
-        // so the query is limited to only active
-        if ($filters['stat'] != 'ALL') {
-            // Set/update insts to filter by
-            if (sizeof($filters['inst']) > 0) {
-                $_insts = Institution::whereIn('id',$filters['inst'])->where('is_active',1)->get();
-            } else {
-                $_insts = Institution::where('is_active',1)->get();
-            }
-            $filters['inst'] = $_insts->pluck('id')->toArray();
-            // Set/update provs to filter by
-            if (sizeof($filters['prov']) > 0) {
-                $_provs = Provider::whereIn('id',$filters['prov'])->where('is_active',1)->get();
-            } else {
-                $_provs = Provider::where('is_active',1)->get();
-            }
-            $filters['prov'] = $_provs->pluck('id')->toArray();
         }
 
         // Skip querying for records unless we're returning json
@@ -89,17 +61,17 @@ class SushiSettingController extends Controller
                                   ->when(sizeof($filters['prov']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('prov_id', $filters['prov']);
                                   })
+                                  ->when(sizeof($filters['stat']) > 0, function ($qry) use ($filters) {
+                                      return $qry->whereIn('status', $filters['stat']);
+                                  })
                                   ->get();
 
             // Add stuff to simplify the datatable
-            $settings = array();
-            foreach ($data as $setting) {
-                $rec = $setting->toArray();
-                $rec['inst_name'] = $setting->institution->name;
-                $rec['prov_name'] = $setting->provider->name;
-                $rec['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';
-                $settings[] = $rec;
-            }
+            $settings = $data->map( function($setting) {
+                $setting->inst_name = $setting->institution->name;
+                $setting->prov_name = $setting->provider->name;
+                return $setting;
+            });
 
             return response()->json(['settings' => $settings], 200);
 
@@ -147,7 +119,7 @@ class SushiSettingController extends Controller
         abort_unless($setting->institution->canManage(), 403);
 
         // Set next_harvest date
-        if (!$setting->provider->is_active || !$setting->institution->is_active || !$setting->is_active) {
+        if (!$setting->provider->is_active || !$setting->institution->is_active || $setting->status != 'Enabled') {
             $setting['next_harvest'] = null;
         } else {
             $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
@@ -216,8 +188,7 @@ class SushiSettingController extends Controller
         $setting->load('institution', 'provider');
 
         // Set status string based on is_active and add in a string for next_harvest
-        $setting['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';
-        if (!$setting->provider->is_active || !$setting->institution->is_active || !$setting->is_active) {
+        if (!$setting->provider->is_active || !$setting->institution->is_active || $setting->status != 'Enabled') {
             $setting['next_harvest'] = null;
         } else {
             $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
@@ -520,8 +491,7 @@ class SushiSettingController extends Controller
             $inst_sheet->setCellValue('A' . $row, $setting->inst_id);
             $inst_sheet->setCellValue('B' . $row, $setting->institution->local_id);
             $inst_sheet->setCellValue('C' . $row, $setting->prov_id);
-            $_stat = ($setting->is_active) ? "Y" : "N";
-            $inst_sheet->setCellValue('D' . $row, $_stat);
+            $inst_sheet->setCellValue('D' . $row, $setting->status);
             $inst_sheet->setCellValue('E' . $row, $setting->customer_id);
             $inst_sheet->setCellValue('F' . $row, $setting->requestor_id);
             $inst_sheet->setCellValue('G' . $row, $setting->API_key);
@@ -636,8 +606,10 @@ class SushiSettingController extends Controller
             }
 
             // Update or create the settings
-            $_active = ($row[3] == 'N') ? 0 : 1;
-            $_args = array('is_active' => $_active, 'customer_id' => $row[4], 'requestor_id' => $row[5],
+            if (!is_array($row[3], array('Enabled','Disabled','Suspended','Incomplete'))) {
+                $row[3] = ($row[3] == 1) ? 'Enabled' : 'Disabled';
+            }
+            $_args = array('status' => $row[3], 'customer_id' => $row[4], 'requestor_id' => $row[5],
                            'API_key' => $row[6], 'support_email' => $row[7]);
             $current_setting = SushiSetting::
                 updateOrCreate(['inst_id' => $cur_inst_id, 'prov_id' => $row[2]], $_args);
@@ -659,11 +631,6 @@ class SushiSettingController extends Controller
         if (!$is_admin) {
            $data = SushiSetting::with('institution:id,name','provider:id,name')
                                ->where('inst_id',$usersInst)->get();
-           // map is_active to 'status'
-           $settings = $data->map(function ($setting) {
-               $setting['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';
-               return $setting;
-           });
            return response()->json(['result' => true, 'msg' => $msg, 'settings' => $settings]);
         } else {
           return response()->json(['result' => true, 'msg' => $msg]);

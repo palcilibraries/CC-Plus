@@ -136,11 +136,8 @@ class InstitutionController extends Controller
         $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
         $institution['groups'] = $institution->institutionGroups()->pluck('institution_group_id')->all();
 
-        // map is_active to 'status' and attach settings to the institution object
-        $institution['sushiSettings'] = $sushi_settings->map(function ($setting) {
-            $setting['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';
-            return $setting;
-        });
+        // Add on Sushi Settings
+        $institution['sushiSettings'] = $sushi_settings;
 
         // Roles are limited to current user's max role
         $all_roles = Role::where('id', '<=', $thisUser->maxRole())->orderBy('name', 'ASC')

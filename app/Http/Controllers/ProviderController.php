@@ -24,6 +24,7 @@ class ProviderController extends Controller
     /**
      * Display a listing of the resource.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
@@ -153,11 +154,8 @@ class ProviderController extends Controller
             }
         }
 
-        // map is_active sushisetting to 'status' and attach settings to the provider object
-        $provider['sushiSettings'] = $sushi_settings->map(function ($setting) {
-            $setting['status'] = ($setting->is_active) ? 'Enabled' : 'Disabled';
-            return $setting;
-        });
+        // Add on Sushi Settings
+        $provider['sushiSettings'] = $sushi_settings;
 
         // get master reports and harvestlog records
         $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)

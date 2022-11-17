@@ -31,17 +31,20 @@
                   label="Provider(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
-      <v-col class="d-flex px-4 align-center" cols="3">
-        <v-select :items="statuses" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
-                  label="Institution and Provider Status" item-text="name" item-value="name"
+      <v-col class="d-flex px-4 align-center" cols="2">
+        <div v-if="mutable_filters['stat'].length>0" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('stat')"/>&nbsp;
+        </div>
+        <v-select :items="statuses" v-model="mutable_filters['stat']" @change="updateFilters('stat')" multiple
+                  label="Harvest Status"
         ></v-select> &nbsp;
       </v-col>
     </v-row>
     <v-row class="d-flex pa-1 align-center" no-gutters>
       <v-col class="d-flex px-2" cols="4" sm="2">
-        <v-select :items='bulk_actions' v-model='bulkAction' @change="processBulk()"
-                  item-text="action" item-value="status" label="Bulk Actions"
-                  :disabled='selectedRows.length==0'></v-select>
+        <v-select :items='bulk_actions' v-model='bulkAction' label="Bulk Actions" @change="processBulk()"
+                  :disabled='selectedRows.length==0'
+        ></v-select>
       </v-col>
       <v-col v-if="selectedRows.length>0" class="d-flex px-4 align-center" cols="8" sm="4">
         <span class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
@@ -132,7 +135,7 @@
                 mutable_settings: [],
                 mutable_filters: this.filters,
                 mutable_options: {},
-                statuses: ['ALL','Active Only'],
+                statuses: ['Enabled','Disabled','Suspended','Incomplete'],
                 mutable_institutions: [ ...this.institutions ],
                 mutable_providers: [ ...this.providers ],
                 loading: true,
@@ -150,7 +153,7 @@
                 ],
                 headers: [],
                 footer_props: { 'items-per-page-options': [10,50,100,-1] },
-                bulk_actions: [ 'Enable', 'Disable', 'Delete' ],
+                bulk_actions: [ 'Enable', 'Disable', 'Suspend', 'Delete' ],
                 bulkAction: null,
                 selectedRows: [],
                 dtKey: 1,
@@ -161,8 +164,8 @@
                     requestor_id: '',
                     API_key: '',
                     extra_args: '',
-                    is_active: 1
-				        })
+                    status: 'Enabled'
+				        }),
             }
         },
         methods: {
@@ -240,8 +243,9 @@
               if (this.bulkAction == 'Enable') {
                   msg += "Enabling the selected setting(s) will cause them to be added to the harvesting queue";
                   msg += " according to the harvest day defined for the provider(s).";
-              } else if (this.bulkAction == 'Disable') {
-                  msg += "Disabling the selected setting(s) will leave the attempts counter intact, and will";
+              } else if (this.bulkAction == 'Disable' || this.bulkAction == 'Suspend') {
+                  msg += (this.bulkAction == 'Disable') ? "Disabling" : "Suspending";
+                  msg += " the selected setting(s) will leave the attempts counter intact, and will";
                   msg += " prevent future harvesting attempts. Any queued harvests related to the settings";
                   msg += " will be cancelled; harvests that are 'Active', or 'Pending' will not be changed.";
               } else if (this.bulkAction == 'Delete') {
@@ -276,18 +280,16 @@
                       }
                       this.success = "Selected settings successfully deleted.";
                   } else {
-                      var state = (this.bulkAction == 'Enable') ? 1 : 0;
-                      var new_status = this.bulkAction+'d';
+                      var new_status = (this.bulkAction=='Suspend') ? 'Suspended' : this.bulkAction+'d';
                       this.selectedRows.forEach( (setting) => {
                           axios.post('/sushisettings-update', {
                             inst_id: setting.inst_id,
                             prov_id: setting.prov_id,
-                            is_active: state
+                            status: new_status
                           })
                           .then( (response) => {
                               if (response.data.result) {
                                   var _idx = this.mutable_settings.findIndex(h=>h.id == setting.id);
-                                  this.mutable_settings[_idx].is_active = state;
                                   this.mutable_settings[_idx].status = new_status;
                               } else {
                                   this.success = '';
@@ -441,4 +443,6 @@
 <style>
 .Enabled { color: #00dd00; }
 .Disabled { color: #dd0000; }
+.Suspended { color: #999999; }
+.Incomplete { color: #ff8c00; }
 </style>

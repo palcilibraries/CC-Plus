@@ -17,9 +17,11 @@
       <form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
             @keydown="form.errors.clear($event.target.name)">
         <input v-model="form.inst_id" id="inst_id" type="hidden">
-        <v-select :items="mutable_unset" v-model="form.prov_id" @change="onUnsetChange" outlined
-                  placeholder="Connect a Provider" item-text="name" item-value="id" color="primary"
-        ></v-select>
+        <v-col class="d-flex pa-0" cols="5">
+          <v-select :items="mutable_unset" v-model="form.prov_id" @change="onUnsetChange" outlined
+                    placeholder="Connect a Provider" item-text="name" item-value="id" color="primary"
+          ></v-select>
+        </v-col>
         <div v-if="showForm" class="form-fields">
           <template v-for="cnx in connectors">
             <v-text-field v-model="form[cnx.name]" :label='cnx.label' :id='cnx.name' outlined></v-text-field>
@@ -81,12 +83,11 @@
             <td v-if="all_connectors.some(c => (c.name == 'extra_args'))">{{ item.extra_args }}</td>
             <td :class="item.status">{{ item.status }}</td>
             <td v-if="is_manager || is_admin">
-              <v-btn class='btn btn-danger' small type="button" @click="destroy(item)">Delete connection</v-btn>
-            </td>
-  		      <td v-if="is_manager || is_admin">
-              <v-btn class='btn' small type="button" :href="'/sushisettings/'+item.id+'/edit'">
-                Settings & harvests
-              </v-btn>
+              <a :href="'/sushisettings/'+item.id+'/edit'">
+                <v-icon title="Settings and harvests" :href="'/sushisettings/'+item.id+'/edit'">mdi-cog-outline</v-icon>
+              </a>
+              &nbsp; &nbsp;
+              <v-icon title="Delete connection" @click="destroy(item)">mdi-trash-can-outline</v-icon>
             </td>
           </tr>
         </template>
@@ -134,7 +135,6 @@
                   { label: '', name: 'extra_args' },
                   { label: 'Status', name: 'status' },
                   { label: '', name: ''},
-				          { label: '', name: ''}
                 ],
                 headers: [],
                 form: new window.Form({
@@ -144,7 +144,7 @@
                     requestor_id: '',
                     API_key: '',
                     extra_args: '',
-                    is_active: 1
+                    status: 'Enabled'
 				        })
             }
         },

@@ -23,7 +23,8 @@ class CreateSushiSettingsTable extends Migration
             $table->text('extra_args')->nullable();
             $table->text('support_email')->nullable();
             $table->string('last_harvest', 7)->nullable();   // YYYY-MM , last successful
-            $table->boolean('is_active')->default(1);
+            // Status should be: 'Enabled', 'Disabled', 'Suspended', or 'Incomplete'
+            $table->string('status', 10);
             $table->timestamps();
 
             $table->foreign('inst_id')->references('id')->on('institutions')->onDelete('cascade');

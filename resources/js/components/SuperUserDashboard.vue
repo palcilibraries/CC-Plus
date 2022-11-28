@@ -17,9 +17,13 @@
       <template v-slot:item="{ item }">
         <tr>
           <td>{{ item.ccp_key }}</td>
-          <td><a @click="editForm(item.id)">{{ item.name }}</a></td>
+          <td>{{ item.name }}</td>
           <td><a target="_blank" :href="'mailto:'+item.email">{{ item.email }}</a></td>
-          <td><v-btn class='btn btn-danger' x-small type="button" @click="destroy(item.id)">Delete</v-btn></td>
+          <td>
+            <v-icon v-if="!showForm" title="Edit Instance Settings" @click="editForm(item.id)">mdi-cog-outline</v-icon>
+            &nbsp;
+            <v-icon title="Delete Instance" @click="destroy(item.id)">mdi-trash-can-outline</v-icon>
+          </td>
         </tr>
       </template>
     </v-data-table>
@@ -122,7 +126,7 @@
         mutable_consortia: [...this.consortia],
         current_consortium: {},
         con_headers: [
-            { text: 'Key', value: 'ccp_key' },
+            { text: 'Database Key', value: 'ccp_key' },
             { text: 'Name', value: 'name' },
             { text: 'Email', value: 'email' },
             { text: '', value: 'data-table-expand' },

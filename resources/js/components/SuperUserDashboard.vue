@@ -20,7 +20,7 @@
           <td>{{ item.name }}</td>
           <td><a target="_blank" :href="'mailto:'+item.email">{{ item.email }}</a></td>
           <td>
-            <v-icon v-if="!showForm" title="Edit Instance Settings" @click="editForm(item.id)">mdi-cog-outline</v-icon>
+            <v-icon v-if="!consoDialog" title="Edit Instance Settings" @click="editForm(item.id)">mdi-cog-outline</v-icon>
             &nbsp;
             <v-icon title="Delete Instance" @click="destroy(item.id)">mdi-trash-can-outline</v-icon>
           </td>

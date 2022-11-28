@@ -31,7 +31,7 @@
                 ></topnav>
             @endif
         @endif
-        <main class="py-4">
+        <main class="main_content">
             @yield('content')
         </main>
     </v-app>

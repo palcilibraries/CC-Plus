@@ -590,7 +590,7 @@ class ReportController extends Controller
         //Run it
         $ids_with_data = HarvestLog::join($_join, 'harvestlogs.sushisettings_id', 'Set.id')
                                    ->selectRaw($raw_query)
-                                   ->where('status', 'Success')
+                                   ->where('harvestlogs.status', 'Success')
                                    ->groupBy($column)
                                    ->pluck($column)->toArray();
         // Return the IDs

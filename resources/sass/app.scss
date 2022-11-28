@@ -139,9 +139,6 @@ main #app {
 .actionable-subhead {
 	display: inline-block;
 }
-/*.flex {
-	display: flex;
-}*/
 .more {
 	margin-top: 1em;
 }
@@ -170,4 +167,11 @@ main #app {
 	margin-top: 1em;
 	font-size: 1.2em;
 	font-weight: bold;
+}
+/* new class - LSR: 11/28/22 */
+.main_content {
+  margin: 0 auto;
+  max-width: 1366px;
+  padding-top: 1.5rem !important;
+  padding-bottom: 1.5rem !important;
 }

@@ -8,6 +8,7 @@ use App\Provider;
 use App\Role;
 use App\SushiSetting;
 use App\HarvestLog;
+use App\ConnectionField;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -84,7 +85,7 @@ class InstitutionController extends Controller
             }
 
             // Get institution records
-            $inst_data = Institution::with('institutionGroups:id,name')
+            $inst_data = Institution::with('institutionGroups:id,name','sushiSettings')
                                        ->when(!is_null($filter_stat), function ($qry) use ($filter_stat) {
                                            return $qry->where('is_active', $filter_stat);
                                        })
@@ -102,9 +103,10 @@ class InstitutionController extends Controller
                     $inst->groups .= $group->name;
                 }
                 $inst->status = ($inst->is_active) ? 'Active' : 'Inactive';
+                $harvest_count = $inst->sushiSettings->whereNotNull('last_harvest')->count();
+                $inst->can_delete = ($harvest_count > 0 || $inst->id == 1) ? false : true;
                 return $inst;
             });
-
             return response()->json(['institutions' => $institutions], 200);
 
         // Not returning JSON, pass only what the index/vue-component needs to initialize the page
@@ -186,22 +188,22 @@ class InstitutionController extends Controller
 
         // Get the institution and sushi settings
         $institution = Institution::with('users', 'users.roles')->findOrFail($id);
-        $sushi_settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
+        $sushi_settings = SushiSetting::with('provider','provider.connectors')->where('inst_id',$institution->id)->get();
 
         // Get most recent harvest and set can_delete flag
         $last_harvest = $sushi_settings->max('last_harvest');
         $institution['can_delete'] = ($id > 1 && is_null($last_harvest)) ? true : false;
 
-        // Add user's highest role as "permission" as a separate array
+        // Get institution users and map in max-role as "permission"
         $users = array();
-        foreach ($institution->users as $inst_user) {
-            $new_u = $inst_user->toArray();
-            $max_role = $inst_user->maxRoleName();
+        foreach ($institution->users as $_u) {
+            $new_u = $_u->toArray();
+            $max_role = $_u->maxRoleName();
             if ($max_role == "Admin") $max_role = "Consortium Admin";
             if ($max_role == "Manager") $max_role = "Local Admin";
             if ($max_role == "Viewer") $max_role = "Consortium Viewer";
             $new_u['permission'] = $max_role;
-            array_push($users, $new_u);
+            $users[] = $new_u;
         }
         $_name = array_column($users, "name");
         array_multisort($_name, SORT_ASC, $users);
@@ -214,30 +216,38 @@ class InstitutionController extends Controller
         $institution['sushiSettings'] = $sushi_settings;
 
         // Roles are limited to current user's max role
-        $all_roles = Role::where('id', '<=', $thisUser->maxRole())->orderBy('name', 'ASC')
+        $all_roles = Role::where('id', '<=', $thisUser->maxRole())->orderBy('id', 'DESC')
                          ->get(['name', 'id'])->toArray();
+        foreach ($all_roles as $idx => $r) {
+            if ($r['name'] == 'Manager') $all_roles[$idx]['name'] = "Local Admin";
+            if ($r['name'] == 'Admin') $all_roles[$idx]['name'] = "Consortium Admin";
+            if ($r['name'] == 'Viewer') $all_roles[$idx]['name'] = "Viewer";
+        }
 
-        // Build an array of providers not yet connected to this inst and another that holds
-        // the connection_fields used across all providers (whether connected or not)
+        // Get all connectors and initialize the connectors array
+        $fields = ConnectionField::get();
+        $all_connnectors = array();
+        foreach ($fields as $field) {
+            $key = trim($field->name);
+            $all_connectors[$key] = array('id'=>$field->id, 'name'=>$field->name, 'label'=>$field->label, 'active'=>false);
+        }
+        // Build an array of providers not yet connected to this inst and set the flag in connectors
+        // to mark connectors in use by connected providers
         $set_provider_ids = $sushi_settings->pluck('prov_id')->values()->toArray();
         $all_providers = Provider::with('connectors')->whereIn('inst_id', [1,$id])
                                  ->orderBy('name', 'ASC')->get(['id','name','inst_id']);
         $unset_providers = array();
-        $all_connectors = array();
-        $seen_connectors = array();
         foreach ($all_providers as $prov) {
-            if (!in_array($prov->id,$set_provider_ids)) {
+            // Flag active connectors for providers already connected
+            if (in_array($prov->id,$set_provider_ids)) {
+                foreach($prov->connectors as $cnx) {
+                    $key = trim($cnx->name);
+                    if (!$all_connectors[$key]['active']) $all_connectors[$key]['active'] = true;
+                }
+            // Un-connected providers and their connectors go into the unset array
+            } else {
                 $unset_providers[] = array('id' => $prov->id, 'name' => $prov->name,
                                            'connectors' => $prov->connectors->toArray());
-            }
-            // There are only 4... if they're all set, skip checking
-            if (sizeof($seen_connectors) < 4) {
-              foreach($prov->connectors as $cnx) {
-                  if (!in_array($cnx->name,$seen_connectors)) {
-                      $all_connectors[] = array('name' => $cnx->name, 'label' => $cnx->label);
-                      $seen_connectors[] = $cnx->name;
-                  }
-              }
             }
         }
 
@@ -254,7 +264,8 @@ class InstitutionController extends Controller
                               ->get('harvestlogs.*')->toArray();
         return view(
             'institutions.show',
-            compact('institution', 'users', 'unset_providers', 'all_connectors', 'all_groups', 'all_roles', 'harvests')
+            compact('institution', 'users', 'unset_providers', 'all_connectors', 'all_groups', 'all_roles',
+                    'harvests')
         );
     }
 
@@ -282,6 +293,7 @@ class InstitutionController extends Controller
         if (!$institution->canManage()) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
+        $was_active = $institution->is_active;
 
        // Validate form inputs
         $this->validate($request, ['name' => 'required', 'is_active' => 'required']);
@@ -312,7 +324,28 @@ class InstitutionController extends Controller
             }
         }
 
-        return response()->json(['result' => true, 'msg' => 'Settings successfully updated']);
+        // If changing from active to inactive, suspend related sushi settings
+         $settings = array();
+         if ( $was_active && !$institution->is_active ) {
+             SushiSetting::where('inst_id',$institution->id)->where('status','Enabled')
+                         ->update(['status' => 'Suspended']);
+         }
+
+        // If changing from inactive to active, enable suspended settings where institution is also active
+         if ( !$was_active && $institution->is_active ) {
+            SushiSetting::join('providers as Prov', 'sushisettings.prov_id', 'Prov.id')
+                        ->where('Prov.is_active', 1)->where('sushisettings.inst_id',$institution->id)
+                        ->where('status','Suspended')->update(['status' => 'Enabled']);
+         }
+
+        // Return updated institution data
+         $settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
+         $harvest_count = $settings->whereNotNull('last_harvest')->count();
+         $institution['can_delete'] = ($harvest_count > 0 || $institution->id == 1) ? false : true;
+         $institution['sushiSettings'] = $settings->toArray();
+
+         return response()->json(['result' => true, 'msg' => 'Settings successfully updated',
+                                  'institution' => $institution]);
     }
 
     /**

@@ -11,7 +11,7 @@
         <v-col class="d-flex px-2" cols="3">
           <v-btn small color="primary" @click="settingsImportForm">Import Sushi Settings</v-btn>
         </v-col>
-        <v-col class="d-flex px-2" cols="3">
+        <v-col class="d-flex px-2" cols="2">
           <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
           ></v-text-field>
         </v-col>
@@ -60,6 +60,10 @@
           <a :href="'/institutions/'+item.id+'/edit'">
             <v-icon title="Edit Institution">mdi-cog-outline</v-icon>
           </a>
+          &nbsp; &nbsp;
+          <v-icon v-if="is_admin && item.can_delete" title="Delete Institution" @click="destroy(item.id)">
+            mdi-trash-can-outline
+          </v-icon>
         </template>
         <v-alert slot="no-results" :value="true" color="error" icon="warning">
           Your search for "{{ search }}" found no results.
@@ -551,6 +555,35 @@
                     }
                 });
             this.instDialog = false;
+        },
+        destroy (instid) {
+            var self = this;
+            Swal.fire({
+              title: 'Are you sure?',
+              text: "Deleting an institution cannot be reversed, only manually recreated."+
+                    " Because this institution has no harvested usage data, it can be safely"+
+                    " deleted. NOTE: All users and SUSHI settings connected to this institution"+
+                    " will also be removed.",
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonColor: '#3085d6',
+              cancelButtonColor: '#d33',
+              confirmButtonText: 'Yes, proceed'
+            }).then((result) => {
+              if (result.value) {
+                  axios.delete('/institutions/'+instid)
+                       .then( (response) => {
+                           if (response.data.result) {
+                               window.location.assign("/institutions");
+                           } else {
+                               self.success = '';
+                               self.failure = response.data.msg;
+                           }
+                       })
+                       .catch({});
+              }
+            })
+            .catch({});
         },
         updateOptions(options) {
             if (Object.keys(this.mutable_options).length === 0) return;

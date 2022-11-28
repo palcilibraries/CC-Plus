@@ -41,36 +41,36 @@
     <div v-else>
       <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)" class="in-page-form">
         <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-        <v-text-field outlined required name="email" label="Email" type="email"
-                      v-model="form.email" :rules="emailRules">
-        </v-text-field>
+        <v-text-field outlined required name="email" label="Email" v-model="form.email"></v-text-field>
         <v-switch v-if="is_manager || is_admin" v-model="form.is_active" label="Active?"></v-switch>
         <v-select v-if="is_admin" outlined required :items="institutions" v-model="form.inst_id"
                   label="Institution" item-text="name" item-value="id" @change="changeInst"
         ></v-select>
         <v-text-field v-else outlined readonly label="Institution" :value="inst_name"></v-text-field>
         <input type="hidden" id="inst_id" name="inst_id" :value="user.inst_id">
-        <v-text-field outlined name="password" label="Password" id="password" type="password"
+        <v-text-field outlined name="password" label="Password" id="password" :type="pw_show ? 'text' : 'password'"
+                      :append-icon="pw_show ? 'mdi-eye' : 'mdi-eye-off'" @click:append="pw_show = !pw_show"
                       v-model="form.password" :rules="passwordRules">
         </v-text-field>
         <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
-                      type="password" v-model="form.confirm_pass" :rules="passwordRules">
+                      :type="pwc_show ? 'text' : 'password'" :append-icon="pwc_show ? 'mdi-eye' : 'mdi-eye-off'"
+                      @click:append="pwc_show = !pwc_show" v-model="form.confirm_pass" :rules="passwordRules">
         </v-text-field>
-  		<div  v-if="is_manager || is_admin" class="field-wrapper">
-	      <v-subheader v-text="'User Roles'"></v-subheader>
-	      <v-select :items="all_roles" v-model="form.roles" item-text="name" item-value="id" label="User Role(s)"
- 	                multiple chips hint="Define roles for user" persistent-hint
-	      ></v-select>
-		</div>
+        <div v-if="is_manager || is_admin" class="field-wrapper">
+          <v-subheader v-text="'User Roles'"></v-subheader>
+          <v-select :items="all_roles" v-model="form.roles" item-text="name" item-value="id" label="User Role(s)"
+                    multiple chips hint="Define roles for user" persistent-hint
+          ></v-select>
+        </div>
         <v-spacer></v-spacer>
         <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
           Save User Settings
         </v-btn>
-		<v-btn small type="button" @click="hideForm">cancel</v-btn>
-		<div class="status-message" v-if="success || failure">
+        <v-btn small type="button" @click="hideForm">cancel</v-btn>
+        <div class="status-message" v-if="success || failure">
 	        <span v-if="success" class="good" role="alert" v-text="success"></span>
 	        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-		</div>
+        </div>
       </form>
     </div>
   </div>
@@ -98,6 +98,8 @@
                 inst_name: '',
                 email: '',
                 password: '',
+                pw_show: false,
+                pwc_show: false,
                 mutable_user: { ...this.user },
                 emailRules: [
                     v => !!v || 'E-mail is required',
@@ -164,9 +166,13 @@
                 .catch({});
             },
             swapForm (event) {
+                this.success = '';
+                this.failure = '';
                 this.showForm = true;
             },
             hideForm (event) {
+                this.success = '';
+                this.failure = '';
                 this.showForm = false;
             },
             changeInst () {

@@ -11,6 +11,10 @@
         <v-col class="d-flex px-2" cols="3">
           <v-btn small color="primary" @click="settingsImportForm">Import Sushi Settings</v-btn>
         </v-col>
+        <v-col class="d-flex px-2" cols="2">
+          <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
+          ></v-text-field>
+        </v-col>
       </v-row>
       <v-row class="d-flex ma-0">
         <v-col v-if="is_admin" class="d-flex px-2" cols="3">&nbsp;</v-col>
@@ -25,22 +29,24 @@
         <span v-if="success" class="good" role="alert" v-text="success"></span>
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
       </div>
-      <v-data-table :headers="headers" :items="mutable_providers" item-key="prov_id" :options="mutable_options"
-                     :key="dtKey" @update:options="updateOptions">
-        <template v-slot:item="{ item }">
-          <tr>
-            <td v-if="is_admin || is_manager">
-              <a :href="'/providers/'+item.prov_id">{{ item.prov_name }}</a>
-            </td>
-            <td v-else>{{ item.prov_name }}</a>
-            <td v-if="item.is_active">Active</td>
-            <td v-else>Inactive</td>
-            <td v-if="item.inst_id==1">Entire Consortium</td>
-            <td v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></td>
-            <td>{{ item.day_of_month }}</td>
-            <td>&nbsp;</td>
-          </tr>
+      <v-data-table :headers="headers" :items="mutable_providers" item-key="id" :options="mutable_options"
+                    :search="search" @update:options="updateOptions" :key="dtKey">
+        <template v-slot:item.inst_name="{ item }">
+          <span v-if="item.inst_id==1">{{ item.institution.name }}</span>
+          <span v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></span>
         </template>
+        <template v-slot:item.action="{ item }" v-if="is_admin || is_manager">
+          <a :href="'/providers/'+item.id+'/edit'">
+            <v-icon title="Edit Provider">mdi-cog-outline</v-icon>
+          </a>
+          &nbsp; &nbsp;
+          <v-icon v-if="is_admin && item.can_delete" title="Delete Provider" @click="destroy(item.id)">
+            mdi-trash-can-outline
+          </v-icon>
+        </template>
+        <v-alert slot="no-results" :value="true" color="error" icon="warning">
+          Your search for "{{ search }}" found no results.
+        </v-alert>
       </v-data-table>
     </div>
     <v-dialog v-model="providerImportDialog" persistent max-width="1200px">
@@ -49,7 +55,7 @@
         </v-card-subtitle>
         <v-card-text>
           <v-container grid-list-md>
-            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+            <v-file-input show-size label="CC+ CSV Import File" v-model="csv_upload" accept="text/csv" outlined
             ></v-file-input>
             <p>
               <strong>Note:&nbsp; Provider imports function exclusively as Updates. No existing provider records will
@@ -182,7 +188,8 @@
 </template>
 
 <script>
-  import { mapGetters } from 'vuex'
+  import { mapGetters } from 'vuex';
+  import Swal from 'sweetalert2';
   export default {
     props: {
             providers: { type:Array, default: () => [] },
@@ -201,11 +208,10 @@
         import_types: ['Add or Update', 'Full Replacement'],
         inst_name: '',
         headers: [
-          { text: 'Provider ', value: 'prov_name', align: 'start' },
-          { text: 'Status', value: 'is_active' },
+          { text: 'Provider ', value: 'name', align: 'start' },
+          { text: 'Status', value: 'active' },
           { text: 'Serves', value: 'inst_name' },
-          { text: 'Harvest Day', value: 'day_of_month' },
-          { text: 'Action', value: '' },
+          { text: 'Harvest Day', value: 'day_of_month', align: 'center' },
         ],
         mutable_providers: this.providers,
         form: new window.Form({
@@ -226,6 +232,7 @@
         dtKey: 1,
         mutable_options: {},
         csv_upload: null,
+        search: '',
       }
     },
     methods:{
@@ -339,6 +346,35 @@
             });
             this.$store.dispatch('updateDatatableOptions',this.mutable_options);
         },
+        destroy (provid) {
+            Swal.fire({
+              title: 'Are you sure?',
+              text: "Deleting a provider cannot be reversed, only manually recreated."+
+                    " Because this provider has no harvested usage data, it can be safely"+
+                    " deleted. NOTE: All SUSHI settings connected to this provider"+
+                    " will also be removed.",
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonColor: '#3085d6',
+              cancelButtonColor: '#d33',
+              confirmButtonText: 'Yes, proceed'
+            }).then((result) => {
+              if (result.value) {
+                  axios.delete('/providers/'+provid)
+                       .then( (response) => {
+                           if (response.data.result) {
+                               this.mutable_providers.splice(this.mutable_providers.findIndex(p=>p.id == provid),1);
+                               this.success = "Selected institutions deleted successfully.";
+                           } else {
+                               this.success = '';
+                               this.failure = response.data.msg;
+                           }
+                       })
+                       .catch({});
+              }
+            })
+            .catch({});
+        },
     },
     computed: {
       ...mapGetters(['is_manager','is_admin','datatable_options'])
@@ -354,6 +390,10 @@
     mounted() {
       if (!this.is_admin) {
           this.inst_name = this.institutions[0].name;
+      }
+      // Add empty header for admin/manager for the "actions" column in the datatable
+      if (this.is_admin || this.is_manager) {
+          this.headers.push({ text: '', value: 'action' });
       }
 
       // Set datatable options with store-values

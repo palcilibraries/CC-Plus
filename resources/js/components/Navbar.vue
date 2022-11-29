@@ -1,5 +1,5 @@
   <template>
-    <nav class="navbar navbar-expand navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand navbar-light bg-white">
       <div class="container">
 	      <a class="navbar-brand" href="/">
           <img src="/images/CC_Plus_Logo.png" alt="CC plus" height="50px" width="103px" />

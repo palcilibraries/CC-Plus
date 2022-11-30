@@ -57,13 +57,14 @@
                     item-key="id" :options="mutable_options" @update:options="updateOptions"
                     :footer-props="footer_props" :search="search" :key="'indt'+dtKey">
         <template v-slot:item.action="{ item }">
-          <a :href="'/institutions/'+item.id+'/edit'">
-            <v-icon title="Edit Institution">mdi-cog-outline</v-icon>
-          </a>
-          &nbsp; &nbsp;
-          <v-icon v-if="is_admin && item.can_delete" title="Delete Institution" @click="destroy(item.id)">
-            mdi-trash-can-outline
-          </v-icon>
+          <span class="dt_action">
+            <v-btn icon @click="goEdit(item.id)">
+              <v-icon title="Edit Institution" >mdi-cog-outline</v-icon>
+            </v-btn>
+            <v-btn icon class="pl-4" @click="destroy(item.id)">
+              <v-icon v-if="is_admin && item.can_delete" title="Delete Institution">mdi-trash-can-outline</v-icon>
+            </v-btn>
+          </span>
         </template>
         <v-alert slot="no-results" :value="true" color="error" icon="warning">
           Your search for "{{ search }}" found no results.
@@ -584,6 +585,9 @@
               }
             })
             .catch({});
+        },
+        goEdit (instId) {
+            window.location.assign('/institutions/'+instId+'/edit');
         },
         updateOptions(options) {
             if (Object.keys(this.mutable_options).length === 0) return;

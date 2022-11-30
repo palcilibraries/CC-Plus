@@ -30,6 +30,7 @@ class InstitutionGroupController extends Controller
         foreach ($groups as $group) {
             $members = $group->institutions->pluck('id')->toArray();
             $group->not_members = Institution::whereNotIn('id',$members)->get(['id','name'])->toArray();
+            $group->count = sizeof($members);
             $data[] = $group->toArray();
         }
         return view('institutiongroups.index', compact('data'));
@@ -75,6 +76,7 @@ class InstitutionGroupController extends Controller
         }
 
         $group->not_members = Institution::whereNotIn('id', $new_members)->get(['id','name'])->toArray();
+        $group->count = Isizeof($new_members);
 
         return response()->json(['result' => true, 'msg' => 'Group created successfully', 'group' => $group]);
     }
@@ -128,11 +130,11 @@ class InstitutionGroupController extends Controller
         }
 
         // Build returned group data the way index() does
-        $data = array();
         $member_ids = $group->institutions->pluck('id')->toArray();
         $group->not_members = Institution::whereNotIn('id',$member_ids)->get(['id','name'])->toArray();
         $data = $group->toArray();
         $data['institutions'] = $request->institutions;
+        $data['count'] = sizeof($data['institutions']);
 
         return response()->json(['result' => true, 'msg' => 'Group updated successfully', 'group' => $data]);
     }
@@ -160,6 +162,7 @@ class InstitutionGroupController extends Controller
             $group->institutions()->attach($inst['id']);
             $count++;
         }
+        $group->count = sizeof($member_institutions) + $count;
 
         // Build returned group data the way index() does
         return response()->json(['result' => true, 'msg' => 'Group updated successfully', 'count' => $count, 'group' => $group]);

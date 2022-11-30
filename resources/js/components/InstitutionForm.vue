@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="page-header"><h1>{{ institution.name }}</h1></div>
+    <div class="page-header"><h2>{{ institution.name }}</h2></div>
     <div v-if="(is_admin || is_manager)" class="details">
   	  <v-row class="d-flex ma-0" no-gutters>
         <v-col class="d-flex pa-0">
@@ -73,10 +73,10 @@
               <td>{{ item.name }}</td>
               <td>{{ item.permission }}&nbsp;</td>
               <td>{{ item.last_login }}</td>
-              <td>
+              <td class="dt_action">
                 <v-icon title="Edit User Settings" @click="editUser(item.id)">mdi-cog-outline</v-icon>
-                <!-- &nbsp; &nbsp;
-                <v-icon title="Delete User" @click="destroyUser(item.id)">mdi-trash-can-outline</v-icon> -->
+                &nbsp; &nbsp;
+                <v-icon title="Delete User" @click="destroyUser(item.id)">mdi-trash-can-outline</v-icon>
               </td>
             </tr>
           </template>
@@ -179,18 +179,18 @@
         <v-data-table :headers="sushiHeaders" :items="mutable_inst.sushiSettings" item-key="id" :key="'setdt_'+dtKey">
           <template v-slot:item="{ item }" >
             <tr>
-              <td><a :href="'/providers/'+item.provider.id">{{ item.provider.name }}</a></td>
+              <td>{{ item.provider.name }}</td>
               <td v-if="mutable_connectors['customer_id']['active']">{{ item.customer_id }}</td>
               <td v-if="mutable_connectors['requestor_id']['active']">{{ item.requestor_id }}</td>
               <td v-if="mutable_connectors['API_key']['active']">{{ item.API_key }}</td>
               <td v-if="mutable_connectors['extra_args']['active']">{{ item.extra_args }}</td>
               <td :class="item.status">{{ item.status }}</td>
               <td v-if="is_manager || is_admin">
-                <a :href="'/sushisettings/'+item.id+'/edit'">
-                  <v-icon title="Settings and harvests" :href="'/sushisettings/'+item.id+'/edit'">mdi-cog-outline</v-icon>
-                </a>
-                &nbsp; &nbsp;
-                <v-icon title="Delete connection" @click="destroySushi(item)">mdi-trash-can-outline</v-icon>
+                <span class="dt_action">
+                  <v-icon title="Settings and harvests" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
+                  &nbsp; &nbsp;
+                  <v-icon title="Delete connection" @click="destroySushi(item)">mdi-trash-can-outline</v-icon>
+                </span>
               </td>
             </tr>
           </template>
@@ -582,6 +582,37 @@
                     }
                 })
                 .catch({});
+            },
+            destroyUser (userid) {
+                var self = this;
+                Swal.fire({
+                  title: 'Are you sure?',
+                  text: "This user will be permanently deleted along with any saved report views.",
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: '#3085d6',
+                  cancelButtonColor: '#d33',
+                  confirmButtonText: 'Yes, proceed'
+                }).then((result) => {
+                  if (result.value) {
+                      axios.delete('/users/'+userid)
+                           .then( (response) => {
+                               if (response.data.result) {
+                                   // Remove the setting from the "set" list
+                                   this.mutable_users.splice(this.mutable_users.findIndex(s=> s.id == userid),1);
+                                   this.dtKey += 1;           // re-render of the datatable
+                               } else {
+                                   self.success = '';
+                                   self.failure = response.data.msg;
+                               }
+                           })
+                           .catch({});
+                  }
+                })
+                .catch({});
+            },
+            goEdit (settingId) {
+                window.location.assign('/sushisettings/'+settingId+'/edit');
             },
             // Set Sushi DataTable headers array based on the provider connectors
             buildsushiHeaders() {

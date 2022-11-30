@@ -7,15 +7,24 @@
         </v-btn>
       </v-col>
       <v-col class="d-flex px-1" cols="5">
-        <a @click="doExport">Export to Excel</a>
+        <a @click="doExport"><v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel</a>
       </v-col>
       <v-col class="d-flex px-2" cols="3">
         <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
         ></v-text-field>
       </v-col>
     </v-row>
-    <v-row no-gutters>
-      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+    <v-row class="d-flex pa-1 align-center" no-gutters>
+      <v-col class="d-flex px-2" cols="2">
+        <v-select :items='bulk_actions' v-model='bulkAction' label="Bulk Actions" @change="processBulk()"
+                  :disabled='selectedRows.length==0'
+        ></v-select>
+      </v-col>
+      <v-col v-if="selectedRows.length>0" class="d-flex px-4 align-center" cols="2">
+        <span class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
+      </v-col>
+      <v-col v-else class="d-flex" cols="2">&nbsp;</v-col>
+      <v-col class="d-flex px-2 align-center" cols="3">
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
@@ -23,7 +32,7 @@
                   label="Institution(s)"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
-      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+      <v-col class="d-flex px-2 align-center" cols="3">
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
@@ -40,16 +49,6 @@
         ></v-select> &nbsp;
       </v-col>
     </v-row>
-    <v-row class="d-flex pa-1 align-center" no-gutters>
-      <v-col class="d-flex px-2" cols="4" sm="2">
-        <v-select :items='bulk_actions' v-model='bulkAction' label="Bulk Actions" @change="processBulk()"
-                  :disabled='selectedRows.length==0'
-        ></v-select>
-      </v-col>
-      <v-col v-if="selectedRows.length>0" class="d-flex px-4 align-center" cols="8" sm="4">
-        <span class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
-      </v-col>
-    </v-row>
     <div class="status-message" v-if="success || failure">
       <span v-if="success" class="good" role="alert" v-text="success"></span>
       <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
@@ -58,14 +57,18 @@
                   item-key="id" :options="mutable_options" @update:options="updateOptions"
                   :footer-props="footer_props" :search="search" :key="'setdt_'+dtKey">
       <template v-slot:item.status="{ item }">
-        <span :class="item.status">{{ item.status }}</span>
+        <span v-if="item.status=='Enabled'"><v-icon large color="green" title="Enabled">mdi-toggle-switch</v-icon></span>
+        <span v-if="item.status=='Disabled'"><v-icon large color="red" title="Disabled">mdi-toggle-switch-off</v-icon></span>
+        <span v-if="item.status=='Suspended'">
+          <v-icon large color="gray" title="Suspended">mdi-toggle-switch-outline</v-icon>
+        </span>
       </template>
       <template v-slot:item.action="{ item }">
-        <a :href="'/sushisettings/'+item.id+'/edit'">
-          <v-icon title="Settings and harvests">mdi-cog-outline</v-icon>
-        </a>
-        &nbsp; &nbsp;
-        <v-icon title="Delete connection" @click="destroy(item)">mdi-trash-can-outline</v-icon>
+        <span class="dt_action">
+          <v-icon title="Settings and harvests" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
+          &nbsp; &nbsp;
+          <v-icon title="Delete connection" @click="destroy(item)">mdi-trash-can-outline</v-icon>
+        </span>
       </template>
       <v-alert slot="no-results" :value="true" color="error" icon="warning">
         Your search for "{{ search }}" found no results.
@@ -340,6 +343,9 @@
                 }
               })
               .catch({});
+          },
+          goEdit (settingId) {
+              window.location.assign('/sushisettings/'+settingId+'/edit');
           },
           testSettings (event) {
               this.failure = '';

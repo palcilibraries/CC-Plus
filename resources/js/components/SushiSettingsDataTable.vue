@@ -56,6 +56,14 @@
     <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_settings" :loading="loading" show-select
                   item-key="id" :options="mutable_options" @update:options="updateOptions"
                   :footer-props="footer_props" :search="search" :key="'setdt_'+dtKey">
+      <template v-slot:item.inst_name="{ item }">
+         <span v-if="item.institution.is_active">{{ item.inst_name }}</span>
+         <span v-else><font color="gray">{{ item.inst_name }}</font></span>
+      </template>
+      <template v-slot:item.prov_name="{ item }">
+        <span v-if="item.provider.is_active">{{ item.prov_name }}</span>
+        <span v-else><em><font color="gray">{{ item.prov_name }}</font></em></span>
+      </template>
       <template v-slot:item.status="{ item }">
         <span v-if="item.status=='Enabled'"><v-icon large color="green" title="Enabled">mdi-toggle-switch</v-icon></span>
         <span v-if="item.status=='Disabled'"><v-icon large color="red" title="Disabled">mdi-toggle-switch-off</v-icon></span>
@@ -145,13 +153,13 @@
                 connectors: [],
                 // Actual headers array is built from these in mounted()
                 header_fields: [
+                  { label: 'Status', name: 'status' },
                   { label: 'Institution ', name: 'inst_name' },
                   { label: 'Provider ', name: 'prov_name' },
                   { label: '', name: 'customer_id' },
                   { label: '', name: 'requestor_id' },
                   { label: '', name: 'API_key' },
                   { label: '', name: 'extra_args' },
-                  { label: 'Status', name: 'status' },
                   { label: ' ', name: 'action' },
                 ],
                 headers: [],

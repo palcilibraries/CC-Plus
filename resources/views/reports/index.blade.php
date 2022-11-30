@@ -7,7 +7,7 @@
 <div class="row">
     <div class="col-lg-12 margin-tb">
         <div class="pull-left">
-            <h2>CC+ Report Settings</h2>
+            <h3>CC+ Report Settings</h3>
         </div>
     </div>
 </div>

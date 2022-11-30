@@ -5,9 +5,9 @@
   <div class="col-lg-12 margin-tb">
     <div class="pull-left">
       @if (auth()->user()->hasRole("Admin"))
-      <h2>{{ session('ccp_con_key','') }} : Providers</h2>
+      <h3>{{ session('ccp_con_key','') }} : Providers</h3>
       @else
-      <h2>Providers</h2>
+      <h3>Providers</h3>
       @endif
     </div>
   </div>

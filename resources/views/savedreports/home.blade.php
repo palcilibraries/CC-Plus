@@ -8,11 +8,11 @@
 @endif
 <v-app>
   <v-main>
-    <h1>{{ auth()->user()->name }}'s dashboard</h1>
-    <h2 class="component-subhead">{{ $inst_count }} institution(s) and {{ $prov_count }} provider(s) connected</h2>
+    <h2>{{ auth()->user()->name }}'s dashboard</h2>
+    <h3 class="component-subhead">{{ $inst_count }} institution(s) and {{ $prov_count }} provider(s) connected</h3>
     <div class="dashboard-section">
       @if (sizeof($report_data) >= 1)
-        <h2 class="actionable-subhead">My Saved Reports</h2>
+        <h3 class="actionable-subhead">My Saved Reports</h3>
       @else
         <p>No Custom Reports</p>
       @endif
@@ -27,7 +27,7 @@
     @endif
 
 	<div class="dashboard-section">
-      <h2>Recent Activity</h2>
+      <h3>Recent Activity</h3>
 	  <harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"></harvestlog-summary-table>
     </div>
   </v-main>

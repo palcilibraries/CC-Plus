@@ -4,7 +4,7 @@
 <div class="row">
   <div class="col-lg-12 margin-tb">
     <div class="pull-left">
-      <h2>{{ session('ccp_con_key','') }} : Institutions</h2>
+      <h3>{{ session('ccp_con_key','') }} : Institutions</h3>
     </div>
   </div>
 </div>

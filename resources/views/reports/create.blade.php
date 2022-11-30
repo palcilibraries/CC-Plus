@@ -2,7 +2,7 @@
 
 @section('content')
 <v-app reportwiz>
-  <h3>Create a Report</h4>
+  <h3>Create a Report</h3>
   <create-report :institutions="{{ json_encode($institutions) }}"
                  :inst_groups="{{ json_encode($inst_groups) }}"
                  :providers="{{ json_encode($providers) }}"

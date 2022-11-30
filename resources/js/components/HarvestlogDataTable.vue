@@ -81,7 +81,9 @@
       <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_harvests" :loading="loading" show-select
                     item-key="id" :options="mutable_options" @update:options="updateOptions" :key="dtKey">
         <template v-slot:item.action="{ item }">
-          <v-btn class='btn' x-small type="button" :href="'/harvestlogs/'+item.id+'/edit'">Details</v-btn>
+          <span class="dt_action">
+            <v-icon title="Edit Details" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
+          </span>
         </template>
       </v-data-table>
     </div>
@@ -301,6 +303,9 @@
               this.dtKey += 1;           // force re-render of the datatable
           })
           .catch({});
+        },
+        goEdit (logId) {
+            window.location.assign('/harvestlogs/'+logId+'/edit');
         },
     },
     computed: {

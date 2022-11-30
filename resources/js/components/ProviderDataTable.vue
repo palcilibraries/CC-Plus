@@ -19,10 +19,14 @@
       <v-row class="d-flex ma-0">
         <v-col v-if="is_admin" class="d-flex px-2" cols="3">&nbsp;</v-col>
         <v-col v-if="is_admin" class="d-flex px-2" cols="3">
-          <a :href="'/providers/export/xlsx'">Export providers to Excel</a>
+          <a @click="doProvExport">
+            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export Providers to Excel
+          </a>
         </v-col>
         <v-col class="d-flex px-2" cols="3">
-          <a :href="'/sushisettings/export/xlsx'">Export sushi settings to Excel</a>
+          <a @click="doSushiExport">
+            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export Sushi Settings to Excel
+          </a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">
@@ -36,13 +40,11 @@
           <span v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></span>
         </template>
         <template v-slot:item.action="{ item }" v-if="is_admin || is_manager">
-          <a :href="'/providers/'+item.id+'/edit'">
-            <v-icon title="Edit Provider">mdi-cog-outline</v-icon>
-          </a>
-          &nbsp; &nbsp;
-          <v-icon v-if="is_admin && item.can_delete" title="Delete Provider" @click="destroy(item.id)">
-            mdi-trash-can-outline
-          </v-icon>
+          <span class="dt_action">
+            <v-icon title="Edit Provider" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
+            &nbsp; &nbsp;
+            <v-icon title="Delete Provider" @click="destroy(item.id)">mdi-trash-can-outline</v-icon>
+          </span>
         </template>
         <v-alert slot="no-results" :value="true" color="error" icon="warning">
           Your search for "{{ search }}" found no results.
@@ -315,6 +317,12 @@
                  });
              this.settingsImportDialog = false;
         },
+        doProvExport () {
+            window.location.assign('/providers/export/xlsx');
+        },
+        doSushiExport () {
+            window.location.assign('/sushi-export');
+        },
         formSubmit (event) {
             this.success = '';
             this.failure = '';
@@ -374,6 +382,9 @@
               }
             })
             .catch({});
+        },
+        goEdit (provId) {
+            window.location.assign('/providers/'+provId+'/edit');
         },
     },
     computed: {

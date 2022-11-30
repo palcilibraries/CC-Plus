@@ -11,7 +11,9 @@
       </v-row>
       <v-row class="d-flex ma-0">
         <v-col v-if="is_admin" class="d-flex px-2" cols="4">
-          <a :href="'/users/export/xlsx'">Export to Excel</a>
+          <a @click="doExport">
+            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel
+          </a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">
@@ -308,6 +310,9 @@
                         }
                     });
             }
+        },
+        doExport () {
+            window.location.assign('/users/export/xlsx');
         },
         destroy (userid) {
             var self = this;

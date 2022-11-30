@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="page-header"><h1>{{ form.name }}</h1></div>
+    <div class="page-header"><h2>{{ form.name }}</h2></div>
     <div class="details" :key="'details_'+dtKey">
       <v-row v-if="can_edit && !showForm" no-gutters>
         <v-col class="d-flex pa-0">
@@ -148,10 +148,8 @@
             <td v-if="mutable_prov.connectors.some(c => c.name === 'API_key')">{{ item.API_key }}</td>
             <td v-if="mutable_prov.connectors.some(c => c.name === 'extra_args')">{{ item.extra_args }}</td>
             <td :class="item.status">{{ item.status }}</td>
-            <td v-if="is_manager || is_admin">
-              <a :href="'/sushisettings/'+item.id+'/edit'">
-                <v-icon title="Settings and harvests" :href="'/sushisettings/'+item.id+'/edit'">mdi-cog-outline</v-icon>
-              </a>
+            <td class="dt_action" v-if="is_manager || is_admin">
+              <v-icon title="Settings and harvests" @click="goEditSushi(item.id)">mdi-cog-outline</v-icon>
               &nbsp; &nbsp;
               <v-icon title="Delete connection" @click="destroySushi(item)">mdi-trash-can-outline</v-icon>
             </td>
@@ -455,6 +453,9 @@
                   this.testData = '';
                   this.testStatus = '';
                   this.showSushiForm = true;
+              },
+              goEditSushi (settingId) {
+                  window.location.assign('/sushisettings/'+settingId+'/edit');
               },
         },
         computed: {

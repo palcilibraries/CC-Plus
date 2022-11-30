@@ -22,13 +22,17 @@
                     :key="'DT'+dtKey" @update:options="updateOptions">
         <template v-slot:item="{ item }">
           <tr>
-            <td><a @click="editForm(item.id)">{{ item.name }}</a></td>
+            <td>{{ item.name }}</td>
             <td><a :href="'/institutions/'+item.inst_id+'/edit'">{{ item.institution.name }}</a></td>
             <td v-if="item.status">Active</td>
-            <td>{{ item.email }}</td>
+            <td><a target="_blank" :href="'mailto:'+item.email">{{ item.email }}</a></td>
             <td>{{ item.role_string }}</td>
             <td>{{ item.last_login }}</td>
-            <td><v-btn small class='btn btn-danger' type="button" @click="destroy(item.id)">Delete</v-btn></td>
+            <td class="dt_action">
+              <v-icon title="Edit User Settings" @click="editForm(item.id)">mdi-cog-outline</v-icon>
+              &nbsp; &nbsp;
+              <v-icon title="Delete User" @click="destroy(item.id)">mdi-trash-can-outline</v-icon>
+            </td>
           </tr>
         </template>
       </v-data-table>
@@ -230,6 +234,7 @@
           { text: 'Email', value: 'email' },
           { text: 'Roles', value: 'role_string' },
           { text: 'Last Login', value: 'last_login' },
+          { text: '', value: '' },
         ],
         emailRules: [
             v => !!v || 'E-mail is required',

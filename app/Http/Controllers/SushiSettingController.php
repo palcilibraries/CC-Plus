@@ -54,7 +54,7 @@ class SushiSettingController extends Controller
         if ($json) {
 
             // Get sushi settings
-            $data = SushiSetting::with('institution:id,name','provider:id,name')
+            $data = SushiSetting::with('institution:id,name,is_active','provider:id,name,is_active')
                                   ->when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('inst_id', $filters['inst']);
                                   })

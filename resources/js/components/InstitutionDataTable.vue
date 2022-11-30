@@ -19,10 +19,14 @@
       <v-row v-if="is_admin" class="d-flex ma-0">
         <v-col class="d-flex px-2" cols="3">&nbsp;</v-col>
         <v-col class="d-flex px-2" cols="3">
-          <a :href="'/institutions/export/xlsx'">Export institutions to Excel</a>
+          <a @click="doInstExport">
+            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export Institutions to Excel
+          </a>
         </v-col>
         <v-col class="d-flex px-2" cols="3">
-          <a :href="'/sushisettings/export/xlsx'">Export sushi settings to Excel</a>
+          <a @click="doSushiExport">
+            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export Sushi Settings to Excel
+          </a>
         </v-col>
       </v-row>
       <v-row class="d-flex pa-1 align-center" no-gutters>
@@ -61,8 +65,11 @@
             <v-btn icon @click="goEdit(item.id)">
               <v-icon title="Edit Institution" >mdi-cog-outline</v-icon>
             </v-btn>
-            <v-btn icon class="pl-4" @click="destroy(item.id)">
-              <v-icon v-if="is_admin && item.can_delete" title="Delete Institution">mdi-trash-can-outline</v-icon>
+            <v-btn v-if="is_admin && item.can_delete" icon class="pl-4" @click="destroy(item.id)">
+              <v-icon title="Delete Institution">mdi-trash-can-outline</v-icon>
+            </v-btn>
+            <v-btn v-if="is_admin && !item.can_delete" icon class="pl-4">
+              <v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon>
             </v-btn>
           </span>
         </template>
@@ -588,6 +595,12 @@
         },
         goEdit (instId) {
             window.location.assign('/institutions/'+instId+'/edit');
+        },
+        doInstExport () {
+            window.location.assign('/institutions/export/xlsx');
+        },
+        doSushiExport () {
+            window.location.assign('/sushi-export');
         },
         updateOptions(options) {
             if (Object.keys(this.mutable_options).length === 0) return;

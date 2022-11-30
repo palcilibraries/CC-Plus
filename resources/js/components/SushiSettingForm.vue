@@ -1,14 +1,13 @@
 <template>
   <div class="details">
   	<v-row no-gutters>
-	  <h2 class="section-title">Sushi Settings</h2>
-      <v-col class="d-flex ma-2" cols="2" sm="2">
-        <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+	    <h3 class="section-title">Sushi Settings</h3>
+      <v-col class="d-flex px-4 dt_action" cols="2">
+        <v-icon title="Edit Setting" @click="swapForm">mdi-cog-outline</v-icon>
+        &nbsp; &nbsp;
+        <v-icon title="Delete Setting" @click="destroy(setting.id)">mdi-trash-can-outline</v-icon>
       </v-col>
-      <v-col class="d-flex ma-2" cols="2" sm="2">
-        <v-btn small class='btn btn-danger' type="button" @click="destroy(setting.id)">Delete</v-btn>
-      </v-col>
-	</v-row>
+  	</v-row>
     <div v-if="!showForm">
       <!-- form display control and confirmations  -->
       <!-- Values-only when form not active -->
@@ -39,7 +38,7 @@
         </v-col>
       </v-row>
       <div>
-	  	  <h2>Actions</h2>
+	  	  <h3>Actions</h3>
           <v-btn small color="secondary" type="button" @click="testSettings"
                  style="display:inline-block;margin-right:1em;">test</v-btn>
           <v-btn v-if="form.status == 'Enabled'"  small color="secondary" type="button" @click="changeStatus('Suspended')"

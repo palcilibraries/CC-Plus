@@ -6,6 +6,7 @@ use App\SushiSetting;
 use App\Institution;
 use App\Provider;
 use App\HarvestLog;
+use App\InstitutionGroup;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -34,7 +35,7 @@ class SushiSettingController extends Controller
         $json = ($request->input('json')) ? true : false;
 
         // Assign optional inputs to $filters array
-        $filters = array('inst' => [], 'prov' => [], 'stat' => []);
+        $filters = array('inst' => [], 'group' => 0, 'prov' => [], 'stat' => []);
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
@@ -49,6 +50,14 @@ class SushiSettingController extends Controller
             }
         }
 
+        // If filtering by group, get the institution IDs for the group
+        $group_insts = array();
+        if ($filters['group'] != 0) {
+            $group = InstitutionGroup::with('institutions:id')->find($filters['group']);
+            if ($group) {
+                $group_insts = $group->institutions->pluck('id')->toArray();
+            }
+        }
         // Skip querying for records unless we're returning json
         // The vue-component will run a request for initial data once it is mounted
         if ($json) {
@@ -57,6 +66,9 @@ class SushiSettingController extends Controller
             $data = SushiSetting::with('institution:id,name,is_active','provider:id,name,is_active')
                                   ->when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('inst_id', $filters['inst']);
+                                  })
+                                  ->when($filters['group'] > 0, function ($qry) use ($group_insts) {
+                                      return $qry->whereIn('inst_id', $group_insts);
                                   })
                                   ->when(sizeof($filters['prov']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('prov_id', $filters['prov']);
@@ -85,6 +97,9 @@ class SushiSettingController extends Controller
             $providers = Provider::with('connectors')->orderBy('name', 'ASC')
                                  ->get(['id', 'name', 'inst_id', 'is_active']);
 
+            // Get InstitutionGroups
+            $inst_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
+
             // Build an array of connection_fields used across all providers (whether connected or not)
             $all_connectors = array();
             $seen_connectors = array();
@@ -101,7 +116,7 @@ class SushiSettingController extends Controller
             }
 
             return view('sushisettings.index',
-                        compact('all_connectors','institutions','providers','filters'));
+                        compact('all_connectors','institutions','inst_groups','providers','filters'));
         }
 
     }

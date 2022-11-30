@@ -24,7 +24,7 @@
         <span class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
       </v-col>
       <v-col v-else class="d-flex" cols="2">&nbsp;</v-col>
-      <v-col class="d-flex px-2 align-center" cols="3">
+      <v-col v-if="mutable_filters['group']==0" class="d-flex px-2 align-center" cols="2">
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
@@ -32,7 +32,15 @@
                   label="Institution(s)"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
-      <v-col class="d-flex px-2 align-center" cols="3">
+      <v-col v-if="mutable_filters['inst'].length==0" class="d-flex px-2" cols="2">
+        <div v-if="mutable_filters['group'] != 0" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('group')"/>&nbsp;
+        </div>
+        <v-select :items="inst_groups" v-model="mutable_filters['group']"  @change="updateFilters('group')"
+                  label="Institution Group"  item-text="name" item-value="id" hint="Limit the display to an institution group"
+        ></v-select>
+      </v-col>
+      <v-col class="d-flex px-2 align-center" cols="2">
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
@@ -58,7 +66,7 @@
                   :footer-props="footer_props" :search="search" :key="'setdt_'+dtKey">
       <template v-slot:item.inst_name="{ item }">
          <span v-if="item.institution.is_active">{{ item.inst_name }}</span>
-         <span v-else><font color="gray">{{ item.inst_name }}</font></span>
+         <span v-else><em><font color="gray">{{ item.inst_name }}</font></em></span>
       </template>
       <template v-slot:item.prov_name="{ item }">
         <span v-if="item.provider.is_active">{{ item.prov_name }}</span>
@@ -130,6 +138,7 @@
                 all_connectors: { type:Array, default: () => [] },
                 providers: { type:Array, default: () => [] },
                 institutions: { type:Array, default: () => [] },
+                inst_groups: { type:Array, default: () => [] },
                 filters: { type:Object, default: () => {} }
                },
         data() {
@@ -196,7 +205,7 @@
               this.updateSettings();
           },
           clearFilter(filter) {
-              this.mutable_filters[filter] = [];
+              this.mutable_filters[filter] = (filter == 'group') ? 0 : [];
               this.$store.dispatch('updateAllFilters',this.mutable_filters);
               this.updateSettings();
           },
@@ -415,9 +424,15 @@
           Object.assign(this.mutable_filters, this.all_filters);
           Object.keys(this.filters).forEach( (key) =>  {
             if (this.filters[key] != null) {
-              if (this.filters[key].length>0) {
-                count++;
-                this.mutable_filters[key] = this.filters[key];
+              let count_it = false;
+              if ( key == 'group') {
+                  if ( this.filters['group'] != 0) count_it = true;
+              } else {
+                  if (this.filters[key].length>0) count_it = true;
+              }
+              if (count_it) {
+                  count++;
+                  this.mutable_filters[key] = this.filters[key];
               }
             }
           });

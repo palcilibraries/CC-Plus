@@ -11,26 +11,27 @@
       </v-row>
       <v-row class="d-flex ma-0">
         <v-col class="d-flex px-2" cols="4">
-          <a :href="'/institutiongroups/export/xlsx'">Export to Excel</a>
+          <a @click="doExport">
+            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel
+          </a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">
         <span v-if="success" class="good" role="alert" v-text="success"></span>
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
       </div>
-      <v-data-table :headers="headers" :items="mutable_groups" item-key="id" :options="mutable_options"
-                     :key="dtKey" @update:options="updateOptions">
-        <template v-slot:item="{ item }">
-          <tr>
-            <td>{{ item.name }}</td>
-            <td>
-              <v-btn x-small class="btn btn-primary" type="button" @click="editForm(item.id)">Edit</v-btn>
+      <div style="width:50%;">
+        <v-data-table :headers="headers" :items="mutable_groups" item-key="id" :options="mutable_options"
+                      :key="dtKey" @update:options="updateOptions">
+          <template v-slot:item.action="{ item }">
+            <span class="dt_action">
+              <v-icon title="Edit Group" @click="editForm(item.id)">mdi-cog-outline</v-icon>
               &nbsp; &nbsp;
-              <v-btn x-small class='btn btn-danger' type="button" @click="destroy(item.id)">Delete</v-btn>
-            </td>
-          </tr>
-        </template>
-      </v-data-table>
+              <v-icon title="Delete Group" @click="destroy(item.id)">mdi-trash-can-outline</v-icon>
+            </span>
+          </template>
+        </v-data-table>
+      </div>
     </div>
     <v-dialog v-model="importDialog" persistent max-width="800px">
       <v-card>
@@ -138,7 +139,7 @@
         mutable_groups: this.groups,
         headers: [
           { text: 'Group', value: 'name' },
-          { },
+          { text: '', value: 'action' },
         ],
         form: new window.Form({
             name: '',
@@ -206,6 +207,9 @@
                      }
                  });
             this.importDialog = false;
+        },
+        doExport () {
+            window.location.assign('/institutiongroups/export/xlsx');
         },
         // Create a group
         formSubmit (event) {

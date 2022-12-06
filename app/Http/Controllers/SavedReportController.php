@@ -51,7 +51,7 @@ class SavedReportController extends Controller
 
         // Setup raw fields for what we need from the harvestlog
         $count_fields  = "sushisettings.inst_id, ";
-        $count_fields .= "count(*) as total, sum(case when status='Success' then 1 else 0 end) as success";
+        $count_fields .= "count(*) as total, sum(case when harvestlogs.status='Success' then 1 else 0 end) as success";
 
         // Build the output data array
         $report_data = array();

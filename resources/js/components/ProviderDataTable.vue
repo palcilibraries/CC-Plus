@@ -372,7 +372,7 @@
                        .then( (response) => {
                            if (response.data.result) {
                                this.mutable_providers.splice(this.mutable_providers.findIndex(p=>p.id == provid),1);
-                               this.success = "Selected institutions deleted successfully.";
+                               this.success = "Provider successfully deleted.";
                            } else {
                                this.success = '';
                                this.failure = response.data.msg;

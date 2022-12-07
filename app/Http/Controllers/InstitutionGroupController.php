@@ -76,7 +76,7 @@ class InstitutionGroupController extends Controller
         }
 
         $group->not_members = Institution::whereNotIn('id', $new_members)->get(['id','name'])->toArray();
-        $group->count = Isizeof($new_members);
+        $group->count = sizeof($new_members);
 
         return response()->json(['result' => true, 'msg' => 'Group created successfully', 'group' => $group]);
     }

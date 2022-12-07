@@ -264,7 +264,7 @@
         settingsImportDialog: false,
         groupingDialog: false,
         search: '',
-        bulk_actions: [ 'Set Active', 'Set Inactive', 'Create New Group', 'Add to Existing Group', 'Delete' ],
+        bulk_actions: [ 'Set Active', 'Set Inactive', 'Create New Group', 'Add to Existing Group' ],
         bulkAction: null,
         selectedRows: [],
         groupingType: '',
@@ -354,13 +354,9 @@
                 msg += "<li>Disabled settings will remain disabled</li></ul>";
             } else if (this.bulkAction == 'Set Inactive') {
                 msg += "Bulk processing will process each requested institution sequentially.<br><br>";
-                msg += "Activating these institutions will affect their Sushi Settings:<br>";
+                msg += "De-Activating these institutions will affect their Sushi Settings:<br>";
                 msg += "<ul><li>Active settings will be Suspended</li>";
                 msg += "<li>Queued harvests will NOT be cancelled.</li></ul>";
-            } else if (this.bulkAction == 'Delete') {
-              msg += "Bulk processing will delete each requested institution sequentially.<br><br>";
-              msg += "Delete the selected institutions will also remove all related Sushi Settings.";
-              msg += " Any harvests already queued will NOT be cancelled.";
             } else if (this.bulkAction == 'Create New Group') {
                 this.groupingType = 'Create';
                 this.groupingDialog = true;
@@ -371,7 +367,6 @@
                 this.groupingDialog = true;
                 this.bulkAction = '';
                 return true;
-            } else if (this.bulkAction == 'Delete') {
             } else {
                 this.failure = "Unrecognized Bulk Action in processBulk!";
                 return;
@@ -383,45 +378,27 @@
             .then((result) => {
               if (result.value) {
                 this.success = "Working...";
-                if (this.bulkAction == 'Delete') {
-                    for (let idx=0; idx<this.selectedRows.length; idx++) {
-                      var inst=this.selectedRows[idx];
-                      axios.delete('/institutions/'+inst.id)
-                        .then( (response) => {
-                            if (response.data.result) {
-                                this.mutable_institutions.splice(this.mutable_institutions.findIndex(i=>i.id == inst.id),1);
-                                this.selectedRows.splice(idx,1);
-                            } else {
-                                this.success = '';
-                                this.failure = response.data.msg;
-                                return false;
-                            }
-                        }).catch({});
-                    }
-                    this.success = "Selected institutions deleted successfully.";
-                } else {
-                    var state = (this.bulkAction == 'Set Active') ? 1 : 0;
-                    var new_status = (state == 1) ? 'Active' : 'Inactive';
-                    this.selectedRows.forEach( (inst) => {
-                        // axios.post('/sushisettings-update', {
-                        axios.patch('/institutions/'+inst.id, {
-                          name: inst.name,
-                          is_active: state
-                        })
-                        .then( (response) => {
-                            if (response.data.result) {
-                                var _idx = this.mutable_institutions.findIndex(i=>i.id == inst.id);
-                                this.mutable_institutions[_idx].is_active = state;
-                                this.mutable_institutions[_idx].status = new_status;
-                            } else {
-                                this.success = '';
-                                this.failure = response.data.msg;
-                                return false;
-                            }
-                        }).catch(error => {});
-                    });
-                    this.success = "Selected institutions successfully updated.";
-                }
+                var state = (this.bulkAction == 'Set Active') ? 1 : 0;
+                var new_status = (state == 1) ? 'Active' : 'Inactive';
+                this.selectedRows.forEach( (inst) => {
+                    // axios.post('/sushisettings-update', {
+                    axios.patch('/institutions/'+inst.id, {
+                      name: inst.name,
+                      is_active: state
+                    })
+                    .then( (response) => {
+                        if (response.data.result) {
+                            var _idx = this.mutable_institutions.findIndex(i=>i.id == inst.id);
+                            this.mutable_institutions[_idx].is_active = state;
+                            this.mutable_institutions[_idx].status = new_status;
+                        } else {
+                            this.success = '';
+                            this.failure = response.data.msg;
+                            return false;
+                        }
+                    }).catch(error => {});
+                });
+                this.success = "Selected institutions successfully updated.";
               }
               this.bulkAction = '';
               this.dtKey += 1;           // update the datatable

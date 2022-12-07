@@ -139,8 +139,8 @@
         mutable_groups: this.groups,
         headers: [
           { text: 'Group', value: 'name' },
-          { text: 'Member Count', value: 'count' },
-          { text: '', value: 'action' },
+          { text: 'Member Count', value: 'count', align: 'center' },
+          { text: '', value: 'action', sortable: false },
         ],
         form: new window.Form({
             name: '',

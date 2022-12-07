@@ -277,7 +277,7 @@
           { text: 'Local ID ', value: 'local_id', align: 'start' },
           { text: 'Status', value: 'status' },
           { text: 'Group(s)', value: 'groups' },
-          { text: '', value: 'action' },
+          { text: '', value: 'action', sortable: false },
         ],
         footer_props: { 'items-per-page-options': [10,50,100,-1] },
         mutable_institutions: [ ...this.institutions],

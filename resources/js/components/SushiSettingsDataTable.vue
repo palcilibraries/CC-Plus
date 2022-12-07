@@ -169,7 +169,7 @@
                   { label: '', name: 'requestor_id' },
                   { label: '', name: 'API_key' },
                   { label: '', name: 'extra_args' },
-                  { label: ' ', name: 'action' },
+                  { label: ' ', name: 'action', sortable: false },
                 ],
                 headers: [],
                 footer_props: { 'items-per-page-options': [10,50,100,-1] },

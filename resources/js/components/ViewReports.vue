@@ -42,7 +42,7 @@
           { text: 'Based-on (Master)', value: 'name' },
           { text: '#-Months', value: 'months' },
           { text: '#-Fields', value: 'field_count' },
-          { text: '', value: '' },
+          { text: '', value: '', sortable: false },
         ],
         counter_headers: [
             { text: 'Name', value: 'name' },

@@ -236,7 +236,7 @@
           { text: 'Email', value: 'email' },
           { text: 'Roles', value: 'role_string' },
           { text: 'Last Login', value: 'last_login' },
-          { text: '', value: '' },
+          { text: '', value: '', sortable: false },
         ],
         emailRules: [
             v => !!v || 'E-mail is required',

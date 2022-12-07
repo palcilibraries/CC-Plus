@@ -40,7 +40,7 @@
           { text: 'Usage Date', value: 'yearmon' },
           { text: 'Attempts', value: 'attempts' },
           { text: 'Status', value: 'status' },
-          { text: '', value: '' },
+          { text: '', value: '', sortable: false },
         ],
         mutable_harvests: this.harvests,
         seemore_url: "/harvestlogs",

@@ -35,9 +35,9 @@
           { text: 'Year-Month', value: 'yearmon' },
           { text: 'Provider', value: 'prov_name' },
           { text: 'Institution', value: 'inst_name' },
-		  { text: 'Report', value: 'report_name' },
+          { text: 'Report', value: 'report_name' },
           { text: 'Last Updated', value: 'updated_at' },
-		  { text: '', value: '' },
+          { text: '', value: '', sortable: false },
         ],
       }
     },

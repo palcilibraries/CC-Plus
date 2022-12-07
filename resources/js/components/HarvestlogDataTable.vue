@@ -121,7 +121,7 @@
           { text: 'Usage Date', value: 'yearmon' },
           { text: 'Attempts', value: 'attempts' },
           { text: 'Status', value: 'status' },
-          { text: '', value: 'action' },
+          { text: '', value: 'action', sortable: false },
         ],
         mutable_harvests: this.harvests,
         mutable_filters: this.filters,

@@ -404,7 +404,7 @@
       }
       // Add empty header for admin/manager for the "actions" column in the datatable
       if (this.is_admin || this.is_manager) {
-          this.headers.push({ text: '', value: 'action' });
+          this.headers.push({ text: '', value: 'action', sortable: false });
       }
 
       // Set datatable options with store-values

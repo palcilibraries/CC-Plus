@@ -100,14 +100,14 @@ export default {
                 role: "Manager",
                 children: [
                   {
-                    url: "/users",
-                    name: "Users",
-                    role: "Manager",
+                    url: "/providers",
+                    name: "Providers",
+                    role: "Admin",
                   },
                   {
                     url: "/institutions",
                     name: "Institutions",
-                    role: "Manager",
+                    role: "Admin",
                   },
                   {
                     url: "/institutiongroups",
@@ -115,8 +115,8 @@ export default {
                     role: "Admin",
                   },
                   {
-                    url: "/providers",
-                    name: "Providers",
+                    url: "/users",
+                    name: "Users",
                     role: "Admin",
                   },
                   {
@@ -219,12 +219,12 @@ export default {
             this.consortia.push({'ccp_key': 'con_template', 'name': 'Template'});
             if (this.consortia.some(con => con.ccp_key == this.ccp_key)) this.cur_key = this.ccp_key;
         }
-        // Managers (without view or Admin rights) get a modified "insitutions" link and label
+        // Managers (without view or Admin rights) have Admin replaced by "My institution"
         if (this.is_manager && !(this.is_superuser || this.is_admin || this.is_viewer)) {
             var idx1 = this.navList.findIndex(nav => nav.name == "Admin");
-            var idx2 = this.navList[idx1].children.findIndex(nav => nav.url == '/institutions');
-            this.navList[idx1].children[idx2].name = "My Institution";
-            this.navList[idx1].children[idx2].url = "/institutions/"+this.user.inst_id;
+            this.navList[idx1].name = "My Institution";
+            this.navList[idx1].url = "/institutions/"+this.user.inst_id;
+            this.navList[idx1].children = null;
         }
         console.log('Navbar Component mounted.');
     }

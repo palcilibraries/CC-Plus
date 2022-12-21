@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\SushiSetting;
 use App\Institution;
 use App\Provider;
+use App\GlobalProvider;
 use App\HarvestLog;
 use App\InstitutionGroup;
+use App\ConnectionField;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -29,9 +31,7 @@ class SushiSettingController extends Controller
     public function index(Request $request)
     {
         $thisUser = auth()->user();
-        if (!$thisUser->hasRole("Admin")) {
-            return response()->json(['result' => false, 'msg' => 'Request failed (403) - Forbidden']);
-        }
+        abort_unless($thisUser->hasAnyRole(['Admin']), 403);
         $json = ($request->input('json')) ? true : false;
 
         // Assign optional inputs to $filters array
@@ -85,7 +85,25 @@ class SushiSettingController extends Controller
                 return $setting;
             });
 
-            return response()->json(['settings' => $settings], 200);
+            // Build an array of connection_fields used across all providers (whether connected or not)
+            $all_connectors = array();
+            $seen_connectors = array();
+            $global_connectors = ConnectionField::get();
+            $providerIds = $data->unique('prov_id')->pluck('prov_id')->toArray();
+            $providers = Provider::whereIn('id',$providerIds)->get();
+            foreach ($providers as $prov) {
+                // There are only 4... if they're all set, skip checking
+                if (sizeof($seen_connectors) < 4) {
+                    $connectors = $global_connectors->whereIn('id',$prov->globalProv->connectors);
+                    foreach($connectors as $cnx) {
+                        if (!in_array($cnx->name,$seen_connectors)) {
+                            $all_connectors[] = array('name' => $cnx->name, 'label' => $cnx->label);
+                            $seen_connectors[] = $cnx->name;
+                        }
+                    }
+                }
+            }
+            return response()->json(['settings' => $settings, 'connectors' => $all_connectors], 200);
 
         // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {
@@ -94,29 +112,12 @@ class SushiSettingController extends Controller
                                        ->get(['id', 'name', 'is_active']);
 
             // Get all providers, regardless of is_active
-            $providers = Provider::with('connectors')->orderBy('name', 'ASC')
-                                 ->get(['id', 'name', 'inst_id', 'is_active']);
+            $providers = Provider::with('globalProv')->orderBy('name', 'ASC')->get();
 
             // Get InstitutionGroups
             $inst_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
 
-            // Build an array of connection_fields used across all providers (whether connected or not)
-            $all_connectors = array();
-            $seen_connectors = array();
-            foreach ($providers as $prov) {
-                // There are only 4... if they're all set, skip checking
-                if (sizeof($seen_connectors) < 4) {
-                  foreach($prov->connectors as $cnx) {
-                      if (!in_array($cnx->name,$seen_connectors)) {
-                          $all_connectors[] = array('name' => $cnx->name, 'label' => $cnx->label);
-                          $seen_connectors[] = $cnx->name;
-                      }
-                  }
-                }
-            }
-
-            return view('sushisettings.index',
-                        compact('all_connectors','institutions','inst_groups','providers','filters'));
+            return view('sushisettings.index',compact('institutions','inst_groups','providers','filters'));
         }
 
     }
@@ -130,15 +131,18 @@ class SushiSettingController extends Controller
     public function edit($id)
     {
         // User must be able to manage the settings
-        $setting = SushiSetting::with(['institution', 'provider', 'provider.connectors'])->findOrFail($id);
+        $setting = SushiSetting::with(['institution', 'provider', 'provider.globalProv'])->findOrFail($id);
         abort_unless($setting->institution->canManage(), 403);
+
+        // Map in the connector details
+        $setting->provider->connectors = ConnectionField::whereIn('id',$setting->provider->globalProv->connectors)->get();
 
         // Set next_harvest date
         if (!$setting->provider->is_active || !$setting->institution->is_active || $setting->status != 'Enabled') {
             $setting['next_harvest'] = null;
         } else {
-            $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
-            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->day_of_month,date("Y")));
+            $mon = (date("j") < $setting->provider->globalProv->day_of_month) ? date("n") : date("n")+1;
+            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->globalProv->day_of_month,date("Y")));
         }
 
         // Get 10 most recent harvests
@@ -195,19 +199,34 @@ class SushiSettingController extends Controller
     {
         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
 
-        $input = $request->all();
-        if (!auth()->user()->hasAnyRole(['Admin']) && $input['inst_id'] != auth()->user()->inst_id) {
+        $form_data = $request->all();
+        $fields = array_except($form_data,array('global_id'));
+
+        if (!auth()->user()->hasAnyRole(['Admin']) && $fields['inst_id'] != auth()->user()->inst_id) {
             return response()->json(['result' => false, 'msg' => 'You can only assign settings for your institution']);
         }
-        $setting = SushiSetting::create($input);
-        $setting->load('institution', 'provider');
-
+        // if global_id is not null, we need to create a provider record on-the-fly as an institution-specific
+        // provider before creating the sushisetting record.
+        if (!is_null($form_data['global_id'])) {
+            $gp = GlobalProvider::where('id',$form_data['global_id'])->first();
+            if ($gp) {
+                $provider_data = array('name' => $gp->name, 'global_id' => $gp->id, 'is_active' => $gp->is_active,
+                                       'inst_id' => $fields['inst_id']);
+                $new_provider = Provider::create($provider_data);
+                $fields['prov_id'] = $new_provider->id;
+            } else {
+                return response()->json(['result' => false, 'msg' => 'Database error! Cannot find global provider record!']);
+            }
+        }
+        // create the new sushi setting record
+        $setting = SushiSetting::create($fields);
+        $setting->load('institution', 'provider', 'provider.globalProv');
         // Set status string based on is_active and add in a string for next_harvest
         if (!$setting->provider->is_active || !$setting->institution->is_active || $setting->status != 'Enabled') {
             $setting['next_harvest'] = null;
         } else {
-            $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
-            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->day_of_month,date("Y")));
+            $mon = (date("j") < $setting->provider->globalProv->day_of_month) ? date("n") : date("n")+1;
+            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->globalProv->day_of_month,date("Y")));
         }
         return response()->json(['result' => true, 'msg' => 'Settings successfully created', 'setting' => $setting]);
     }
@@ -224,17 +243,50 @@ class SushiSettingController extends Controller
         $input = $request->all();
 
        // Ensure user is allowed to change the settings
-        $institution = Institution::findOrFail($request->inst_id);
+        $institution = Institution::findOrFail($input['inst_id']);
         if (!$institution->canManage()) {
             return response()->json(['result' => false, 'msg' => 'Invalid request']);
         }
 
-       // Update or create the settings
-        $setting = SushiSetting::updateOrCreate(
-            ['inst_id' => $request->inst_id, 'prov_id' => $request->prov_id],
-            $input
-        );
-        return response()->json(['result' => true, 'msg' => 'Setting updated successfully']);
+        // Get the settings record
+        $setting = SushiSetting::where('inst_id',$input['inst_id'])->where('prov_id',$input['prov_id'])->first();
+        if (!$setting) {
+            $setting = SushiSetting::create($input);
+        }
+        $setting->load('institution','provider','provider.globalProv');
+
+        // Get required connectors
+        $connectors = ConnectionField::whereIn('id',$setting->provider->globalProv->connectors)->pluck('name')->toArray();
+
+        // Chack connection fields and input values
+        $updates = array();
+        $missing_count = 0;
+        foreach ($connectors as $cnx) {
+            $cnx_value = (isset($input[$cnx])) ? trim($input[$cnx]) : $setting->$cnx;
+            if (is_null($cnx_value) || $cnx_value == '') {
+                $cnx_value = '-missing-';
+            }
+            $missing_count += ($cnx_value == '-missing-') ? 1 : 0;
+            if (isset($input[$cnx])) {
+                $updates[$cnx] = $cnx_value;
+            }
+        }
+
+        // Set new status
+        $new_status = (isset($input['status'])) ? $input['status'] : $setting->status;
+        if ($new_status == 'Enabled') {
+            if (!$setting->provider->is_active || !$setting->institution->is_active) {
+                $new_status = 'Suspended';
+            } else if ($missing_count > 0) {
+                $new_status = 'Incomplete';
+            }
+        }
+        if ($new_status != $setting->status) {
+            $updates['status'] = $new_status;
+        }
+        $setting->update($updates);
+
+        return response()->json(['result' => true, 'msg' => 'Setting updated successfully', 'setting' => $setting]);
     }
 
     /**
@@ -338,9 +390,19 @@ class SushiSettingController extends Controller
         if ($request->filters) {
             $filters = json_decode($request->filters, true);
         } else {
-            $filters = array('inst' => [], 'prov' => []);
+            $filters = array('inst' => [], 'prov' => [], 'group' => 0);
         }
-        if (!$thisUser->hasRole("Admin")) {
+        // Admins have export using group filter, manager can only export their own inst
+        $group = null;
+        if ($thisUser->hasRole("Admin")) {
+            // If group-filter is set, pull the instIDs for the group and set as the "inst" filter
+            if ($filters['group'] > 0) {
+                $group = InstitutionGroup::with('institutions:id')->find($filters['group']);
+                if ($group) {
+                    $filters['inst'] = $group->institutions->pluck('id')->toArray();
+                }
+            }
+        } else {
             $filters['inst'] = array($thisUser->inst_id);
         }
 
@@ -448,11 +510,11 @@ class SushiSettingController extends Controller
         $info_sheet->setCellValue('B19', 'Integer > 1');
         $info_sheet->setCellValue('C19', 'Unique CC-Plus Provider ID - required');
         $info_sheet->setCellValue('D19', 'Yes');
-        $info_sheet->setCellValue('A20', 'Active');
-        $info_sheet->setCellValue('B20', 'String (Y or N)');
-        $info_sheet->setCellValue('C20', 'Make the setting active?');
+        $info_sheet->setCellValue('A20', 'Status');
+        $info_sheet->setCellValue('B20', 'String');
+        $info_sheet->setCellValue('C20', 'Enabled , Disabled, Suspended, or Incomplete');
         $info_sheet->setCellValue('D20', 'No');
-        $info_sheet->setCellValue('E20', 'Y');
+        $info_sheet->setCellValue('E20', 'Disabled');
         $info_sheet->setCellValue('A21', 'Customer ID');
         $info_sheet->setCellValue('B21', 'String');
         $info_sheet->setCellValue('C21', 'SUSHI customer ID , provider-specific');
@@ -473,6 +535,13 @@ class SushiSettingController extends Controller
         $info_sheet->setCellValue('C24', 'Support email address, per-provider');
         $info_sheet->setCellValue('D24', 'No');
         $info_sheet->setCellValue('E24', 'NULL');
+        $info_sheet->mergeCells('A26:E28');
+        $info_sheet->getStyle('A26:E28')->applyFromArray($head_style);
+        $info_sheet->getStyle('A26:E28')->getAlignment()->setWrapText(true);
+        $bot_txt = "Status will be set to 'Suspended' for settings where the Institution or Provider is not active.\n";
+        $bot_txt .= "Status will be set to 'Incomplete', and the field values marked as missing, if values are not";
+        $bot_txt .= " supplied for fields required to connect to the provider (e.g. for customer_id, requestor_id, etc.)";
+        $info_sheet->setCellValue('A26', $bot_txt);
 
         // Set row height and auto-width columns for the sheet
         for ($r = 1; $r < 22; $r++) {
@@ -493,7 +562,7 @@ class SushiSettingController extends Controller
         $inst_sheet->setCellValue('A1', 'CC+ System ID');
         $inst_sheet->setCellValue('B1', 'Local ID');
         $inst_sheet->setCellValue('C1', 'Provider ID');
-        $inst_sheet->setCellValue('D1', 'Active');
+        $inst_sheet->setCellValue('D1', 'Status');
         $inst_sheet->setCellValue('E1', 'Customer ID');
         $inst_sheet->setCellValue('F1', 'Requestor ID');
         $inst_sheet->setCellValue('G1', 'API Key');
@@ -524,18 +593,22 @@ class SushiSettingController extends Controller
 
         // Give the file a meaningful filename
         $fileName = "CCplus";
-        if (!$inst_filters && !$prov_filters) {
+        if (!$inst_filters && !$prov_filters && is_null($group)) {
             $fileName .= "_" . session('ccp_con_key', '') . "_All";
         } else {
             if (!$inst_filters) {
                 $fileName .= "_AllInstitutions";
             } else {
-                $fileName .= ($inst_name == "") ? "_SomeInstitutions": "_" . $inst_name;
+                if ($group) {
+                    $fileName .= "_" . preg_replace('/ /', '', $group->name);
+                } else {
+                    $fileName .= ($inst_name == "") ? "_SomeInstitutions": "_" . preg_replace('/ /', '', $inst_name);
+                }
             }
             if (!$prov_filters) {
                 $fileName .= "_AllProviders";
             } else {
-                $fileName .= ($prov_name == "") ? "_SomeProviders": "_" . $prov_name;
+                $fileName .= ($prov_name == "") ? "_SomeProviders": "_" . preg_replace('/ /', '', $prov_name);
             }
         }
         $fileName .= "_SushiSettings.xlsx";
@@ -581,74 +654,112 @@ class SushiSettingController extends Controller
         $institutions= Institution::get();
         if ($is_admin) {
             $inst_ids = $institutions->pluck('id')->toArray();
-            $prov_ids = Provider::pluck('id')->toArray();
+            $providers = Provider::with('globalProv')->get();
         } else {
             $inst_ids = array($usersInst);
-            $prov_ids = Provider::whereIn('inst_id', [ 1, $usersInst ])->pluck('id')->toArray();
+            $providers = Provider::with('globalProv')->whereIn('inst_id', [ 1, $usersInst ])->get();
         }
+        $prov_ids = $providers->pluck('id')->toArray();
+
+        // Get all connection fields
+        $all_connectors = ConnectionField::get();
 
         // Process the input rows
         $updated = 0;
         $deleted = 0;
         $skipped = 0;
+        $incomplete = 0;
         foreach ($rows as $rowNum => $row) {
             // Ignore header row and rows with bad/missing/invalid IDs
             if ($rowNum == 0 || !isset($row[0]) && !isset($row[1])) continue;
 
             // Look for a matching existing institution based on ID or local-ID
-            $current_inst = null;
-            $cur_inst_id = (isset($row[0])) ? strval(trim($row[0])) : null;
+            $input_inst_id = (isset($row[0])) ? strval(trim($row[0])) : null;
             $localID = (strlen(trim($row[1])) > 0) ? trim($row[1]) : null;
 
             // empty/missing/invalid ID and no localID?  skip the row
-            if (!$localID && ($row[0] == "" || !is_numeric($row[0]))) {
+            if (!$localID && ($input_inst_id == "" || !is_numeric($input_inst_id))) {
                 $inst_skipped++;
                 continue;
             }
-            // If no ID and $localID not found, skip the row
-            if (!$current_inst && $localID) {
-                $current_inst = $institutions->where("local_id", $localID)->first();
-                if (!$current_inst) {
-                    $skipped++;
-                    continue;
-                }
-                $cur_inst_id = $current_inst->id;
-            }
-            // Process only Inst_ids and prov_ids found in the "allowed" arrays created above
-            if ( !in_array($cur_inst_id, $inst_ids) || !in_array($row[2], $prov_ids) ) {
+
+            // Get the settings' provider
+            $current_prov = $providers->where('id',$row[2])->first();
+            if (!$current_prov) {
                 $skipped++;
                 continue;
             }
 
-            // Update or create the settings
-            if (!is_array($row[3], array('Enabled','Disabled','Suspended','Incomplete'))) {
-                $row[3] = ($row[3] == 1) ? 'Enabled' : 'Disabled';
+            // Get the current institution
+            $current_inst = null;
+            if ($localID) {
+                $current_inst = $institutions->where("local_id", $localID)->first();
+            } else if (!is_null($input_inst_id)) {
+                $current_inst = $institutions->where("id", $input_inst_id)->first();
             }
-            $_args = array('status' => $row[3], 'customer_id' => $row[4], 'requestor_id' => $row[5],
-                           'API_key' => $row[6], 'support_email' => $row[7]);
+
+            // If no ID and $localID not found, skip the row
+            if (!$current_inst) {
+                $skipped++;
+                continue;
+            }
+
+            // Process only Inst_ids and prov_ids found in the "allowed" arrays created above
+            if ( !in_array($current_inst->id, $inst_ids) || !in_array($row[2], $prov_ids) ) {
+                $skipped++;
+                continue;
+            }
+
+            // Put settings (except status) into an array for the update call
+            $_args = array('customer_id' => $row[4], 'requestor_id' => $row[5], 'API_key' => $row[6], 'support_email' => $row[7]);
+
+            // Figure out/assign status
+            $_args['status'] = (in_array($row[3], array('Enabled','Disabled','Suspended','Incomplete'))) ? $row[3] : null;
+            if (is_null($_args['status'])) {
+                $_args['status'] = ($row[3] == 1) ? 'Enabled' : 'Disabled';
+            }
+            if (!$current_inst->is_active || !$current_prov->is_active) {
+                $_args['status'] = 'Suspended';
+            } else if ($_args['status'] =='Enabled') {
+                $required_connectors = $all_connectors->whereIn('id',$current_prov->globalProv->connectors)
+                                                      ->pluck('name')->toArray();
+                $missing_count = 0;
+                foreach ($required_connectors as $cnx) {
+                    if ( is_null($_args[$cnx]) || trim($_args[$cnx]) == '' ) {
+                        $_args[$cnx] = "-missing-";
+                        $missing_count++;
+                    }
+                }
+                if ($missing_count>0) {
+                    $_args['status'] = 'Incomplete';
+                    $incomplete++;
+                }
+            }
+
+            // Update or create the settings
             $current_setting = SushiSetting::
-                updateOrCreate(['inst_id' => $cur_inst_id, 'prov_id' => $row[2]], $_args);
+                updateOrCreate(['inst_id' => $current_inst->id, 'prov_id' => $row[2]], $_args);
             $updated++;
         }
 
         // Setup return info message
         $msg = "";
         $msg .= ($updated > 0) ? $updated . " added or updated" : "";
+        if ($incomplete > 0) {
+            $msg .= " (" . $incomplete . " were incomplete)";
+        }
         if ($skipped > 0) {
             $msg .= ($msg != "") ? ", " . $skipped . " skipped" : $skipped . " skipped";
         }
         $msg  = 'Sushi settings import completed : ' . $msg;
 
-        // If this is a manager (not an admin), create a return object with the
-        // settings to be returned. The manager has run the import via the
-        // AllSushiByInst component - and the settings array needs to be updated.
-        // Admins run imports from the datatable and need no updated settings.
+        // Create a return object with the settings to be returned.
         if (!$is_admin) {
-           $data = SushiSetting::with('institution:id,name','provider:id,name')
-                               ->where('inst_id',$usersInst)->get();
-           return response()->json(['result' => true, 'msg' => $msg, 'settings' => $settings]);
+            $settings = SushiSetting::with('institution:id,name','provider:id,name')
+                                    ->whereIn('inst_id', [ 1, $usersInst ])->get();
         } else {
-          return response()->json(['result' => true, 'msg' => $msg]);
+            $settings = SushiSetting::with('institution:id,name','provider:id,name')->get();
         }
+        return response()->json(['result' => true, 'msg' => $msg, 'settings' => $settings]);
     }
 }

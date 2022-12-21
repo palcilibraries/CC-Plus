@@ -1,6 +1,5 @@
 <template>
   <div>
-    <div class="page-header"><h2>{{ form.name }}</h2></div>
     <div class="details" :key="'details_'+dtKey">
       <v-row v-if="can_edit && !showForm" no-gutters>
         <v-col class="d-flex pa-0">
@@ -25,9 +24,9 @@
   	      <tr><td>Serves</td><td>{{ inst_name }}</td></tr>
   	      <tr><td>SUSHI service URL</td><td>{{ mutable_prov.server_url_r5 }}</td></tr>
           <tr>
-  	        <td>Connection Fields</td>
+  	        <td>Required Connection Fields</td>
   	        <td>
-  	          <template v-for="cnx in mutable_prov.connectors">
+  	          <template v-for="cnx in connectors">
                 <v-chip>{{ cnx.name }}</v-chip>
               </template>
   	        </td>
@@ -48,28 +47,11 @@
       </div>
       <div v-else>
         <v-form v-model="formValid" class="in-page-form">
-          <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
+          <v-text-field v-model="form.name" label="Name" outlined readonly></v-text-field>
           <v-switch v-model="form.is_active" label="Active?"></v-switch>
-          <v-select :items="institutions" v-model="form.inst_id" value="provider.inst_id" label="Serves"
-                    item-text="name" item-value="id" outlined
+          <v-select v-if="is_admin && mutable_prov.inst_id!=1" :items="institutions" v-model="form.inst_id"
+                    value="provider.inst_id" label="Serves" item-text="name" item-value="id" outlined
           ></v-select>
-          <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined></v-text-field>
-          <div v-if="is_admin" class="field-wrapper has-label">
-            <v-subheader v-text="'Required Connection Fields'"></v-subheader>
-            <v-select :items="all_fields" v-model="form.connectors" value="provider.connectors" label="Select"
-                      item-text="name" item-value="id" multiple chips
-            ></v-select>
-          </div>
-  		    <div class="field-wrapper has-label">
-  	        <v-subheader v-text="'Run Harvests Monthly on Day'"></v-subheader>
-  	        <v-text-field v-model="form.day_of_month" label="Day-of-Month" single-line type="number"
-	                      :rules="dayRules"></v-text-field>
-          </div>
-          <div class="field-wrapper has-label">
-            <v-subheader v-text="'Maximum #-of Retries'"></v-subheader>
-            <v-text-field v-model="form.max_retries" label="Max Retries" hide-details single-line type="number"
-            ></v-text-field>
-          </div>
           <div class="field-wrapper has-label">
 	          <v-subheader v-text="'Reports to Harvest'"></v-subheader>
 	          <v-select :items="master_reports" v-model="form.master_reports" value="provider.reports" label="Select"
@@ -102,8 +84,9 @@
 	    </v-expansion-panel></v-expansion-panels>
     </div>
     <div class="related-list">
-      <h3 class="section-title">Sushi Settings by Institution </h3>
-      <div v-if="is_manager">
+      <h3 v-if="is_admin" class="section-title">Sushi Settings by Institution </h3>
+      <h3 v-else class="section-title">Sushi Settings</h3>
+      <div v-if="is_admin">
         <v-row class="d-flex mb-4" no-gutters>
           <v-col class="d-flex pa-0" cols="3">
             <v-btn small color="primary" type="button" @click="enableImportDialog" class="section-action">
@@ -121,11 +104,11 @@
           <input v-model="sushiForm.prov_id" id="provider.id" type="hidden">
           <v-col class="d-flex pa-0" cols="5">
             <v-select :items="mutable_unset" v-model="sushiForm.inst_id" @change="onUnsetChange"
-                      placeholder="Connect an Institution" item-text="name" item-value="id" outlined
+                      :placeholder="unset_hint" item-text="name" item-value="id" outlined
             ></v-select>
           </v-col>
           <div v-if="showSushiForm" class="form-fields">
-            <template v-for="cnx in mutable_prov.connectors">
+            <template v-for="cnx in connectors">
               <v-text-field v-model="sushiForm[cnx.name]" :label='cnx.label' :id='cnx.name' outlined></v-text-field>
               &nbsp; &nbsp;
             </template>
@@ -142,11 +125,30 @@
       <v-data-table :headers="headers" :items="mutable_prov.sushiSettings" item-key="id" :key="'setdt_'+dtKey">
         <template v-slot:item="{ item }" >
           <tr>
-            <td><a :href="'/institutions/'+item.institution.id">{{ item.institution.name }}</a></td>
-            <td v-if="mutable_prov.connectors.some(c => c.name === 'customer_id')">{{ item.customer_id }}</td>
-            <td v-if="mutable_prov.connectors.some(c => c.name === 'requestor_id')">{{ item.requestor_id }}</td>
-            <td v-if="mutable_prov.connectors.some(c => c.name === 'API_key')">{{ item.API_key }}</td>
-            <td v-if="mutable_prov.connectors.some(c => c.name === 'extra_args')">{{ item.extra_args }}</td>
+            <td>
+               <span v-if="item.institution.is_active">
+                 <a :href="'/institutions/'+item.inst_id">{{ item.institution.name }}</a>
+               </span>
+               <span v-else class="isInactive" @click="goEditInst(item.inst_id)">
+                 {{ item.institution.name }}
+               </span>
+            </td>
+            <td v-if="connectors.some(c => c.name === 'customer_id')">
+              <span v-if="item.customer_id=='-missing-'" class="Incomplete"><em>missing+required</em></span>
+              <span v-else>{{ item.customer_id }}</span>
+            </td>
+            <td v-if="connectors.some(c => c.name === 'requestor_id')">
+              <span v-if="item.requestor_id=='-missing-'" class="Incomplete"><em>missing+required</em></span>
+              <span v-else>{{ item.requestor_id }}</span>
+            </td>
+            <td v-if="connectors.some(c => c.name === 'API_key')">
+              <span v-if="item.API_key=='-missing-'" class="Incomplete"><em>missing+required</em></span>
+              <span v-else>{{ item.API_key }}</span>
+            </td>
+            <td v-if="connectors.some(c => c.name === 'extra_args')">
+              <span v-if="item.extra_args=='-missing-'" class="Incomplete"><em>missing+required</em></span>
+              <span v-else>{{ item.extra_args }}</span>
+            </td>
             <td :class="item.status">{{ item.status }}</td>
             <td class="dt_action" v-if="is_manager || is_admin">
               <v-icon title="Settings and harvests" @click="goEditSushi(item.id)">mdi-cog-outline</v-icon>
@@ -207,7 +209,7 @@
                 institutions: { type:Array, default: () => [] },
                 unset: { type:Array, default: () => [] },
                 master_reports: { type:Array, default: () => [] },
-                all_fields: { type:Array, default: () => [] },
+                connectors: { type:Array, default: () => [] },
                 harvests: { type:Array, default: () => [] },
                },
         data() {
@@ -216,7 +218,7 @@
                 failure: '',
                 status: '',
                 statusvals: ['Inactive','Active'],
-                inst_name: '',
+                inst_name: 'Entire Consortium',
                 testData: '',
                 testStatus: '',
                 can_edit: false,
@@ -225,7 +227,8 @@
                 showSushiForm: false,
                 importDialog: false,
                 csv_upload: null,
-                export_filters: { 'inst': [], 'prov': [this.provider.id] },
+                unset_hint: 'Connect an Institution',
+                export_filters: { 'inst': [], 'prov': [this.provider.id], 'group': 0 },
                 mutable_prov: { ...this.provider },
                 mutable_unset: [ ...this.unset ],
                 dtKey: 1,
@@ -244,10 +247,6 @@
                     name: this.provider.name,
                     inst_id: this.provider.inst_id,
                     is_active: this.provider.is_active,
-                    server_url_r5: this.provider.server_url_r5,
-                    day_of_month: this.provider.day_of_month,
-                    max_retries: this.provider.max_retries,
-                    connectors: [],
                     master_reports: [],
                 }),
                 sushiForm: new window.Form({
@@ -275,7 +274,7 @@
                     .then( (response) => {
                         if (response.result) {
                             this.mutable_prov = response.provider;
-                            this.form.max_retries = response.provider.max_retries;
+                            // this.form.max_retries = response.provider.max_retries;
                             if (this.is_admin) {
                                 this.inst_name = this.institutions[response.provider.inst_id-1].name;
                             }
@@ -363,6 +362,15 @@
                 window.location.assign(url);
             },
             sushiFormSubmit (event) {
+              this.success = '';
+              this.failure = '';
+              // All connectors are required - whether they work or not is a matter of testing+confirming
+              this.connectors.forEach( (cnx) => {
+                  if (this.sushiForm[cnx.name] == '' || this.sushiForm[cnx.name] == null) {
+                      this.failure = "Error: "+cnx.name+" must be supplied to connect to this provider!";
+                  }
+              });
+              if (this.failure != '') return;
                 this.sushiForm.post('/sushisettings')
 	                .then((response) => {
                       if (response.result) {
@@ -424,13 +432,13 @@
                   this.testStatus = "... Working ...";
                   this.showTest = true;
                   var testArgs = {'prov_id' : this.sushiForm.prov_id};
-                  if (this.mutable_prov.connectors.some(c => c.name === 'requestor_id'))
+                  if (this.connectors.some(c => c.name === 'requestor_id'))
                       testArgs['requestor_id'] = this.sushiForm.requestor_id;
-                  if (this.mutable_prov.connectors.some(c => c.name === 'customer_id'))
+                  if (this.connectors.some(c => c.name === 'customer_id'))
                       testArgs['customer_id'] = this.sushiForm.customer_id;
-                  if (this.mutable_prov.connectors.some(c => c.name === 'API_key'))
+                  if (this.connectors.some(c => c.name === 'API_key'))
                       testArgs['API_key'] = this.sushiForm.API_key;
-                  if (this.mutable_prov.connectors.some(c => c.name === 'extra_args'))
+                  if (this.connectors.some(c => c.name === 'extra_args'))
                       testArgs['extra_args'] = this.sushiForm.extra_args;
                   axios.post('/sushisettings-test', testArgs)
                   .then((response) => {
@@ -457,37 +465,32 @@
               goEditSushi (settingId) {
                   window.location.assign('/sushisettings/'+settingId+'/edit');
               },
+              goEditInst (instId) {
+                  window.location.assign('/institutions/'+instId);
+              },
         },
         computed: {
           ...mapGetters(['is_manager','is_admin','user_inst_id'])
         },
         mounted() {
             this.showForm = false;
-            if ( this.provider.inst_id==1 ) {
-                this.inst_name="Entire Consortium";
-            } else {
-                if (this.is_admin) {
-                    this.inst_name = this.institutions[this.provider.inst_id-1].name;
-                } else {
-                    this.inst_name = this.institutions[0].name;
-                }
+            if ( this.provider.inst_id!=1 ) {
+                let _inst = this.institutions.find(inst => inst.id == this.provider.inst_id);
+                this.inst_name = _inst.name;
             }
             if ( this.is_admin || (this.is_manager && this.provider.inst_id==this.user_inst_id)) {
                 this.can_edit = true;
             }
             this.status=this.statusvals[this.provider.is_active];
-            // Setup form:master_reports and form:connectors
+            // Setup form:master_reports
             for(var i=0;i<this.provider.reports.length;i++){
                this.form.master_reports.push(this.provider.reports[i].id);
-            }
-            for(var i=0;i<this.provider.connectors.length;i++){
-               this.form.connectors.push(this.provider.connectors[i].id);
             }
             // Setup DataTable headers array based on the provider connectors
             this.header_fields.forEach((fld) => {
                 // Connection fields are setup in "header_fields" as names without labels
                 if (fld.label == '' && fld.name != '') {
-                    let cnx = this.provider.connectors.find(c => c.name == fld.name);
+                    let cnx = this.connectors.find(c => c.name == fld.name);
                     if (typeof(cnx) != 'undefined') {
                         this.headers.push({ text: cnx.label, value: cnx.name});
                     }
@@ -495,15 +498,35 @@
                     this.headers.push({ text: fld.label, value: fld.name });
                 }
             });
+            if (!this.is_admin && this.is_manager) {
+                this.unset_hint = "'Connect My Institution';"
+            }
 
             console.log('Provider Component mounted.');
         }
     }
+//.a.Inactive {
+
 </script>
 
-<style>
+<style scoped>
 .wrap-column-boxes {
     flex-flow: row wrap;
     align-items: flex-end;
- }
+}
+.Enabled { color: #00dd00; }
+.Disabled { color: #dd0000; }
+.Suspended {
+  color: #999999;
+  font-style: italic;
+}
+.Incomplete {
+  color: #dd0000;
+  font-style: italic;
+}
+.isInactive {
+  cursor: pointer;
+  color: #999999;
+  font-style: italic;
+}
 </style>

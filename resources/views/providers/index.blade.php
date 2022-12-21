@@ -15,8 +15,7 @@
 <v-app>
   <provider-data-table :providers="{{ json_encode($providers) }}"
                        :institutions="{{ json_encode($institutions) }}"
-                       :master_reports="{{ json_encode($master_reports) }}"
-                       :default_retries="{{ $default_retries }}"
+                       :unset_global="{{ json_encode($unset_global) }}"
   ></provider-data-table>
 </v-app>
 @endsection

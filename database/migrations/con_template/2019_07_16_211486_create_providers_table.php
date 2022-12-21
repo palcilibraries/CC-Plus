@@ -15,16 +15,17 @@ class CreateProvidersTable extends Migration
     {
         Schema::create('providers', function (Blueprint $table) {
 
+            $global_db = DB::connection('globaldb')->getDatabaseName();
+
             $table->Increments('id');
-            $table->string('name')->unique();
+            $table->string('name');
             $table->boolean('is_active')->default(1);
             $table->unsignedInteger('inst_id')->default(1); // inst_id=1 is consorta-wide
-            $table->string('server_url_r5')->nullable();
-            $table->unsignedInteger('day_of_month')->default(15);
-            $table->unsignedInteger('max_retries')->default(10);
+            $table->unsignedInteger('global_id')->nullable();
             $table->timestamps();
 
             $table->foreign('inst_id')->references('id')->on('institutions');
+            $table->foreign('global_id')->references('id')->on($global_db . '.global_providers');
         });
     }
 

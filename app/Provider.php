@@ -23,9 +23,8 @@ class Provider extends Model
    *
    * @var array
    */
-    protected $fillable = [ 'name', 'is_active', 'inst_id', 'server_url_r5', 'day_of_month', 'max_retries' ];
-    protected $casts = ['id'=>'integer', 'is_active'=>'integer', 'inst_id'=>'integer', 'day_of_month'=>'integer',
-                        'max_retries' => 'integer'];
+    protected $fillable = [ 'name', 'is_active', 'inst_id', 'global_id' ];
+    protected $casts = ['id'=>'integer', 'is_active'=>'integer', 'inst_id'=>'integer', 'global_id' => 'integer'];
 
   /**
    * The attributes that should be encrypted on save (password is already hashed)
@@ -68,6 +67,21 @@ class Provider extends Model
           ->withTimestamps();
     }
 
+    public function globalProv()
+    {
+        return $this->belongsTo('App\GlobalProvider', 'global_id');
+    }
+
+    public function data()
+    {
+        if (!is_null($this->global_id)) {
+            $globalProv = $this->globalProv()->first()->toArray();
+            return array_merge($this->globalProv()->first()->toArray(),$this->toArray());
+        } else {
+            return $this->toArray();
+        }
+    }
+
     public function titleReports()
     {
         return $this->hasMany('App\TitleReport');
@@ -86,12 +100,5 @@ class Provider extends Model
     public function itemReports()
     {
         return $this->hasMany('App\ItemReport');
-    }
-
-    public function connectors()
-    {
-        $_db = config('database.connections.consodb.database');
-        return $this
-          ->belongsToMany('App\ConnectionField', $_db . '.provider_connectors');
     }
 }

@@ -9,6 +9,7 @@ use App\Report;
 use App\HarvestLog;
 use App\SushiSetting;
 use App\ConnectionField;
+use App\GlobalProvider;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -30,93 +31,35 @@ class ProviderController extends Controller
     public function index(Request $request)
     {
         $thisUser = auth()->user();
-        $consodb = config('database.connections.consodb.database');
-       // Admins get list of all providers
-        if ($thisUser->hasRole("Admin")) {
-            $provider_data = Provider::with('institution:id,name','sushiSettings:id,last_harvest')->orderBy('name','ASC')->get();
+        abort_unless($thisUser->hasRole('Admin'), 403);
 
-       // Otherwise, get all consortia-wide providers and those that match user's inst_id
-       // (exclude providers assigned to institutions.)
-        } else {
-            $provider_data = Provider::with('institution:id,name')->where('inst_id', 1)->orWhere('inst_id', $thisUser->inst_id)
+        $consodb = config('database.connections.consodb.database');
+       // Get all providers
+        $provider_data = Provider::with('institution:id,name','sushiSettings:id,last_harvest','reports:id,name','globalProv')
                                  ->orderBy('name','ASC')->get();
-        }
+        $existingIds = $provider_data->pluck('global_id')->toArray();
 
         // Map columns to simplify the datatable
         $providers = $provider_data->map( function ($rec) use ($thisUser) {
             $rec->active = ($rec->is_active) ? 'Active' : 'Inactive';
             $rec->inst_name = ($rec->institution->id == 1) ? 'Entire Consortium' : $rec->institution->name;
             $rec->can_delete = false;
-            if ($thisUser->hasRole("Admin") || ($thisUser->hasRole("Manager") && $thisUser->inst_id == $rec->inst_id)) {
-                $last_harvest = $rec->sushiSettings->max('last_harvest');
-                $rec->can_delete = (is_null($last_harvest)) ? true : false;
-            }
+            $rec->day_of_month = $rec->globalProv->day_of_month;
+            $last_harvest = $rec->sushiSettings->max('last_harvest');
+            $rec->can_delete = (is_null($last_harvest)) ? true : false;
+            $rec->reports_string = ($rec->reports) ? $this->makeReportString($rec->reports) : 'None';
+
             return $rec;
-        });
+        })->toArray();
 
-       // $institutions depends on whether current user is admin or Manager
-        if ($thisUser->hasRole("Admin")) {
-            $institutions = Institution::where('id','>',1)->orderBy('name', 'ASC')->get(['id','name'])->toArray();
-            array_unshift($institutions,array('id' => 1,'name' => 'Entire Consortium'));
-        } else {  // Managers and Users limited their own inst
-            $institutions = Institution::where('id', '=', $thisUser->inst_id)->get(['id','name'])->toArray();
-        }
-        $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
-                                 ->get(['id','name'])->toArray();
-        $default_retries = config('ccplus.max_harvest_retries');
+       // Get all institutions
+        $institutions = Institution::where('id','>',1)->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+        array_unshift($institutions,array('id' => 1,'name' => 'Entire Consortium'));
 
-        return view('providers.index', compact('providers', 'institutions', 'master_reports', 'default_retries'));
-    }
+       // Pull unset global provider definitions
+        $unset_global = GlobalProvider::whereNotIn('id',$existingIds)->orderBy('name', 'ASC')->get();
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        return redirect()->route('providers.index');
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        $thisUser = auth()->user();
-        if ($thisUser->hasRole("Admin")) {
-            return response()->json(['result' => false, 'msg' => 'Create failed (403) - Forbidden']);
-        }
-        $this->validate($request, [
-          'name' => 'required',
-          'inst_id' => 'required'
-        ]);
-        $input = $request->all();
-        $provider = Provider::create($input);
-
-        // Attach reports
-        if (!is_null($request->input('master_reports'))) {
-            foreach ($request->input('master_reports') as $r) {
-                $provider->reports()->attach($r);
-            }
-        }
-
-        // Build return object that matches what index does (above)
-        $return_data = array();
-        $data = Provider::with('institution:id,name')->where('id', $provider->id)->first();
-        if ($data) {
-            $return_data = $data->toArray();
-            $return_data['active'] = ($data->is_active) ? 'Active' : 'Inactive';
-            $return_data['inst_name'] = ($data->inst_id == 1) ? 'Entire Consortium' : $data->institution->name;
-            $return_data['can_delete'] = ($thisUser->hasRole("Admin") ||
-                                          ($thisUser->hasRole("Manager") && $thisUser->inst_id == $data->inst_id)) ? true : false;
-        }
-
-        return response()->json(['result' => true, 'msg' => 'Provider successfully created',
-                                 'provider' => $return_data]);
+        return view('providers.index', compact('providers', 'institutions', 'unset_global'));
     }
 
     /**
@@ -128,11 +71,14 @@ class ProviderController extends Controller
     public function show($id)
     {
         $thisUser = auth()->user();
-        $provider = Provider::with(['reports:reports.id,reports.name','connectors'])->findOrFail($id);
+        $con_prov = Provider::with('reports:reports.id,reports.name','globalProv')->findOrFail($id);
+        // $con_prov holds the database record, $provider is what we'll build and pass to the UI
+        $provider = $con_prov->data();
 
        // Build data to be passed based on whether the user is admin or Manager
+        $limit_to_insts = null;
         if ($thisUser->hasRole("Admin")) {
-            $sushi_settings = SushiSetting::with('institution')->where('prov_id',$provider->id)->get();
+            $sushi_settings = SushiSetting::with('institution')->where('prov_id',$con_prov->id)->get();
 
             // Get last_harvest for the provider (ALL insts) as determinant for whether it can be deleted
             $last_harvest = $sushi_settings->max('last_harvest');
@@ -143,46 +89,32 @@ class ProviderController extends Controller
             array_unshift($institutions,array('id' => 1,'name' => 'Entire Consortium'));
 
             // Setup an array of insts without settings for this provider
-            $set_inst_ids = $provider->sushiSettings->pluck('inst_id');
+            $set_inst_ids = $con_prov->sushiSettings->pluck('inst_id');
             $set_inst_ids[] = 1;
             $unset_institutions = Institution::whereNotIn('id', $set_inst_ids)
                                              ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
-            $limit_to_insts = array();
-        } else {  // Managers/Users are limited their own inst
+        } else {  // Managers/Users are limited to their own inst
             $user_inst = $thisUser->inst_id;
             $limit_to_insts = array($user_inst);
             $sushi_settings = SushiSetting::with('institution')
-                                          ->where('prov_id',$provider->id)->where('inst_id', $user_inst)->get();
+                                          ->where('prov_id',$con_prov->id)->where('inst_id', $user_inst)->get();
             $last_harvest = $sushi_settings->max('last_harvest');
-            $provider['can_delete'] = ($thisUser->inst_id == $provider->inst_id && is_null($last_harvest)) ? true : false;
+            $provider['can_delete'] = ($thisUser->inst_id == $con_prov->inst_id && is_null($last_harvest)) ? true : false;
             $institutions = Institution::where('id', '=', $user_inst)->get(['id','name'])->toArray();
             $unset_institutions = array();
-            if (count($provider->sushiSettings) == 0) {
+            if ($sushi_settings->count() == 0) {
                 $unset_institutions[] = Institution::where('id', $user_inst)->first()->toArray();
             }
         }
 
         // Add on Sushi Settings
-        $provider->unsetRelation('sushiSettings');
-        $provider['sushiSettings'] = $sushi_settings;
+        $provider['sushiSettings'] = $sushi_settings->toArray();
 
-        // get master reports and harvestlog records
-        $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
-                                 ->get(['id','name'])->toArray();
+        // Master reports limited to whet is defined for the related global provider
+        $master_reports = Report::whereIn('id', $con_prov->globalProv->master_reports)->get(['id','name'])->toArray();
 
-        // Get connection fields
-        $connection_fields = ConnectionField::get(['id','name']);
-        $all_fields = $connection_fields->toArray();
-
-        // if the provider has NO connectors required, update it to at least require customer_id
-        if ($provider->connectors->count() == 0) {
-            $cf = $connection_fields->where('name','customer_id')->first();
-            if ($cf) {
-                $provider->unsetRelation('connectors');
-                $provider->connectors()->attach($cf->id);
-                $provider->load('connectors');
-            }
-        }
+        // Connection fields is the set defined for the related global provider
+        $connectors = ConnectionField::whereIn('id', $con_prov->globalProv->connectors)->get()->values()->toArray();
 
         // Get 10 most recent harvests
         $harvests = HarvestLog::with('report:id,name',
@@ -203,7 +135,7 @@ class ProviderController extends Controller
             'institutions',
             'unset_institutions',
             'master_reports',
-            'all_fields',
+            'connectors',
             'harvests'
         ));
     }
@@ -229,23 +161,17 @@ class ProviderController extends Controller
     public function update(Request $request, $id)
     {
         $thisUser = auth()->user();
-        $provider = Provider::with(['reports:reports.id,reports.name','connectors'])->findOrFail($id);
+        $provider = Provider::with('globalProv')->findOrFail($id);
         if (!$provider->canManage()) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
         $was_active = $provider->is_active;
+        $fields = ConnectionField::whereIn('id',$provider->globalProv->connectors)->get()->values()->toArray();
 
       // Validate form inputs
-        $this->validate($request, [
-            'name' => 'required',
-            'is_active' => 'required',
-            'inst_id' => 'required',
-        ]);
+        $this->validate($request, ['is_active' => 'required', 'inst_id' => 'required',]);
         $input = $request->all();
-        if (!isset($input['max_retries']) || $input['max_retries'] < 0) {
-            $input['max_retries'] = 0;
-        }
-        $prov_input = array_except($input,array('connectors','master_reports'));
+        $prov_input = array_except($input,array('master_reports'));
 
       // Update the record and assign reports in master_reports
         $provider->update($prov_input);
@@ -256,35 +182,48 @@ class ProviderController extends Controller
             }
         }
 
-      // Update the provider_connectors
-        $provider->connectors()->detach();
-        if (!is_null($request->input('connectors'))) {
-            foreach ($request->input('connectors') as $cnx) {
-                $provider->connectors()->attach($cnx);
+      // If is_active is changing, check and update related sushi settings
+        if ($was_active != $provider->is_active) {
+            if ($thisUser->hasRole("Admin")) {
+                $settings = SushiSetting::with('institution')->where('prov_id',$provider->id)->get();
+            } else {
+                $settings = SushiSetting::with('institution')
+                                        ->where('prov_id',$provider->id)->where('inst_id', $thisUser->inst_id)->get();
             }
-        }
-        $provider->load('connectors');
 
-      // If changing from active to inactive, suspend related sushi settings
-        if ( $was_active && !$provider->is_active ) {
-            SushiSetting::where('prov_id',$provider->id)->where('status','Enabled')
-                        ->update(['status' => 'Suspended']);
-         }
-
-      // If changing from inactive to active, enable suspended settings where institution is also active
-        if ( !$was_active && $provider->is_active ) {
-           SushiSetting::join('institutions as Inst', 'sushisettings.inst_id', 'Inst.id')
-                       ->where('Inst.is_active', 1)->where('prov_id',$provider->id)
-                       ->where('status','Suspended')->update(['status' => 'Enabled']);
+            foreach ($settings as $setting) {
+              // skip disabled settings
+                if ($setting->status == 'Disabled') continue;
+              // If required connectors all have values, check to see if sushi setting status needs updating
+                if ($setting->isComplete()) {
+                  // Setting is Enabled, provider going inactive, suspend it
+                    if ($setting->status == 'Enabled' && $was_active && !$provider->is_active ) {
+                        $setting->update(['status' => 'Suspended']);
+                    }
+                  // Setting is Suspended, provider going active with active institution, enable it
+                    if ($setting->status == 'Suspended' && !$was_active && $provider->is_active &&
+                        $setting->institution->is_active) {
+                        $setting->update(['status' => 'Enabled']);
+                    }
+                  // Setting status is Incomplete, provider is active and institution is active, enable it
+                    if ($setting->status == 'Incomplete' && $provider->is_active && $setting->institution->is_active) {
+                        $setting->update(['status' => 'Enabled']);
+                    }
+              // If required conenctors are missing value(s), mark them and update setting status tp Incomplete
+                } else {
+                    $setting_updates = array('status' => 'Incomplete');
+                    foreach ($fields as $fld) {
+                        if ($setting->$fld == null || $setting->$fld == '') {
+                            $setting_updates[$fld] = "-missing-";
+                        }
+                    }
+                    $setting->update($setting_updates);
+                }
+            }
         }
 
       // Return updated provider data
         $provider->load('reports:reports.id,reports.name');
-        if ($thisUser->hasRole("Admin")) {
-            $settings= SushiSetting::with('institution')->where('prov_id',$provider->id)->get();
-        } else {
-            $settings = SushiSetting::with('institution')->where('prov_id',$provider->id)->where('inst_id', $user_inst)->get();
-        }
         $last_harvest = $settings->max('last_harvest');
         $provider['can_delete'] = (is_null($last_harvest)) ? true : false;
         $provider['sushiSettings'] = $settings->toArray();
@@ -294,13 +233,55 @@ class ProviderController extends Controller
     }
 
     /**
+     * Connect one or more global providers as a consortium provider
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function connect(Request $request)
+    {
+        // verify access for requesting user
+        $thisUser = auth()->user();
+        abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
+
+        // Get and validate inputs
+        $this->validate($request, [ 'providers' => 'required', 'inst_id' => 'required' ]);
+        $input = $request->all();
+        $inst_id = ($thisUser->hasRole("Admin")) ? $inst_id = $input['inst_id'] : $thisUser->inst_id;
+
+        // Attach the providers and build an array (like index makes) of the added entries
+        $added = array();
+        $global_providers = GlobalProvider::whereIn('id',$input['providers'])->get();
+        foreach ($global_providers as $gp) {
+            $data = array('name' => $gp->name, 'inst_id' => $inst_id, 'is_active' => $gp->is_active, 'global_id' => $gp->id);
+            $provider = Provider::create($data);
+            $provider->load('institution:id,name','globalProv');
+            $provider->active = ($provider->is_active) ? 'Active' : 'Inactive';
+            $provider->inst_name = ($provider->institution->id == 1) ? 'Entire Consortium' : $provider->institution->name;
+            $provider->can_delete = true;
+            $provider->day_of_month = $provider->globalProv->day_of_month;
+            $provider->SushiSettings = [];
+            // Attach reports to be be pulled
+            foreach ($gp->master_reports as $r) {
+                $provider->reports()->attach($r);
+            }
+            $added[] = $provider->data();
+        }
+
+
+        // Pull unset global provider definitions
+        $message = count($added) . " Provider(s) successfully connected";
+        return response()->json(['result' => true, 'msg' => $message, 'added' => $added, ]);
+    }
+
+    /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Provider  $provider
+     * @param  \App\Provider  $id
      */
     public function destroy($id)
     {
-        $provider = Provider::findOrFail($id);
+        $provider = Provider::with('globalProv')->findOrFail($id);
         if (!$provider->canManage()) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
@@ -311,7 +292,8 @@ class ProviderController extends Controller
             return response()->json(['result' => false, 'msg' => $ex->getMessage()]);
         }
 
-        return response()->json(['result' => true, 'msg' => 'Provider successfully deleted']);
+        return response()->json(['result' => true, 'msg' => 'Provider successfully deleted',
+                                 'global_provider' => $provider->globalProv]);
     }
 
     /**
@@ -648,5 +630,24 @@ class ProviderController extends Controller
         $msg  = 'Import successful, Providers : ' . $detail;
 
         return response()->json(['result' => true, 'msg' => $msg, 'providers' => $providers]);
+    }
+
+    /**
+     * Build string representation of master_reports array
+     *
+     * @param  Array  $reports
+     * @return String
+     */
+    private function makeReportString($reports) {
+        $report_string = '';
+        $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
+        foreach ($reports as $rpt) {
+            $mr = $master_reports->where('id',$rpt->id)->first();
+            if ($mr) {
+                $report_string .= ($report_string == '') ? '' : ', ';
+                $report_string .= $mr->name;
+            }
+        }
+        return $report_string;
     }
 }

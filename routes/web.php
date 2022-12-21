@@ -67,6 +67,8 @@ Route::get('/harvestlogs/{id}/raw', 'HarvestLogController@downloadRaw')->middlew
 Route::get('/available-providers', 'HarvestLogController@availableProviders')->middleware(['auth']);
 Route::post('/update-harvest-status', 'HarvestLogController@updateStatus')->middleware(['auth','role:Admin,Manager']);
 Route::post('extend-institution-group', 'InstitutionGroupController@extend')->middleware(['auth','role:Admin,Manager']);
+Route::post('/providers/connect', 'ProviderController@connect')->name('providers.connect')
+     ->middleware(['auth','role:Admin,Manager']);
 //
 Route::get('/users/export/{type}', 'UserController@export');
 Route::get('/providers/export/{type}', 'ProviderController@export');

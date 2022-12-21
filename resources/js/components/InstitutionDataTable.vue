@@ -1,31 +1,24 @@
 <template>
   <div>
     <div>
-      <v-row v-if="is_admin" class="d-flex ma-0">
+      <v-row class="d-flex ma-0">
         <v-col class="d-flex px-2" cols="3">
           <v-btn small color="primary" @click="createForm">Create an Institution</v-btn>
         </v-col>
         <v-col class="d-flex px-2" cols="3">
           <v-btn small color="primary" @click="institutionImportForm">Import Institutions</v-btn>
         </v-col>
+        <v-col cols="3">&nbsp;</v-col>
         <v-col class="d-flex px-2" cols="3">
-          <v-btn small color="primary" @click="settingsImportForm">Import Sushi Settings</v-btn>
-        </v-col>
-        <v-col class="d-flex px-2" cols="2">
           <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
           ></v-text-field>
         </v-col>
       </v-row>
-      <v-row v-if="is_admin" class="d-flex ma-0">
+      <v-row class="d-flex ma-0">
         <v-col class="d-flex px-2" cols="3">&nbsp;</v-col>
         <v-col class="d-flex px-2" cols="3">
           <a @click="doInstExport">
             <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export Institutions to Excel
-          </a>
-        </v-col>
-        <v-col class="d-flex px-2" cols="3">
-          <a @click="doSushiExport">
-            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export Sushi Settings to Excel
           </a>
         </v-col>
       </v-row>
@@ -65,10 +58,10 @@
             <v-btn icon @click="goEdit(item.id)">
               <v-icon title="Edit Institution" >mdi-cog-outline</v-icon>
             </v-btn>
-            <v-btn v-if="is_admin && item.can_delete" icon class="pl-4" @click="destroy(item.id)">
+            <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
               <v-icon title="Delete Institution">mdi-trash-can-outline</v-icon>
             </v-btn>
-            <v-btn v-if="is_admin && !item.can_delete" icon class="pl-4">
+            <v-btn v-if="!item.can_delete" icon class="pl-4">
               <v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon>
             </v-btn>
           </span>
@@ -123,49 +116,6 @@
           </v-col>
           <v-col class="d-flex">
             <v-btn class='btn' x-small type="button" color="primary" @click="institutionImportDialog=false">Cancel</v-btn>
-          </v-col>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-    <v-dialog v-model="settingsImportDialog" persistent max-width="1200px">
-      <v-card>
-        <v-card-title>Import Sushi Settings</v-card-title>
-        <v-spacer></v-spacer>
-        <v-card-text>
-          <v-container grid-list-md>
-            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
-            ></v-file-input>
-            <p>
-              <strong>Note:&nbsp; The Import Type below determines whether the settings in the input file should
-              be treated as an <em>Update</em> or as a <em>Full Replacement</em> for any existing settings.</strong>
-            </p>
-            <p>
-              When "Full Replacement" is chosen, any EXISTING SETTINGS omitted from the import file will be deleted!
-              This will also remove all associated harvest and failed-harvest records connected to the settings!
-            </p>
-            <p>
-              The "Add or Update" option will not delete any sushi settings, but will overwrite existing settings
-              whenever a match for an Institution-ID and Provider-ID are found in the import file. If no setting
-              exists for a given valid provider-institution pair, a new setting will be created and saved. Any values
-              in columns C-G which are NULL, blank, or missing for a valid provider-institution pair, will result
-              in a NULL value being stored for that field.
-            </p>
-            <p>
-              For these reasons, exercise caution using this import function, especially when requesting a Full
-              Replacement import. Generating an export of the existing settings FIRST will provide detailed
-              instructions for importing on the "How to Import" tab and will help ensure that the desired
-              end-state is achieved.
-            </p>
-            <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
-          </v-container>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-col class="d-flex">
-            <v-btn x-small color="primary" type="submit" @click="settingsImportSubmit">Run Import</v-btn>
-          </v-col>
-          <v-col class="d-flex">
-            <v-btn class='btn' x-small type="button" color="primary" @click="settingsImportDialog=false">Cancel</v-btn>
           </v-col>
         </v-card-actions>
       </v-card>
@@ -493,32 +443,6 @@
                  });
              this.institutionImportDialog = false;
         },
-        settingsImportSubmit (event) {
-            this.success = '';
-            if (this.csv_upload==null) {
-                this.failure = 'A CSV import file is required';
-                return;
-            }
-            this.failure = '';
-            let formData = new FormData();
-            formData.append('csvfile', this.csv_upload);
-            formData.append('type', this.import_type);
-            axios.post('/sushisettings/import', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                  })
-                 .then( (response) => {
-                     if (response.data.result) {
-                         this.failure = '';
-                         this.success = response.data.msg;
-                     } else {
-                         this.success = '';
-                         this.failure = response.data.msg;
-                     }
-                 });
-             this.settingsImportDialog = false;
-        },
         formSubmit (event) {
             this.success = '';
             this.failure = '';
@@ -576,9 +500,6 @@
         doInstExport () {
             window.location.assign('/institutions/export/xlsx');
         },
-        doSushiExport () {
-            window.location.assign('/sushi-export');
-        },
         updateOptions(options) {
             if (Object.keys(this.mutable_options).length === 0) return;
             Object.keys(this.mutable_options).forEach( (key) =>  {
@@ -590,7 +511,7 @@
         },
     },
     computed: {
-      ...mapGetters(['all_filters','page_name','is_admin','datatable_options'])
+      ...mapGetters(['all_filters','page_name','datatable_options'])
     },
     beforeCreate() {
       // Load existing store data

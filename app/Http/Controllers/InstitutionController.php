@@ -8,6 +8,7 @@ use App\Provider;
 use App\Role;
 use App\SushiSetting;
 use App\HarvestLog;
+use App\GlobalProvider;
 use App\ConnectionField;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -29,7 +30,7 @@ class InstitutionController extends Controller
     public function index(Request $request)
     {
         $thisUser = auth()->user();
-        abort_unless($thisUser->hasAnyRole(['Admin','Viewer']), 403);
+        abort_unless($thisUser->hasAnyRole(['Admin']), 403);
 
         $json = ($request->input('json')) ? true : false;
 
@@ -188,7 +189,7 @@ class InstitutionController extends Controller
 
         // Get the institution and sushi settings
         $institution = Institution::with('users', 'users.roles')->findOrFail($id);
-        $sushi_settings = SushiSetting::with('provider','provider.connectors')->where('inst_id',$institution->id)->get();
+        $sushi_settings = SushiSetting::with('provider','provider.globalProv')->where('inst_id',$institution->id)->get();
 
         // Get most recent harvest and set can_delete flag
         $last_harvest = $sushi_settings->max('last_harvest');
@@ -231,24 +232,38 @@ class InstitutionController extends Controller
             $key = trim($field->name);
             $all_connectors[$key] = array('id'=>$field->id, 'name'=>$field->name, 'label'=>$field->label, 'active'=>false);
         }
-        // Build an array of providers not yet connected to this inst and set the flag in connectors
+        // Build arrays of providers not yet connected to this inst and set the flag in connectors
         // to mark connectors in use by connected providers
         $set_provider_ids = $sushi_settings->pluck('prov_id')->values()->toArray();
-        $all_providers = Provider::with('connectors')->whereIn('inst_id', [1,$id])
-                                 ->orderBy('name', 'ASC')->get(['id','name','inst_id']);
-        $unset_providers = array();
+        $all_providers = Provider::with('globalProv')->whereIn('inst_id', [1,$id])->orderBy('name', 'ASC')->get();
+        $unset_conso_providers = array();
         foreach ($all_providers as $prov) {
+            // Pull the providers' connection fields
+            $connectors = $fields->whereIn('id', $prov->globalProv->connectors);
+
             // Flag active connectors for providers already connected
             if (in_array($prov->id,$set_provider_ids)) {
-                foreach($prov->connectors as $cnx) {
+                foreach($connectors as $cnx) {
                     $key = trim($cnx->name);
                     if (!$all_connectors[$key]['active']) $all_connectors[$key]['active'] = true;
                 }
             // Un-connected providers and their connectors go into the unset array
             } else {
-                $unset_providers[] = array('id' => $prov->id, 'name' => $prov->name,
-                                           'connectors' => $prov->connectors->toArray());
+                $unset_conso_providers[] = array('id' => $prov->id, 'name' => $prov->name,
+                                                 'connectors' => $connectors->values()->toArray());
             }
+        }
+
+        // Build list of global providers not already added to the consortium
+        // These are eligible to be added as institution-specific providers
+        $conso_global_ids = $all_providers->pluck('global_id')->toArray();
+        $global_providers = GlobalProvider::whereNotIn('id', $conso_global_ids)->orderBy('name', 'ASC')->get();
+        $unset_global_providers = array();
+        foreach ($global_providers as $gp) {
+            $unset = $gp->toArray();
+            // replace array of IDs with full connection fields for U/I use
+            $unset['connectors'] = ConnectionField::whereIn('id',$gp->connectors)->get()->values()->toArray();
+            $unset_global_providers[] = $unset;
         }
 
         // Get 10 most recent harvests
@@ -264,8 +279,8 @@ class InstitutionController extends Controller
                               ->get('harvestlogs.*')->toArray();
         return view(
             'institutions.show',
-            compact('institution', 'users', 'unset_providers', 'all_connectors', 'all_groups', 'all_roles',
-                    'harvests')
+            compact('institution', 'users', 'unset_conso_providers', 'unset_global_providers', 'all_connectors',
+                    'all_groups', 'all_roles', 'harvests')
         );
     }
 

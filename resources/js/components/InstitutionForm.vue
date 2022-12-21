@@ -18,7 +18,8 @@
       </v-row>
       <!-- display institution form if manager has activated it. onSubmit function closes and resets instForm -->
       <div v-if="showInstForm">
-        <form method="POST" action="" @submit.prevent="instFormSubmit" @keydown="instForm.errors.clear($event.target.name)" class="in-page-form">
+        <form method="POST" action="" @submit.prevent="instFormSubmit" @keydown="instForm.errors.clear($event.target.name)"
+              class="in-page-form">
           <v-text-field v-model="instForm.name" label="Name" outlined></v-text-field>
           <v-text-field v-model="instForm.internal_id" label="Internal Identifier" outlined></v-text-field>
           <v-switch v-model="instForm.is_active" label="Active?"></v-switch>
@@ -137,9 +138,6 @@
     <!-- Sushi Settings arranged by-provider -->
     <div class="related-list">
       <h3 class="section-title">Sushi Settings by Provider</h3>
-      <!-- <span v-if="is_admin">
-        &nbsp; &nbsp; <a href="/providers/create"><v-icon title="Add a Provider">mdi-database-plus</v-icon></a>
-      </span> -->
       <div v-if="is_manager">
         <v-row class="d-flex mb-4" no-gutters>
           <v-col class="d-flex pa-0" cols="3">
@@ -152,15 +150,22 @@
           </v-col>
         </v-row>
       </div>
-      <div v-if="(is_manager || is_admin) && mutable_unset.length > 0">
+      <div v-if="(is_manager || is_admin) && (mutable_unset_con.length > 0 || mutable_unset_glo.length > 0)">
         <form method="POST" action="/sushisettings" @submit.prevent="sushiFormSubmit"
               @keydown="sushiForm.errors.clear($event.target.name)">
           <input v-model="sushiForm.inst_id" id="institution.id" type="hidden">
-          <v-col class="d-flex pa-0" cols="5">
-            <v-select :items="mutable_unset" v-model="sushiForm.prov_id" @change="onUnsetChange" outlined
-                      placeholder="Connect a Provider" item-text="name" item-value="id" color="primary"
-            ></v-select>
-          </v-col>
+          <v-row class="d-flex my-2" no-gutters>
+            <v-col v-if="mutable_unset_con.length > 0" class="d-flex pr-4" cols="4">
+              <v-select :items="mutable_unset_con" v-model="sushiForm.prov_id" @change="onUnsetChange('conso')" outlined
+                        placeholder="Connect a Consortium Provider" item-text="name" item-value="id" color="primary"
+              ></v-select>
+            </v-col>
+            <v-col v-if="mutable_unset_glo.length > 0" class="d-flex pa-0" cols="4">
+              <v-select :items="mutable_unset_glo" v-model="sushiForm.global_id" @change="onUnsetChange('global')" outlined
+                        placeholder="Add Institution-Specific Provider" item-text="name" item-value="id" color="primary"
+              ></v-select>
+            </v-col>
+          </v-row>
           <div v-if="showSushiForm" class="form-fields">
             <template v-for="cnx in new_provider.connectors">
               <v-text-field v-model="sushiForm[cnx.name]" :label='cnx.label' :id='cnx.name' outlined></v-text-field>
@@ -179,11 +184,30 @@
         <v-data-table :headers="sushiHeaders" :items="mutable_inst.sushiSettings" item-key="id" :key="'setdt_'+dtKey">
           <template v-slot:item="{ item }" >
             <tr>
-              <td>{{ item.provider.name }}</td>
-              <td v-if="mutable_connectors['customer_id']['active']">{{ item.customer_id }}</td>
-              <td v-if="mutable_connectors['requestor_id']['active']">{{ item.requestor_id }}</td>
-              <td v-if="mutable_connectors['API_key']['active']">{{ item.API_key }}</td>
-              <td v-if="mutable_connectors['extra_args']['active']">{{ item.extra_args }}</td>
+              <td>
+                 <span v-if="item.provider.is_active">
+                   <a :href="'/providers/'+item.prov_id">{{ item.provider.name }}</a>
+                 </span>
+                 <span v-else class="isInactive" @click="goEditProv(item.prov_id)">
+                   {{ item.provider.name }}
+                 </span>
+              </td>
+              <td v-if="mutable_connectors['customer_id']['active']">
+                <span v-if="item.customer_id=='-missing-'" class="Incomplete">missing+required</span>
+                <span v-else>{{ item.customer_id }}</span>
+              </td>
+              <td v-if="mutable_connectors['requestor_id']['active']">
+                <span v-if="item.requestor_id=='-missing-'" class="Incomplete">missing+required</span>
+                <span v-else>{{ item.requestor_id }}</span>
+              </td>
+              <td v-if="mutable_connectors['API_key']['active']">
+                <span v-if="item.API_key=='-missing-'" class="Incomplete">missing+required</span>
+                <span v-else>{{ item.API_key }}</span>
+              </td>
+              <td v-if="mutable_connectors['extra_args']['active']">
+                <span v-if="item.extra_args=='-missing-'" class="Incomplete">missing+required</span>
+                <span v-else>{{ item.extra_args }}</span>
+              </td>
               <td :class="item.status">{{ item.status }}</td>
               <td v-if="is_manager || is_admin">
                 <span class="dt_action">
@@ -244,7 +268,8 @@
     export default {
         props: {institution: { type:Object, default: () => {} },
                 users: { type:Array, default: () => [] },
-                unset: { type:Array, default: () => [] },
+                unset_conso: { type:Array, default: () => [] },
+                unset_global: { type:Array, default: () => [] },
                 all_connectors: { type:Object, default: () => {} },
                 all_groups: { type:Array, default: () => [] },
                 all_roles: { type:Array, default: () => [] },
@@ -262,7 +287,8 @@
                 showSushiForm: false,
                 showTest: false,
                 mutable_inst: { ...this.institution },
-                mutable_unset: [ ...this.unset ],
+                mutable_unset_con: [ ...this.unset_conso ],
+                mutable_unset_glo: [ ...this.unset_global ],
                 mutable_users: [ ...this.users ],
                 mutable_groups: [ ...this.institution.groups],
                 mutable_connectors: { ...this.all_connectors },
@@ -302,6 +328,7 @@
                 sushiForm: new window.Form({
                     inst_id: this.institution.id,
                     prov_id: null,
+                    global_id: null,
                     customer_id: '',
                     requestor_id: '',
                     API_key: '',
@@ -312,7 +339,7 @@
                 sushiHeaders: [],
                 dtKey: 1,
                 csv_upload: null,
-                export_filters: { 'inst': [this.institution.id], 'prov': [] },
+                export_filters: { 'inst': [this.institution.id], 'prov': [], 'group': 0 },
                 import_type: '',
                 import_types: ['Add or Update', 'Full Replacement']
             }
@@ -326,12 +353,7 @@
                         if (response.result) {
                             this.success = response.msg;
                             this.mutable_inst = response.institution;
-                            // this.mutable_inst.name = this.instForm.name;
-                            // this.mutable_inst.internal_id = this.instForm.internal_id;
-                            // this.mutable_inst.is_active = this.instForm.is_active;
                             this.status = this.statusvals[this.instForm.is_active];
-                            // this.mutable_inst.fte = this.instForm.fte;
-                            // this.mutable_inst.notes = this.instForm.notes;
                             this.mutable_groups = this.instForm.institutiongroups;
                         } else {
                             this.failure = response.msg;
@@ -369,10 +391,20 @@
             hideSushiForm () {
                 this.showSushiForm = false;
                 this.sushiForm.prov_id = null;
+                this.sushiForm.global_id = null;
                 this.new_provider = { 'connectors': [] };
             },
-            onUnsetChange () {
-                this.new_provider = this.mutable_unset.find(p => p.id == this.sushiForm.prov_id);
+            onUnsetChange (type) {
+                let _prov = {};
+                if (type == 'conso') {
+                  _prov = this.mutable_unset_con.find(p => p.id == this.sushiForm.prov_id);
+                } else if (type == 'global') {
+                  _prov = this.mutable_unset_glo.find(p => p.id == this.sushiForm.global_id);
+                } else {
+                  this.failure = 'Javascript error : unknown type in onUnsetChange';
+                  return;
+                }
+                this.new_provider = { ..._prov };
                 this.sushiForm.customer_id = '';
                 this.sushiForm.requestor_id = '';
                 this.sushiForm.API_key = '';
@@ -389,6 +421,7 @@
             },
             importSubmit (event) {
                 this.success = '';
+                this.failure = '';
                 if (this.import_type == '') {
                     this.failure = 'An import type is required';
                     return;
@@ -397,7 +430,6 @@
                     this.failure = 'A CSV import file is required';
                     return;
                 }
-                this.failure = '';
                 let formData = new FormData();
                 formData.append('csvfile', this.csv_upload);
                 formData.append('type', this.import_type);
@@ -486,10 +518,20 @@
                    .catch(error => {});
             },
             sushiFormSubmit (event) {
+                this.success = '';
+                this.failure = '';
+                // All connectors are required - whether they work or not is a matter of testing+confirming
+                this.new_provider.connectors.forEach( (cnx) => {
+                    if (this.sushiForm[cnx.name] == '' || this.sushiForm[cnx.name] == null) {
+                        this.failure = "Error: "+cnx.name+" must be supplied to connect to this provider!";
+                    }
+                });
+                if (this.failure != '') return;
+
+                // crea() method on sushisettings controller to add to the table
                 this.sushiForm.post('/sushisettings')
 	                .then((response) => {
                       if (response.result) {
-                          this.failure = '';
                           this.success = response.msg;
                           // Add the new connection to the settings rows and sort it by-name ascending
                           this.mutable_inst.sushiSettings.push(response.setting);
@@ -499,8 +541,11 @@
                             return 0;
                           });
                           // Remove the provider from the unset array
-                          this.mutable_unset.splice(this.mutable_unset.findIndex(p => p.id == this.new_provider.id),1);
-
+                          if (this.sushiForm.global_id == null) {
+                            this.mutable_unset_con.splice(this.mutable_unset_con.findIndex(p => p.id==this.new_provider.id),1);
+                          } else {
+                            this.mutable_unset_glo.splice(this.mutable_unset_glo.findIndex(p => p.id==this.new_provider.id),1);
+                          }
                           // Check provider connectors to see if a new connector was just enabled
                           let new_cnx = false;
                           this.new_provider.connectors.forEach( (cnx) => {
@@ -513,6 +558,8 @@
                           if (new_cnx) this.buildsushiHeaders();
                           this.new_provider = { 'connectors': [] };
                           this.showSushiForm = false;
+                          this.sushiForm.prov_id = null;
+                          this.sushiForm.global_id = null;
                           this.dtKey += 1;
                       } else {
                           this.success = '';
@@ -570,12 +617,21 @@
                            })
                            .catch({});
                        // Add the entry to the "unset" list and res-sort it
-                       this.mutable_unset.push({'id': setting.prov_id, 'name': setting.provider.name});
-                       this.mutable_unset.sort((a,b) => {
-                         if ( a.name < b.name ) return -1;
-                         if ( a.name > b.name ) return 1;
-                         return 0;
-                       });
+                       if (setting.inst_id ==1) { // consortium provider
+                           this.mutable_unset_con.push({'id': setting.prov_id, 'name': setting.provider.name});
+                           this.mutable_unset_con.sort((a,b) => {
+                             if ( a.name < b.name ) return -1;
+                             if ( a.name > b.name ) return 1;
+                             return 0;
+                           });
+                       } else { // institution-specific provider
+                           this.mutable_unset_glo.push({'id': setting.prov_id, 'name': setting.provider.name});
+                           this.mutable_unset_glo.sort((a,b) => {
+                             if ( a.name < b.name ) return -1;
+                             if ( a.name > b.name ) return 1;
+                             return 0;
+                           });
+                       }
                        // Remove the setting from the "set" list
                        this.mutable_inst.sushiSettings.splice(this.mutable_inst.sushiSettings.findIndex(s=> s.id == setting.id),1);
                        this.dtKey += 1;           // re-render of the datatable
@@ -614,6 +670,9 @@
             goEdit (settingId) {
                 window.location.assign('/sushisettings/'+settingId+'/edit');
             },
+            goEditProv (provId) {
+                window.location.assign('/providers/'+provId+'/edit');
+            },
             // Set Sushi DataTable headers array based on the provider connectors
             buildsushiHeaders() {
               this.sushiHeaders = [ { text: 'Name', value: 'name' } ];
@@ -637,3 +696,20 @@
         }
     }
 </script>
+<style scoped>
+.Enabled { color: #00dd00; }
+.Disabled { color: #dd0000; }
+.Suspended {
+  color: #999999;
+  font-style: italic;
+}
+.Incomplete {
+  color: #dd0000;
+  font-style: italic;
+}
+.isInactive {
+  cursor: pointer;
+  color: #999999;
+  font-style: italic;
+}
+</style>

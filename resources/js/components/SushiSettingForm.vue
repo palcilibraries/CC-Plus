@@ -13,16 +13,24 @@
       <!-- Values-only when form not active -->
       <v-row>
         <v-col v-if="setting.provider.connectors.some(c => c.name === 'customer_id')" cols="3">
-          <strong>Customer ID: </strong>{{ form.customer_id }}
+          <strong>Customer ID: </strong>
+          <span v-if="form.customer_id == '-missing-'"><font color="red">missing+required</font></span>
+          <span v-else>{{ form.customer_id }}</span>
         </v-col>
       	<v-col v-if="setting.provider.connectors.some(c => c.name === 'requestor_id')" cols="3">
-          <strong>Requestor ID: </strong>{{ form.requestor_id }}
+          <strong>Requestor ID: </strong>
+          <span v-if="form.requestor_id == '-missing-'"><font color="red">missing+required</font></span>
+          <span v-else>{{ form.requestor_id }}</span>
         </v-col>
       	<v-col v-if="setting.provider.connectors.some(c => c.name === 'API_key')" cols="3">
-          <strong>API Key: </strong>{{ form.API_key }}
+          <strong>API Key: </strong>
+          <span v-if="form.API_key == '-missing-'"><font color="red">missing+required</font></span>
+          <span v-else>{{ form.API_key }}</span>
         </v-col>
         <v-col v-if="setting.provider.connectors.some(c => c.name === 'extra_args')" cols="3">
-          <strong>Extra Args: </strong>{{ form.extra_args }}
+          <strong>Extra Args: </strong>
+          <span v-if="form.extra_args == '-missing-'"><font color="red">missing+required</font></span>
+          <span v-else>{{ form.extra_args }}</span>
         </v-col>
       </v-row>
       <v-row>
@@ -32,7 +40,7 @@
       </v-row>
       <v-row>
         <v-col v-if="form.status == 'Enabled'" cols="4"><strong><font color='green'>Harvesting Enabled</font></strong></v-col>
-        <v-col v-else  cols="4"><strong><font color='red'>Harvesting {{ form.status }}</font></strong></v-col>
+        <v-col v-else><strong><font color='red'>Harvest Status: {{ form.status }}</font></strong></v-col>
         <v-col v-if="setting.next_harvest" cols="8">
           <strong>Next Harvest: </strong>{{ setting.next_harvest }}</a>
         </v-col>
@@ -41,10 +49,10 @@
 	  	  <h3>Actions</h3>
           <v-btn small color="secondary" type="button" @click="testSettings"
                  style="display:inline-block;margin-right:1em;">test</v-btn>
-          <v-btn v-if="form.status == 'Enabled'"  small color="secondary" type="button" @click="changeStatus('Suspended')"
-                 style="display:inline-block;margin-right:1em;">suspend</v-btn>
-          <v-btn v-else small color="green" type="button" @click="changeStatus('Enabled')"
-                 style="display:inline-block;margin-right:1em;">enable</v-btn>
+          <v-btn v-if="form.status == 'Enabled' || form.status == 'Suspended'" small color="warning" type="button"
+                 @click="changeStatus('Disabled')" style="display:inline-block;margin-right:1em;">disable</v-btn>
+          <v-btn v-if="form.status != 'Enabled'" small color="green" type="button"
+                 @click="changeStatus('Enabled')" style="display:inline-block;margin-right:1em;">enable</v-btn>
           <a :href="'/harvestlogs/create?inst='+setting.inst_id+'&prov='+setting.prov_id">
             <v-btn small color="primary" type="button" style="display:inline-block;margin-right:1em;">harvest</v-btn>
           </a>
@@ -102,7 +110,7 @@
                 success: '',
                 failure: '',
                 status: '',
-				showForm: false,
+                showForm: false,
                 showTest: false,
                 testData: '',
                 testStatus: '',
@@ -124,6 +132,12 @@
                     .then( (response) => {
 	                    this.warning = '';
 	                    this.confirm = 'Settings successfully updated.';
+                      // Update form fields that may have been changed by the update
+                      this.form.status = response.setting.status;
+                      this.form.customer_id = response.setting.customer_id;
+                      this.form.requestor_id = response.setting.requestor_id;
+                      this.form.API_key = response.setting.API_key;
+                      this.form.extra_args = response.setting.extra_args;
 	                });
                 this.showForm = false;
             },
@@ -176,7 +190,7 @@
                 })
                 .then( (response) => {
                     if (response.data.result) {
-                        this.form.status = new_status;
+                        this.form.status = response.data.setting.status;
                     } else {
                         self.success = '';
                         self.failure = response.data.msg;

@@ -65,19 +65,42 @@
                   item-key="id" :options="mutable_options" @update:options="updateOptions"
                   :footer-props="footer_props" :search="search" :key="'setdt_'+dtKey">
       <template v-slot:item.inst_name="{ item }">
-         <span v-if="item.institution.is_active">{{ item.inst_name }}</span>
-         <span v-else><em><font color="gray">{{ item.inst_name }}</font></em></span>
+         <span v-if="item.institution.is_active">
+           <a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a>
+         </span>
+         <span v-else class="isInactive" @click="goEditInst(item.inst_id)">{{ item.inst_name }}</span>
       </template>
       <template v-slot:item.prov_name="{ item }">
-        <span v-if="item.provider.is_active">{{ item.prov_name }}</span>
-        <span v-else><em><font color="gray">{{ item.prov_name }}</font></em></span>
+        <span v-if="item.provider.is_active">
+          <a :href="'/providers/'+item.prov_id">{{ item.prov_name }}</a>
+        </span>
+        <span v-else class="isInactive" @click="goEditProv(item.prov_id)">{{ item.prov_name }}</span>
       </template>
       <template v-slot:item.status="{ item }">
         <span v-if="item.status=='Enabled'"><v-icon large color="green" title="Enabled">mdi-toggle-switch</v-icon></span>
         <span v-if="item.status=='Disabled'"><v-icon large color="red" title="Disabled">mdi-toggle-switch-off</v-icon></span>
+        <span v-if="item.status=='Incomplete'">
+          <v-icon large color="red" title="Incomplete">mdi-toggle-switch-off</v-icon>
+        </span>
         <span v-if="item.status=='Suspended'">
           <v-icon large color="gray" title="Suspended">mdi-toggle-switch-outline</v-icon>
         </span>
+      </template>
+      <template v-slot:item.customer_id="{ item }">
+        <span v-if="item.customer_id=='-missing-'" class="Incomplete">missing+required</span>
+        <span v-else>{{ item.customer_id }}</span>
+      </template>
+      <template v-slot:item.requestor_id="{ item }">
+        <span v-if="item.requestor_id=='-missing-'" class="Incomplete">missing+required</span>
+        <span v-else>{{ item.requestor_id }}</span>
+      </template>
+      <template v-slot:item.API_key="{ item }">
+        <span v-if="item.API_key=='-missing-'" class="Incomplete">missing+required</span>
+        <span v-else>{{ item.API_key }}</span>
+      </template>
+      <template v-slot:item.extra_args="{ item }">
+        <span v-if="item.extra_args=='-missing-'" class="Incomplete">missing+required</span>
+        <span v-else>{{ item.extra_args }}</span>
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
@@ -135,7 +158,6 @@
 
     export default {
         props: {
-                all_connectors: { type:Array, default: () => [] },
                 providers: { type:Array, default: () => [] },
                 institutions: { type:Array, default: () => [] },
                 inst_groups: { type:Array, default: () => [] },
@@ -148,7 +170,6 @@
                 testData: '',
                 testStatus: '',
                 search: '',
-				        showForm: false,
                 showTest: false,
                 importDialog: false,
                 csv_upload: null,
@@ -195,12 +216,13 @@
           },
           doExport () {
               let url = "/sushi-export";
-              if (this.mutable_filters['inst'].length > 0 || this.mutable_filters['prov'].length > 0) {
+              if (this.mutable_filters['inst'].length > 0 || this.mutable_filters['prov'].length > 0 ||
+                  this.mutable_filters['group'] != 0) {
                   url += "?filters="+JSON.stringify(this.mutable_filters);
               }
               window.location.assign(url);
           },
-          updateFilters() {
+          updateFilters(filter) {
               this.$store.dispatch('updateAllFilters',this.mutable_filters);
               this.updateSettings();
           },
@@ -216,10 +238,29 @@
               let _filters = JSON.stringify(this.mutable_filters);
               axios.get("/sushisettings?json=1&filters="+_filters)
                    .then((response) => {
-                       this.mutable_settings = response.data.settings;
+                       this.connectors = [ ...response.data.connectors ];
+                       this.mutable_settings = [ ...response.data.settings ];
+                       this.updateHeaders();
                    })
                    .catch(err => console.log(err));
                this.loading = false;
+               this.dtKey += 1;           // re-render of the datatable
+          },
+          // Build/Re-build DataTable headers array based on the provider connectors
+          updateHeaders() {
+              this.headers = [];
+              this.header_fields.forEach((fld) => {
+                  // Connection fields are setup in "header_fields" as names without labels
+                  if (fld.label == '' && fld.name != '') {
+                      // any provider using the field means we make a column for it
+                      let cnx = this.connectors.find(c => c.name == fld.name);
+                      if (typeof(cnx) != 'undefined') {
+                          this.headers.push({ text: cnx.label, value: cnx.name});
+                      }
+                  } else {
+                      this.headers.push({ text: fld.label, value: fld.name });
+                  }
+              });
           },
           updateOptions(options) {
               Object.keys(this.mutable_options).forEach( (key) =>  {
@@ -248,7 +289,6 @@
                        if (response.data.result) {
                            // Load settings
                            this.updateSettings();
-                           this.dtKey += 1;           // re-render of the datatable
                            this.success = response.data.msg;
                        } else {
                            this.failure = response.data.msg;
@@ -310,7 +350,7 @@
                           .then( (response) => {
                               if (response.data.result) {
                                   var _idx = this.mutable_settings.findIndex(h=>h.id == setting.id);
-                                  this.mutable_settings[_idx].status = new_status;
+                                  this.mutable_settings[_idx].status = response.data.setting.status;
                               } else {
                                   this.success = '';
                                   this.failure = response.data.msg;
@@ -364,6 +404,12 @@
           goEdit (settingId) {
               window.location.assign('/sushisettings/'+settingId+'/edit');
           },
+          goEditInst (instId) {
+              window.location.assign('/institutions/'+instId);
+          },
+          goEditProv (provId) {
+              window.location.assign('/providers/'+provId);
+          },
           testSettings (event) {
               this.failure = '';
               this.success = '';
@@ -385,24 +431,6 @@
                       }
                   })
                  .catch(error => {});
-          },
-          onUnsetChange (prov) {
-              this.form.customer_id = '';
-              this.form.requestor_id = '';
-              this.form.API_key = '';
-              this.form.extra_args = '';
-              this.failure = '';
-              this.success = '';
-              this.testData = '';
-              this.testStatus = '';
-              this.showForm = true;
-              let provider = this.unset.find(p => p.id == prov);
-              this.connectors = provider.connectors;
-          },
-          hideForm (event) {
-              this.showForm = false;
-              this.form.prov_id = null;
-              this.connectors = [];
           },
         },
         computed: {
@@ -443,23 +471,8 @@
           // Update store and apply filters if some have been set
           if (count>0) this.$store.dispatch('updateAllFilters',this.mutable_filters);
 
-          // Setup DataTable headers array based on the provider connectors
-          this.header_fields.forEach((fld) => {
-              // Connection fields are setup in "header_fields" as names without labels
-              if (fld.label == '' && fld.name != '') {
-                  // any provider using the field means we make a column for it
-                  let cnx = this.all_connectors.find(c => c.name == fld.name);
-                  if (typeof(cnx) != 'undefined') {
-                      this.headers.push({ text: cnx.label, value: cnx.name});
-                  }
-              } else {
-                  this.headers.push({ text: fld.label, value: fld.name });
-              }
-          });
-
-          // Load settings
+          // Load settings and update column headers
           this.updateSettings();
-          this.dtKey += 1;           // update the datatable
 
           // Subscribe to store updates
           this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
@@ -469,9 +482,20 @@
     }
 </script>
 
-<style>
+<style scoped>
 .Enabled { color: #00dd00; }
 .Disabled { color: #dd0000; }
-.Suspended { color: #999999; }
-.Incomplete { color: #ff8c00; }
+.Suspended {
+  color: #999999;
+  font-style: italic;
+}
+.Incomplete {
+  color: #dd0000;
+  font-style: italic;
+}
+.isInactive {
+  cursor: pointer;
+  color: #999999;
+  font-style: italic;
+}
 </style>

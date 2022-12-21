@@ -9,8 +9,7 @@
   </div>
 </div>
 <v-app>
-  <sushisettings-data-table :all_connectors="{{ json_encode($all_connectors) }}"
-                         :institutions="{{ json_encode($institutions) }}"
+  <sushisettings-data-table :institutions="{{ json_encode($institutions) }}"
                          :inst_groups="{{ json_encode($inst_groups) }}"
                          :providers="{{ json_encode($providers) }}"
                          :filters="{{ json_encode($filters) }}"

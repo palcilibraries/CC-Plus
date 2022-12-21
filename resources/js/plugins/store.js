@@ -57,6 +57,10 @@ export const store = new Vuex.Store({
                            datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                        groupDesc: [], multiSort: false, mustSort: false }
                  },
+          globalproviders: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: []},
+                             datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
+                                         groupDesc: [], multiSort: false, mustSort: false }
+                           },
       },
       report_data: [],
   },

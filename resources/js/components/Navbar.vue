@@ -83,8 +83,8 @@ export default {
                     role: "SuperUser",
                   },
                   {
-                    url: "/globalvendors",
-                    name: "Global Vendor Settings",
+                    url: "/globalproviders",
+                    name: "Global Provider Settings",
                     role: "SuperUser",
                   },
                   {

@@ -49,6 +49,7 @@ Vue.component('alert-data-table', require('./components/AlertDataTable.vue').def
 Vue.component('alert-summary-table', require('./components/AlertSummaryTable.vue').default);
 Vue.component('superuser-dashboard', require('./components/SuperUserDashboard.vue').default);
 Vue.component('globalsettings', require('./components/GlobalSettings.vue').default);
+Vue.component('global-provider-data-table', require('./components/GlobalProviderDataTable.vue').default);
 Vue.component('sushisettings-data-table', require('./components/SushiSettingsDataTable.vue').default);
 
 /**

@@ -41,7 +41,7 @@ Route::resource('/systemalerts', 'SystemAlertController')->middleware(['auth']);
 Route::get('/globaladmin', 'GlobalAdminController@index')->middleware('auth','role:SuperUser');
 Route::post('/change-instance', 'GlobalAdminController@changeInstance')->middleware('auth','role:SuperUser');
 Route::resource('/globalsettings', 'GlobalSettingController')->middleware('auth','role:SuperUser');
-Route::resource('/globalvendors', 'GlobalVendorController')->middleware('auth','role:SuperUser');
+Route::resource('/globalproviders', 'GlobalProviderController')->middleware('auth','role:SuperUser');
 Route::resource('/consortia', 'ConsortiumController')->middleware('auth','role:SuperUser');
 //
 Route::get('/admin', 'AdminController@index')->name('admin')->middleware(['auth','role:Admin,Manager']);

@@ -9,6 +9,15 @@ use Illuminate\Database\Eloquent\Model;
 class SushiSetting extends Model
 {
    // use HasEncryptedAttributes;
+   /**
+   * Class Constructor
+   */
+    private $global_connectors;
+    public function __construct(array $attributes = array())
+    {
+       parent::__construct($attributes);
+       $this->global_connectors = ConnectionField::get();
+    }
 
   /**
    * The database table used by the model.
@@ -43,6 +52,16 @@ class SushiSetting extends Model
     public function provider()
     {
         return $this->belongsTo('App\Provider', 'prov_id');
+    }
+
+    public function isComplete()
+    {
+        $required = $this->provider->globalProv->connectors;
+        $connectors = $this->global_connectors->whereIn('id',$required)->pluck('name')->toArray();
+        foreach ($connectors as $cnx) {
+            if (is_null($this->$cnx) || trim($this->$cnx) == '' || $this->$cnx == '-missing-') return false;
+        }
+        return true;
     }
 
     public function harvestLogs()

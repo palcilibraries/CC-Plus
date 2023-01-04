@@ -33,13 +33,8 @@ class UserController extends Controller
 
         // Admins see all, managers see only their inst, eveyone else gets an error
         $thisUser = auth()->user();
-        abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
-        if ($thisUser->hasRole("Admin")) {
-            $user_data = User::with('roles','institution:id,name')->orderBy('name', 'ASC')->get();
-        } else {    // is manager
-            $user_data = User::with('roles', 'institution:id,name')->orderBy('name', 'ASC')
-                             ->where('inst_id', '=', $thisUser->inst_id)->get();
-        }
+        abort_unless($thisUser->hasAnyRole(['Admin']), 403);
+        $user_data = User::with('roles','institution:id,name')->orderBy('name', 'ASC')->get();
 
         // Get all roles
         $all_roles = Role::orderBy('id', 'ASC')->get(['name', 'id']);

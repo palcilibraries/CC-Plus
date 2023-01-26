@@ -45,19 +45,21 @@
           <strong>Next Harvest: </strong>{{ setting.next_harvest }}</a>
         </v-col>
       </v-row>
-      <div>
-	  	  <h3>Actions</h3>
-          <v-btn small color="secondary" type="button" @click="testSettings"
-                 style="display:inline-block;margin-right:1em;">test</v-btn>
-          <v-btn v-if="form.status == 'Enabled' || form.status == 'Suspended'" small color="warning" type="button"
-                 @click="changeStatus('Disabled')" style="display:inline-block;margin-right:1em;">disable</v-btn>
-          <v-btn v-if="form.status != 'Enabled'" small color="green" type="button"
-                 @click="changeStatus('Enabled')" style="display:inline-block;margin-right:1em;">enable</v-btn>
-          <a :href="'/harvestlogs/create?inst='+setting.inst_id+'&prov='+setting.prov_id">
-            <v-btn small color="primary" type="button" style="display:inline-block;margin-right:1em;">harvest</v-btn>
-          </a>
+      <v-row class="d-flex ma-0 pt-1">
+        <h3>Actions</h3>
+      </v-row>
+      <div class="d-flex ma-0 py-1">
+        <v-btn small color="secondary" type="button" @click="testSettings"
+               style="display:inline-block;margin-right:1em;">test</v-btn>
+        <v-btn v-if="form.status == 'Enabled' || form.status == 'Suspended'" small color="warning" type="button"
+               @click="changeStatus('Disabled')" style="display:inline-block;margin-right:1em;">disable</v-btn>
+        <v-btn v-if="form.status != 'Enabled'" small color="green" type="button"
+               @click="changeStatus('Enabled')" style="display:inline-block;margin-right:1em;">enable</v-btn>
+        <a :href="'/harvestlogs/create?inst='+setting.inst_id+'&prov='+setting.prov_id">
+          <v-btn small color="primary" type="button" style="display:inline-block;margin-right:1em;">harvest</v-btn>
+        </a>
       </div>
-      <v-row v-if="showTest || success || failure" class="status-message">
+      <v-row class="d-flex ma-0 py-1 status-message" v-if="showTest || success || failure">
         <span v-if="success" class="good" role="alert" v-text="success"></span>
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
         <div v-if="showTest">
@@ -199,22 +201,25 @@
                 .catch(error => {});
             },
             testSettings (event) {
-                var self = this;
-                self.showTest = true;
-                self.testData = '';
-                self.testStatus = "... Working ...";
+                this.showTest = true;
+                this.testData = '';
+                this.testStatus = "... Working ...";
                 var testArgs = {'prov_id' : this.form.prov_id};
-                if (this.connectors.some(c => c.name === 'requestor_id')) testArgs['requestor_id'] = this.form.requestor_id;
-                if (this.connectors.some(c => c.name === 'customer_id')) testArgs['customer_id'] = this.form.customer_id;
-                if (this.connectors.some(c => c.name === 'API_key')) testArgs['API_key'] = this.form.API_key;
-                if (this.connectors.some(c => c.name === 'extra_args')) testArgs['extra_args'] = this.form.extra_args;
+                if (this.setting.provider.connectors.some(c => c.name === 'requestor_id'))
+                    testArgs['requestor_id'] = this.form.requestor_id;
+                if (this.setting.provider.connectors.some(c => c.name === 'customer_id'))
+                    testArgs['customer_id'] = this.form.customer_id;
+                if (this.setting.provider.connectors.some(c => c.name === 'API_key'))
+                    testArgs['API_key'] = this.form.API_key;
+                if (this.setting.provider.connectors.some(c => c.name === 'extra_args'))
+                    testArgs['extra_args'] = this.form.extra_args;
                 axios.post('/sushisettings-test', testArgs)
                      .then((response) => {
                         if ( response.data.result == '') {
-                            self.testStatus = "No results!";
+                            this.testStatus = "No results!";
                         } else {
-                            self.testStatus = response.data.result;
-                            self.testData = response.data.rows;
+                            this.testStatus = response.data.result;
+                            this.testData = response.data.rows;
                         }
                     })
                    .catch(error => {});

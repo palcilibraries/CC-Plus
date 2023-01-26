@@ -176,16 +176,15 @@ class SushiSettingController extends Controller
         }
 
        // Get sushi URL from provider record
-        $server_url = Provider::where('id', '=', $request->prov_id)->value('server_url_r5');
+        $provider = Provider::with('globalProv')->where('id', $request->prov_id)->get();
 
        // Get the settings
-        $_where = ['inst_id' => $request->inst_id,
-                 'prov_id' => $request->prov_id];
+        $_where = ['inst_id' => $request->inst_id, 'prov_id' => $request->prov_id];
         $data = SushiSetting::where($_where)->first();
         $settings = (is_null($data)) ? array('count' => 0) : $data->toArray();
 
        // Return settings and url as json
-        $return = array('settings' => $settings, 'url' => $server_url);
+        $return = array('settings' => $settings, 'url' => $provider->globalProv->server_url_r5);
         return response()->json($return);
     }
 
@@ -304,7 +303,7 @@ class SushiSettingController extends Controller
         } catch (\Exception $e) {
             return response()->json(['result' => false, 'msg' => 'Error decoding input!']);
         }
-        $provider = Provider::findOrFail($input['prov_id']);
+        $provider = Provider::with('globalProv')->findOrFail($input['prov_id']);
 
         // ASME (there may be others) checks the Agent and returns 403 if it doesn't like what it sees
         $options = [
@@ -312,7 +311,7 @@ class SushiSettingController extends Controller
         ];
 
        // Begin setting up the URI by cleaning/standardizing the server_url_r5 string in the setting
-        $_url = rtrim($provider->server_url_r5);    // remove trailing whitespace
+        $_url = rtrim($provider->globalProv->server_url_r5);    // remove trailing whitespace
         $_url = preg_replace('/\/?reports\/?/i', '', $_url); // take off any methods with any bounding slashes
         $_url = preg_replace('/\/?status\/?/i', '', $_url);  //   "   "   "     "      "   "     "        "
         $_url = preg_replace('/\/?members\/?/i', '', $_url); //   "   "   "     "      "   "     "        "

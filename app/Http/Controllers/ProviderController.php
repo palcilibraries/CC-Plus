@@ -177,8 +177,12 @@ class ProviderController extends Controller
         $provider->update($prov_input);
         $provider->reports()->detach();
         if (!is_null($request->input('master_reports'))) {
+            // attach reports to the provider, but only if the requested one(s) are in global:master_reports
+            $global_master_list = $provider->globalProv->master_reports;
             foreach ($request->input('master_reports') as $r) {
-                $provider->reports()->attach($r);
+                if (in_array($r, $global_master_list)) {
+                    $provider->reports()->attach($r);
+                }
             }
         }
 
@@ -314,18 +318,20 @@ class ProviderController extends Controller
         if ($thisUser->hasRole("Admin")) {
             $providers = DB::table($consodb . '.providers as prv')
                       ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
+                      ->join('ccplus_global.global_providers as gp', 'gp.id', '=', 'prv.global_id')
                       ->orderBy('prov_name', 'ASC')
-                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','server_url_r5',
+                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','gp.server_url_r5',
                              'inst.name as inst_name','day_of_month','max_retries']);
        // Managers get all consortia-wide providers and those that match user's inst_id
        // (excludes providers assigned to institutions.)
         } else {
             $providers = DB::table($consodb . '.providers as prv')
                       ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
+                      ->join('ccplus_global.global_providers as gp', 'gp.id', '=', 'prv.global_id')
                       ->where('prv.inst_id', 1)
                       ->orWhere('prv.inst_id', $thisUser->inst_id)
                       ->orderBy('prov_name', 'ASC')
-                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','server_url_r5',
+                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','gp.server_url_r5',
                              'inst.name as inst_name','day_of_month','max_retries']);
         }
 
@@ -469,13 +475,8 @@ class ProviderController extends Controller
         }
 
         // redirect output to client browser
-        if ($type == 'xlsx') {
-            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        // } elseif ($type == 'xls') {
-        //     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
-        //     header('Content-Type: application/vnd.ms-excel');
-        }
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');
         $writer->save('php://output');

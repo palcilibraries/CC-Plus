@@ -29,7 +29,11 @@ class GlobalSettingsServiceProvider extends ServiceProvider
     {
         $settings = $cache->remember('ccplus', 60, function() use ($settings)
         {
-            return $settings->pluck('value', 'name')->all();
+            $values = array();
+            try {
+              $values = $settings->pluck('value', 'name')->all();
+            } catch (\Exception $e) { }
+            return $values;
         });
         config()->set('ccplus', $settings);
     }

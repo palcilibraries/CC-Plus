@@ -247,7 +247,7 @@
                      if (response.data.result) {
                          this.failure = '';
                          this.success = response.data.msg;
-                         // Replace mutable array with response institutions
+                         // Replace mutable array with response providers
                          this.mutable_providers = response.data.providers;
                      } else {
                          this.success = '';
@@ -318,7 +318,7 @@
                        .then( (response) => {
                            if (response.data.result) {
                                this.mutable_providers.splice(this.mutable_providers.findIndex(p=>p.id == gpid),1);
-                               this.success = "Selected institutions deleted successfully.";
+                               this.success = "Global provider deleted successfully.";
                            } else {
                                this.success = '';
                                this.failure = response.data.msg;

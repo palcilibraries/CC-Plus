@@ -98,6 +98,7 @@ class GlobalProviderController extends Controller
       $provider->connectors = (count($input['connectors']) > 0) ? $input['connectors'] : array(1);
       $provider->master_reports = $input['master_reports'];
       $provider->save();
+      $provider['can_delete'] = true;
       $provider['reports_string'] = (sizeof($input['master_reports']) > 0) ?
                                     $this->makeReportString($input['master_reports']) : 'None';
 

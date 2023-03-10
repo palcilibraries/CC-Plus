@@ -62,7 +62,7 @@ class LoginController extends Controller
             return $this->sendLockoutResponse($request);
         }
 
-        // Check for global/superAdmin credential
+        // Check for ServerAdmin credential
         if (!is_null(config('ccplus.server_admin')) &&
             !is_null(config('ccplus.server_admin_pass')) &&
             $request->email == config('ccplus.server_admin') &&
@@ -94,7 +94,7 @@ class LoginController extends Controller
         $user->last_login = now();
         $user->save();
         if ($user->email == config('ccplus.server_admin')) {
-            return redirect("/globaladmin");
+            return redirect("/serveradmin");
         } else {
             return redirect("/");
         }

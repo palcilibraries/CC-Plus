@@ -94,6 +94,7 @@ class GlobalProviderController extends Controller
       $provider->day_of_month = $input['day_of_month'];
       $provider->max_retries = $input['max_retries'];
       // If no connectors required, force customer_id ON
+      if (!isset($input['connectors'])) $input['connectors'] = array();
       $provider->connectors = (count($input['connectors']) > 0) ? $input['connectors'] : array(1);
       $provider->master_reports = $input['master_reports'];
       $provider->save();
@@ -239,14 +240,10 @@ class GlobalProviderController extends Controller
     public function destroy($id)
     {
         $globalProvider = GlobalProvider::findOrFail($id);
-        if (!$globalProvider->canManage()) {
-            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
-        }
 
         // Loop through all consortia instances and delete from the providers tables
         $instances = Consortium::get();
         $keepDB  = config('database.connections.consodb.database');
-        $updates = array('name' => $input['name'], 'is_active' => $isActive);
         foreach ($instances as $instance) {
             // switch the database connection
             config(['database.connections.consodb.database' => "ccplus_" . $instance->ccp_key]);

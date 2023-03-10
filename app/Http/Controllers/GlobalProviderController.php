@@ -14,7 +14,7 @@ class GlobalProviderController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth','role:SuperUser']);
+        $this->middleware(['auth','role:ServerAdmin']);
     }
 
     /**

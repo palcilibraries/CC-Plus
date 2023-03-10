@@ -9,7 +9,7 @@ use \Illuminate\Contracts\Cache\Factory;
 class GlobalSettingController extends Controller
 {
   /**
-   * Index method for GlobalAdmin Controller
+   * Index method for GlobalSetting Controller
    *
    * @return \Illuminate\Http\Response
    */

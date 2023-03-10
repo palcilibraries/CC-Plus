@@ -43,7 +43,7 @@ class ConsortiumController extends Controller
         $server_admin = config('ccplus.server_admin');
         $server_admin_pass = config('ccplus.server_admin_pass');
         if (strlen($server_admin) == 0 || strlen($server_admin_pass) == 0) {
-            return response()->json(['result' => false, 'msg' => 'Global Admin credential is not properly defined!']);
+            return response()->json(['result' => false, 'msg' => 'Server Admin credential is not properly defined!']);
         }
 
         // Get global and template database table names and connection details
@@ -96,7 +96,7 @@ class ConsortiumController extends Controller
             // Zap any AUTO_INCREMENT value in the create command
             $command = preg_replace("/ AUTO_INCREMENT=(\d+)/", "", $raw_command);
             $data_query = str_replace('ZZZZ', $table, $_qry2);
-            // Copy just the SuperUser credential from the template.. no other users
+            // Copy just the ServerAdmin credential from the template.. no other users
             if ($table == "users") {
                 $data_query .= " WHERE id=1";
             }
@@ -129,7 +129,7 @@ class ConsortiumController extends Controller
         $consortium = Consortium::create($request->only('ccp_key', 'name', 'email', 'is_active'));
 
         // Create the Administrator account in the new consortium users table using input values
-        // (The SuperUser account and role setting should have copied over from the template database)
+        // (The ServerAdmin account and role setting should have copied over from the template database)
         DB::table($conso_db . ".users")->insert([
         ['id' => 2,
          'name' => 'CC-Plus Administrator',

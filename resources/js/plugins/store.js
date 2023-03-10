@@ -8,7 +8,7 @@ export const store = new Vuex.Store({
       admin: false,
       manager: false,
       viewer: false,
-      superuser: false,
+      serveradmin: false,
       user_inst_id: 0,
       page_name: 'default',
       page_options: {
@@ -78,18 +78,18 @@ export const store = new Vuex.Store({
       }
     },
     SET_ACCESS(state, access) {
-      if (access=='SuperUser') {
-          state.superuser=true;
+      if (access=='ServerAdmin') {
+          state.serveradmin=true;
           state.admin=true;
           state.manager=true;
           state.viewer=true;
       } else if (access=='Admin') {
-          state.superuser=false;
+          state.serveradmin=false;
           state.admin=true;
           state.manager=true;
           state.viewer=true;
       } else {
-          state.superuser=false;
+          state.serveradmin=false;
           state.admin=false;
           // These are independent of each other, and can both be true
           if (access=='Manager') state.manager = true;
@@ -207,7 +207,7 @@ export const store = new Vuex.Store({
     },
   },
   getters: {
-    is_superuser: state => { return state.superuser },
+    is_serveradmin: state => { return state.serveradmin },
     is_admin: state => { return state.admin },
     is_manager: state => { return state.manager },
     is_viewer: state => { return state.viewer },

@@ -115,15 +115,15 @@ class ResetAdminPW extends Command
            $this->line('<fg=cyan>' . $_db . ' Successfully Updated.');
         }
 
-        // If we've reset the template, reset the role_user table to just the superAdmin role
+        // If we've reset the template, reset the role_user table to just the ServerAdmin role
         // (to ensure that created consortia inherit the roles settings too)
         if ($update_con_template) {
             config(['database.connections.consodb.database' => 'ccplus_con_template']);
-            $super_role = \App\Role::where('name','SuperUser')->first();
+            $serverAdminRole = \App\Role::where('name','ServerAdmin')->first();
             $user = \App\User::where('email', $server_admin)->first();
-            if ($super_role && $user) {
+            if ($serverAdminRole && $user) {
                 $user->roles()->detach();
-                $user->roles()->attach($super_role->id);
+                $user->roles()->attach($serverAdminRole->id);
             }
         }
 

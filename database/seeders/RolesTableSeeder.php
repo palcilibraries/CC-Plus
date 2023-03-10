@@ -30,7 +30,7 @@ class RolesTableSeeder extends Seeder
             ['id' => 25, 'name' => 'Manager'],
             ['id' => 50, 'name' => 'Viewer'],
             ['id' => 99, 'name' => 'Admin'],
-            ['id' => 999, 'name' => 'SuperUser']
+            ['id' => 999, 'name' => 'ServerAdmin']
             ]);
         }
     }

@@ -6,27 +6,27 @@ use Illuminate\Http\Request;
 use App\Consortium;
 use DB;
 
-class GlobalAdminController extends Controller
+class ServerAdminController extends Controller
 {
 
     public function __construct()
     {
-        $this->middleware(['auth','role:SuperUser']);
+        $this->middleware(['auth','role:ServerAdmin']);
     }
 
     /**
-     * Index method for GlobalAdmin Controller
+     * Index method for ServerAdmin Controller
      *
      * @return \Illuminate\Http\Response
      */
     public function index()
     {
         $consortia = Consortium::orderby('name')->get();
-        return view('globaladmin.home', compact('consortia'));
+        return view('serveradmin.home', compact('consortia'));
     }
 
     /**
-     * Change instnance method for GlobalAdmin Controller
+     * Change instnance method for ServerAdmin Controller
      *
      * @return \Illuminate\Http\Response
      */

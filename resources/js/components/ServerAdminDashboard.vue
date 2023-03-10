@@ -269,7 +269,7 @@
       }
     },
     mounted() {
-      console.log('SuperUser Dashboard mounted.');
+      console.log('ServerAdmin Dashboard mounted.');
     }
   }
 </script>

@@ -135,7 +135,7 @@ class ConsortiumCommand extends Command
         DB::table($global_db . '.consortia')->insert($conso_data);
         $this->line('<fg=cyan>Consortium added to global database.');
 
-      // Create the SuperUser account in the users table using values from the .env file
+      // Create the ServerAdmin account in the users table using values from the .env file
         DB::table($conso_db . ".users")->insert([
         ['name' => 'Server Administrator',
          'password' => $server_admin_pass,
@@ -157,7 +157,7 @@ class ConsortiumCommand extends Command
          'is_active' => 1]
         ]);
 
-      // Set roles for SuperUser and 'Administrator'
+      // Set roles for ServerAdmin and 'Administrator'
         DB::table($conso_db . ".role_user")->insert(['role_id' =>  999, 'user_id' => 1]);
         DB::table($conso_db . ".role_user")->insert(['role_id' =>  99, 'user_id' => 2]);
 

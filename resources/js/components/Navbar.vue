@@ -29,7 +29,7 @@
 
             <!-- Right Side Of Navbar -->
             <ul class="navbar-nav ml-auto">
-                <li v-if="is_superuser && ccp_key!=''" class="nav-item">
+                <li v-if="is_serveradmin && ccp_key!=''" class="nav-item">
                     <v-select :items="consortia" v-model="cur_key" label="Instance" item-text="name"
                               item-value="ccp_key" @change="changeInstance" dense outlined
                     ></v-select>
@@ -73,24 +73,24 @@ export default {
             cur_key: '',
             navList: [
               { url: "/", name: "Home", role: "All" },
-              { url: "/globaladmin",
+              { url: "/serveradmin",
                 name: "Server Admin",
-                role: "SuperUser",
+                role: "ServerAdmin",
                 children: [
                   {
-                    url: "/globaladmin",
+                    url: "/serveradmin",
                     name: "Instances",
-                    role: "SuperUser",
+                    role: "ServerAdmin",
                   },
                   {
                     url: "/globalproviders",
                     name: "Global Provider Settings",
-                    role: "SuperUser",
+                    role: "ServerAdmin",
                   },
                   {
                     url: "/globalsettings",
                     name: "Global Environment Settings",
-                    role: "SuperUser",
+                    role: "ServerAdmin",
                   },
                 ]
               },
@@ -175,9 +175,9 @@ export default {
     },
     methods: {
       isVisible(item) {
-        if (this.is_superuser) return true;
-        if (this.is_admin && (item.role != 'SuperUser')) return true;
-        if (this.is_manager && (item.role != 'Admin' && item.role != 'SuperUser')) return true;
+        if (this.is_serveradmin) return true;
+        if (this.is_admin && (item.role != 'ServerAdmin')) return true;
+        if (this.is_manager && (item.role != 'Admin' && item.role != 'ServerAdmin')) return true;
         if (item.role == 'All') return true;
         return false;
       },
@@ -197,7 +197,7 @@ export default {
       },
     },
     computed: {
-      ...mapGetters(['is_manager','is_admin','is_viewer','is_superuser'])
+      ...mapGetters(['is_manager','is_admin','is_viewer','is_serveradmin'])
     },
     mounted() {
         // Get user's max role
@@ -215,12 +215,12 @@ export default {
         this.$store.dispatch('updateAccess', max_role);
         this.$store.dispatch('updateUserInst', this.user["inst_id"]);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
-        if (this.is_superuser) {
+        if (this.is_serveradmin) {
             this.consortia.push({'ccp_key': 'con_template', 'name': 'Template'});
             if (this.consortia.some(con => con.ccp_key == this.ccp_key)) this.cur_key = this.ccp_key;
         }
         // Managers (without view or Admin rights) have Admin replaced by "My institution"
-        if (this.is_manager && !(this.is_superuser || this.is_admin || this.is_viewer)) {
+        if (this.is_manager && !(this.is_serveradmin || this.is_admin || this.is_viewer)) {
             var idx1 = this.navList.findIndex(nav => nav.name == "Admin");
             this.navList[idx1].name = "My Institution";
             this.navList[idx1].url = "/institutions/"+this.user.inst_id;

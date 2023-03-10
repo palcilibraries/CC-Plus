@@ -37,12 +37,12 @@ Route::resource('/alertsettings', 'AlertSettingController')
      ->middleware(['auth','role:Admin,Manager','cache.headers:no_store']);
 Route::resource('/savedreports', 'SavedReportController')->middleware(['auth']);
 Route::resource('/systemalerts', 'SystemAlertController')->middleware(['auth']);
-// Global admin routes
-Route::get('/globaladmin', 'GlobalAdminController@index')->middleware('auth','role:SuperUser');
-Route::post('/change-instance', 'GlobalAdminController@changeInstance')->middleware('auth','role:SuperUser');
-Route::resource('/globalsettings', 'GlobalSettingController')->middleware('auth','role:SuperUser');
-Route::resource('/globalproviders', 'GlobalProviderController')->middleware('auth','role:SuperUser');
-Route::resource('/consortia', 'ConsortiumController')->middleware('auth','role:SuperUser');
+// Server admin routes
+Route::get('/serveradmin', 'ServerAdminController@index')->middleware('auth','role:ServerAdmin');
+Route::post('/change-instance', 'ServerAdminController@changeInstance')->middleware('auth','role:ServerAdmin');
+Route::resource('/globalsettings', 'GlobalSettingController')->middleware('auth','role:ServerAdmin');
+Route::resource('/globalproviders', 'GlobalProviderController')->middleware('auth','role:ServerAdmin');
+Route::resource('/consortia', 'ConsortiumController')->middleware('auth','role:ServerAdmin');
 //
 Route::get('/admin', 'AdminController@index')->name('admin')->middleware(['auth','role:Admin,Manager']);
 Route::get('/alerts', 'AlertController@index')->name('alerts')->middleware('auth');

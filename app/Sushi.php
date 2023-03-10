@@ -135,7 +135,7 @@ class Sushi extends Model
     public function buildUri($setting, $method = "reports", $report = "")
     {
        // Begin setting up the URI by cleaning/standardizing the server_url_r5 string in the setting
-        $_url = rtrim($setting->provider->server_url_r5);    // remove trailing whitespace
+        $_url = rtrim($setting->provider->globalProv->server_url_r5);    // remove trailing whitespace
         $_url = preg_replace('/\/?reports\/?/i', '', $_url); // take off any methods with any bounding slashes
         $_url = preg_replace('/\/?status\/?/i', '', $_url);  //   "   "   "     "      "   "     "        "
         $_url = preg_replace('/\/?members\/?/i', '', $_url); //   "   "   "     "      "   "     "        "

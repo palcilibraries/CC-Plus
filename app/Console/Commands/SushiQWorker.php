@@ -16,6 +16,7 @@ use App\HarvestLog;
 use App\CcplusError;
 use App\Severity;
 use App\Alert;
+use App\GlobalProvider;
 use \ubfr\c5tools\JsonR5Report;
 use \ubfr\c5tools\CheckResult;
 use \ubfr\c5tools\ParseException;
@@ -47,6 +48,7 @@ class SushiQWorker extends Command
      */
     protected $description = 'Process the CC-Plus Sushi Queue for a Consortium';
     private $all_consortia;
+    private $global_providers;
 
     /**
      * Create a new command instance.
@@ -56,6 +58,7 @@ class SushiQWorker extends Command
     public function __construct()
     {
         parent::__construct();
+        $this->global_providers = GlobalProvider::where('is_active', true)->get();
     }
 
     /**
@@ -120,7 +123,9 @@ class SushiQWorker extends Command
        // ($job_ids is updated @ bottom of loop)
         while (sizeof($job_ids) > 0) {
            // Get the current jobs
-            $jobs = SushiQueueJob::whereIn('id', $job_ids)
+            $jobs = SushiQueueJob::with('harvest','harvest.sushiSetting','harvest.sushiSetting.provider',
+                                        'harvest.sushiSetting.provider.globalProv')
+                                 ->whereIn('id', $job_ids)
                                  ->orderBy('priority', 'DESC')
                                  ->orderBy('id', 'ASC')
                                  ->get();
@@ -148,7 +153,7 @@ class SushiQWorker extends Command
                // Check the job url against all active urls and skip if there's a match
                // (this should also skip any job that gets grabbed by another worker between when
                // we built the $job_ids array and this point.)
-                if ($this->hasActiveHarvest($job->harvest->sushiSetting->provider->server_url_r5)) {
+                if ($this->hasActiveHarvest($job->harvest->sushiSetting->provider->globalProv->server_url_r5)) {
                     continue;
                 }
 
@@ -312,7 +317,7 @@ class SushiQWorker extends Command
                     $job->harvest->attempts++;
 
                    // If we're out of retries, the harvest fails and we set an Alert
-                    if ($job->harvest->attempts >= $setting->provider->max_retries) {
+                    if ($job->harvest->attempts >= $setting->provider->globalProv->max_retries) {
                         $job->harvest->status = 'Fail';
                         Alert::insert(['yearmon' => $yearmon, 'prov_id' => $setting->prov_id,
                                        'harvest_id' => $job->harvest->id, 'status' => 'Active', 'created_at' => $ts]);
@@ -356,17 +361,18 @@ class SushiQWorker extends Command
     {
         foreach ($this->all_consortia as $_con) {
             $_db = 'ccplus_' . $_con->ccp_key;
-            $_urls = DB::table($_db . '.harvestlogs as harv')
+            $_globalIds = DB::table($_db . '.harvestlogs as harv')
                          ->distinct()
                          ->join($_db . '.sushisettings as sus', 'sus.id', '=', 'harv.sushisettings_id')
                          ->join($_db . '.providers as prv', 'prv.id', '=', 'sus.prov_id')
                          ->where($_db . '.harv.status', 'Active')
-                         ->select($_db . '.prv.server_url_r5')
+                         ->select($_db . '.prv.global_id')
                          ->get();
+            $_urls = $this->global_providers->whereIn('id',$_globalIds)->pluck('server_url_r5')->toArray();
             foreach ($_urls as $_url) {
                 // Test HOST of url , since https://sushi.prov.com/R5  and https://sushi.prov.com/R5/reports
                 // both WORK , and are the same service. A straight-up compare won't catch it...
-                if (parse_url($_url->server_url_r5, PHP_URL_HOST) == parse_url($job_url, PHP_URL_HOST)) {
+                if (parse_url($_url, PHP_URL_HOST) == parse_url($job_url, PHP_URL_HOST)) {
                     return true;
                 }
             }

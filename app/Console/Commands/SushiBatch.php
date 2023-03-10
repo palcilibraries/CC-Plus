@@ -118,10 +118,12 @@ class SushiBatch extends Command
 
        // Get Provider data as a collection regardless of whether we just need one
         if ($prov_id == 0) {
-            $providers = Provider::with('SushiSettings','SushiSettings.institution','reports')
+            $providers = Provider::with('SushiSettings', 'SushiSettings.institution', 'SushiSettings.provider',
+                                        'SushiSettings.provider.globalProv', 'reports', 'globalProv')
                                  ->where('is_active', '=', true)->get();
         } else {
-            $providers = Provider::with('SushiSettings','SushiSettings.institution','reports')
+            $providers = Provider::with('SushiSettings','SushiSettings.institution', 'SushiSettings.provider',
+                                        'SushiSettings.provider.globalProv', 'reports', 'globalProv')
                                  ->where('is_active', '=', true)->where('id', '=', $prov_id)->get();
         }
 
@@ -129,7 +131,7 @@ class SushiBatch extends Command
         $this->line("Harvest begins for " . $consortium->ccp_key . " at " . date("Y-m-d H:i:s"));
         foreach ($providers as $provider) {
            // If running as "Auto" and today is not the day to run, skip silently to next provider
-            if ($this->option('auto') && $provider->day_of_month != date('j')) {
+            if ($this->option('auto') && $provider->globalProv->day_of_month != date('j')) {
                 continue;
             }
 

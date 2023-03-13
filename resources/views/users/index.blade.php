@@ -17,6 +17,7 @@
                    :institutions="{{ json_encode($institutions) }}"
                    :allowed_roles="{{ json_encode($allowed_roles) }}"
                    :all_groups="{{ json_encode($all_groups) }}"
+                   :filters="{{ json_encode($filters) }}"
   ></user-data-table>
 </v-app>
 @endsection

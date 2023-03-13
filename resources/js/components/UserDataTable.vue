@@ -8,12 +8,37 @@
         <v-col class="d-flex px-2" cols="4">
           <v-btn small color="primary" @click="createForm">Create a User</v-btn>
         </v-col>
+        <v-col class="d-flex px-2" cols="3">
+          <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
+          ></v-text-field>
+        </v-col>
       </v-row>
       <v-row class="d-flex ma-0">
-        <v-col v-if="is_admin" class="d-flex px-2" cols="4">
+        <v-col v-if="is_admin" class="d-flex px-2" cols="3">
           <a @click="doExport">
             <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel
           </a>
+        </v-col>
+        <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+          <div v-if="mutable_filters['inst'] != null" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
+          </div>
+          <v-select :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters('inst')"
+                    label="Limit by Institution"  item-text="name" item-value="id"
+          ></v-select>
+        </v-col>
+        <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+          <v-select :items="status_options" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
+                    label="Limit by Status"
+          ></v-select>
+        </v-col>
+        <v-col class="d-flex px-2 align-center" cols="3">
+          <div v-if="mutable_filters['roles'].length>0" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('roles')"/>&nbsp;
+          </div>
+          <v-select :items="allowed_roles" v-model="mutable_filters['roles']" @change="updateFilters('inst')" multiple
+                    label="Limit by Role(s)"  item-text="name" item-value="id"
+          ></v-select>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">
@@ -21,7 +46,7 @@
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
       </div>
       <v-data-table :headers="headers" :items="mutable_users" item-key="id" :options="mutable_options"
-                    :key="'DT'+dtKey" @update:options="updateOptions">
+                    :key="'DT'+dtKey" :search="search" @update:options="updateOptions">
         <template v-slot:item="{ item }">
           <tr>
             <td>{{ item.name }}</td>
@@ -37,6 +62,9 @@
             </td>
           </tr>
         </template>
+        <v-alert slot="no-results" :value="true" color="error" icon="warning">
+          Your search for "{{ search }}" found no results.
+        </v-alert>
       </v-data-table>
     </div>
     <v-dialog v-model="importDialog" persistent max-width="1200px">
@@ -212,6 +240,7 @@
             allowed_roles: { type:Array, default: () => [] },
             institutions: { type:Array, default: () => [] },
             all_groups: { type:Array, default: () => [] },
+            filters: { type:Object, default: () => {} }
            },
     data () {
       return {
@@ -223,11 +252,14 @@
         inst_name: '',
         mutable_users: [ ...this.users ],
         mutable_institutions: [ ...this.institutions ],
+        mutable_filters: this.filters,
         current_user: {},
         dialogType: 'create',
         userDialog: false,
         instDialog: false,
         importDialog: false,
+        search: '',
+        status_options: ['ALL', 'Active', 'Inactive'],
         form_key: 1,
         headers: [
           { text: 'User Name ', value: 'name' },
@@ -421,6 +453,27 @@
             this.instForm.notes = '';
             this.instDialog = true;
         },
+
+        updateFilters() {
+            this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            this.updateRecords();
+        },
+        clearFilter(filter) {
+            if (filter == 'inst') this.mutable_filters['inst'] = null;
+            if (filter == 'roles') this.mutable_filters['roles'] = [];
+            this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            this.updateRecords();
+        },
+        updateRecords() {
+            this.success = "";
+            this.failure = "";
+            let _filters = JSON.stringify(this.mutable_filters);
+            axios.get("/users?json=1&filters="+_filters)
+                 .then((response) => {
+                     this.mutable_users = response.data.users;
+                 })
+                 .catch(err => console.log(err));
+        },
         importSubmit (event) {
             this.success = '';
             this.failure = '';
@@ -487,20 +540,38 @@
     },
     beforeCreate() {
         // Load existing store data
-		this.$store.commit('initialiseStore');
-	},
+  		this.$store.commit('initialiseStore');
+  	},
     beforeMount() {
         // Set page name in the store
         this.$store.dispatch('updatePageName','users');
-	},
+	  },
     mounted() {
       if (!this.is_admin) {
           this.inst_name = this.institutions[0].name;
       }
 
+      // Apply any defined prop-based filters (and overwrite existing store values)
+      var count = 0;
+      Object.assign(this.mutable_filters, this.all_filters);
+      Object.keys(this.filters).forEach( (key) =>  {
+        if (this.filters[key] != null) {
+          if (this.filters[key].length>0) {
+            count++;
+            this.mutable_filters[key] = this.filters[key];
+          }
+        }
+      });
+
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);
-      this.dtKey += 1;           // force re-render of the datatable
+
+      // Update store and apply filters if some have been set
+      if (count>0) this.$store.dispatch('updateAllFilters',this.mutable_filters);
+
+      // Load settings
+      this.updateRecords();
+      this.dtKey += 1;           // update the datatable
 
       // Subscribe to store updates
       this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });

@@ -34,60 +34,115 @@ class UserController extends Controller
         // Admins see all, managers see only their inst, eveyone else gets an error
         $thisUser = auth()->user();
         abort_unless($thisUser->hasAnyRole(['Admin']), 403);
-        $user_data = User::with('roles','institution:id,name')->orderBy('name', 'ASC')->get();
+
+        $json = ($request->input('json')) ? true : false;
+
+        // Assign optional inputs to $filters array
+        $filters = array('inst' => null, 'stat' => 'ALL', 'roles' => []);
+        if ($request->input('filters')) {
+            $filter_data = json_decode($request->input('filters'));
+            foreach ($filter_data as $key => $val) {
+                if ($key == 'inst' && (is_null($val) || $val == '')) continue;
+                if ($key == 'stat' && (is_null($val) || $val == '')) continue;
+                if ($key == 'roles' && sizeof($val) == 0) continue;
+                $filters[$key] = $val;
+            }
+        } else {
+            $keys = array_keys($filters);
+            foreach ($keys as $key) {
+                if ($request->input($key)) {
+                    if ($key == 'inst' || $key == 'stat') {
+                        if (is_null($request->input($key)) || $request->input($key) == '') continue;
+                    } else if ($key == 'roles') {
+                        if (sizeof($request->input('roles')) == 0) continue;
+                    }
+                    $filters[$key] = $request->input($key);
+                }
+            }
+        }
 
         // Get all roles
         $all_roles = Role::orderBy('id', 'ASC')->get(['name', 'id']);
         $viewRoleId = $all_roles->where('name', 'Viewer')->first()->id;
 
-        // Make user role names one string, role IDs into an array, and status to a string for the view
-        $data = array();
-        foreach ($user_data as $rec) {
-            // exclude any users that cannot be managed by thisUser from the displayed list
-            if (!$rec->canManage()) continue;
-            $_roles = "";
-            $user = $rec->toArray();
-            $user['status'] = ($rec->is_active == 1) ? 'Active' : 'Inactive';
+        // Skip querying for records unless we're returning json
+        // The vue-component will run a request for initial data once it is mounted
+        if ($json) {
 
-            // Put role IDs in an array for the user object
-            $role_ids = $rec->roles->pluck('id')->toArray();
-            $user['roles'] = $role_ids;
-
-            // Set role_string to hold user's highest access right (other than viewer)
-            $access_role_ids = $rec->roles->where('id','<>',$viewRoleId)->pluck('id')->toArray();
-            $user['role_string'] = $all_roles->where('id', max($access_role_ids))->first()->name;
-            if ($user['role_string'] == 'Manager') $user['role_string'] = "Local Admin";
-            if ($user['role_string'] == 'Admin') $user['role_string'] = "Consortium Admin";
-
-            // non-admins with Viewer get it tacked onto their role_string
-            if ( $rec->roles->where('name', 'Viewer')->first() ) {
-                if (!$rec->roles->whereIn('name', ['ServerAdmin','Admin'])->first() ) {
-                    $user['role_string'] .= ", Consortium Viewer";
-                }
+            // Prep variables for use in querying
+            $filter_stat = null;
+            if ($filters['stat'] != 'ALL') {
+                $filter_stat = ($filters['stat'] == 'Active') ? 1 : 0;
             }
-            $data[] = $user;
-        }
 
-        // Admin gets a select-box of institutions (built-in create option), otherwise just the users' inst
-        if ($thisUser->hasRole('Admin')) {
-            $institutions = Institution::orderBy('name', 'ASC')->get(['id','name'])->toArray();
+            $user_data = User::with('roles','institution:id,name')
+                             ->when($filters['inst'], function ($qry) use ($filters) {
+                                 return $qry->where('inst_id', $filters['inst']);
+                             })
+                             ->when(!is_null($filter_stat), function ($qry) use ($filter_stat) {
+                                 return $qry->where('is_active', $filter_stat);
+                             })
+                             ->orderBy('name', 'ASC')->get();
+
+            // Make user role names one string, role IDs into an array, and status to a string for the view
+            $data = array();
+            foreach ($user_data as $rec) {
+                // exclude any users that cannot be managed by thisUser from the displayed list
+                if (!$rec->canManage()) continue;
+
+                // Skip user if role-filter is set and the user doesn;t have match(es)
+                $role_ids = $rec->roles->pluck('id')->toArray();  // Get user's roles as array of IDs
+                if ( count($filters['roles']) > 0 ) {
+                    $rolesXsect = array_intersect($filters['roles'], $role_ids);
+                    if ( count($rolesXsect) == 0 ) continue;
+                }
+
+                // Setup array for this user data
+                $user = $rec->toArray();
+                $user['status'] = ($rec->is_active == 1) ? 'Active' : 'Inactive';
+                $user['roles'] = $role_ids;
+
+                // Set role_string to hold user's highest access right (other than viewer)
+                $access_role_ids = $rec->roles->where('id','<>',$viewRoleId)->pluck('id')->toArray();
+                $user['role_string'] = $all_roles->where('id', max($access_role_ids))->first()->name;
+                if ($user['role_string'] == 'Manager') $user['role_string'] = "Local Admin";
+                if ($user['role_string'] == 'Admin') $user['role_string'] = "Consortium Admin";
+
+                // non-admins with Viewer get it tacked onto their role_string
+                if ( $rec->roles->where('name', 'Viewer')->first() ) {
+                    if (!$rec->roles->whereIn('name', ['ServerAdmin','Admin'])->first() ) {
+                        $user['role_string'] .= ", Consortium Viewer";
+                    }
+                }
+                $data[] = $user;
+            }
+            return response()->json(['users' => $data], 200);
+
+        // not-json
         } else {
-            $institutions = Institution::where('id', '=', $thisUser->inst_id)
-                                       ->get(['id','name'])->toArray();
-        }
-        $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
+            // Admin gets a select-box of institutions (built-in create option), otherwise just the users' inst
+            if ($thisUser->hasRole('Admin')) {
+                $institutions = Institution::orderBy('name', 'ASC')->get(['id','name'])->toArray();
+            } else {
+                $institutions = Institution::where('id', '=', $thisUser->inst_id)
+                                           ->get(['id','name'])->toArray();
+            }
+            $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
 
-        // Set choices for roles; disallow choosing roles higher current user's max role
-        $allowed_roles = array();
-        foreach ($all_roles as $role) {
-            if ($role->id > $thisUser->maxRole()) continue;
-            $_role = $role;
-            if ($_role->name == "Manager") $_role->name = "Local Admin";
-            if ($_role->name == 'Admin') $_role->name = "Consortium Admin";
-            if ($_role->name == 'Viewer') $_role->name = "Consortium Viewer";
-            $allowed_roles[] = $_role;
+            // Set choices for roles; disallow choosing roles higher current user's max role
+            $allowed_roles = array();
+            foreach ($all_roles as $role) {
+                if ($role->id > $thisUser->maxRole()) continue;
+                $_role = $role;
+                if ($_role->name == "Manager") $_role->name = "Local Admin";
+                if ($_role->name == 'Admin') $_role->name = "Consortium Admin";
+                if ($_role->name == 'Viewer') $_role->name = "Consortium Viewer";
+                $allowed_roles[] = $_role;
+            }
+            $data = array();
+            return view('users.index', compact('data', 'institutions', 'allowed_roles', 'all_groups', 'filters'));
         }
-        return view('users.index', compact('data', 'institutions', 'allowed_roles', 'all_groups'));
+
     }
 
     /**

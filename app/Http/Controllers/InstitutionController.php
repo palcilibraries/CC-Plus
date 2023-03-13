@@ -304,6 +304,7 @@ class InstitutionController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $thisUser = auth()->user();
         $institution = Institution::findOrFail($id);
         if (!$institution->canManage()) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
@@ -314,7 +315,7 @@ class InstitutionController extends Controller
         $this->validate($request, ['name' => 'required', 'is_active' => 'required']);
         $input = $request->all();
 
-        // Make sure that local ID is unique if not set null
+       // Make sure that local ID is unique if not set null
         $newID = (isset($input['local_id'])) ? trim($input['local_id']) : null;
         if ($institution->local_id != $newID) {
             if (strlen($newID) > 0) {
@@ -329,35 +330,42 @@ class InstitutionController extends Controller
             }
         }
 
+       // if not admin (user is a local-admin for their institution), only update FTE and notes
+        if (!$thisUser->hasRole("Admin")) {
+            $limitedFields = array('fte' => $input['fte'], 'notes' => $input['notes']);
+            $institution->update($limitedFields);
 
-       // Update the record and assign groups
-        $institution->update($input);
-        if (isset($input['institutiongroups'])) {
-            $institution->institutionGroups()->detach();
-            foreach ($request->input('institutiongroups') as $g) {
-                $institution->institutionGroups()->attach($g);
-            }
+       // Admins update everything from $input
+        } else {
+            // Update the record and assign groups
+             $institution->update($input);
+             if (isset($input['institutiongroups'])) {
+                 $institution->institutionGroups()->detach();
+                 foreach ($request->input('institutiongroups') as $g) {
+                     $institution->institutionGroups()->attach($g);
+                 }
+             }
+
+             // If changing from active to inactive, suspend related sushi settings
+              $settings = array();
+              if ( $was_active && !$institution->is_active ) {
+                  SushiSetting::where('inst_id',$institution->id)->where('status','Enabled')
+                              ->update(['status' => 'Suspended']);
+              }
+
+             // If changing from inactive to active, enable suspended settings where institution is also active
+              if ( !$was_active && $institution->is_active ) {
+                 SushiSetting::join('providers as Prov', 'sushisettings.prov_id', 'Prov.id')
+                             ->where('Prov.is_active', 1)->where('sushisettings.inst_id',$institution->id)
+                             ->where('status','Suspended')->update(['status' => 'Enabled']);
+              }
+
+             // Return updated institution data
+              $settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
+              $harvest_count = $settings->whereNotNull('last_harvest')->count();
+              $institution['can_delete'] = ($harvest_count > 0 || $institution->id == 1) ? false : true;
+              $institution['sushiSettings'] = $settings->toArray();
         }
-
-        // If changing from active to inactive, suspend related sushi settings
-         $settings = array();
-         if ( $was_active && !$institution->is_active ) {
-             SushiSetting::where('inst_id',$institution->id)->where('status','Enabled')
-                         ->update(['status' => 'Suspended']);
-         }
-
-        // If changing from inactive to active, enable suspended settings where institution is also active
-         if ( !$was_active && $institution->is_active ) {
-            SushiSetting::join('providers as Prov', 'sushisettings.prov_id', 'Prov.id')
-                        ->where('Prov.is_active', 1)->where('sushisettings.inst_id',$institution->id)
-                        ->where('status','Suspended')->update(['status' => 'Enabled']);
-         }
-
-        // Return updated institution data
-         $settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
-         $harvest_count = $settings->whereNotNull('last_harvest')->count();
-         $institution['can_delete'] = ($harvest_count > 0 || $institution->id == 1) ? false : true;
-         $institution['sushiSettings'] = $settings->toArray();
 
          return response()->json(['result' => true, 'msg' => 'Settings successfully updated',
                                   'institution' => $institution]);

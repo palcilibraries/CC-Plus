@@ -20,27 +20,27 @@
       <div v-if="showInstForm">
         <form method="POST" action="" @submit.prevent="instFormSubmit" @keydown="instForm.errors.clear($event.target.name)"
               class="in-page-form">
-          <v-text-field v-model="instForm.name" label="Name" outlined></v-text-field>
-          <v-text-field v-model="instForm.internal_id" label="Internal Identifier" outlined></v-text-field>
-          <v-switch v-model="instForm.is_active" label="Active?"></v-switch>
-  		      <div class="field-wrapper">
-              <v-subheader v-text="'FTE'"></v-subheader>
-              <v-text-field v-model="instForm.fte" label="FTE" hide-details single-line type="number"
-              ></v-text-field>
-  		      </div>
-            <div class="field-wrapper has-label">
-              <v-subheader v-text="'Belongs To'"></v-subheader>
-              <v-select :items="all_groups" v-model="instForm.institutiongroups" value="mutable_groups"
-                        item-text="name" item-value="id" label="Institution Group(s)" multiple
-                        chips hint="Assign group membership for this institution" persistent-hint
-              ></v-select>
-            </div>
-            <v-textarea v-model="instForm.notes" value="mutable_inst.notes" label="Notes" auto-grow
-            ></v-textarea>
-            <v-btn small color="primary" type="submit" :disabled="instForm.errors.any()">
-              Save Institution Settings
-            </v-btn>
-            <v-btn small type="button" @click="showInstForm=false">cancel</v-btn>
+          <v-text-field v-if="is_admin" v-model="instForm.name" label="Name" outlined></v-text-field>
+          <v-text-field v-if="is_admin" v-model="instForm.internal_id" label="Internal Identifier" outlined></v-text-field>
+          <v-switch v-if="is_admin" v-model="instForm.is_active" label="Active?"></v-switch>
+		      <div class="field-wrapper">
+            <v-subheader v-text="'FTE'"></v-subheader>
+            <v-text-field v-model="instForm.fte" label="FTE" hide-details single-line type="number"
+            ></v-text-field>
+  	      </div>
+          <div v-if="is_admin" class="field-wrapper has-label">
+            <v-subheader v-text="'Belongs To'"></v-subheader>
+            <v-select :items="all_groups" v-model="instForm.institutiongroups" value="mutable_groups"
+                      item-text="name" item-value="id" label="Institution Group(s)" multiple
+                      chips hint="Assign group membership for this institution" persistent-hint
+            ></v-select>
+          </div>
+          <v-textarea v-model="instForm.notes" value="mutable_inst.notes" label="Notes" auto-grow
+          ></v-textarea>
+          <v-btn small color="primary" type="submit" :disabled="instForm.errors.any()">
+            Save Institution Settings
+          </v-btn>
+          <v-btn small type="button" @click="showInstForm=false">cancel</v-btn>
         </form>
       </div>
       <!-- Values-only when form not active -->
@@ -111,7 +111,8 @@
       	        ></v-select>
               </div>
               <p>&nbsp;</p>
-              <v-btn small color="primary" type="submit" :disabled="userForm.errors.any()">Save New User</v-btn>
+              <v-btn small color="primary" type="submit" :disabled="userForm.errors.any()">{{ userSubmitLabel}}</v-btn>
+              <!-- <v-btn small color="primary" type="submit" :disabled="userForm.errors.any()">Save New User</v-btn> -->
               <v-btn small type="button" @click="hideUserForm">cancel</v-btn>
             </form>
           </v-col>
@@ -286,6 +287,7 @@
                 importDialog: false,
                 showSushiForm: false,
                 showTest: false,
+                userSubmitLabel: 'Save New User',
                 mutable_inst: { ...this.institution },
                 mutable_unset_con: [ ...this.unset_conso ],
                 mutable_unset_glo: [ ...this.unset_global ],
@@ -366,6 +368,7 @@
                 this.failure = '';
                 this.success = '';
                 this.userInputForm = 'edit';
+                this.userSubmitLabel = 'Update User';
                 this.current_user = this.mutable_users[this.mutable_users.findIndex(u=> u.id == userid)];
                 this.userForm.name = this.current_user.name;
                 this.userForm.inst_id = this.mutable_inst.id;
@@ -379,6 +382,7 @@
                 this.failure = '';
                 this.success = '';
                 this.userInputForm = 'create';
+                this.userSubmitLabel = 'Save New User';
                 this.userForm.name = '';
                 this.userForm.inst_id = this.mutable_inst.id;
                 this.userForm.is_active = 1;

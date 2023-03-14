@@ -78,7 +78,7 @@ export const store = new Vuex.Store({
       }
     },
     SET_ACCESS(state, access) {
-      if (access=='ServerAdmin') {
+      if (access=='ServerAdmin' || access=='SuperUser') {
           state.serveradmin=true;
           state.admin=true;
           state.manager=true;

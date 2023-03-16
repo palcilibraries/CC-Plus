@@ -30,7 +30,9 @@ class SavedReportController extends Controller
      */
     public function index()
     {
-        //
+      // Get formatted array of saved user reports
+      $report_data = $this->savedUserReports(auth()->id());
+      return view('savedreports.my-saved', compact('report_data'));
     }
 
     /**
@@ -41,64 +43,18 @@ class SavedReportController extends Controller
     public function home()
     {
         // Get list of saved reports for this user
-        $user_inst = auth()->user()->inst_id;
-        $user_is_admin = auth()->user()->hasRole("Admin");
-        $user_is_viewer = auth()->user()->hasRole("Viewer");
-        $saved_reports = SavedReport::with('master')->where('user_id', auth()->id())->get();
+        $thisUser = auth()->user();
+        $user_inst = $thisUser->inst_id;
+        $user_is_admin = $thisUser->hasRole("Admin");
+        $user_is_viewer = $thisUser->hasRole("Viewer");
 
-        // Get the report filters
-        $all_filters = ReportFilter::get(['id','table_name']);
-
-        // Setup raw fields for what we need from the harvestlog
-        $count_fields  = "sushisettings.inst_id, ";
-        $count_fields .= "count(*) as total, sum(case when harvestlogs.status='Success' then 1 else 0 end) as success";
-
-        // Build the output data array
-        $report_data = array();
-        foreach ($saved_reports as $report) {
-            $last_harvest = HarvestLog::where('report_id', '=', $report->master->id)->max('yearmon');
-            $data = array('id' => $report->id, 'title' => $report->title, 'last_harvest' => $last_harvest,
-                          'master_id' => $report->master_id, 'master_name' => $report->master->name);
-
-            // Handle institution/group filters
-            $limit_to_insts = array();  // default to no limit
-            $filter_vals = $report->parsedFilters();
-            foreach ($filter_vals as $key => $val) {
-                $filt = $all_filters->where('id', $key)->first();
-                if (!$filt) {
-                    continue;
-                }
-                if ($filt->table_name == 'institutions') {
-                    $limit_to_insts = $val; // $val should be an array....
-                    break;
-                } elseif ($filt->table_name == 'institutiongroups') {
-                    if ($val > 0) {
-                        $group = InstitutionGroup::find($val);
-                        $limit_to_insts = $group->institutions->pluck('id')->toArray();
-                        break;
-                    }
-                }
-            }
-
-            // Pull by-institution harvest/error counts, add to report_data
-            $inst_harv = HarvestLog::join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
-                                  ->when($limit_to_insts, function ($query, $limit_to_insts) {
-                                        return $query->whereIn('sushisettings.inst_id', $limit_to_insts);
-                                  })
-                                  ->where('report_id', '=', $report->master->id)
-                                  ->where('yearmon', '=', $last_harvest)
-                                  ->selectRaw($count_fields)
-                                  ->groupBy('sushisettings.inst_id')
-                                  ->get(['inst_id','total','success'])
-                                  ->toArray();
-
-            $data['successful'] = 0;
-            $data['inst_count'] = sizeof($inst_harv);
-            foreach ($inst_harv as $inst) {
-                $data['successful'] += ($inst['total'] == $inst['success']) ? 1 : 0;
-            }
-            $report_data[] = $data;
+        // If the user is a Local Admin, redirect to their Institution summary page
+        if (!$user_is_admin && $thisUser->hasRole('Manager')) {
+            return redirect()->route('institutions.show', [$user_inst]);
         }
+
+        // Get formatted array of saved user reports
+        $report_data = $this->savedUserReports(auth()->id());
 
         // Summarize harvest data values and counts
         $limit_to_insts = ($user_is_admin || $user_is_viewer) ? array() : array($user_inst);
@@ -424,5 +380,72 @@ class SavedReportController extends Controller
         }
         $report->delete();
         return response()->json(['result' => true, 'msg' => 'Saved report successfully deleted']);
+    }
+
+    /**
+     * Return a formatted array of saved user reports
+     *
+     * @param  Integer $userId
+     * @return Array
+     */
+    private function savedUserReports($userId)
+    {
+        // Get list of saved reports for this user
+        $saved_reports = SavedReport::with('master')->where('user_id', $userId)->get();
+
+        // Get the report filters
+        $all_filters = ReportFilter::get(['id','table_name']);
+
+        // Setup raw fields for what we need from the harvestlog
+        $count_fields  = "sushisettings.inst_id, ";
+        $count_fields .= "count(*) as total, sum(case when harvestlogs.status='Success' then 1 else 0 end) as success";
+
+        // Build the output data array
+        $report_data = array();
+        foreach ($saved_reports as $report) {
+            $last_harvest = HarvestLog::where('report_id', '=', $report->master->id)->max('yearmon');
+            $data = array('id' => $report->id, 'title' => $report->title, 'last_harvest' => $last_harvest,
+                          'master_id' => $report->master_id, 'master_name' => $report->master->name);
+
+            // Handle institution/group filters
+            $limit_to_insts = array();  // default to no limit
+            $filter_vals = $report->parsedFilters();
+            foreach ($filter_vals as $key => $val) {
+                $filt = $all_filters->where('id', $key)->first();
+                if (!$filt) {
+                    continue;
+                }
+                if ($filt->table_name == 'institutions') {
+                    $limit_to_insts = $val; // $val should be an array....
+                    break;
+                } elseif ($filt->table_name == 'institutiongroups') {
+                    if ($val > 0) {
+                        $group = InstitutionGroup::find($val);
+                        $limit_to_insts = $group->institutions->pluck('id')->toArray();
+                        break;
+                    }
+                }
+            }
+
+            // Pull by-institution harvest/error counts, add to report_data
+            $inst_harv = HarvestLog::join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
+                                  ->when($limit_to_insts, function ($query, $limit_to_insts) {
+                                        return $query->whereIn('sushisettings.inst_id', $limit_to_insts);
+                                  })
+                                  ->where('report_id', '=', $report->master->id)
+                                  ->where('yearmon', '=', $last_harvest)
+                                  ->selectRaw($count_fields)
+                                  ->groupBy('sushisettings.inst_id')
+                                  ->get(['inst_id','total','success'])
+                                  ->toArray();
+
+            $data['successful'] = 0;
+            $data['inst_count'] = sizeof($inst_harv);
+            foreach ($inst_harv as $inst) {
+                $data['successful'] += ($inst['total'] == $inst['success']) ? 1 : 0;
+            }
+            $report_data[] = $data;
+        }
+        return $report_data;
     }
 }

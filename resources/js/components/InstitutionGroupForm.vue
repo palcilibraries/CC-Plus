@@ -111,7 +111,7 @@
             formSubmit (event) {
                 this.success = '';
                 this.failure = '';
-                this.form.patch('/institutiongroups/'+this.group['id'])
+                this.form.patch('/institution/groups/'+this.group['id'])
                     .then( (response) => {
                         if (response.result) {
                             this.success = response.msg;
@@ -141,10 +141,10 @@
                   confirmButtonText: 'Yes, proceed'
                 }).then((result) => {
                   if (result.value) {
-                      axios.delete('/institutiongroups/'+groupid)
+                      axios.delete('/institution/groups/'+groupid)
                            .then( (response) => {
                                if (response.data.result) {
-                                   window.location.assign("/institutiongroups");
+                                   window.location.assign("/institution/groups");
                                } else {
                                    self.success = '';
                                    self.failure = response.data.msg;

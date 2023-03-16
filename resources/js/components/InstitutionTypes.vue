@@ -11,7 +11,7 @@
       </v-row>
       <v-row class="d-flex ma-0">
         <v-col class="d-flex px-2" cols="4">
-          <a :href="'/institutiontypes/export/xlsx'">Export to Excel</a>
+          <a :href="'/institution/types/export/xlsx'">Export to Excel</a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">
@@ -172,7 +172,7 @@
             let formData = new FormData();
             formData.append('csvfile', this.csv_upload);
             formData.append('type', this.import_type);
-            axios.post('/institutiontypes/import', formData, {
+            axios.post('/institution/types/import', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
@@ -194,7 +194,7 @@
             this.success = '';
             this.failure = '';
             if (this.editDialog) {
-                this.form.patch('/institutiontypes/'+this.current_type.id)
+                this.form.patch('/institution/types/'+this.current_type.id)
                     .then((response) => {
                         if (response.result) {
                             // Update mutable_types record with new value
@@ -207,7 +207,7 @@
                     });
                 this.editDialog = false;
             } else if (this.createDialog) {
-                this.form.post('/institutiontypes')
+                this.form.post('/institution/types')
                 .then( (response) => {
                     if (response.result) {
                         this.failure = '';
@@ -239,7 +239,7 @@
               confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
               if (result.value) {
-                  axios.delete('/institutiontypes/'+typeid)
+                  axios.delete('/institution/types/'+typeid)
                        .then( (response) => {
                            if (response.data.result) {
                                self.failure = '';

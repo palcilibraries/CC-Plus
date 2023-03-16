@@ -146,7 +146,7 @@
                     this.form.ym_from = '';
                     this.form.ym_to = '';
                 }
-                this.form.patch('/savedreports/'+this.report['id'])
+                this.form.patch('/my-reports/'+this.report['id'])
                     .then( (response) => {
                         if (response.result) {
                             this.mutable_report.title = this.form.title;
@@ -178,7 +178,7 @@
                   confirmButtonText: 'Yes, proceed'
                 }).then((result) => {
                   if (result.value) {
-                      axios.delete('/savedreports/'+id)
+                      axios.delete('/my-reports/'+id)
                            .then( (response) => {
                                if (response.data.result) {
                                    window.location.reload();

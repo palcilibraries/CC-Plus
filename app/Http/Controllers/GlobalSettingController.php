@@ -16,7 +16,7 @@ class GlobalSettingController extends Controller
   public function index()
   {
       // Get settings as an associative array of name => value
-      $skip_vars = array('server_admin','server_admin_pass');
+      $skip_vars = array('global_admin','global_admin_pass');
       $settings = GlobalSetting::whereNotIn('name',$skip_vars)->pluck('value', 'name')->toArray();
       return view('globalsettings.index', compact('settings'));
   }

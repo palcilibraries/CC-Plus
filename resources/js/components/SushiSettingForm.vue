@@ -55,7 +55,7 @@
                @click="changeStatus('Disabled')" style="display:inline-block;margin-right:1em;">disable</v-btn>
         <v-btn v-if="form.status != 'Enabled'" small color="green" type="button"
                @click="changeStatus('Enabled')" style="display:inline-block;margin-right:1em;">enable</v-btn>
-        <a :href="'/harvestlogs/create?inst='+setting.inst_id+'&prov='+setting.prov_id">
+        <a :href="'/harvests/create?inst='+setting.inst_id+'&prov='+setting.prov_id">
           <v-btn small color="primary" type="button" style="display:inline-block;margin-right:1em;">harvest</v-btn>
         </a>
       </div>

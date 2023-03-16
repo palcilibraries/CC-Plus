@@ -261,7 +261,7 @@
             this.failure = '';
             // Update existing global provider
             if (this.dialog_title == "Edit Global Provider") {
-              this.form.patch('/globalproviders/'+this.current_provider_id)
+              this.form.patch('/global/providers/'+this.current_provider_id)
               .then( (response) => {
                   if (response.result) {
                       this.failure = '';
@@ -282,7 +282,7 @@
 
             // Create new global provider
             } else {
-                this.form.post('/globalproviders')
+                this.form.post('/global/providers')
                 .then( (response) => {
                     if (response.result) {
                         this.failure = '';
@@ -314,7 +314,7 @@
               confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, proceed'
             }).then((result) => {
               if (result.value) {
-                  axios.delete('/globalproviders/'+gpid)
+                  axios.delete('/global/providers/'+gpid)
                        .then( (response) => {
                            if (response.data.result) {
                                this.mutable_providers.splice(this.mutable_providers.findIndex(p=>p.id == gpid),1);

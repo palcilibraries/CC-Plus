@@ -65,19 +65,19 @@ class User extends Authenticatable
 
     public function canManage()
     {
-      // ServerAdmin can manage any user and is only changeable by another ServerAdmin
-        if (auth()->user()->hasRole("ServerAdmin")) {
+      // GlobalAdmin can manage any user and is only changeable by another GlobalAdmin
+        if (auth()->user()->hasRole("GlobalAdmin")) {
             return true;
         } else {
-            if ($this->roles()->where("name", "ServerAdmin")->first()) return false;
+            if ($this->roles()->where("name", "GlobalAdmin")->first()) return false;
         }
 
-      // Admin can manage any non-ServerAdmin user
+      // Admin can manage any non-GlobalAdmin user
         if (auth()->user()->hasRole("Admin")) return true;
 
       // Managers can manage users at their own inst, but not Admins
         if (auth()->user()->hasRole("Manager") &&
-            !$this->roles()->where("name", "Admin")->orWhere("name", "ServerAdmin")->first()) {
+            !$this->roles()->where("name", "Admin")->orWhere("name", "GlobalAdmin")->first()) {
             return auth()->user()->inst_id == $this->inst_id;
         }
       // Users can manage themselves
@@ -116,7 +116,7 @@ class User extends Authenticatable
 
     public function hasAnyRole($roles)
     {
-        if ($this->roles()->where("name", "ServerAdmin")->first()) return true;
+        if ($this->roles()->where("name", "GlobalAdmin")->first()) return true;
         if (is_array($roles)) {
             if ($this->roles()->whereIn('name', $roles)->first()) return true;
         } else {
@@ -139,7 +139,7 @@ class User extends Authenticatable
 
     public function hasRole($role)
     {
-        if ($this->roles()->where("name", "ServerAdmin")->first()) return true;
+        if ($this->roles()->where("name", "GlobalAdmin")->first()) return true;
         if ($this->roles()->where("name", $role)->first()) return true;
         return 0;
     }

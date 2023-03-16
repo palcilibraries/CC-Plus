@@ -1,7 +1,7 @@
 <template>
   <v-form ref="wizardForm">
     <div v-if="selections_made">
-      <v-btn color="gray" small @click="resetForm">Reset Selections</v-btn>
+      <v-btn color="gray" small @click="resetForm('all')">Reset Selections</v-btn>
     </div>
     <div v-if="this.is_admin || this.is_viewer">
       <v-row class="d-flex align-mid">
@@ -188,7 +188,7 @@
       }
     },
     methods: {
-        resetForm () {
+        resetForm (type) {
             // Reset dialogs
             this.$refs.wizardForm.reset();
             this.dialogs.date = false;
@@ -205,7 +205,7 @@
             this.$store.dispatch('updateInstGroupFilter',0);
             this.$store.dispatch('updateProviderFilter',[]);
             this.$store.dispatch('updateReportId',1);
-            this.updateAvailable();
+            if (type == 'all') this.updateAvailable();
         },
         onInstChange () {
             this.$store.dispatch('updateInstitutionFilter',this.inst);
@@ -223,9 +223,11 @@
             this.updateAvailable();
         },
         onReportChange () {
+            // If selectedReport (or form) got reset
             if (typeof(this.selectedReport) == 'undefined') {    // got reset?
                 return;
             }
+            if (this.selectedReport == null || this.selectedReport == {}) return;
             // Setting master_id triggers the computed method above, which sets date-bounds
             let parent_id = this.reports[this.selectedReport.id-1].parent_id;
             if (parent_id == 0) {  // choice was a master report?
@@ -285,8 +287,9 @@
                 }
             });
             let params = {...report_filters, dateRange: this.dateRange};
-            this.resetForm();
+            this.resetForm('fields');
             window.location.assign("/reports/preview?filters=" + JSON.stringify(params));
+            return false;
         },
     },
     computed: {

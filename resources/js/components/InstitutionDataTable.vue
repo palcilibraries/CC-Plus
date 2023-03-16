@@ -284,14 +284,12 @@
         updateRecords() {
             this.success = "";
             this.failure = "";
-            this.loading = true;
             let _filters = JSON.stringify(this.mutable_filters);
             axios.get("/institutions?json=1&filters="+_filters)
                  .then((response) => {
                      this.mutable_institutions = response.data.institutions;
                  })
                  .catch(err => console.log(err));
-            this.loading = false;
         },
         processBulk() {
             this.success = "";
@@ -372,7 +370,7 @@
                 return;
             }
             the_group_name = this.newGroupName;
-            axios.post('/institutiongroups', {
+            axios.post('/institution/groups', {
               name: this.newGroupName,
               institutions: this.selectedRows
             })

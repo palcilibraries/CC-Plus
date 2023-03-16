@@ -137,8 +137,8 @@
         <v-btn class='btn' small type="button" color="green" @click="goExport">Export</v-btn>
       </v-col>
     </v-row>
-    <div v-if="!configForm">
-      <v-row class="status-message" v-if="success || failure">
+    <div v-if="!configForm" class="status-message">
+      <v-row v-if="success || failure" class="d-flex pt-2">
         <span v-if="success" class="good" role="alert" v-text="success"></span>
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
       </v-row>
@@ -496,7 +496,7 @@
                 num_months = toDate.getMonth() - fromDate.getMonth() +
                          (12 * (toDate.getFullYear() - fromDate.getFullYear())) + 1;
             }
-            axios.post('/savedreports', {
+            axios.post('/my-reports', {
                 title: this.form.title,
                 save_id: this.form.save_id,
                 report_id: this.all_filters.report_id,

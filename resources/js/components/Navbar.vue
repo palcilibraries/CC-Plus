@@ -1,7 +1,8 @@
-  <template>
-    <nav class="navbar navbar-expand navbar-light bg-white">
+<template>
+    <nav class="navbar navbar-expand navbar-light bg-dev">
       <div class="container">
-	      <a class="navbar-brand" href="/">
+        <!-- <a class="navbar-brand" href="/"> -->
+	      <a class="navbar-brand" :href=homeUrl>
           <img src="/images/CC_Plus_Logo.png" alt="CC plus" height="50px" width="103px" />
         </a>
         <div id="navbarSupportedContent" class="collapse navbar-collapse">
@@ -29,7 +30,7 @@
 
             <!-- Right Side Of Navbar -->
             <ul class="navbar-nav ml-auto">
-                <li v-if="is_serveradmin && ccp_key!=''" class="nav-item">
+                <li v-if="is_globaladmin && ccp_key!=''" class="nav-item">
                     <v-select :items="consortia" v-model="cur_key" label="Instance" item-text="name"
                               item-value="ccp_key" @change="changeInstance" dense outlined
                     ></v-select>
@@ -71,52 +72,58 @@ export default {
         return {
             profile_url: '',
             cur_key: '',
+            homeUrl: "/",
             navList: [
               { url: "/", name: "Home", role: "All" },
-              { url: "/serveradmin",
-                name: "Server Admin",
-                role: "ServerAdmin",
+              {
+                name: "Global Admin",
+                role: "GlobalAdmin",
                 children: [
                   {
-                    url: "/serveradmin",
+                    url: "/global/providers",
+                    name: "Global Providers",
+                    role: "GlobalAdmin",
+                  },
+                  {
+                    url: "/global/instances",
                     name: "Instances",
-                    role: "ServerAdmin",
+                    role: "GlobalAdmin",
                   },
                   {
-                    url: "/globalproviders",
-                    name: "Global Provider Settings",
-                    role: "ServerAdmin",
-                  },
-                  {
-                    url: "/globalsettings",
-                    name: "Global Environment Settings",
-                    role: "ServerAdmin",
+                    url: "/global/config",
+                    name: "System Config",
+                    role: "GlobalAdmin",
                   },
                 ]
               },
               {
                 url: "#",
                 name: "Admin",
-                role: "Manager",
+                role: "Admin",
                 children: [
-                  {
-                    url: "/providers",
-                    name: "Providers",
-                    role: "Admin",
-                  },
                   {
                     url: "/institutions",
                     name: "Institutions",
                     role: "Admin",
                   },
                   {
-                    url: "/institutiongroups",
+                    url: "/institution/groups",
                     name: "Groups",
                     role: "Admin",
                   },
+                  // {
+                  //   url: "/institutions/types",
+                  //   name: "Institution Types",
+                  //   role: "Admin",
+                  // },
                   {
                     url: "/users",
                     name: "Users",
+                    role: "Admin",
+                  },
+                  {
+                    url: "/providers",
+                    name: "Providers",
                     role: "Admin",
                   },
                   {
@@ -127,30 +134,24 @@ export default {
                 ]
               },
               {
-                url: "#",
                 name: "Harvests",
                 role: "All",
                 children: [
                   {
-                    url: "/harvestlogs/create",
+                    url: "/harvest/log",
+                    name: "Log",
+                    role: "All",
+                  },
+                  {
+                    url: "/harvest/manual",
                     name: "Manual Harvest",
                     role: "All",
                   },
-                  {
-                    url: "/harvestlogs/create",
-                    name: "Scheduled",
-                    role: "All",
-                  },
-                  {
-                    url: "/harvestlogs",
-                    name: "Logs",
-                    role: "All",
-                  },
-                  {
-                    url: "/alerts",
-                    name: "Alerts",
-                    role: "All",
-                  },
+                  // {
+                  //   url: "/alerts",
+                  //   name: "Alerts",
+                  //   role: "All",
+                  // },
                 ]
               },
               {
@@ -159,13 +160,18 @@ export default {
                 role: "All",
                 children: [
                   {
-                    url: "/reports/create",
-                    name: "Configure",
+                    url: "/my-reports",
+                    name: "My Reports",
                     role: "All",
                   },
                   {
-                    url: "/reports",
-                    name: "Types",
+                    url: "/reports/create",
+                    name: "Create",
+                    role: "All",
+                  },
+                  {
+                    url: "/reports/counter",
+                    name: "Counter Types",
                     role: "All",
                   },
                 ]
@@ -175,9 +181,9 @@ export default {
     },
     methods: {
       isVisible(item) {
-        if (this.is_serveradmin) return true;
-        if (this.is_admin && (item.role != 'ServerAdmin')) return true;
-        if (this.is_manager && (item.role != 'Admin' && item.role != 'ServerAdmin')) return true;
+        if (this.is_globaladmin) return true;
+        if (this.is_admin && (item.role != 'GlobalAdmin')) return true;
+        if (this.is_manager && (item.role != 'Admin' && item.role != 'GlobalAdmin')) return true;
         if (item.role == 'All') return true;
         return false;
       },
@@ -197,7 +203,7 @@ export default {
       },
     },
     computed: {
-      ...mapGetters(['is_manager','is_admin','is_viewer','is_serveradmin'])
+      ...mapGetters(['is_manager','is_admin','is_viewer','is_globaladmin'])
     },
     mounted() {
         // Get user's max role
@@ -215,15 +221,18 @@ export default {
         this.$store.dispatch('updateAccess', max_role);
         this.$store.dispatch('updateUserInst', this.user["inst_id"]);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
-        if (this.is_serveradmin) {
+        if (this.is_globaladmin) {
             this.consortia.push({'ccp_key': 'con_template', 'name': 'Template'});
             if (this.consortia.some(con => con.ccp_key == this.ccp_key)) this.cur_key = this.ccp_key;
         }
-        // Managers (without view or Admin rights) have Admin replaced by "My institution"
-        if (this.is_manager && !(this.is_serveradmin || this.is_admin || this.is_viewer)) {
-            var idx1 = this.navList.findIndex(nav => nav.name == "Admin");
+// Managers (without view or Admin rights) have Admin replaced by "My institution"
+        // Managers (without view or Admin rights) have Home replaced by "My institution"
+        if (this.is_manager && !(this.is_globaladmin || this.is_admin || this.is_viewer)) {
+            // var idx1 = this.navList.findIndex(nav => nav.name == "Admin");
+            var idx1 = this.navList.findIndex(nav => nav.name == "Home");
             this.navList[idx1].name = "My Institution";
-            this.navList[idx1].url = "/institutions/"+this.user.inst_id;
+            this.homeUrl = "/institutions/"+this.user.inst_id;
+            this.navList[idx1].url = this.homeUrl;
             this.navList[idx1].children = null;
         }
         console.log('Navbar Component mounted.');

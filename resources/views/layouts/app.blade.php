@@ -21,7 +21,7 @@
     <v-app id="app">
         <!-- Skip <topnav> if auth()->user() is undefined... -->
         @if ( auth()->check() )
-            @if ( auth()->user()->hasRole('ServerAdmin') )
+            @if ( auth()->user()->hasRole('GlobalAdmin') )
                 <topnav :user="{{ json_encode(App\User::with('roles')->where('id',auth()->id())->first()->toArray()) }}"
                         :consortia="{{ json_encode(\App\Consortium::get(['name','ccp_key'])->toArray() ) }}"
                         :ccp_key="{{ json_encode( Session::get('ccp_con_key') ) }}"

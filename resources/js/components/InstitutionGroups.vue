@@ -191,7 +191,7 @@
             let formData = new FormData();
             formData.append('csvfile', this.csv_upload);
             formData.append('type', this.import_type);
-            axios.post('/institutiongroups/import', formData, {
+            axios.post('/institution/groups/import', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
@@ -210,7 +210,7 @@
             this.importDialog = false;
         },
         doExport () {
-            window.location.assign('/institutiongroups/export/xlsx');
+            window.location.assign('/institution/groups/export/xlsx');
         },
         // Create a group
         formSubmit (event) {
@@ -218,7 +218,7 @@
             this.failure = '';
             if (this.editDialog) {
                 this.form.institutions = this.current_group.institutions;
-                this.form.patch('/institutiongroups/'+this.current_group.id)
+                this.form.patch('/institution/groups/'+this.current_group.id)
                     .then((response) => {
                         if (response.result) {
                             // Update mutable_types record with new value
@@ -231,7 +231,8 @@
                     });
                 this.editDialog = false;
             } else {
-                this.form.post('/institutiongroups')
+                this.form.institutions = [];
+                this.form.post('/institution/groups')
                 .then( (response) => {
                     if (response.result) {
                         this.failure = '';
@@ -264,7 +265,7 @@
               confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
               if (result.value) {
-                  axios.delete('/institutiongroups/'+groupid)
+                  axios.delete('/institution/groups/'+groupid)
                        .then( (response) => {
                            if (response.data.result) {
                                self.failure = '';

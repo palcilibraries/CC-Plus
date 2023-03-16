@@ -17,7 +17,7 @@ class CheckRole
     public function handle($request, Closure $next, ...$roles)
     {
         $user = \Auth::user();
-        if ($user->hasRole("ServerAdmin")) {
+        if ($user->hasRole("GlobalAdmin")) {
             return $next($request);
         }
 

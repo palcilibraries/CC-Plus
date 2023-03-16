@@ -5,24 +5,24 @@
         <v-flex v-for="report in mutable_reports" :key="report.id">
           <v-card>
             <h3 class="v-card-title headline font-weight-bold">{{ report.title }}</h3>
-			<div class="v-card-actions">
-	            <v-btn class='btn' small type="button" :href="'/savedreports/'+report.id+'/edit'">Edit</v-btn>
-                <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
-			</div>
+			      <div class="v-card-actions">
+	            <v-btn class='btn' small type="button" :href="'/my-reports/'+report.id+'/edit'">Edit</v-btn>
+              <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
+			      </div>
             <v-card-text class="">
               <p>Last Harvest: ({{ report.master_name }}) {{ report.last_harvest }}</p>
               <div v-if="is_admin || is_viewer">
                 <p>{{ report.successful }} / {{ report.inst_count }} institutions successful
-                    <a :href="'/harvestlogs?rept='+report.master_id+'&ymfr='+report.last_harvest">Harvest details</a>
+                    <a :href="'/harvests?rept='+report.master_id+'&ymfr='+report.last_harvest">Harvest details</a>
                 </p>
               </div>
               <div v-else>
                 <p v-if="report.successful < report.inst_count">
                   One or more harvests have failed
-                  <a :href="'/harvestlogs?rept='+report.master_id+'&ymfr='+report.last_harvest">Harvest details</a>
+                  <a :href="'/harvests?rept='+report.master_id+'&ymfr='+report.last_harvest">Harvest details</a>
                 </p>
                 <p v-else>All harvests completed successfully
-                  <a :href="'/harvestlogs?rept='+report.master_id+'&ymfr='+report.last_harvest">Harvest details</a>
+                  <a :href="'/harvests?rept='+report.master_id+'&ymfr='+report.last_harvest">Harvest details</a>
                 </p>
               </div>
               <v-btn class='btn primary' small type="button" :href="'/reports/preview?saved_id='+report.id">
@@ -65,7 +65,7 @@
               confirmButtonText: 'Yes, proceed'
             }).then((result) => {
               if (result.value) {
-                  axios.delete('/savedreports/'+id)
+                  axios.delete('/my-reports/'+id)
                        .then( (response) => {
                            if (response.data.result) {
                                self.failure = '';

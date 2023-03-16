@@ -12,7 +12,7 @@
           <td>{{ item.attempts }}</td>
           <td>{{ item.status }}</td>
           <td v-if="item.attempts>0">
-            <a :href="'/harvestlogs/'+item.id+'/edit'">details</a>
+            <a :href="'/harvests/'+item.id+'/edit'">details</a>
           </td>
         </tr>
       </template>
@@ -43,7 +43,7 @@
           { text: '', value: '', sortable: false },
         ],
         mutable_harvests: this.harvests,
-        seemore_url: "/harvestlogs",
+        seemore_url: "/harvests",
       }
     },
     mounted() {

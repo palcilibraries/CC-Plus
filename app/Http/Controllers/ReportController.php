@@ -79,27 +79,7 @@ class ReportController extends Controller
                                            'master' => $master->name, 'field_count' => $child->fieldCount());
             }
         }
-
-        // Get and map the user-defined reports
-        $user_report_data = SavedReport::with('master')->orderBy('title', 'asc')
-                                       ->where('user_id', '=', auth()->id())
-                                       ->get();
-        if ($user_report_data) {
-            $user_reports = $user_report_data->map(function ($record) {
-                                $record['field_count'] = sizeof(preg_split('/,/', $record->inherited_fields));
-                if ($record->date_range == 'latestMonth') {
-                    $record['months'] = 'Most recent one';
-                } elseif ($record->date_range == 'latestYear') {
-                    $record['months'] = 'Most recent 12';
-                } else {
-                    $record['months'] = 'Custom: ' . $record->ym_from . ' to ' . $record->ym_to;
-                }
-                                return $record;
-            });
-        } else {
-            $user_reports = null;
-        }
-        return view('reports.view', compact('counter_reports', 'user_reports'));
+        return view('reports.view', compact('counter_reports'));
     }
 
     /**

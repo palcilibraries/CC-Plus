@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h3>Harvest Logs</h3>
+    <h3>Harvest Log</h3>
     <div class="d-flex pa-0 align-center">
       <div v-if="datesFromTo!='|'" class="x-box">
         <img src="/images/red-x-16.png" width="100%" alt="clear date range" @click="clearFilter('date_range')"/>&nbsp;
@@ -91,7 +91,7 @@
       <v-data-table :headers="headers" :items="mutable_harvests" :loading="loading" item-key="id"
                      :options="mutable_options" @update:options="updateOptions">
         <template v-slot:item.action="{ item }">
-          <v-btn class='btn' x-small type="button" :href="'/harvestlogs/'+item.id+'/edit'">Details</v-btn>
+          <v-btn class='btn' x-small type="button" :href="'/harvests/'+item.id+'/edit'">Details</v-btn>
         </template>
       </v-data-table>
     </div>
@@ -208,7 +208,7 @@
             if (this.filter_by_toYM != null) this.mutable_filters['toYM'] = this.filter_by_toYM;
             if (this.filter_by_fromYM != null) this.mutable_filters['fromYM'] = this.filter_by_fromYM;
             let _filters = JSON.stringify(this.mutable_filters);
-            axios.get("/harvestlogs?json=1&filters="+_filters)
+            axios.get("/harvests?json=1&filters="+_filters)
                  .then((response) => {
                      this.mutable_harvests = response.data.harvests;
                      this.mutable_updated = response.data.updated;
@@ -261,7 +261,7 @@
                     for (let idx=0; idx<self.selectedRows.length; idx++) {
                       var harvest=self.selectedRows[idx];
                       if (self.status_changeable.includes(harvest.status)) {
-                        axios.delete('/harvestlogs/'+harvest.id)
+                        axios.delete('/harvests/'+harvest.id)
                         .then( (response) => {
                           if (response.data.result) {
                             self.mutable_harvests.splice(self.mutable_harvests.findIndex(h=>h.id == harvest.id),1);
@@ -305,7 +305,7 @@
           .catch({});
         },
         goEdit (logId) {
-            window.location.assign('/harvestlogs/'+logId+'/edit');
+            window.location.assign('/harvests/'+logId+'/edit');
         },
     },
     computed: {

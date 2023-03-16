@@ -63,10 +63,10 @@ class LoginController extends Controller
         }
 
         // Check for ServerAdmin credential
-        if (!is_null(config('ccplus.server_admin')) &&
-            !is_null(config('ccplus.server_admin_pass')) &&
-            $request->email == config('ccplus.server_admin') &&
-            Hash::check($request->password, config('ccplus.server_admin_pass'))
+        if (!is_null(config('ccplus.global_admin')) &&
+            !is_null(config('ccplus.global_admin_pass')) &&
+            $request->email == config('ccplus.global_admin') &&
+            Hash::check($request->password, config('ccplus.global_admin_pass'))
            ) {
             if ($this->attemptLogin($request)) {
                 return $this->sendLoginResponse($request);
@@ -93,8 +93,8 @@ class LoginController extends Controller
     {
         $user->last_login = now();
         $user->save();
-        if ($user->email == config('ccplus.server_admin')) {
-            return redirect("/serveradmin");
+        if ($user->email == config('ccplus.global_admin')) {
+            return redirect("/global/instances");
         } else {
             return redirect("/");
         }

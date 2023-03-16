@@ -67,7 +67,7 @@
     <v-row v-if="mutable_harvest.rawfile" no-gutters class="d-flex align-center">
       <v-col cols="2" sm="1">Raw Data</v-col>
       <v-col cols="2" sm="1">
-        <a :href="'/harvestlogs/'+mutable_harvest.id+'/raw'"><v-btn color="primary" x-small>download</v-btn></a>
+        <a :href="'/harvests/'+mutable_harvest.id+'/raw'"><v-btn color="primary" x-small>download</v-btn></a>
       </v-col>
     </v-row>
     <v-row v-else class="d-flex my-2 align-center">
@@ -165,10 +165,10 @@
                   confirmButtonText: 'Yes, proceed'
                 }).then((result) => {
                   if (result.value) {
-                      axios.delete('/harvestlogs/'+id)
+                      axios.delete('/harvests/'+id)
                            .then( (response) => {
                                if (response.data.result) {
-                                   window.location.assign("/harvestlogs");
+                                   window.location.assign("/harvests");
                                } else {
                                    self.success = '';
                                    self.failure = response.data.msg;

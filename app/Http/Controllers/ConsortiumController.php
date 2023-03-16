@@ -39,11 +39,11 @@ class ConsortiumController extends Controller
             return response()->json(['result' => false, 'msg' => 'Another database named ' . $conso_db . ' already exists!']);
         }
 
-        // Get server admin credential
-        $server_admin = config('ccplus.server_admin');
-        $server_admin_pass = config('ccplus.server_admin_pass');
-        if (strlen($server_admin) == 0 || strlen($server_admin_pass) == 0) {
-            return response()->json(['result' => false, 'msg' => 'Server Admin credential is not properly defined!']);
+        // Get global admin credential
+        $global_admin = config('ccplus.global_admin');
+        $global_admin_pass = config('ccplus.global_admin_pass');
+        if (strlen($global_admin) == 0 || strlen($global_admin_pass) == 0) {
+            return response()->json(['result' => false, 'msg' => 'Global Admin credential is not properly defined!']);
         }
 
         // Get global and template database table names and connection details
@@ -96,7 +96,7 @@ class ConsortiumController extends Controller
             // Zap any AUTO_INCREMENT value in the create command
             $command = preg_replace("/ AUTO_INCREMENT=(\d+)/", "", $raw_command);
             $data_query = str_replace('ZZZZ', $table, $_qry2);
-            // Copy just the ServerAdmin credential from the template.. no other users
+            // Copy just the GlobalAdmin credential from the template.. no other users
             if ($table == "users") {
                 $data_query .= " WHERE id=1";
             }
@@ -129,7 +129,7 @@ class ConsortiumController extends Controller
         $consortium = Consortium::create($request->only('ccp_key', 'name', 'email', 'is_active'));
 
         // Create the Administrator account in the new consortium users table using input values
-        // (The ServerAdmin account and role setting should have copied over from the template database)
+        // (The GlobalAdmin account and role setting should have copied over from the template database)
         DB::table($conso_db . ".users")->insert([
         ['id' => 2,
          'name' => 'CC-Plus Administrator',
@@ -197,14 +197,12 @@ class ConsortiumController extends Controller
      */
     public function destroy($id)
     {
-dd('Really ? Gonna delete ID: ' . $id . " ?? ");
         $consortium = Consortium::findOrFail($id);
-        $consortium->delete();
-
-        return redirect()->route('consortia.index')
-            ->with(
-                'flash_message',
-                'Consortium successfully deleted!'
-            );
+        try {
+            $consortium->delete();
+            return response()->json(['result' => true, 'msg' => 'Instance successfully deleted']);
+        } catch (\Exception $e) {
+            return response()->json(['result' => true, 'msg' => $e->getMessage()]);
+        }
     }
 }

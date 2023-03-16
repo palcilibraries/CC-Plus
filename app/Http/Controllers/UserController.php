@@ -110,7 +110,7 @@ class UserController extends Controller
 
                 // non-admins with Viewer get it tacked onto their role_string
                 if ( $rec->roles->where('name', 'Viewer')->first() ) {
-                    if (!$rec->roles->whereIn('name', ['ServerAdmin','Admin'])->first() ) {
+                    if (!$rec->roles->whereIn('name', ['GlobalAdmin','Admin'])->first() ) {
                         $user['role_string'] .= ", Consortium Viewer";
                     }
                 }
@@ -352,7 +352,7 @@ class UserController extends Controller
         if ($updated_user['role_string'] == 'Admin') $updated_user['role_string'] = "Consortium Admin";
         // non-admins with Viewer get it tacked onto their role_string
         if ( $user->roles->where('name', 'Viewer')->first() ) {
-            if (!$user->roles->whereIn('name', ['ServerAdmin','Admin'])->first() ) {
+            if (!$user->roles->whereIn('name', ['GlobalAdmin','Admin'])->first() ) {
                 $updated_user['role_string'] .= ", Consortium Viewer";
             }
         }

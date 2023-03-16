@@ -218,7 +218,7 @@
                 this.failure = 'Range of months to harvest is invalid';
                 return;
             }
-            this.form.post('/harvestlogs')
+            this.form.post('/harvests')
                 .then((response) => {
                     if (response.result) {
                         this.failure = '';

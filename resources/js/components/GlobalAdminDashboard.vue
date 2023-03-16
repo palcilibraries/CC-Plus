@@ -213,7 +213,9 @@
                          if (response.data.result) {
                              this.success = response.data.msg;
                              this.failure = '';
-                         } else {
+                             this.mutable_consortia.splice(this.mutable_consortia.findIndex(c=> c.id == conId),1);
+                             this.dtKey++;
+                       } else {
                              this.success = '';
                              this.failure = response.data.msg;
                          }
@@ -269,7 +271,7 @@
       }
     },
     mounted() {
-      console.log('ServerAdmin Dashboard mounted.');
+      console.log('GlobalAdmin Dashboard mounted.');
     }
   }
 </script>

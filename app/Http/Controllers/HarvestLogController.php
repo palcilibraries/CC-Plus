@@ -221,7 +221,7 @@ class HarvestLogController extends Controller
         // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {
             $harvests = array();
-            return view('harvestlogs.index', compact(
+            return view('harvests.index', compact(
                 'harvests',
                 'institutions',
                 'groups',
@@ -296,7 +296,7 @@ class HarvestLogController extends Controller
         $report_ids = DB::table($table)->distinct('report_id')->pluck('report_id')->toArray();
         $all_reports = Report::whereIn('id', $report_ids)->orderBy('id', 'asc')->get()->toArray();
 
-        return view('harvestlogs.create', compact('institutions','inst_groups','providers','all_reports','presets'));
+        return view('harvests.create', compact('institutions','inst_groups','providers','all_reports','presets'));
     }
 
     /**
@@ -621,7 +621,7 @@ class HarvestLogController extends Controller
             }
         }
 
-        return view('harvestlogs.edit', compact('harvest', 'attempts'));
+        return view('harvests.edit', compact('harvest', 'attempts'));
     }
 
 

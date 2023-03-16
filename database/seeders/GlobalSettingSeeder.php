@@ -24,8 +24,8 @@ class GlobalSettingSeeder extends Seeder
             $password = Hash::make('ChangeMeNow!');
             DB::table($table)->insert([
                                  ['id' => 1, 'name' => 'root_url', 'value' => 'http://localhost/'],
-                                 ['id' => 2, 'name' => 'server_admin', 'value' => 'ServerAdmin'],
-                                 ['id' => 3, 'name' => 'server_admin_pass', 'value' => $password],
+                                 ['id' => 2, 'name' => 'global_admin', 'value' => 'GlobalAdmin'],
+                                 ['id' => 3, 'name' => 'global_admin_pass', 'value' => $password],
                                  ['id' => 4, 'name' => 'reports_path', 'value' => '/usr/local/stats_reports/'],
                                  ['id' => 5, 'name' => 'cookie_life', 'value' => '90'],
                                  ['id' => 6, 'name' => 'silence_days', 'value' => '10'],

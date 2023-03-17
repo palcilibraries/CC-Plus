@@ -28,8 +28,17 @@ class GlobalProviderController extends Controller
       $gp_data = GlobalProvider::orderBy('name', 'ASC')->get();
 
       // get connection fields and master reports
-      $all_connectors = ConnectionField::get(['id','label'])->toArray();
-      $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
+      $connectionFields = ConnectionField::get(['id','name','label']);
+      $all_connectors = $connectionFields->toArray();
+
+      // Re-order maaster reports for the U/I
+      $order = array('PR','DR','IR','TR');
+      $_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
+      $master_reports = array();
+      foreach ($order as $_name) {
+          $rpt = $_reports->where('name',$_name)->first();
+          $master_reports[] = $rpt;
+      }
 
       // get all the consortium instances and preserve the current instance database setting
       $instances = Consortium::get();
@@ -42,6 +51,22 @@ class GlobalProviderController extends Controller
         $provider['status'] = ($gp->is_active) ? "Active" : "Inactive";
         $provider['reports_string'] = ($gp->master_reports) ?
                                       $this->makeReportString($gp->master_reports) : 'None';
+
+        // Build arrays of booleans for connecion fields and reports for the U/I chackboxes
+        $enabled = $gp->connectors;
+        $cnx_state = array();
+        foreach ($connectionFields as $fld) {
+            $cnx_state[$fld->name] = (in_array($fld->id, $enabled)) ? true : false;
+        }
+        $provider['connector_state'] = $cnx_state;
+
+        // Build reports enabled array in an arbitrary way (PR,DR,IR,TR)
+        $enabled = $gp->master_reports;
+        $rpt_state = array();
+        foreach ($master_reports as $rpt) {
+            $rpt_state[$rpt->name] = (in_array($rpt->id, $enabled)) ? true : false;
+        }
+        $provider['report_state'] = $rpt_state;
 
         // Walk all instances scan for harvests connected to this provider
         // If any are found, the can_delete flag will be set to false to disable deletion option in the U/I
@@ -125,11 +150,19 @@ class GlobalProviderController extends Controller
       $input = $request->all();
       $isActive = ($input['is_active']) ? 1 : 0;
 
+      // Pull all connection fields and master reports
+      $all_conectors = ConnectionField::get();
+      $all_master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
+
       // Gather IDs of reports that have been removed. We'll detach these from the consortia instance tables.
       // NOTE:: adding to the global master list doesn't automatically enable new reports in the instance tables.
       $dropped_reports = array();
-      foreach ($provider->master_reports as $mr) {
-          if (!in_array($mr, $input['master_reports'])) {
+      $original_reports = $provider->master_reports;
+      foreach ($original_reports as $mr) {
+          $_master = $all_master_reports->where('id', $mr)->first();
+          if (!$_master) continue;
+          if (!isset($input['report_state'][$_master->name])) continue;
+          if (!$input['report_state'][$_master->name]) {
               $dropped_reports[] = $mr;
           }
       }
@@ -140,18 +173,35 @@ class GlobalProviderController extends Controller
       $provider->server_url_r5 = $input['server_url_r5'];
       $provider->day_of_month = $input['day_of_month'];
       $provider->max_retries = $input['max_retries'];
-      $provider->connectors = $input['connectors'];
-      $provider->master_reports = $input['master_reports'];
+      // Turn array of connection checkboxes into an array of IDs
+      $new_connectors = array();
+      foreach ($all_conectors as $cnx) {
+          if (!isset($input['connector_state'][$cnx->name])) continue;
+          if ($input['connector_state'][$cnx->name]) {
+              $new_connectors[] = $cnx->id;
+          }
+      }
+      $connectors_changed = ($provider->connectors != $new_connectors);
+      $provider->connectors = $new_connectors;
+      // Turn array of report checkboxes into an array of IDs
+      $masterReports = array();
+      $reports_string = "";
+      foreach ($all_master_reports as $rpt) {
+        if (!isset($input['report_state'][$rpt->name])) continue;
+        if ($input['report_state'][$rpt->name]) {
+            $masterReports[] = $rpt->id;
+            $reports_string .= ($reports_string=="") ? "" : ", ";
+            $reports_string .= $rpt->name;
+        }
+      }
+      $provider->master_reports = $masterReports;
       $provider->save();
       $provider['status'] = ($provider->is_active) ? "Active" : "Inactive";
-      $provider['reports_string'] = (sizeof($input['master_reports']) > 0) ?
-                                    $this->makeReportString($input['master_reports']) : 'None';
+      $provider['reports_string'] = ($reports_string == "") ? 'None' : $reports_string;
 
       // Get connector fields
-      $connectors_changed = ($input['connectors'] == $provider->connectors);
-      $connectors = ConnectionField::get();
-      $fields = $connectors->whereIn('id',$provider->connectors)->pluck('name')->toArray();
-      $unused_fields = $connectors->whereNotIn('id',$provider->connectors)->pluck('name')->toArray();
+      $fields = $all_conectors->whereIn('id',$provider->connectors)->pluck('name')->toArray();
+      $unused_fields = $all_conectors->whereNotIn('id',$provider->connectors)->pluck('name')->toArray();
 
       // If changes implicate consortia-provider settings, Loop through all consortia instances
       if ($input['name']!=$orig_name || $isActive!=$orig_isActive || count($dropped_reports)>0 || $connectors_changed) {

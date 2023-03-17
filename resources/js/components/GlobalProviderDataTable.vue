@@ -84,55 +84,77 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="provDialog" persistent max-width="640px">
+    <v-dialog v-model="provDialog" persistent max-width="500px">
       <v-card>
-        <v-card-title>
-          <span>{{ dialog_title }}</span>
-        </v-card-title>
-        <v-form v-model="formValid">
-          <v-card-text>
-            <v-container grid-list-md>
-              <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-              <v-switch v-model="form.is_active" label="Active?"></v-switch>
-              <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined></v-text-field>
-              <div class="field-wrapper has-label">
-                <v-subheader v-text="'Run Harvests Monthly on Day'"></v-subheader>
-                <v-text-field v-model="form.day_of_month" label="Day-of-Month" single-line type="number"
-                              :rules="dayRules">
-                </v-text-field>
-              </div>
-              <div class="field-wrapper has-label">
-                <v-subheader v-text="'Connection Fields'"></v-subheader>
-                  <v-select :items="all_connectors" v-model="form.connectors" item-value="id"
-                            item-text="label" label="Select" multiple chips hint="Required connection fields"
-                            persistent-hint
-                  ></v-select>
-              </div>
-              <div class="field-wrapper has-label">
-                <v-subheader v-text="'Maximum #-of Retries'"></v-subheader>
-                <v-text-field v-model="form.max_retries" label="Max Retries" hide-details single-line type="number"
+        <v-container grid-list-sm>
+          <v-form v-model="formValid">
+            <v-row class="d-flex ma-2">
+              <v-col class="d-flex pt-4 justify-center"><h4 align="center">{{ dialog_title }}</h4></v-col>
+            </v-row>
+            <v-row class="d-flex mx-2">
+              <v-text-field v-model="form.name" label="Name" outlined dense></v-text-field>
+            </v-row>
+            <v-row class="d-flex mx-2">
+              <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined dense></v-text-field>
+            </v-row>
+            <v-row class="d-flex mx-2">
+              <v-col class="d-flex pr-2" cols="6">
+                <v-list dense>
+                  <v-list-item class="verydense"><strong>Connection Fields</strong></v-list-item>
+                  <v-list-item v-for="cnx in all_connectors" :key="cnx.name" class="verydense">
+                    <v-checkbox v-if="cnx.id==1" :value='form.connector_state[cnx.name]' :key="cnx.name" :label="cnx.label"
+                                v-model="form.connector_state[cnx.name]" disabled dense>
+                    </v-checkbox>
+                    <v-checkbox v-else :value="form.connector_state[cnx.name]" :key="cnx.name" :label="cnx.label"
+                                v-model="form.connector_state[cnx.name]" dense>
+                    </v-checkbox>
+                  </v-list-item>
+                </v-list>
+              </v-col>
+              <v-col class="d-flex pl-2" cols="6">
+                <v-list dense>
+                  <v-list-item class="verydense"><strong>Report to Harvest</strong></v-list-item>
+                  <v-list-item v-for="rpt in master_reports" :key="rpt.name" class="verydense">
+                    <v-checkbox v-if="rpt.id==3" :value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
+                                v-model="form.report_state[rpt.name]" disabled dense>
+                    </v-checkbox>
+                    <v-checkbox v-else ::value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
+                                v-model="form.report_state[rpt.name]" dense>
+                    </v-checkbox>
+                  </v-list-item>
+                </v-list>
+              </v-col>
+            </v-row>
+            <v-row class="d-flex mx-2">
+              <v-col class="d-flex px-2 justify-end" cols="6">Run Harvests Monthly on Day</v-col>
+              <v-col class="d-flex pa-0" cols="2">
+                <v-text-field v-model="form.day_of_month" label="Day-of-Month" single-line dense type="number"
+                              :rules="dayRules"
                 ></v-text-field>
-              </div>
-              <div class="field-wrapper has-label">
-                <v-subheader v-text="'Reports to Harvest'"></v-subheader>
-                <v-select :items="master_reports" v-model="form.master_reports" item-value="id"
-                          item-text="name" label="Select" multiple chips hint="Define which reports can be harvested"
-                          persistent-hint
-                ></v-select>
-              </div>
-            </v-container>
-          </v-card-text>
-          <v-card-actions>
-            <v-col class="d-flex">
-              <v-btn small color="primary" type="button" @click="formSubmit" :disabled="!formValid">
-                Save Provider
-              </v-btn>
-            </v-col>
-            <v-col class="d-flex">
-              <v-btn class='btn' x-small type="button" color="primary" @click="provDialog=false">Cancel</v-btn>
-            </v-col>
-          </v-card-actions>
-      </v-form>
+              </v-col>
+            </v-row>
+            <v-row class="d-flex mx-2">
+              <v-col class="d-flex px-2 justify-end" cols="6">Maximum #-of Retries</v-col>
+              <v-col class="d-flex pa-0" cols="2">
+                <v-text-field v-model="form.max_retries" label="Max Retries" hide-details single-line dense type="number"
+                ></v-text-field>
+              </v-col>
+            </v-row>
+            <v-row class="d-flex mx-2 align-center">
+              <v-col class="d-flex" cols="4">
+                <v-switch v-model="form.is_active" label="Active?" dense></v-switch>
+              </v-col>
+              <v-col class="d-flex" cols="4">
+                <v-btn x-small color="primary" type="button" @click="formSubmit" :disabled="!formValid">
+                  Save Provider
+                </v-btn>
+              </v-col>
+              <v-col class="d-flex" cols="4">
+                <v-btn x-small color="primary" type="button" @click="provDialog=false">Cancel</v-btn>
+              </v-col>
+            </v-row>
+          </v-form>
+        </v-container>
       </v-card>
     </v-dialog>
   </div>
@@ -168,8 +190,9 @@
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],
-        new_provider: {'id': null, 'name': '', 'is_active': 1, 'master_reports': [], 'server_url_r5': '',
-                      'day_of_month': 15, 'max_retries': this.default_retries},
+        // Default new provider - active, customer_id field enabled, dayL15 and default #-retries
+        new_provider: {'id': null, 'name': '', 'is_active': 1, 'report_state': [], 'connector_state': [],
+                       'server_url_r5': '', 'day_of_month': 15, 'max_retries': this.default_retries},
         formValid: true,
         form: new window.Form({
             name: '',
@@ -177,8 +200,8 @@
             server_url_r5: '',
             day_of_month: 15,
             max_retries: 10,
-            connectors: [],
-            master_reports: [],
+            connector_state: [],
+            report_state: [],
         }),
         dayRules: [
             v => !!v || "Day of month is required",
@@ -202,8 +225,8 @@
             this.form.server_url_r5 = _prov.server_url_r5;
             this.form.day_of_month = _prov.day_of_month;
             this.form.max_retries = _prov.max_retries;
-            this.form.connectors = _prov.connectors;
-            this.form.master_reports = _prov.master_reports;
+            this.form.connector_state = _prov.connector_state;
+            this.form.report_state = _prov.report_state;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
             this.provDialog = true;
@@ -217,8 +240,8 @@
             this.form.server_url_r5 = this.new_provider.server_url_r5;
             this.form.day_of_month = this.new_provider.day_of_month;
             this.form.max_retries = this.new_provider.max_retries;
-            this.form.connectors = this.new_provider.connectors;
-            this.form.master_reports = this.new_provider.master_reports;
+            this.form.connector_state = this.new_provider.connector_state;
+            this.form.report_state = this.new_provider.report_state;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
             this.provDialog = true;
@@ -351,6 +374,13 @@
         this.$store.dispatch('updatePageName','globalproviders');
 	},
     mounted() {
+      // Initialize the connection fields and reports checkboxes for a new provider
+      this.all_connectors.forEach( cnx => {
+        this.new_provider.connector_state[cnx['name']] = (cnx['id']==1) ? true : false;
+      });
+      this.master_reports.forEach( rpt => {
+        this.new_provider.report_state[rpt['name']] = (rpt['id']==3) ? true : false;
+      });
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);
       this.dtKey += 1;           // force re-render of the datatable
@@ -362,6 +392,6 @@
     }
   }
 </script>
-<style>
-
+<style scoped>
+.verydense { max-height: 16px; }
 </style>

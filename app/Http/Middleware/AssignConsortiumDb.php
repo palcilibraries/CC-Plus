@@ -22,7 +22,7 @@ class AssignConsortiumDb
        // having to chooee (which would connect them to the con_template database)
         if ($request->isMethod('post') && $request->getPathInfo() == "/login") {
             if (is_null($request['consortium'])) {
-                if ($request->email == config('ccplus.server_admin')) {
+                if ($request->email == config('ccplus.global_admin')) {
                     $request['consortium'] = "con_template";
                     session(['ccp_con_key' => "con_template"]);
                 } else {

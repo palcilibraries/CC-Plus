@@ -113,7 +113,7 @@
               </v-col>
               <v-col class="d-flex pl-2" cols="6">
                 <v-list dense>
-                  <v-list-item class="verydense"><strong>Report to Harvest</strong></v-list-item>
+                  <v-list-item class="verydense"><strong>Available Reports</strong></v-list-item>
                   <v-list-item v-for="rpt in master_reports" :key="rpt.name" class="verydense">
                     <v-checkbox v-if="rpt.id==3" :value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
                                 v-model="form.report_state[rpt.name]" disabled dense>
@@ -127,16 +127,19 @@
             </v-row>
             <v-row class="d-flex mx-2">
               <v-col class="d-flex px-2 justify-end" cols="6">Run Harvests Monthly on Day</v-col>
+              <v-col class="d-flex pa-0" cols="1">&nbsp;</v-col>
               <v-col class="d-flex pa-0" cols="2">
                 <v-text-field v-model="form.day_of_month" label="Day-of-Month" single-line dense type="number"
-                              :rules="dayRules"
+                              class="centered-input" :rules="dayRules"
                 ></v-text-field>
               </v-col>
             </v-row>
             <v-row class="d-flex mx-2">
               <v-col class="d-flex px-2 justify-end" cols="6">Maximum #-of Retries</v-col>
+              <v-col class="d-flex pa-0" cols="1">&nbsp;</v-col>
               <v-col class="d-flex pa-0" cols="2">
                 <v-text-field v-model="form.max_retries" label="Max Retries" hide-details single-line dense type="number"
+                              class="centered-input"
                 ></v-text-field>
               </v-col>
             </v-row>
@@ -394,4 +397,7 @@
 </script>
 <style scoped>
 .verydense { max-height: 16px; }
+.centered-input >>> input {
+  text-align: center
+}
 </style>

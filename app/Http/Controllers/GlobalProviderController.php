@@ -114,14 +114,44 @@ class GlobalProviderController extends Controller
       $provider->name = $input['name'];
       $provider->is_active = $input['is_active'];
       $provider->server_url_r5 = $input['server_url_r5'];
+
+      // Turn array of connection checkboxes into an array of IDs
+      $connectors = array();
+      if (isset($input['connector_state'])) {
+        $all_conectors = ConnectionField::get();
+        foreach ($all_conectors as $cnx) {
+            if (!isset($input['connector_state'][$cnx->name])) continue;
+            if ($input['connector_state'][$cnx->name]) {
+                $connectors[] = $cnx->id;
+            }
+        }
+        $provider->connectors = $connectors;
+      }
+
+      // Turn array of report checkboxes into an array of IDs
+      $masterReports = array();
+      $reports_string = "";
+      if (isset($input['report_state'])) {
+          $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
+          foreach ($master_reports as $rpt) {
+            if (!isset($input['report_state'][$rpt->name])) continue;
+            if ($input['report_state'][$rpt->name]) {
+                $masterReports[] = $rpt->id;
+                $reports_string .= ($reports_string=="") ? "" : ", ";
+                $reports_string .= $rpt->name;
+            }
+          }
+      }
+      $provider->master_reports = $masterReports;
+
       // If no connectors required, force customer_id ON
-      if (!isset($input['connectors'])) $input['connectors'] = array();
-      $provider->connectors = (count($input['connectors']) > 0) ? $input['connectors'] : array(1);
-      $provider->master_reports = $input['master_reports'];
+      $provider->connectors = (count($connectors) > 0) ? $connectors : array(1);
       $provider->save();
       $provider['can_delete'] = true;
-      $provider['reports_string'] = (sizeof($input['master_reports']) > 0) ?
-                                    $this->makeReportString($input['master_reports']) : 'None';
+      $provider['status'] = ($provider->is_active) ? "Active" : "Inactive";
+      $provider['reports_string'] = ($reports_string == "") ? 'None' : $reports_string;
+      $provider['report_state'] = (isset($input['report_state'])) ? $input['report_state'] : array();
+      $provider['connector_state'] = (isset($input['connector_state'])) ? $input['connector_state'] : array();
 
       return response()->json(['result' => true, 'msg' => 'Provider successfully created',
                                'provider' => $provider]);

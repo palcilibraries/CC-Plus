@@ -173,7 +173,7 @@
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],
-        new_provider: {'id': null, 'name': '', 'is_active': 1, 'report_state': [], 'connector_state': [], 'server_url_r5': ''},
+        new_provider: {'id': null, 'name': '', 'is_active': 1, 'report_state': {}, 'connector_state': {}, 'server_url_r5': ''},
         formValid: true,
         form: new window.Form({
             name: '',

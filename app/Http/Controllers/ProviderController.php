@@ -44,7 +44,7 @@ class ProviderController extends Controller
             $rec->active = ($rec->is_active) ? 'Active' : 'Inactive';
             $rec->inst_name = ($rec->institution->id == 1) ? 'Entire Consortium' : $rec->institution->name;
             $rec->can_delete = false;
-            $rec->day_of_month = $rec->globalProv->day_of_month;
+            $rec->day_of_month = $rec->day_of_month;
             $last_harvest = $rec->sushiSettings->max('last_harvest');
             $rec->can_delete = (is_null($last_harvest)) ? true : false;
             $rec->reports_string = ($rec->reports) ? $this->makeReportString($rec->reports) : 'None';
@@ -111,7 +111,24 @@ class ProviderController extends Controller
         $provider['sushiSettings'] = $sushi_settings->toArray();
 
         // Master reports limited to whet is defined for the related global provider
-        $master_reports = Report::whereIn('id', $con_prov->globalProv->master_reports)->get(['id','name'])->toArray();
+        $_reports = Report::whereIn('id', $con_prov->globalProv->master_reports)->get(['id','name']);
+
+        // Re-order maaster reports for the U/I
+        $order = array('PR','DR','TR','IR');
+        $master_reports = array();
+        $rpt_state = array();
+        foreach ($order as $name) {
+            $rpt = $_reports->where('name',$name)->first();
+            if (!$rpt) continue;
+            $master_reports[] = $rpt;
+            $rpt_state[$name] = false;
+        }
+
+        // setup reprts_state structure to mkae checkboxres with
+        foreach ($master_reports as $rpt) {
+            $rpt_state[$rpt->name] = ($con_prov->reports->where('name',$rpt->name)->first()) ? true : false;
+        }
+        $provider['report_state'] = $rpt_state;
 
         // Connection fields is the set defined for the related global provider
         $connectors = ConnectionField::whereIn('id', $con_prov->globalProv->connectors)->get()->values()->toArray();
@@ -176,25 +193,29 @@ class ProviderController extends Controller
       // Update the record and assign reports in master_reports
         $provider->update($prov_input);
         $provider->reports()->detach();
-        if (!is_null($request->input('master_reports'))) {
+        if (!is_null($request->input('report_state'))) {
+            $report_state = $request->input('report_state');
             // attach reports to the provider, but only if the requested one(s) are in global:master_reports
+            $all_master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
             $global_master_list = $provider->globalProv->master_reports;
-            foreach ($request->input('master_reports') as $r) {
-                if (in_array($r, $global_master_list)) {
-                    $provider->reports()->attach($r);
+            $order = array('PR','DR','TR','IR');
+            foreach ($global_master_list as $id) {
+                $master = $all_master_reports->where('id',$id)->first();
+                if (!$master) continue;
+                if ($report_state[$master->name]) {
+                    $provider->reports()->attach($id);
                 }
             }
         }
 
+        if ($thisUser->hasRole("Admin")) {
+            $settings = SushiSetting::with('institution')->where('prov_id',$provider->id)->get();
+        } else {
+            $settings = SushiSetting::with('institution')
+                                    ->where('prov_id',$provider->id)->where('inst_id', $thisUser->inst_id)->get();
+        }
       // If is_active is changing, check and update related sushi settings
         if ($was_active != $provider->is_active) {
-            if ($thisUser->hasRole("Admin")) {
-                $settings = SushiSetting::with('institution')->where('prov_id',$provider->id)->get();
-            } else {
-                $settings = SushiSetting::with('institution')
-                                        ->where('prov_id',$provider->id)->where('inst_id', $thisUser->inst_id)->get();
-            }
-
             foreach ($settings as $setting) {
               // skip disabled settings
                 if ($setting->status == 'Disabled') continue;
@@ -263,15 +284,15 @@ class ProviderController extends Controller
             $provider->active = ($provider->is_active) ? 'Active' : 'Inactive';
             $provider->inst_name = ($provider->institution->id == 1) ? 'Entire Consortium' : $provider->institution->name;
             $provider->can_delete = true;
-            $provider->day_of_month = $provider->globalProv->day_of_month;
+            $provider->day_of_month = 15;
             $provider->SushiSettings = [];
             // Attach reports to be be pulled
             foreach ($gp->master_reports as $r) {
                 $provider->reports()->attach($r);
             }
+            $provider->reports_string = ($provider->reports) ? $this->makeReportString($provider->reports) : 'None';
             $added[] = $provider->data();
         }
-
 
         // Pull unset global provider definitions
         $message = count($added) . " Provider(s) successfully connected";
@@ -321,7 +342,7 @@ class ProviderController extends Controller
                       ->join('ccplus_global.global_providers as gp', 'gp.id', '=', 'prv.global_id')
                       ->orderBy('prov_name', 'ASC')
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','gp.server_url_r5',
-                             'inst.name as inst_name','day_of_month','max_retries']);
+                             'inst.name as inst_name','day_of_month']);
        // Managers get all consortia-wide providers and those that match user's inst_id
        // (excludes providers assigned to institutions.)
         } else {
@@ -332,7 +353,7 @@ class ProviderController extends Controller
                       ->orWhere('prv.inst_id', $thisUser->inst_id)
                       ->orderBy('prov_name', 'ASC')
                       ->get(['prv.id as prov_id','prv.name as prov_name','prv.is_active','prv.inst_id','gp.server_url_r5',
-                             'inst.name as inst_name','day_of_month','max_retries']);
+                             'inst.name as inst_name','day_of_month']);
         }
 
         // Get all providers, with reports
@@ -586,7 +607,6 @@ class ProviderController extends Controller
 
             // Update or create the Provider record
             if (is_null($current_prov)) {      // Create
-                $_prov['max_retries'] = config('ccplus.max_harvest_retries');
                 $current_prov = Provider::create($_prov);
                 $cur_prov_id = $current_prov->id;
                 $prov_created++;

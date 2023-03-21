@@ -125,24 +125,6 @@
                 </v-list>
               </v-col>
             </v-row>
-            <v-row class="d-flex mx-2">
-              <v-col class="d-flex px-2 justify-end" cols="6">Run Harvests Monthly on Day</v-col>
-              <v-col class="d-flex pa-0" cols="1">&nbsp;</v-col>
-              <v-col class="d-flex pa-0" cols="2">
-                <v-text-field v-model="form.day_of_month" label="Day-of-Month" single-line dense type="number"
-                              class="centered-input" :rules="dayRules"
-                ></v-text-field>
-              </v-col>
-            </v-row>
-            <v-row class="d-flex mx-2">
-              <v-col class="d-flex px-2 justify-end" cols="6">Maximum #-of Retries</v-col>
-              <v-col class="d-flex pa-0" cols="1">&nbsp;</v-col>
-              <v-col class="d-flex pa-0" cols="2">
-                <v-text-field v-model="form.max_retries" label="Max Retries" hide-details single-line dense type="number"
-                              class="centered-input"
-                ></v-text-field>
-              </v-col>
-            </v-row>
             <v-row class="d-flex mx-2 align-center">
               <v-col class="d-flex" cols="4">
                 <v-switch v-model="form.is_active" label="Active?" dense></v-switch>
@@ -171,7 +153,6 @@
             providers: { type:Array, default: () => [] },
             master_reports: { type:Array, default: () => [] },
             all_connectors: { type:Array, default: () => [] },
-            default_retries: { type:Number, default: null }
            },
     data () {
       return {
@@ -189,20 +170,15 @@
           { text: 'Provider ', value: 'name', align: 'start' },
           { text: 'Master Reports', value: 'reports_string' },
           { text: 'Status', value: 'status' },
-          { text: 'Harvest Day', value: 'day_of_month', align: 'center' },
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],
-        // Default new provider - active, customer_id field enabled, dayL15 and default #-retries
-        new_provider: {'id': null, 'name': '', 'is_active': 1, 'report_state': [], 'connector_state': [],
-                       'server_url_r5': '', 'day_of_month': 15, 'max_retries': this.default_retries},
+        new_provider: {'id': null, 'name': '', 'is_active': 1, 'report_state': [], 'connector_state': [], 'server_url_r5': ''},
         formValid: true,
         form: new window.Form({
             name: '',
             is_active: 1,
             server_url_r5: '',
-            day_of_month: 15,
-            max_retries: 10,
             connector_state: [],
             report_state: [],
         }),
@@ -226,8 +202,6 @@
             this.form.name = _prov.name;
             this.form.is_active = _prov.is_active;
             this.form.server_url_r5 = _prov.server_url_r5;
-            this.form.day_of_month = _prov.day_of_month;
-            this.form.max_retries = _prov.max_retries;
             this.form.connector_state = _prov.connector_state;
             this.form.report_state = _prov.report_state;
             this.providerImportDialog = false;
@@ -241,8 +215,6 @@
             this.form.name = this.new_provider.name;
             this.form.is_active = this.new_provider.is_active;
             this.form.server_url_r5 = this.new_provider.server_url_r5;
-            this.form.day_of_month = this.new_provider.day_of_month;
-            this.form.max_retries = this.new_provider.max_retries;
             this.form.connector_state = this.new_provider.connector_state;
             this.form.report_state = this.new_provider.report_state;
             this.providerImportDialog = false;

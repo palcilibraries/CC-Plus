@@ -315,9 +315,10 @@ class SushiQWorker extends Command
                 if ($request_status != "Pending") {    // Pending is not failure
                    // Increment harvest attempts
                     $job->harvest->attempts++;
+                    $max_retries = intval(config('ccplus.max_harvest_retries'));
 
                    // If we're out of retries, the harvest fails and we set an Alert
-                    if ($job->harvest->attempts >= $setting->provider->globalProv->max_retries) {
+                    if ($job->harvest->attempts >= $max_retries) {
                         $job->harvest->status = 'Fail';
                         Alert::insert(['yearmon' => $yearmon, 'prov_id' => $setting->prov_id,
                                        'harvest_id' => $job->harvest->id, 'status' => 'Active', 'created_at' => $ts]);

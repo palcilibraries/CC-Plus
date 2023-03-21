@@ -32,7 +32,7 @@ class GlobalProviderController extends Controller
       $all_connectors = $connectionFields->toArray();
 
       // Re-order maaster reports for the U/I
-      $order = array('PR','DR','IR','TR');
+      $order = array('PR','DR','TR','IR');
       $_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
       $master_reports = array();
       foreach ($order as $_name) {
@@ -93,10 +93,9 @@ class GlobalProviderController extends Controller
         $providers[] = $provider;
       }
 
-      // Restore the database habdle and pull the max_retries config variable
+      // Restore the database habdle and load the view
       config(['database.connections.consodb.database' => $keepDB]);
-      $default_retries = config('ccplus.max_harvest_retries');
-      return view('globalproviders.index', compact('providers', 'master_reports', 'all_connectors', 'default_retries'));
+      return view('globalproviders.index', compact('providers', 'master_reports', 'all_connectors'));
     }
 
     /**
@@ -108,16 +107,13 @@ class GlobalProviderController extends Controller
     public function store(Request $request)
     {
       // Validate form inputs
-      $this->validate($request, [ 'name' => 'required', 'is_active' => 'required', 'server_url_r5' => 'required',
-                                  'day_of_month' => 'required', 'max_retries' => 'required' ]);
+      $this->validate($request, [ 'name' => 'required', 'is_active' => 'required', 'server_url_r5' => 'required' ]);
       $input = $request->all();
       // Create new global provider
       $provider = new GlobalProvider;
       $provider->name = $input['name'];
       $provider->is_active = $input['is_active'];
       $provider->server_url_r5 = $input['server_url_r5'];
-      $provider->day_of_month = $input['day_of_month'];
-      $provider->max_retries = $input['max_retries'];
       // If no connectors required, force customer_id ON
       if (!isset($input['connectors'])) $input['connectors'] = array();
       $provider->connectors = (count($input['connectors']) > 0) ? $input['connectors'] : array(1);
@@ -145,8 +141,7 @@ class GlobalProviderController extends Controller
       $orig_isActive = $provider->is_active;
 
       // Validate form inputs
-      $this->validate($request, [ 'name' => 'required', 'is_active' => 'required', 'server_url_r5' => 'required',
-                                  'day_of_month' => 'required', 'max_retries' => 'required' ]);
+      $this->validate($request, [ 'name' => 'required', 'is_active' => 'required', 'server_url_r5' => 'required' ]);
       $input = $request->all();
       $isActive = ($input['is_active']) ? 1 : 0;
 
@@ -171,8 +166,6 @@ class GlobalProviderController extends Controller
       $provider->name = $input['name'];
       $provider->is_active = $isActive;
       $provider->server_url_r5 = $input['server_url_r5'];
-      $provider->day_of_month = $input['day_of_month'];
-      $provider->max_retries = $input['max_retries'];
       // Turn array of connection checkboxes into an array of IDs
       $new_connectors = array();
       foreach ($all_conectors as $cnx) {
@@ -275,7 +268,7 @@ class GlobalProviderController extends Controller
                   }
               }
           }
-          // Restore the database habdle and pull the max_retries config variable
+          // Restore the database habdle
           config(['database.connections.consodb.database' => $keepDB]);
       }
 
@@ -310,7 +303,7 @@ class GlobalProviderController extends Controller
                 return response()->json(['result' => false, 'msg' => $ex->getMessage()]);
             }
         }
-        // Restore the database habdle and pull the max_retries config variable
+        // Restore the database habdle
         config(['database.connections.consodb.database' => $keepDB]);
 
         // Delete the global entry

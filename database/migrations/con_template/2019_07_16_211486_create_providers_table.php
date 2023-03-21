@@ -21,6 +21,7 @@ class CreateProvidersTable extends Migration
             $table->string('name');
             $table->boolean('is_active')->default(1);
             $table->unsignedInteger('inst_id')->default(1); // inst_id=1 is consorta-wide
+            $table->unsignedInteger('day_of_month')->default(15);
             $table->unsignedInteger('global_id')->nullable();
             $table->timestamps();
 

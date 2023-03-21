@@ -17,56 +17,81 @@
       </v-row>
       <!-- form display control and confirmations  -->
       <!-- Values-only when form not active -->
-      <div v-if="!showForm">
-  	    <v-simple-table dense>
-          <tr><td>Name</td><td>{{ mutable_prov.name }}</td></tr>
-          <tr><td>Status</td><td>{{ status }}</td></tr>
-  	      <tr><td>Serves</td><td>{{ inst_name }}</td></tr>
-  	      <tr><td>SUSHI service URL</td><td>{{ mutable_prov.server_url_r5 }}</td></tr>
-          <tr>
-  	        <td>Required Connection Fields</td>
-  	        <td>
-  	          <template v-for="cnx in connectors">
-                <v-chip>{{ cnx.name }}</v-chip>
-              </template>
-  	        </td>
-  	      </tr>
-  	      <tr><td>Run harvests monthly on day</td><td>{{ mutable_prov.day_of_month }}</td></tr>
-          <tr><td>Maximum retries</td><td>{{ mutable_prov.max_retries }}</td></tr>
-  	      <tr>
-  	        <td>Reports to harvest </td>
-  	        <td>
-  	          <template v-for="report in master_reports">
-                <v-chip v-if="mutable_prov.reports.some(r => r.id === report.id)">
-  	              {{ report.name }}
-  	            </v-chip>
-  	          </template>
-  	        </td>
-  	      </tr>
-  	    </v-simple-table>
-      </div>
-      <div v-else>
-        <v-form v-model="formValid" class="in-page-form">
-          <v-text-field v-model="form.name" label="Name" outlined readonly></v-text-field>
-          <v-switch v-model="form.is_active" label="Active?"></v-switch>
-          <v-select v-if="is_admin && mutable_prov.inst_id!=1" :items="institutions" v-model="form.inst_id"
-                    value="provider.inst_id" label="Serves" item-text="name" item-value="id" outlined
-          ></v-select>
-          <div class="field-wrapper has-label">
-	          <v-subheader v-text="'Reports to Harvest'"></v-subheader>
-	          <v-select :items="master_reports" v-model="form.master_reports" value="provider.reports" label="Select"
-	                    item-text="name" item-value="id" multiple chips hint="Choose which reports to harvest"
-                      persistent-hint
-	          ></v-select>
-		      </div>
-          <br />
-          <v-btn small color="primary" type="button" @click="formSubmit" :disabled="!formValid">
-              Save Provider Settings
-          </v-btn>
-          &nbsp; &nbsp;
-          <v-btn small type="button" @click="showForm=false">cancel</v-btn>
-        </v-form>
-      </div>
+	    <v-simple-table v-if="!showForm" dense>
+        <tr><td>Name</td><td>{{ mutable_prov.name }}</td></tr>
+        <tr><td>Status</td><td>{{ status }}</td></tr>
+	      <tr><td>Serves</td><td>{{ inst_name }}</td></tr>
+	      <tr><td>SUSHI service URL</td><td>{{ mutable_prov.server_url_r5 }}</td></tr>
+        <tr>
+	        <td>Required Connection Fields</td>
+	        <td>
+	          <template v-for="cnx in connectors">
+              <v-chip>{{ cnx.name }}</v-chip>
+            </template>
+	        </td>
+	      </tr>
+	      <tr><td>Run harvests monthly on day</td><td>{{ mutable_prov.day_of_month }}</td></tr>
+	      <tr>
+	        <td>Reports to harvest </td>
+	        <td>
+	          <template v-for="report in master_reports">
+              <v-chip v-if="mutable_prov.reports.some(r => r.id === report.id)">
+	              {{ report.name }}
+	            </v-chip>
+	          </template>
+	        </td>
+	      </tr>
+	    </v-simple-table>
+      <v-form v-if="showForm" v-model="formValid" class="in-page-form">
+        <v-row class="d-flex ma-0">
+          <v-col class="d-flex px-1" cols="9">
+            <v-text-field v-model="form.name" label="Name" outlined readonly></v-text-field>
+          </v-col>
+          <v-col class="d-flex px-1" cols="3">
+            <v-switch v-model="form.is_active" label="Active?"></v-switch>
+          </v-col>
+        </v-row>
+        <v-row class="d-flex mt-1">
+          <v-col class="d-flex px-1" cols="9">
+            <v-select v-if="is_admin && mutable_prov.inst_id!=1" :items="institutions" v-model="form.inst_id"
+                      value="provider.inst_id" label="Serves" item-text="name" item-value="id" outlined
+            ></v-select>
+          </v-col>
+        </v-row>
+        <v-row class="d-flex ma-0">
+          <v-col class="d-flex px-6" col="4"><strong>Reports to Harvest</strong></v-col>
+          <v-col class="d-flex px-6" col="4"><strong>Run Harvests Monthly on Day</strong></v-col>
+        </v-row>
+        <v-row class="d-flex ma-0">
+          <v-col class="d-flex px-4" col="6">
+              <v-list class="shaded" dense>
+                <v-list-item v-for="rpt in master_reports" :key="rpt.name" class="verydense">
+                  <v-checkbox v-if="rpt.id==3" :value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
+                              v-model="form.report_state[rpt.name]" disabled dense>
+                  </v-checkbox>
+                  <v-checkbox v-else ::value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
+                              v-model="form.report_state[rpt.name]" dense>
+                  </v-checkbox>
+                </v-list-item>
+              </v-list>
+              <div class="float-none"></div>
+          </v-col>
+          <v-col class="d-flex px-4" col="6">
+            <v-text-field v-model="form.day_of_month" label="Day-of-Month" single-line dense type="number"
+                          class="centered-input" :rules="dayRules"
+            ></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row class="d-flex ma-0">
+          <v-col class="d-flex pa-0" col="6">
+            <v-btn small color="primary" type="button" @click="formSubmit" :disabled="!formValid">
+                Save Provider Settings
+            </v-btn>
+            &nbsp; &nbsp;
+            <v-btn small type="button" @click="showForm=false">cancel</v-btn>
+          </v-col>
+        </v-row>
+      </v-form>
     </div>
     <div class="related-list">
       <v-expansion-panels><v-expansion-panel>
@@ -246,8 +271,9 @@
                 form: new window.Form({
                     name: this.provider.name,
                     inst_id: this.provider.inst_id,
+                    day_of_month: this.provider.day_of_month,
                     is_active: this.provider.is_active,
-                    master_reports: [],
+                    report_state: this.provider.report_state,
                 }),
                 sushiForm: new window.Form({
                     inst_id: null,
@@ -274,7 +300,6 @@
                     .then( (response) => {
                         if (response.result) {
                             this.mutable_prov = response.provider;
-                            // this.form.max_retries = response.provider.max_retries;
                             if (this.is_admin) {
                                 this.inst_name = this.institutions[response.provider.inst_id-1].name;
                             }
@@ -482,10 +507,6 @@
                 this.can_edit = true;
             }
             this.status=this.statusvals[this.provider.is_active];
-            // Setup form:master_reports
-            for(var i=0;i<this.provider.reports.length;i++){
-               this.form.master_reports.push(this.provider.reports[i].id);
-            }
             // Setup DataTable headers array based on the provider connectors
             this.header_fields.forEach((fld) => {
                 // Connection fields are setup in "header_fields" as names without labels
@@ -528,5 +549,15 @@
   cursor: pointer;
   color: #999999;
   font-style: italic;
+}
+.shaded {
+  background-color: #efefef;
+}
+.verydense {
+  max-height: 16px;
+  background-color: #efefef;
+}
+.centered-input >>> input {
+  text-align: center;
 }
 </style>

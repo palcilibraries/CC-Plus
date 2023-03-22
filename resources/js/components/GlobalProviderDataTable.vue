@@ -115,10 +115,7 @@
                 <v-list dense>
                   <v-list-item class="verydense"><strong>Available Reports</strong></v-list-item>
                   <v-list-item v-for="rpt in master_reports" :key="rpt.name" class="verydense">
-                    <v-checkbox v-if="rpt.id==3" :value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
-                                v-model="form.report_state[rpt.name]" disabled dense>
-                    </v-checkbox>
-                    <v-checkbox v-else ::value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
+                    <v-checkbox :value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
                                 v-model="form.report_state[rpt.name]" dense>
                     </v-checkbox>
                   </v-list-item>
@@ -354,7 +351,7 @@
         this.new_provider.connector_state[cnx['name']] = (cnx['id']==1) ? true : false;
       });
       this.master_reports.forEach( rpt => {
-        this.new_provider.report_state[rpt['name']] = (rpt['id']==3) ? true : false;
+        this.new_provider.report_state[rpt['name']] = false;
       });
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);

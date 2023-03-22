@@ -109,24 +109,26 @@ class GlobalProviderController extends Controller
       // Validate form inputs
       $this->validate($request, [ 'name' => 'required', 'is_active' => 'required', 'server_url_r5' => 'required' ]);
       $input = $request->all();
+
       // Create new global provider
       $provider = new GlobalProvider;
       $provider->name = $input['name'];
       $provider->is_active = $input['is_active'];
       $provider->server_url_r5 = $input['server_url_r5'];
 
+      // ensure customer_id is always required
+      $input['connector_state']['customer_id'] = true;
+
       // Turn array of connection checkboxes into an array of IDs
       $connectors = array();
-      if (isset($input['connector_state'])) {
-        $all_conectors = ConnectionField::get();
-        foreach ($all_conectors as $cnx) {
-            if (!isset($input['connector_state'][$cnx->name])) continue;
-            if ($input['connector_state'][$cnx->name]) {
-                $connectors[] = $cnx->id;
-            }
-        }
-        $provider->connectors = $connectors;
+      $all_conectors = ConnectionField::get();
+      foreach ($all_conectors as $cnx) {
+          if (!isset($input['connector_state'][$cnx->name])) continue;
+          if ($input['connector_state'][$cnx->name]) {
+              $connectors[] = $cnx->id;
+          }
       }
+      $provider->connectors = $connectors;
 
       // Turn array of report checkboxes into an array of IDs
       $masterReports = array();
@@ -143,15 +145,14 @@ class GlobalProviderController extends Controller
           }
       }
       $provider->master_reports = $masterReports;
-
-      // If no connectors required, force customer_id ON
-      $provider->connectors = (count($connectors) > 0) ? $connectors : array(1);
       $provider->save();
+
+      // Build return object to match what index() rows
       $provider['can_delete'] = true;
       $provider['status'] = ($provider->is_active) ? "Active" : "Inactive";
+      $provider['connector_state'] = $input['connector_state'];
       $provider['reports_string'] = ($reports_string == "") ? 'None' : $reports_string;
       $provider['report_state'] = (isset($input['report_state'])) ? $input['report_state'] : array();
-      $provider['connector_state'] = (isset($input['connector_state'])) ? $input['connector_state'] : array();
 
       return response()->json(['result' => true, 'msg' => 'Provider successfully created',
                                'provider' => $provider]);
@@ -196,6 +197,10 @@ class GlobalProviderController extends Controller
       $provider->name = $input['name'];
       $provider->is_active = $isActive;
       $provider->server_url_r5 = $input['server_url_r5'];
+
+      // ensure customer_id is always required
+      $input['connector_state']['customer_id'] = true;
+
       // Turn array of connection checkboxes into an array of IDs
       $new_connectors = array();
       foreach ($all_conectors as $cnx) {
@@ -220,7 +225,9 @@ class GlobalProviderController extends Controller
       $provider->master_reports = $masterReports;
       $provider->save();
       $provider['status'] = ($provider->is_active) ? "Active" : "Inactive";
+      $provider['connector_state'] = $input['connector_state'];
       $provider['reports_string'] = ($reports_string == "") ? 'None' : $reports_string;
+      $provider['report_state'] = (isset($input['report_state'])) ? $input['report_state'] : array();
 
       // Get connector fields
       $fields = $all_conectors->whereIn('id',$provider->connectors)->pluck('name')->toArray();

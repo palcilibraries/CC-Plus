@@ -141,8 +141,8 @@ class SushiSettingController extends Controller
         if (!$setting->provider->is_active || !$setting->institution->is_active || $setting->status != 'Enabled') {
             $setting['next_harvest'] = null;
         } else {
-            $mon = (date("j") < $setting->provider->globalProv->day_of_month) ? date("n") : date("n")+1;
-            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->globalProv->day_of_month,date("Y")));
+            $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
+            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->day_of_month,date("Y")));
         }
 
         // Get 10 most recent harvests
@@ -224,8 +224,8 @@ class SushiSettingController extends Controller
         if (!$setting->provider->is_active || !$setting->institution->is_active || $setting->status != 'Enabled') {
             $setting['next_harvest'] = null;
         } else {
-            $mon = (date("j") < $setting->provider->globalProv->day_of_month) ? date("n") : date("n")+1;
-            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->globalProv->day_of_month,date("Y")));
+            $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
+            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->day_of_month,date("Y")));
         }
         return response()->json(['result' => true, 'msg' => 'Settings successfully created', 'setting' => $setting]);
     }

@@ -120,15 +120,20 @@ class GlobalProviderController extends Controller
       $input['connector_state']['customer_id'] = true;
 
       // Turn array of connection checkboxes into an array of IDs
+      $extraArgs = false;
       $connectors = array();
       $all_conectors = ConnectionField::get();
       foreach ($all_conectors as $cnx) {
           if (!isset($input['connector_state'][$cnx->name])) continue;
           if ($input['connector_state'][$cnx->name]) {
+              if ($cnx->name == 'extra_args') $extraArgs = true;
               $connectors[] = $cnx->id;
           }
       }
       $provider->connectors = $connectors;
+      if ($extraArgs && !is_null($input['extra_pattern'])) {
+          $provider->extra_pattern = $input['extra_pattern'];
+      }
 
       // Turn array of report checkboxes into an array of IDs
       $masterReports = array();
@@ -202,15 +207,19 @@ class GlobalProviderController extends Controller
       $input['connector_state']['customer_id'] = true;
 
       // Turn array of connection checkboxes into an array of IDs
+      $extraArgs = false;
       $new_connectors = array();
       foreach ($all_conectors as $cnx) {
           if (!isset($input['connector_state'][$cnx->name])) continue;
           if ($input['connector_state'][$cnx->name]) {
+              if ($cnx->name == 'extra_args') $extraArgs = true;
               $new_connectors[] = $cnx->id;
           }
       }
       $connectors_changed = ($provider->connectors != $new_connectors);
       $provider->connectors = $new_connectors;
+      $provider->extra_pattern = ($extraArgs) ? $input['extra_pattern'] : null;
+
       // Turn array of report checkboxes into an array of IDs
       $masterReports = array();
       $reports_string = "";

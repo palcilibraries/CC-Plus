@@ -20,7 +20,7 @@ class GlobalProvider extends Model
    * @var array
    */
     protected $attributes = ['name' => '', 'is_active' => 1, 'master_reports' => '{}', 'connectors' => '{}',
-                             'server_url_r5' => ''];
-    protected $fillable = ['id', 'name', 'is_active', 'master_reports', 'connectors', 'server_url_r5'];
+                             'server_url_r5' => '', 'extra_pattern' => null];
+    protected $fillable = ['id', 'name', 'is_active', 'master_reports', 'connectors', 'server_url_r5', 'extra_pattern'];
     protected $casts = ['id'=>'integer', 'is_active'=>'integer', 'master_reports' => 'array', 'connectors' => 'array'];
 }

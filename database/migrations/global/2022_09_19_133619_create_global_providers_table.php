@@ -21,6 +21,7 @@ class CreateGlobalProvidersTable extends Migration
           $table->json('master_reports')->default(1);
           $table->json('connectors')->default(1);
           $table->string('server_url_r5')->nullable();
+          $table->string('extra_pattern')->nullable();
         });
     }
 

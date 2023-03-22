@@ -16,7 +16,7 @@
       <v-row class="d-flex ma-0">
         <v-col class="d-flex px-2" cols="3">&nbsp;</v-col>
         <v-col class="d-flex px-2" cols="3">
-          <a :href="'/providers/export/xlsx'">Export providers to Excel</a>
+          <a :href="'/global/providers/export/xlsx'">Export providers to Excel</a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">
@@ -122,6 +122,11 @@
                 </v-list>
               </v-col>
             </v-row>
+            <v-row v-if="form.connector_state.extra_args" class="d-flex ma-0">
+              <v-col class="d-flex px-2" cols="12">
+                <v-text-field v-model="form.extra_pattern" label="Extra Arguments Pattern" outlined dense></v-text-field>
+              </v-col>
+            </v-row>
             <v-row class="d-flex mx-2 align-center">
               <v-col class="d-flex" cols="4">
                 <v-switch v-model="form.is_active" label="Active?" dense></v-switch>
@@ -178,6 +183,7 @@
             server_url_r5: '',
             connector_state: [],
             report_state: [],
+            extra_pattern: null,
         }),
         dayRules: [
             v => !!v || "Day of month is required",
@@ -233,7 +239,7 @@
             this.failure = '';
             let formData = new FormData();
             formData.append('csvfile', this.csv_upload);
-            axios.post('/providers/import', formData, {
+            axios.post('/global/providers/import', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }

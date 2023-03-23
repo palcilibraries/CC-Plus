@@ -717,12 +717,13 @@ class GlobalProviderController extends Controller
         global $masterReports;
         $order = array('PR','DR','TR','IR');
         $_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
-        $masterReports = array();
+        $reports_array = array();
         foreach ($order as $_name) {
             $rpt = $_reports->where('name',$_name)->first();
             if (!$rpt) continue;
-            $masterReports[] = $rpt;
+            $reports_array[] = $rpt;
         }
+        $masterReports = collect($reports_array);
     }
 
     /**

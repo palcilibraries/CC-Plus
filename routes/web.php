@@ -91,6 +91,8 @@ Route::get('/admin', 'AdminController@index')->name('adminHome')->middleware(['a
 Route::get('/global/instances', 'GlobalAdminController@index')->name('global.instances')->middleware('auth','role:GlobalAdmin');
 Route::resource('/global/config', 'GlobalSettingController')->middleware('auth','role:GlobalAdmin');
 Route::resource('/global/providers', 'GlobalProviderController', ['as' => 'global'])->middleware('auth','role:GlobalAdmin');
+Route::post('/global/providers/import', 'GlobalProviderController@import')->name('global.providers.import');
+Route::get('/global/providers/export/{type}', 'GlobalProviderController@export')->name('global.providers.export');
 Route::resource('/consortia', 'ConsortiumController')->middleware('auth','role:GlobalAdmin');
 Route::post('/change-instance', 'GlobalAdminController@changeInstance')->name('global.changeInstance')
      ->middleware('auth','role:GlobalAdmin');

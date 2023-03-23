@@ -206,9 +206,9 @@ class InstitutionGroupController extends Controller
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:C6');
-        $info_sheet->getStyle('A1:C6')->applyFromArray($info_style);
-        $info_sheet->getStyle('A1:C6')->getAlignment()->setWrapText(true);
+        $info_sheet->mergeCells('A1:E6');
+        $info_sheet->getStyle('A1:E6')->applyFromArray($info_style);
+        $info_sheet->getStyle('A1:E6')->getAlignment()->setWrapText(true);
         $top_txt  = "The Institution Groups tab represents a starting place for updating or importing settings.\n";
         $top_txt .= "The table below describes the field datatypes and order that the import expects. Any Import\n";
         $top_txt .= "rows without an ID in column A will be ignored. If required values are missing/invalid within\n";
@@ -216,25 +216,30 @@ class InstitutionGroupController extends Controller
         $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
         $top_txt .= "Any header row or columns beyond 'C' will be ignored.";
         $info_sheet->setCellValue('A1', $top_txt);
-        $info_sheet->getStyle('A8:C8')->applyFromArray($head_style);
-        $info_sheet->setCellValue('A9', 'Column Name');
-        $info_sheet->setCellValue('B9', 'Data Type');
-        $info_sheet->setCellValue('C9', 'Description');
-        $info_sheet->setCellValue('A10', 'Id');
-        $info_sheet->setCellValue('B10', 'Integer');
-        $info_sheet->setCellValue('C10', 'Unique CC-Plus InstitutionGroup ID - required');
-        $info_sheet->setCellValue('A11', 'Name');
-        $info_sheet->setCellValue('B11', 'String');
-        $info_sheet->setCellValue('C11', 'Institution Group Name - required');
-        $info_sheet->setCellValue('A12', 'Member Institutions');
-        $info_sheet->setCellValue('B12', 'Comma-separated list of integers');
-        $info_sheet->setCellValue('C12', 'Institution IDs to assign to the group');
-
+        $info_sheet->getStyle('A8:E8')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A8', 'Column Name');
+        $info_sheet->setCellValue('B8', 'Data Type');
+        $info_sheet->setCellValue('C8', 'Description');
+        $info_sheet->setCellValue('D8', 'Required');
+        $info_sheet->setCellValue('E8', 'Default');
+        $info_sheet->setCellValue('A9', 'Id');
+        $info_sheet->setCellValue('B9', 'Integer');
+        $info_sheet->setCellValue('C9', 'Unique CC-Plus InstitutionGroup ID');
+        $info_sheet->setCellValue('D9', 'Yes');
+        $info_sheet->setCellValue('A10', 'Name');
+        $info_sheet->setCellValue('B10', 'String');
+        $info_sheet->setCellValue('C10', 'Institution Group Name');
+        $info_sheet->setCellValue('D10', 'Yes');
+        $info_sheet->setCellValue('A11', 'Member Institutions');
+        $info_sheet->setCellValue('B11', 'Comma-separated list of integers');
+        $info_sheet->setCellValue('C11', 'Institution IDs to assign to the group');
+        $info_sheet->setCellValue('D11', 'No');
+        $info_sheet->setCellValue('E11', 'NULL');
         // Set row height and auto-width columns for the sheet
-        for ($r = 1; $r < 13; $r++) {
+        for ($r = 1; $r < 12; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
-        $info_columns = array('A','B','C','D');
+        $info_columns = array('A','B','C','D','E');
         foreach ($info_columns as $col) {
             $info_sheet->getColumnDimension($col)->setAutoSize(true);
         }

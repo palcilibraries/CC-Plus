@@ -9,7 +9,7 @@
 </div>
 <v-app>
   <global-provider-data-table :providers="{{ json_encode($providers) }}"
-                              :master_reports="{{ json_encode($master_reports) }}"
+                              :master_reports="{{ json_encode($masterReports) }}"
                               :all_connectors="{{ json_encode($all_connectors) }}"
   ></global-provider-data-table>
 </v-app>

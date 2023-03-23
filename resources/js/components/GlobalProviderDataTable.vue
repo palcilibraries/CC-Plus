@@ -1,7 +1,7 @@
 <template>
   <div>
     <div>
-      <v-row class="d-flex ma-0">
+      <v-row class="d-flex mb-1 align-end">
         <v-col class="d-flex px-2" cols="3">
           <v-btn small color="primary" @click="createForm()">Add a Global Provider</v-btn>
         </v-col>
@@ -9,14 +9,13 @@
           <v-btn small color="primary" @click="enableImportForm">Import Providers</v-btn>
         </v-col>
         <v-col class="d-flex px-2" cols="3">
+          <a @click="doExport">
+            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export providers to Excel
+          </a>
+        </v-col>
+        <v-col class="d-flex px-2" cols="3">
           <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
           ></v-text-field>
-        </v-col>
-      </v-row>
-      <v-row class="d-flex ma-0">
-        <v-col class="d-flex px-2" cols="3">&nbsp;</v-col>
-        <v-col class="d-flex px-2" cols="3">
-          <a :href="'/global/providers/export/xlsx'">Export providers to Excel</a>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">
@@ -127,16 +126,16 @@
                 <v-text-field v-model="form.extra_pattern" label="Extra Arguments Pattern" outlined dense></v-text-field>
               </v-col>
             </v-row>
-            <v-row class="d-flex mx-2 align-center">
-              <v-col class="d-flex" cols="4">
+            <v-row class="d-flex mx-2 mb-2 align-center">
+              <v-col class="d-flex px-2" cols="4">
                 <v-switch v-model="form.is_active" label="Active?" dense></v-switch>
               </v-col>
-              <v-col class="d-flex" cols="4">
+              <v-col class="d-flex px-2" cols="4">
                 <v-btn x-small color="primary" type="button" @click="formSubmit" :disabled="!formValid">
                   Save Provider
                 </v-btn>
               </v-col>
-              <v-col class="d-flex" cols="4">
+              <v-col class="d-flex px-2" cols="4">
                 <v-btn x-small color="primary" type="button" @click="provDialog=false">Cancel</v-btn>
               </v-col>
             </v-row>
@@ -175,7 +174,8 @@
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],
-        new_provider: {'id': null, 'name': '', 'is_active': 1, 'report_state': {}, 'connector_state': {}, 'server_url_r5': ''},
+        new_provider: {'id': null, 'name': '', 'is_active': 1, 'report_state': {}, 'connector_state': {}, 'server_url_r5': '',
+                       'extra_pattern': null},
         formValid: true,
         form: new window.Form({
             name: '',
@@ -207,6 +207,7 @@
             this.form.server_url_r5 = _prov.server_url_r5;
             this.form.connector_state = _prov.connector_state;
             this.form.report_state = _prov.report_state;
+            this.form.extra_pattern = _prov.extra_pattern;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
             this.provDialog = true;
@@ -220,6 +221,7 @@
             this.form.server_url_r5 = this.new_provider.server_url_r5;
             this.form.connector_state = this.new_provider.connector_state;
             this.form.report_state = this.new_provider.report_state;
+            this.form.extra_pattern = this.new_provider.extra_pattern;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
             this.provDialog = true;
@@ -338,6 +340,9 @@
                 }
             });
             this.$store.dispatch('updateDatatableOptions',this.mutable_options);
+        },
+        doExport () {
+            window.location.assign('/global/providers/export/xlsx');
         },
     },
     computed: {

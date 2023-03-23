@@ -414,9 +414,9 @@ class UserController extends Controller
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:D7');
-        $info_sheet->getStyle('A1:D7')->applyFromArray($info_style);
-        $info_sheet->getStyle('A1:D7')->getAlignment()->setWrapText(true);
+        $info_sheet->mergeCells('A1:E7');
+        $info_sheet->getStyle('A1:E7')->applyFromArray($info_style);
+        $info_sheet->getStyle('A1:E7')->getAlignment()->setWrapText(true);
         $top_txt  = "The Users tab represents a starting place for updating or importing settings. The table below\n";
         $top_txt .= "describes the datatype and order that the import expects. Any Import rows without an ID value\n";
         $top_txt .= "in column 'A' will be ignored. If values are missing/invalid for a column, but not required,\n";
@@ -426,47 +426,55 @@ class UserController extends Controller
         $info_sheet->setCellValue('A1', $top_txt);
         $info_sheet->getStyle('A9')->applyFromArray($head_style);
         $info_sheet->setCellValue('A9', "NOTE:");
-        $info_sheet->mergeCells('B9:D11');
-        $info_sheet->getStyle('B9:D11')->applyFromArray($info_style);
-        $info_sheet->getStyle('B9:D11')->getAlignment()->setWrapText(true);
+        $info_sheet->mergeCells('B9:E11');
+        $info_sheet->getStyle('B9:E11')->applyFromArray($info_style);
+        $info_sheet->getStyle('B9:E11')->getAlignment()->setWrapText(true);
         $note_txt  = "When performing full-replacement imports, be VERY careful about changing or overwriting\n";
         $note_txt .= "existing ID value(s). The best approach is to add to, or modify, a full export to ensure\n";
         $note_txt .= "that existing user IDs are not accidently overwritten.";
         $info_sheet->setCellValue('B9', $note_txt);
-        $info_sheet->getStyle('A13:D13')->applyFromArray($head_style);
+        $info_sheet->getStyle('A13:E13')->applyFromArray($head_style);
         $info_sheet->setCellValue('A13', 'Column Name');
         $info_sheet->setCellValue('B13', 'Data Type');
         $info_sheet->setCellValue('C13', 'Description');
-        $info_sheet->setCellValue('D13', 'Default');
+        $info_sheet->setCellValue('D13', 'Required');
+        $info_sheet->setCellValue('E13', 'Default');
         $info_sheet->setCellValue('A14', 'Id');
         $info_sheet->setCellValue('B14', 'Integer');
-        $info_sheet->setCellValue('C14', 'Unique CC-Plus User ID - required');
+        $info_sheet->setCellValue('C14', 'Unique CC-Plus User ID');
+        $info_sheet->setCellValue('D14', 'Yes');
         $info_sheet->setCellValue('A15', 'Email');
         $info_sheet->setCellValue('B15', 'String');
-        $info_sheet->setCellValue('C15', 'Email address - required');
+        $info_sheet->setCellValue('C15', 'Email address');
+        $info_sheet->setCellValue('D15', 'Yes');
         $info_sheet->setCellValue('A16', 'Password');
         $info_sheet->setCellValue('B16', 'String');
         $info_sheet->setCellValue('C16', 'Password (will be encrypted)');
-        $info_sheet->setCellValue('D16', 'NULL - no change');
+        $info_sheet->setCellValue('D16', 'No');
+        $info_sheet->setCellValue('E16', 'NULL - no change');
         $info_sheet->setCellValue('A17', 'Name');
         $info_sheet->setCellValue('B17', 'String');
         $info_sheet->setCellValue('C17', 'Full name');
-        $info_sheet->setCellValue('D17', 'NULL');
+        $info_sheet->setCellValue('D17', 'No');
+        $info_sheet->setCellValue('E17', 'NULL');
         $info_sheet->setCellValue('A18', 'Phone');
         $info_sheet->setCellValue('B18', 'String');
         $info_sheet->setCellValue('C18', 'Phone number');
-        $info_sheet->setCellValue('D18', 'NULL');
+        $info_sheet->setCellValue('D18', 'No');
+        $info_sheet->setCellValue('E18', 'NULL');
         $info_sheet->setCellValue('A19', 'Active');
         $info_sheet->setCellValue('B19', 'String (Y or N)');
         $info_sheet->setCellValue('C19', 'Make the user active?');
-        $info_sheet->setCellValue('D19', 'Y');
+        $info_sheet->setCellValue('D19', 'No');
+        $info_sheet->setCellValue('E19', 'Y');
         $info_sheet->setCellValue('A20', 'Role(s)');
         $info_sheet->setCellValue('B20', 'Comma-separated strings');
         $info_sheet->setCellValue('C20', 'Admin, Manager, User, or Viewer');
-        $info_sheet->setCellValue('D20', 'User');
+        $info_sheet->setCellValue('D20', 'No');
+        $info_sheet->setCellValue('E20', 'User');
         // IF you're planning to add these back in, note that the import function below also needs to
         // updated to account for the new column.
-        //-------------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------
         // $info_sheet->setCellValue('A21', 'PWChangeReq');
         // $info_sheet->setCellValue('B21', 'String (Y or N)');
         // $info_sheet->setCellValue('C21', 'Force user to change password');
@@ -474,13 +482,14 @@ class UserController extends Controller
         $info_sheet->setCellValue('A21', 'Institution ID');
         $info_sheet->setCellValue('B21', 'Integer');
         $info_sheet->setCellValue('C21', 'Unique CC-Plus Institution ID (1=Staff)');
-        $info_sheet->setCellValue('D21', '1');
+        $info_sheet->setCellValue('D21', 'No');
+        $info_sheet->setCellValue('E21', '1 (Staff)');
 
         // Set row height and auto-width columns for the sheet
         for ($r = 1; $r < 25; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
-        $info_columns = array('A','B','C','D');
+        $info_columns = array('A','B','C','D','E');
         foreach ($info_columns as $col) {
             $info_sheet->getColumnDimension($col)->setAutoSize(true);
         }

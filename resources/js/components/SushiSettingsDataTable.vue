@@ -16,22 +16,6 @@
         ></v-text-field>
       </v-col>
     </v-row>
-<!--
-    <v-row class="d-flex mb-4" no-gutters>
-      <v-col class="d-flex pa-0" cols="3">
-        <v-btn small color="primary" type="button" @click="importForm" class="section-action">
-          Import Sushi Settings
-        </v-btn>
-      </v-col>
-      <v-col class="d-flex px-1" cols="5">
-        <a @click="doExport"><v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel</a>
-      </v-col>
-      <v-col class="d-flex px-2" cols="3">
-        <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
-        ></v-text-field>
-      </v-col>
-    </v-row>
--->
     <v-row class="d-flex pa-1 align-center" no-gutters>
       <v-col class="d-flex px-2" cols="2">
         <v-select :items='bulk_actions' v-model='bulkAction' label="Bulk Actions" @change="processBulk()"

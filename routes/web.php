@@ -45,8 +45,8 @@ Route::get('/institutions/export/{type}', 'InstitutionController@export')->name(
 Route::resource('/providers', 'ProviderController')->middleware(['auth','cache.headers:no_store']);
 Route::post('/providers/connect', 'ProviderController@connect')->name('providers.connect')
      ->middleware(['auth','role:Admin,Manager']);
-Route::post('/providers/import', 'ProviderController@import')->name('providers.import');
-Route::get('/providers/export/{type}', 'ProviderController@export')->name('providers.export');
+// Route::post('/providers/import', 'ProviderController@import')->name('providers.import');
+// Route::get('/providers/export/{type}', 'ProviderController@export')->name('providers.export');
 Route::get('/available-providers', 'HarvestLogController@availableProviders')->middleware(['auth']);
 // Sushi and Harvests
 Route::resource('/harvests', 'HarvestLogController')->middleware(['auth','cache.headers:no_store']);

@@ -1,76 +1,70 @@
 <template>
   <div>
-    <div>
-      <v-row class="d-flex ma-0">
-        <v-col class="d-flex px-2" cols="3">
-          <v-btn small color="primary" @click="createForm">Create an Institution</v-btn>
-        </v-col>
-        <v-col class="d-flex px-2" cols="3">
-          <v-btn small color="primary" @click="institutionImportForm">Import Institutions</v-btn>
-        </v-col>
-        <v-col cols="3">&nbsp;</v-col>
-        <v-col class="d-flex px-2" cols="3">
-          <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
-          ></v-text-field>
-        </v-col>
-      </v-row>
-      <v-row class="d-flex ma-0">
-        <v-col class="d-flex px-2" cols="3">&nbsp;</v-col>
-        <v-col class="d-flex px-2" cols="3">
-          <a @click="doInstExport">
-            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export Institutions to Excel
-          </a>
-        </v-col>
-      </v-row>
-      <v-row class="d-flex pa-1 align-center" no-gutters>
-        <v-col class="d-flex px-2" cols="3">
-          <v-select :items='bulk_actions' v-model='bulkAction' @change="processBulk()"
-                    item-text="action" item-value="status" label="Bulk Actions"
-                    :disabled='selectedRows.length==0'></v-select>
-        </v-col>
-        <v-col class="d-flex px-4 align-center" cols="2">
-          <span v-if="selectedRows.length>0" class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
-          <span v-else> &nbsp;</span>
-        </v-col>
-        <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-          <v-select :items="status_options" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
-                    label="Limit by Status"
-          ></v-select> &nbsp;
-        </v-col>
-        <v-col class="d-flex px-4 align-center" cols="3">
-          <div v-if="filters['groups'].length>0" class="x-box">
-            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="filters['groups'] = []"/>&nbsp;
-          </div>
-          <v-select :items="mutable_groups" v-model="mutable_filters['groups']" @change="updateFilters('groups')" multiple
-                    label="Limit by Group(s)"  item-text="name" item-value="id"
-          ></v-select>
-        </v-col>
-      </v-row>
-      <div class="status-message" v-if="success || failure">
-        <span v-if="success" class="good" role="alert" v-text="success"></span>
-        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-      </div>
-      <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_institutions" show-select
-                    item-key="id" :options="mutable_options" @update:options="updateOptions"
-                    :footer-props="footer_props" :search="search" :key="'indt'+dtKey">
-        <template v-slot:item.action="{ item }">
-          <span class="dt_action">
-            <v-btn icon @click="goEdit(item.id)">
-              <v-icon title="Edit Institution" >mdi-cog-outline</v-icon>
-            </v-btn>
-            <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
-              <v-icon title="Delete Institution">mdi-trash-can-outline</v-icon>
-            </v-btn>
-            <v-btn v-if="!item.can_delete" icon class="pl-4">
-              <v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon>
-            </v-btn>
-          </span>
-        </template>
-        <v-alert slot="no-results" :value="true" color="error" icon="warning">
-          Your search for "{{ search }}" found no results.
-        </v-alert>
-      </v-data-table>
+    <v-row class="d-flex mb-1 align-end">
+      <v-col class="d-flex px-2" cols="3">
+        <v-btn small color="primary" @click="createForm">Create an Institution</v-btn>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <v-btn small color="primary" @click="institutionImportForm">Import Institutions</v-btn>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <a @click="doInstExport">
+          <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export Institutions to Excel
+        </a>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
+        ></v-text-field>
+      </v-col>
+    </v-row>
+    <v-row class="d-flex pa-1 align-center" no-gutters>
+      <v-col class="d-flex px-2" cols="3">
+        <v-select :items='bulk_actions' v-model='bulkAction' @change="processBulk()"
+                  item-text="action" item-value="status" label="Bulk Actions"
+                  :disabled='selectedRows.length==0'></v-select>
+      </v-col>
+      <v-col class="d-flex px-4 align-center" cols="2">
+        <span v-if="selectedRows.length>0" class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
+        <span v-else> &nbsp;</span>
+      </v-col>
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <v-select :items="status_options" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
+                  label="Limit by Status"
+        ></v-select> &nbsp;
+      </v-col>
+      <v-col class="d-flex px-4 align-center" cols="3">
+        <div v-if="filters['groups'].length>0" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="filters['groups'] = []"/>&nbsp;
+        </div>
+        <v-select :items="mutable_groups" v-model="mutable_filters['groups']" @change="updateFilters('groups')" multiple
+                  label="Limit by Group(s)"  item-text="name" item-value="id"
+        ></v-select>
+      </v-col>
+    </v-row>
+    <div class="status-message" v-if="success || failure">
+      <span v-if="success" class="good" role="alert" v-text="success"></span>
+      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
+    <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_institutions" show-select
+                  item-key="id" :options="mutable_options" @update:options="updateOptions"
+                  :footer-props="footer_props" :search="search" :key="'indt'+dtKey">
+      <template v-slot:item.action="{ item }">
+        <span class="dt_action">
+          <v-btn icon @click="goEdit(item.id)">
+            <v-icon title="Edit Institution" >mdi-cog-outline</v-icon>
+          </v-btn>
+          <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
+            <v-icon title="Delete Institution">mdi-trash-can-outline</v-icon>
+          </v-btn>
+          <v-btn v-if="!item.can_delete" icon class="pl-4">
+            <v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon>
+          </v-btn>
+        </span>
+      </template>
+      <v-alert slot="no-results" :value="true" color="error" icon="warning">
+        Your search for "{{ search }}" found no results.
+      </v-alert>
+    </v-data-table>
     <v-dialog v-model="institutionImportDialog" persistent max-width="1200px">
       <v-card>
         <v-card-title>Import Institutions</v-card-title>

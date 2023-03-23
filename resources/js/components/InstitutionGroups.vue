@@ -1,37 +1,40 @@
 <template>
   <div>
-    <div>
-      <v-row class="d-flex ma-0">
-        <v-col class="d-flex px-2" cols="4">
-          <v-btn small color="primary" @click="importForm">Import Groups</v-btn>
-        </v-col>
-        <v-col class="d-flex px-2" cols="4">
-          <v-btn small color="primary" @click="createForm">Create a new group</v-btn>
-        </v-col>
-      </v-row>
-      <v-row class="d-flex ma-0">
-        <v-col class="d-flex px-2" cols="4">
-          <a @click="doExport">
-            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel
-          </a>
-        </v-col>
-      </v-row>
-      <div class="status-message" v-if="success || failure">
-        <span v-if="success" class="good" role="alert" v-text="success"></span>
-        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-      </div>
-      <div style="width:50%;">
-        <v-data-table :headers="headers" :items="mutable_groups" item-key="id" :options="mutable_options"
-                      :key="dtKey" @update:options="updateOptions">
-          <template v-slot:item.action="{ item }">
-            <span class="dt_action">
-              <v-icon title="Edit Group" @click="editForm(item.id)">mdi-cog-outline</v-icon>
-              &nbsp; &nbsp;
-              <v-icon title="Delete Group" @click="destroy(item.id)">mdi-trash-can-outline</v-icon>
-            </span>
-          </template>
-        </v-data-table>
-      </div>
+    <v-row class="d-flex mb-1 align-end">
+      <v-col class="d-flex px-2" cols="3">
+        <v-btn small color="primary" @click="createForm">Create a new group</v-btn>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <v-btn small color="primary" @click="importForm">Import Groups</v-btn>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <a @click="doExport">
+          <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel
+        </a>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
+        ></v-text-field>
+      </v-col>
+    </v-row>
+    <div class="status-message" v-if="success || failure">
+      <span v-if="success" class="good" role="alert" v-text="success"></span>
+      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+    </div>
+    <div style="width:50%;">
+      <v-data-table :headers="headers" :items="mutable_groups" item-key="id" :options="mutable_options"
+                    :search="search" :key="dtKey" @update:options="updateOptions">
+        <template v-slot:item.action="{ item }">
+          <span class="dt_action">
+            <v-icon title="Edit Group" @click="editForm(item.id)">mdi-cog-outline</v-icon>
+            &nbsp; &nbsp;
+            <v-icon title="Delete Group" @click="destroy(item.id)">mdi-trash-can-outline</v-icon>
+          </span>
+        </template>
+        <v-alert slot="no-results" :value="true" color="error" icon="warning">
+          Your search for "{{ search }}" found no results.
+        </v-alert>
+      </v-data-table>
     </div>
     <v-dialog v-model="importDialog" persistent max-width="800px">
       <v-card>
@@ -147,6 +150,7 @@
             institutions: [],
         }),
         dtKey: 1,
+        search: '',
         mutable_options: {},
         csv_upload: null,
         importDialog: false,

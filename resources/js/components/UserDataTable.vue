@@ -1,72 +1,71 @@
 <template>
   <div>
-    <div>
-      <v-row class="d-flex ma-0">
-        <v-col v-if="is_admin" class="d-flex px-2" cols="4">
-          <v-btn small color="primary" @click="importForm">Import Users</v-btn>
-        </v-col>
-        <v-col class="d-flex px-2" cols="4">
-          <v-btn small color="primary" @click="createForm">Create a User</v-btn>
-        </v-col>
-        <v-col class="d-flex px-2" cols="3">
-          <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
-          ></v-text-field>
-        </v-col>
-      </v-row>
-      <v-row class="d-flex ma-0">
-        <v-col v-if="is_admin" class="d-flex px-2" cols="3">
-          <a @click="doExport">
-            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel
-          </a>
-        </v-col>
-        <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-          <div v-if="mutable_filters['inst'] != null" class="x-box">
-            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
-          </div>
-          <v-select :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters('inst')"
-                    label="Limit by Institution"  item-text="name" item-value="id"
-          ></v-select>
-        </v-col>
-        <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-          <v-select :items="status_options" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
-                    label="Limit by Status"
-          ></v-select>
-        </v-col>
-        <v-col class="d-flex px-2 align-center" cols="3">
-          <div v-if="mutable_filters['roles'].length>0" class="x-box">
-            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('roles')"/>&nbsp;
-          </div>
-          <v-select :items="allowed_roles" v-model="mutable_filters['roles']" @change="updateFilters('inst')" multiple
-                    label="Limit by Role(s)"  item-text="name" item-value="id"
-          ></v-select>
-        </v-col>
-      </v-row>
-      <div class="status-message" v-if="success || failure">
-        <span v-if="success" class="good" role="alert" v-text="success"></span>
-        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-      </div>
-      <v-data-table :headers="headers" :items="mutable_users" item-key="id" :options="mutable_options"
-                    :key="'DT'+dtKey" :search="search" @update:options="updateOptions">
-        <template v-slot:item="{ item }">
-          <tr>
-            <td>{{ item.name }}</td>
-            <td><a :href="'/institutions/'+item.inst_id+'/edit'">{{ item.institution.name }}</a></td>
-            <td v-if="item.status">Active</td>
-            <td><a target="_blank" :href="'mailto:'+item.email">{{ item.email }}</a></td>
-            <td>{{ item.role_string }}</td>
-            <td>{{ item.last_login }}</td>
-            <td class="dt_action">
-              <v-icon title="Edit User Settings" @click="editForm(item.id)">mdi-cog-outline</v-icon>
-              &nbsp; &nbsp;
-              <v-icon title="Delete User" @click="destroy(item.id)">mdi-trash-can-outline</v-icon>
-            </td>
-          </tr>
-        </template>
-        <v-alert slot="no-results" :value="true" color="error" icon="warning">
-          Your search for "{{ search }}" found no results.
-        </v-alert>
-      </v-data-table>
+
+    <v-row class="d-flex mb-1 align-end">
+      <v-col class="d-flex px-2" cols="3">
+        <v-btn small color="primary" @click="createForm">Create a User</v-btn>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <v-btn small color="primary" @click="importForm">Import Users</v-btn>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <a @click="doExport">
+          <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export Users to Excel
+        </a>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
+        ></v-text-field>
+      </v-col>
+    </v-row>
+    <v-row class="d-flex ma-0">
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if="mutable_filters['inst'] != null" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
+        </div>
+        <v-select :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters('inst')"
+                  label="Limit by Institution"  item-text="name" item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <v-select :items="status_options" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
+                  label="Limit by Status"
+        ></v-select>
+      </v-col>
+      <v-col class="d-flex px-2 align-center" cols="3">
+        <div v-if="mutable_filters['roles'].length>0" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('roles')"/>&nbsp;
+        </div>
+        <v-select :items="allowed_roles" v-model="mutable_filters['roles']" @change="updateFilters('inst')" multiple
+                  label="Limit by Role(s)"  item-text="name" item-value="id"
+        ></v-select>
+      </v-col>
+    </v-row>
+    <div class="status-message" v-if="success || failure">
+      <span v-if="success" class="good" role="alert" v-text="success"></span>
+      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
+    <v-data-table :headers="headers" :items="mutable_users" item-key="id" :options="mutable_options"
+                  :key="'DT'+dtKey" :search="search" @update:options="updateOptions">
+      <template v-slot:item="{ item }">
+        <tr>
+          <td>{{ item.name }}</td>
+          <td><a :href="'/institutions/'+item.inst_id+'/edit'">{{ item.institution.name }}</a></td>
+          <td v-if="item.status">Active</td>
+          <td><a target="_blank" :href="'mailto:'+item.email">{{ item.email }}</a></td>
+          <td>{{ item.role_string }}</td>
+          <td>{{ item.last_login }}</td>
+          <td class="dt_action">
+            <v-icon title="Edit User Settings" @click="editForm(item.id)">mdi-cog-outline</v-icon>
+            &nbsp; &nbsp;
+            <v-icon title="Delete User" @click="destroy(item.id)">mdi-trash-can-outline</v-icon>
+          </td>
+        </tr>
+      </template>
+      <v-alert slot="no-results" :value="true" color="error" icon="warning">
+        Your search for "{{ search }}" found no results.
+      </v-alert>
+    </v-data-table>
     <v-dialog v-model="importDialog" persistent max-width="1200px">
       <v-card>
         <v-card-title>Import Users</v-card-title>

@@ -101,10 +101,7 @@
                 <v-list dense>
                   <v-list-item class="verydense"><strong>Connection Fields</strong></v-list-item>
                   <v-list-item v-for="cnx in all_connectors" :key="cnx.name" class="verydense">
-                    <v-checkbox v-if="cnx.id==1" :value='form.connector_state[cnx.name]' :key="cnx.name" :label="cnx.label"
-                                v-model="form.connector_state[cnx.name]" disabled dense>
-                    </v-checkbox>
-                    <v-checkbox v-else :value="form.connector_state[cnx.name]" :key="cnx.name" :label="cnx.label"
+                    <v-checkbox :value="form.connector_state[cnx.name]" :key="cnx.name" :label="cnx.label"
                                 v-model="form.connector_state[cnx.name]" dense>
                     </v-checkbox>
                   </v-list-item>
@@ -170,6 +167,7 @@
         headers: [
           { text: 'Provider ', value: 'name', align: 'start' },
           { text: 'Master Reports', value: 'reports_string' },
+          { text: 'Sushi Connections', value: 'connection_count', align: 'center' },
           { text: 'Status', value: 'status' },
           { text: '', value: 'action', sortable: false },
         ],
@@ -264,14 +262,18 @@
             this.failure = '';
             // Update existing global provider
             if (this.dialog_title == "Edit Global Provider") {
+              let idx = this.mutable_providers.findIndex(p => p.id == this.current_provider_id);
+              var canDelete = this.mutable_providers[idx].can_delete;
+              var connectionCount = this.mutable_providers[idx].connection_count;
               this.form.patch('/global/providers/'+this.current_provider_id)
               .then( (response) => {
                   if (response.result) {
                       this.failure = '';
                       this.success = response.msg;
                       // Update the provider entry in the mutable array
-                      let idx = this.mutable_providers.findIndex(p => p.id == this.current_provider_id);
                       this.mutable_providers[idx] = response.provider;
+                      this.mutable_providers[idx]['can_delete'] = canDelete;
+                      this.mutable_providers[idx]['connection_count'] = connectionCount;
                       this.mutable_providers.sort((a,b) => {
                         if ( a.name < b.name ) return -1;
                         if ( a.name > b.name ) return 1;

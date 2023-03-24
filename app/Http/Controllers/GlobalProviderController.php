@@ -16,6 +16,7 @@ class GlobalProviderController extends Controller
 {
     private $masterReports;
     private $allConnectors;
+    private $instanceData;
 
     public function __construct()
     {
@@ -56,25 +57,15 @@ class GlobalProviderController extends Controller
 
           // Walk all instances scan for harvests connected to this provider
           // If any are found, the can_delete flag will be set to false to disable deletion option in the U/I
-          $harvest_count = 0;
           $provider['can_delete'] = true;
+          $provider['connection_count'] = 0;
           foreach ($instances as $instance) {
-              // switch the database connection
-              config(['database.connections.consodb.database' => "ccplus_" . $instance->ccp_key]);
-              try {
-                  DB::reconnect('consodb');
-              } catch (\Exception $e) {
-                  return response()->json(['result' => 'Error connecting to database for the ' . $instance->name . ' instance!']);
-              }
-              // Get the provider and the number of harvests
-              $con_prov = Provider::with('sushiSettings')->where('global_id', $gp->id)->first();
-              if ($con_prov) {
-                  $harvest_count += $con_prov->sushiSettings->whereNotNull('last_harvest')->count();
-              }
-              if ($harvest_count > 0) {
+              // Collect details from the instance for this provider
+              $details = $this->instanceDetails($instance->ccp_key, $gp->id);
+              if ($details['harvest_count'] > 0) {
                   $provider['can_delete'] = false;
-                  break;
-              };
+              }
+              $provider['connection_count'] += $details['connections'];
           }
           $providers[] = $provider;
       }
@@ -103,9 +94,6 @@ class GlobalProviderController extends Controller
       $provider->name = $input['name'];
       $provider->is_active = $input['is_active'];
       $provider->server_url_r5 = $input['server_url_r5'];
-
-      // ensure customer_id is always required
-      $input['connector_state']['customer_id'] = true;
 
       // Turn array of connection checkboxes into an array of IDs
       $extraArgs = false;
@@ -140,6 +128,7 @@ class GlobalProviderController extends Controller
 
       // Build return object to match what index() rows
       $provider['can_delete'] = true;
+      $provider['connection_count'] = 0;
       $provider['status'] = ($provider->is_active) ? "Active" : "Inactive";
       $provider['connector_state'] = $input['connector_state'];
       $provider['reports_string'] = ($provider->master_reports) ?
@@ -191,9 +180,6 @@ class GlobalProviderController extends Controller
       $provider->name = $input['name'];
       $provider->is_active = $isActive;
       $provider->server_url_r5 = $input['server_url_r5'];
-
-      // ensure customer_id is always required
-      $input['connector_state']['customer_id'] = true;
 
       // Turn array of connection checkboxes into an array of IDs
       $extraArgs = false;
@@ -428,24 +414,24 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C16', 'URL for Provider SUSHI service');
         $info_sheet->setCellValue('D16', 'Yes');
         $info_sheet->setCellValue('E16', 'NULL');
-        $info_sheet->setCellValue('A17', 'harvest_day');
+        $info_sheet->setCellValue('A17', 'Institution ID');
         $info_sheet->setCellValue('B17', 'Integer');
-        $info_sheet->setCellValue('C17', 'Day of the month provider reports are ready (1-28)');
+        $info_sheet->setCellValue('C17', 'Institution ID (see above)');
         $info_sheet->setCellValue('D17', 'No');
-        $info_sheet->setCellValue('E17', '15');
-        $info_sheet->setCellValue('A18', 'Institution ID');
-        $info_sheet->setCellValue('B18', 'Integer');
-        $info_sheet->setCellValue('C18', 'Institution ID (see above)');
+        $info_sheet->setCellValue('E17', '1');
+        $info_sheet->setCellValue('A18', 'DR Reports');
+        $info_sheet->setCellValue('B18', 'String (Y or N)');
+        $info_sheet->setCellValue('C18', 'Provider supplies DR reports?');
         $info_sheet->setCellValue('D18', 'No');
-        $info_sheet->setCellValue('E18', '1');
-        $info_sheet->setCellValue('A19', 'PR Reports');
+        $info_sheet->setCellValue('E18', 'Y');
+        $info_sheet->setCellValue('A19', 'IR Reports');
         $info_sheet->setCellValue('B19', 'String (Y or N)');
-        $info_sheet->setCellValue('C19', 'Provider supplies PR reports?');
+        $info_sheet->setCellValue('C19', 'Provider supplies IR reports?');
         $info_sheet->setCellValue('D19', 'No');
         $info_sheet->setCellValue('E19', 'Y');
-        $info_sheet->setCellValue('A20', 'DR Reports');
+        $info_sheet->setCellValue('A20', 'PR Reports');
         $info_sheet->setCellValue('B20', 'String (Y or N)');
-        $info_sheet->setCellValue('C20', 'Provider supplies DR reports?');
+        $info_sheet->setCellValue('C20', 'Provider supplies PR reports?');
         $info_sheet->setCellValue('D20', 'No');
         $info_sheet->setCellValue('E20', 'Y');
         $info_sheet->setCellValue('A21', 'TR Reports');
@@ -453,11 +439,11 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C21', 'Provider supplies TR reports?');
         $info_sheet->setCellValue('D21', 'No');
         $info_sheet->setCellValue('E21', 'Y');
-        $info_sheet->setCellValue('A22', 'IR Reports');
+        $info_sheet->setCellValue('A22', 'Customer ID');
         $info_sheet->setCellValue('B22', 'String (Y or N)');
-        $info_sheet->setCellValue('C22', 'Provider supplies IR reports?');
+        $info_sheet->setCellValue('C22', 'Customer ID is required for Sushi connections');
         $info_sheet->setCellValue('D22', 'No');
-        $info_sheet->setCellValue('E22', 'Y');
+        $info_sheet->setCellValue('E22', 'N');
         $info_sheet->setCellValue('A23', 'Requestor ID');
         $info_sheet->setCellValue('B23', 'String (Y or N)');
         $info_sheet->setCellValue('C23', 'Requestor ID is required for Sushi connections');
@@ -489,8 +475,8 @@ class GlobalProviderController extends Controller
             $info_sheet->getColumnDimension($col)->setAutoSize(true);
         }
         // setup arrays with the report and connectors mapped to their column ids
-        $rpt_col = array('PR' => 'E', 'DR' => 'F', 'TR' => 'G', 'IR' => 'H');
-        $cnx_col = array('requestor_id' => 'I', 'API_key' => 'J', 'extra_args' => 'K');
+        $rpt_col = array('DR' => 'E', 'IR' => 'F', 'PR' => 'G', 'TR' => 'H');
+        $cnx_col = array('customer_id' => 'I', 'requestor_id' => 'J', 'API_key' => 'K', 'extra_args' => 'L');
 
         // Load the provider data into a new sheet
         $providers_sheet = $spreadsheet->createSheet();
@@ -499,14 +485,15 @@ class GlobalProviderController extends Controller
         $providers_sheet->setCellValue('B1', 'Name');
         $providers_sheet->setCellValue('C1', 'Active');
         $providers_sheet->setCellValue('D1', 'Server URL');
-        $providers_sheet->setCellValue('E1', 'PR-Reports');
-        $providers_sheet->setCellValue('F1', 'DR-Reports');
-        $providers_sheet->setCellValue('G1', 'TR-Reports');
-        $providers_sheet->setCellValue('H1', 'IR-Reports');
-        $providers_sheet->setCellValue('I1', 'Requestor-ID');
-        $providers_sheet->setCellValue('J1', 'API-Key');
-        $providers_sheet->setCellValue('K1', 'Extra-Args');
-        $providers_sheet->setCellValue('L1', 'Extra-Args-Pattern');
+        $providers_sheet->setCellValue('E1', 'DR-Reports');
+        $providers_sheet->setCellValue('F1', 'IR-Reports');
+        $providers_sheet->setCellValue('G1', 'PR-Reports');
+        $providers_sheet->setCellValue('H1', 'TR-Reports');
+        $providers_sheet->setCellValue('I1', 'Customer-ID');
+        $providers_sheet->setCellValue('J1', 'Requestor-ID');
+        $providers_sheet->setCellValue('K1', 'API-Key');
+        $providers_sheet->setCellValue('L1', 'Extra-Args');
+        $providers_sheet->setCellValue('M1', 'Extra-Args-Pattern');
         $row = 2;
         foreach ($global_providers as $provider) {
             $providers_sheet->getRowDimension($row)->setRowHeight(15);
@@ -520,16 +507,15 @@ class GlobalProviderController extends Controller
                 $providers_sheet->setCellValue($rpt_col[$master->name] . $row, $value);
             }
             foreach ($allConnectors as $field) {
-                if ($field->name == 'customer_id') continue;
                 $value = (in_array($field->id, $provider->connectors)) ? 'Y' : 'N';
                 $providers_sheet->setCellValue($cnx_col[$field->name] . $row, $value);
             }
-            $providers_sheet->setCellValue('L' . $row, $provider->extra_pattern);
+            $providers_sheet->setCellValue('M' . $row, $provider->extra_pattern);
             $row++;
         }
 
         // Auto-size the columns
-        $columns = array('A','B','C','D','E','F','G','H','I','J','K','L');
+        $columns = array('A','B','C','D','E','F','G','H','I','J','K','L','M');
         foreach ($columns as $col) {
             $providers_sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -572,8 +558,8 @@ class GlobalProviderController extends Controller
         $this->getMasterReports();
         $this->getConnectionFields();
 
-        // Setup Mapping for report-COLUMN indeces to master_report ID's
-        $rpt_columns = array( 4 => 3, 5 => 2, 6 => 1, 7 => 4);
+        // Setup Mapping for report-COLUMN indeces to master_report ID's (ID => COL)
+        $rpt_columns = array( 2 => 4, 4 => 5, 3 => 6, 1 => 7);
 
         // Process the input rows
         $cur_prov_id = 0;
@@ -630,20 +616,20 @@ class GlobalProviderController extends Controller
 
             // Add reports to the array ($rpt_columns defined above)
             $reports = array();
-            foreach ($rpt_columns as $idx => $id) {
-                if ($row[$idx] == 'Y') $reports[] = $id;
+            foreach ($rpt_columns as $id => $col) {
+                if ($row[$col] == 'Y') $reports[] = $id;
             }
             $_prov['master_reports'] = $reports;
 
             // Add connectors to the array (columns 8-10 have the connector fields)
-            $connectors = array(1);   // Customer ID is always ON
-            for ($cnx=2; $cnx<5; $cnx++) {
+            $connectors = array();
+            for ($cnx=2; $cnx<6; $cnx++) {
                 if ($row[$cnx+6] == 'Y') $connectors[] = $cnx;
             }
             $_prov['connectors'] = $connectors;
             // Extra argument pattern gets saved only if ExtraArgs column = 'Y'
             if ($row[10] == 'Y') {
-                $_prov['extra_pattern'] = $row[11];
+                $_prov['extra_pattern'] = $row[12];
             }
 
             // Update or create the Provider record
@@ -657,6 +643,10 @@ class GlobalProviderController extends Controller
             }
         }
 
+        // get all the consortium instances and preserve the current instance database setting
+        $instances = Consortium::get();
+        $keepDB  = config('database.connections.consodb.database');
+
         // Rebuild full array of global providers to update (needs to match what index() does)
         $updated_providers = array();
         $gp_data = GlobalProvider::orderBy('name', 'ASC')->get();
@@ -668,8 +658,18 @@ class GlobalProviderController extends Controller
             $provider['connector_state'] = $this->connectorState($gp->connectors);
             $provider['report_state'] = $this->reportState($gp->master_reports);
             $provider['can_delete'] = true;
+            $provider['connection_count'] = 0;
+            // Collect details from the instance for this provider
+            foreach ($instances as $instance) {
+                $details = $this->instanceDetails($instance->ccp_key, $gp->id);
+                if ($details['harvest_count'] > 0) {
+                    $provider['can_delete'] = false;
+                }
+                $provider['connection_count'] += $details['connections'];
+            }
             $updated_providers[] = $provider;
         }
+        config(['database.connections.consodb.database' => $keepDB]);
 
         // return the current full list of providers with a success message
         $detail = "";
@@ -693,7 +693,7 @@ class GlobalProviderController extends Controller
      */
     private function makeReportString($reports) {
         $report_string = '';
-        $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
+        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
         foreach ($reports as $id) {
             $rpt = $master_reports->where('id',$id)->first();
             if ($rpt) {
@@ -709,15 +709,7 @@ class GlobalProviderController extends Controller
      */
     private function getMasterReports() {
         global $masterReports;
-        $order = array('PR','DR','TR','IR');
-        $_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
-        $reports_array = array();
-        foreach ($order as $_name) {
-            $rpt = $_reports->where('name',$_name)->first();
-            if (!$rpt) continue;
-            $reports_array[] = $rpt;
-        }
-        $masterReports = collect($reports_array);
+        $masterReports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
     }
 
     /**
@@ -756,5 +748,32 @@ class GlobalProviderController extends Controller
           $cnx_state[$fld->name] = (in_array($fld->id, $connectors)) ? true : false;
       }
       return $cnx_state;
+    }
+
+    /**
+     * Return an array of booleans for connector-state from provider connectors columns
+     *
+     * @param  String  $instnceKey
+     * @param  Integer  $providerID
+     * @return Array  $details
+     */
+    private function instanceDetails($instnceKey, $providerID) {
+
+        $details = array('harvest_count' => 0, 'connections' => 0);
+
+        // switch the database connection
+        config(['database.connections.consodb.database' => "ccplus_" . $instnceKey]);
+        try {
+            DB::reconnect('consodb');
+        } catch (\Exception $e) {
+            return response()->json(['result' => 'Error connecting to database for instance with Key: ' . $instnceKey]);
+        }
+        // Get the provider and the number of harvests
+        $con_prov = Provider::with('sushiSettings')->where('global_id', $providerID)->first();
+        if ($con_prov) {
+            $details['harvest_count'] += $con_prov->sushiSettings->whereNotNull('last_harvest')->count();
+            $details['connections'] += $con_prov->sushiSettings->count();
+        }
+        return $details;
     }
 }

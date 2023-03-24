@@ -66,10 +66,7 @@
           <v-col class="d-flex px-4" col="6">
               <v-list class="shaded" dense>
                 <v-list-item v-for="rpt in master_reports" :key="rpt.name" class="verydense">
-                  <v-checkbox v-if="rpt.id==3" :value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
-                              v-model="form.report_state[rpt.name]" disabled dense>
-                  </v-checkbox>
-                  <v-checkbox v-else ::value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
+                  <v-checkbox :value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
                               v-model="form.report_state[rpt.name]" dense>
                   </v-checkbox>
                 </v-list-item>

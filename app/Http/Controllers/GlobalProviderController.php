@@ -569,10 +569,10 @@ class GlobalProviderController extends Controller
         $seen_provs = array();          // track providers already processed while looping
         foreach ($rows as $row) {
             // Ignore bad/missing/invalid IDs and/or headers
-            if (!isset($row[0])) {
+            if (!isset($row[0]) || !isset($row[1])) {
                 continue;
             }
-            if ($row[0] == "" || !is_numeric($row[0]) || sizeof($row) < 7) {
+            if ($row[0] == "" || !is_numeric($row[0]) || trim($row[1]) == "" || sizeof($row) < 4) {
                 continue;
             }
             $cur_prov_id = intval($row[0]);
@@ -583,19 +583,19 @@ class GlobalProviderController extends Controller
             // Update/Add the provider data/settings
             // Check ID and name columns for silliness or errors
             $_name = trim($row[1]);
-            $current_prov = $global_providers->where("id", "=", $cur_prov_id)->first();
-            if (!is_null($current_prov)) {      // found existing ID
+            $current_prov = $global_providers->where("id", $cur_prov_id)->first();
+            if ($current_prov) {      // found existing ID
                 if (strlen($_name) < 1) {       // If import-name empty, use current value
                     $_name = trim($current_prov->name);
                 } else {                        // trap changing a name to a name that already exists
-                    $existing_prov = $global_providers->where("name", "=", $_name)->first();
-                    if (!is_null($existing_prov)) {
+                    $existing_prov = $global_providers->where("name", $_name)->first();
+                    if ($existing_prov) {
                         $_name = trim($current_prov->name);     // override, use current - no change
                     }
                 }
             } else {        // existing ID not found, try to find by name
-                $current_prov = $global_providers->where("name", "=", $_name)->first();
-                if (!is_null($current_prov)) {
+                $current_prov = $global_providers->where("name", $_name)->first();
+                if ($current_prov) {
                     $_name = trim($current_prov->name);
                 }
             }
@@ -633,13 +633,14 @@ class GlobalProviderController extends Controller
             }
 
             // Update or create the Provider record
-            if (is_null($current_prov)) {      // Create
-                $current_prov = GlobalProvider::create($_prov);
-                $cur_prov_id = $current_prov->id;
-                $prov_created++;
-            } else {                            // Update
+            if ($current_prov) {      // Update
                 $current_prov->update($_prov);
                 $prov_updated++;
+            } else {                 // Create
+                $current_prov = GlobalProvider::create($_prov);
+                $global_providers->push($current_prov);
+                $cur_prov_id = $current_prov->id;
+                $prov_created++;
             }
         }
 

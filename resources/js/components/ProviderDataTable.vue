@@ -3,9 +3,9 @@
     <div>
       <v-row class="d-flex ma-0">
         <v-col v-if="mutable_unset.length > 0" class="d-flex pa-0" cols="3">
-          <v-select :items="mutable_unset" v-model="new_providers" label="Unconnected Providers"
-                    item-text="name" item-value="id" multiple outlined
-          ></v-select>
+          <v-autocomplete :items="mutable_unset" v-model="new_providers" label="Unconnected Providers"
+                          item-text="name" item-value="id" multiple outlined
+          ></v-autocomplete>
         </v-col>
         <v-col v-else class="d-flex" cols="3">&nbsp;</v-col>
         <v-col v-if="new_providers.length > 0" class="d-flex px-2" cols="1">

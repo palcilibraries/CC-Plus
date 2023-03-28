@@ -4,7 +4,8 @@
       <v-row class="d-flex ma-0">
         <v-col v-if="mutable_unset.length > 0" class="d-flex pa-0" cols="3">
           <v-autocomplete :items="mutable_unset" v-model="new_providers" label="Unconnected Providers"
-                          item-text="name" item-value="id" multiple outlined
+                          item-text="name" item-value="id" multiple outlined clearable
+                          :search-input.sync="autoFind" @change="changeNewProviders"
           ></v-autocomplete>
         </v-col>
         <v-col v-else class="d-flex" cols="3">&nbsp;</v-col>
@@ -151,6 +152,9 @@
         },
         goEdit (provId) {
             window.location.assign('/providers/'+provId+'/edit');
+        },
+        changeNewProviders () {
+            this.$nextTick( () => { this.autoFind = ''; } );
         },
     },
     computed: {

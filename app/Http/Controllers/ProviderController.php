@@ -259,33 +259,29 @@ class ProviderController extends Controller
         abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
 
         // Get and validate inputs
-        $this->validate($request, [ 'providers' => 'required', 'inst_id' => 'required' ]);
+        $this->validate($request, [ 'prov_id' => 'required', 'inst_id' => 'required' ]);
         $input = $request->all();
         $inst_id = ($thisUser->hasRole("Admin")) ? $inst_id = $input['inst_id'] : $thisUser->inst_id;
 
-        // Attach the providers and build an array (like index makes) of the added entries
-        $added = array();
-        $global_providers = GlobalProvider::whereIn('id',$input['providers'])->get();
-        foreach ($global_providers as $gp) {
-            $data = array('name' => $gp->name, 'inst_id' => $inst_id, 'is_active' => $gp->is_active, 'global_id' => $gp->id);
-            $provider = Provider::create($data);
-            $provider->load('institution:id,name','globalProv');
-            $provider->active = ($provider->is_active) ? 'Active' : 'Inactive';
-            $provider->inst_name = ($provider->institution->id == 1) ? 'Entire Consortium' : $provider->institution->name;
-            $provider->can_delete = true;
-            $provider->day_of_month = 15;
-            $provider->SushiSettings = [];
-            // Attach reports to be be pulled
-            foreach ($gp->master_reports as $r) {
-                $provider->reports()->attach($r);
-            }
-            $provider->reports_string = ($provider->reports) ? $this->makeReportString($provider->reports) : 'None';
-            $added[] = $provider->data();
+        // Attach the provider and build an array (like index makes) of the added entries
+        $gp = GlobalProvider::where('id',$input['prov_id'])->first();
+        $data = array('name' => $gp->name, 'inst_id' => $inst_id, 'is_active' => $gp->is_active, 'global_id' => $gp->id);
+        $provider = Provider::create($data);
+        $provider->load('institution:id,name','globalProv');
+        $provider->active = ($provider->is_active) ? 'Active' : 'Inactive';
+        $provider->inst_name = ($provider->institution->id == 1) ? 'Entire Consortium' : $provider->institution->name;
+        $provider->can_delete = true;
+        $provider->day_of_month = 15;
+        $provider->SushiSettings = [];
+        // Attach reports to be be pulled
+        foreach ($gp->master_reports as $r) {
+            $provider->reports()->attach($r);
         }
+        $provider->reports_string = ($provider->reports) ? $this->makeReportString($provider->reports) : 'None';
 
         // Pull unset global provider definitions
-        $message = count($added) . " Provider(s) successfully connected";
-        return response()->json(['result' => true, 'msg' => $message, 'added' => $added, ]);
+        $message = "Successfully connected : " . $provider-> name;
+        return response()->json(['result' => true, 'msg' => $message, 'added' => $provider ]);
     }
 
     /**

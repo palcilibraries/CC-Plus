@@ -3,13 +3,12 @@
     <div>
       <v-row class="d-flex ma-0">
         <v-col v-if="mutable_unset.length > 0" class="d-flex pa-0" cols="3">
-          <v-autocomplete :items="mutable_unset" v-model="new_providers" label="Unconnected Providers"
-                          item-text="name" item-value="id" multiple outlined clearable
-                          :search-input.sync="autoFind" @change="changeNewProviders"
+          <v-autocomplete :items="mutable_unset" v-model="new_provider" label="Unconnected Providers"
+                          item-text="name" item-value="id" outlined
           ></v-autocomplete>
         </v-col>
         <v-col v-else class="d-flex" cols="3">&nbsp;</v-col>
-        <v-col v-if="new_providers.length > 0" class="d-flex px-2" cols="1">
+        <v-col v-if="new_provider != null" class="d-flex px-2" cols="1">
           <v-btn small color="primary" @click="connectUnset">Connect</v-btn>
         </v-col>
         <v-col v-else  class="d-flex px-2" cols="1">&nbsp;</v-col>
@@ -71,33 +70,31 @@
         dtKey: 1,
         mutable_options: {},
         search: '',
-        new_providers: [],
+        new_provider: null,
       }
     },
     methods:{
         connectUnset () {
             this.failure = '';
             this.success = '';
-            // Connect providers consortium-wide 
+            // Connect provider consortium-wide
             axios.post('/providers/connect', {
-                providers: this.new_providers,
+                prov_id: this.new_provider,
                 inst_id: 1
             })
             .then( (response) => {
                 if (response.data.result) {
                     this.success = response.data.msg;
                     // Update the mutable_providers (connected ones) and the unset globals list
-                    response.data.added.forEach( (prov) => {
-                      this.mutable_providers.push(prov);
-                      this.mutable_unset.splice(this.mutable_unset.findIndex(p=> p.id == prov.global_id),1);
-                    });
+                    this.mutable_providers.push(response.data.added);
+                    this.mutable_unset.splice(this.mutable_unset.findIndex(p=> p.id == response.data.added.global_id),1);
                     // re-sort the mutable providers (the main display list)
                     this.mutable_providers.sort((a,b) => {
                         if ( a.name < b.name ) return -1;
                         if ( a.name > b.name ) return 1;
                         return 0;
                     });
-                    this.new_providers = [];
+                    this.new_provider = null;
                 } else {
                     this.failure = response.data.msg;
                 }
@@ -152,9 +149,6 @@
         },
         goEdit (provId) {
             window.location.assign('/providers/'+provId+'/edit');
-        },
-        changeNewProviders () {
-            this.$nextTick( () => { this.autoFind = ''; } );
         },
     },
     computed: {

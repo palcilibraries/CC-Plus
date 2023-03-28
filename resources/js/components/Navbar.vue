@@ -45,7 +45,9 @@
                         {{ user["name"] }}<span class="caret"></span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                        <a class="dropdown-item" :href="profile_url">Profile</a>
+                        <div v-if="!is_globaladmin">
+                          <a class="dropdown-item" :href="profile_url">Profile</a>
+                        </div>
                         <a class="dropdown-item" href="/logout"
                            onclick="event.preventDefault();
                                          document.getElementById('logout-form').submit();">Logout</a>

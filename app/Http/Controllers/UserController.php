@@ -74,7 +74,7 @@ class UserController extends Controller
             if ($filters['stat'] != 'ALL') {
                 $filter_stat = ($filters['stat'] == 'Active') ? 1 : 0;
             }
-
+            $global_admin = config('ccplus.global_admin');
             $user_data = User::with('roles','institution:id,name')
                              ->when($filters['inst'], function ($qry) use ($filters) {
                                  return $qry->where('inst_id', $filters['inst']);
@@ -82,6 +82,7 @@ class UserController extends Controller
                              ->when(!is_null($filter_stat), function ($qry) use ($filter_stat) {
                                  return $qry->where('is_active', $filter_stat);
                              })
+                             ->where('email', '<>', $global_admin)
                              ->orderBy('name', 'ASC')->get();
 
             // Make user role names one string, role IDs into an array, and status to a string for the view
@@ -241,6 +242,9 @@ class UserController extends Controller
     {
         $user = User::with('roles')->findOrFail($id);
         abort_unless($user->canManage(), 403);
+        if ($user->hasRole('GlobalAdmin') && $user->email == config('ccplus.global_admin')) {
+            return response()->json(['result' => false, 'msg' => 'Show (403) - Forbidden']);
+        }
 
         return view('users.show', compact('user'));
     }
@@ -256,6 +260,9 @@ class UserController extends Controller
         $thisUser = auth()->user();
         $user = User::findOrFail($id);
         abort_unless($user->canManage(), 403);
+        if ($user->hasRole('GlobalAdmin') && $user->email == config('ccplus.global_admin')) {
+            return response()->json(['result' => false, 'msg' => 'Edit (403) - Forbidden']);
+        }
         $user->roles = $user->roles()->pluck('role_id')->all();
 
         // Admin gets a select-box of institutions, otherwise just the users' inst
@@ -283,7 +290,8 @@ class UserController extends Controller
     {
         $thisUser = auth()->user();
         $user = User::findOrFail($id);
-        if (!$user->canManage()) {
+        if (!$user->canManage() ||
+            ($user->hasRole('GlobalAdmin') && $user->email == config('ccplus.global_admin')) ) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
 
@@ -370,12 +378,13 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        if (!$user->canManage()) {
-            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
+        if (!$user->canManage() ||
+            ($user->hasRole('GlobalAdmin') && $user->email == config('ccplus.global_admin')) ) {
+            return response()->json(['result' => false, 'msg' => 'Delete failed (403) - Forbidden']);
         }
         if (auth()->id() == $id) {
             return response()->json(['result' => false,
-                                     'msg' => 'Suicide forbidden (403); have an Admin or Manager assist you.']);
+                                     'msg' => 'Self-deletion forbidden (403); have an Admin assist you.']);
         }
         $user->delete();
         return response()->json(['result' => true, 'msg' => 'User successfully deleted']);
@@ -659,6 +668,7 @@ class UserController extends Controller
             // Update or create the User record
             if (is_null($current_user)) {      // Create
                 $current_user = User::create($_user);
+                $users->push($current_user);
                 $cur_user_id = $current_user->id;
                 $num_created++;
             } else {                            // Update

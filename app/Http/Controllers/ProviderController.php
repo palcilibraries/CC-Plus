@@ -35,7 +35,8 @@ class ProviderController extends Controller
 
         $consodb = config('database.connections.consodb.database');
        // Get all providers
-        $provider_data = Provider::with('institution:id,name','sushiSettings:id,last_harvest','reports:id,name','globalProv')
+        $provider_data = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest','reports:id,name',
+                                        'globalProv')
                                  ->orderBy('name','ASC')->get();
         $existingIds = $provider_data->pluck('global_id')->toArray();
 
@@ -43,12 +44,10 @@ class ProviderController extends Controller
         $providers = $provider_data->map( function ($rec) use ($thisUser) {
             $rec->active = ($rec->is_active) ? 'Active' : 'Inactive';
             $rec->inst_name = ($rec->institution->id == 1) ? 'Entire Consortium' : $rec->institution->name;
-            $rec->can_delete = false;
             $rec->day_of_month = $rec->day_of_month;
             $last_harvest = $rec->sushiSettings->max('last_harvest');
             $rec->can_delete = (is_null($last_harvest)) ? true : false;
             $rec->reports_string = ($rec->reports) ? $this->makeReportString($rec->reports) : 'None';
-
             return $rec;
         })->toArray();
 

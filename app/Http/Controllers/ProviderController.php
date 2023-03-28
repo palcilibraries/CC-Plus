@@ -114,6 +114,7 @@ class ProviderController extends Controller
         $master_reports = Report::whereIn('id', $con_prov->globalProv->master_reports)->orderBy('name','ASC')->get(['id','name']);
 
         // setup reprts_state structure to mkae checkboxres with
+        $rpt_state = [];
         foreach ($master_reports as $rpt) {
             $rpt_state[$rpt->name] = ($con_prov->reports->where('name',$rpt->name)->first()) ? true : false;
         }

@@ -10,6 +10,7 @@ use App\HarvestLog;
 use App\SushiSetting;
 use App\ConnectionField;
 use App\GlobalProvider;
+use App\Consortium;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -57,8 +58,9 @@ class ProviderController extends Controller
 
        // Pull unset global provider definitions
         $unset_global = GlobalProvider::whereNotIn('id',$existingIds)->orderBy('name', 'ASC')->get();
-
-        return view('providers.index', compact('providers', 'institutions', 'unset_global'));
+        $cur_instance = Consortium::where('ccp_key', session('ccp_con_key'))->first();
+        $conso_name = $cur_instance->name;
+        return view('providers.index', compact('conso_name', 'providers', 'institutions', 'unset_global'));
     }
 
     /**

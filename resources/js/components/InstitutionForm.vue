@@ -21,7 +21,7 @@
         <form method="POST" action="" @submit.prevent="instFormSubmit" @keydown="instForm.errors.clear($event.target.name)"
               class="in-page-form">
           <v-text-field v-if="is_admin" v-model="instForm.name" label="Name" outlined></v-text-field>
-          <v-text-field v-if="is_admin" v-model="instForm.internal_id" label="Internal Identifier" outlined></v-text-field>
+          <v-text-field v-if="is_admin" v-model="instForm.local_id" label="Internal Identifier" outlined></v-text-field>
           <v-switch v-if="is_admin" v-model="instForm.is_active" label="Active?"></v-switch>
 		      <div class="field-wrapper">
             <v-subheader v-text="'FTE'"></v-subheader>
@@ -47,7 +47,7 @@
       <div v-else>
         <v-simple-table dense>
           <tr><td>Name</td><td>{{ mutable_inst.name }}</td></tr>
-          <tr><td>Internal ID</td><td>{{ mutable_inst.internal_id }}</td></tr>
+          <tr><td>Internal ID</td><td>{{ mutable_inst.local_id }}</td></tr>
           <tr><td>Status</td><td>{{ status }}</td></tr>
           <tr><td>FTE</td><td>{{ mutable_inst.fte }}</td></tr>
           <tr>
@@ -296,7 +296,7 @@
                 mutable_connectors: { ...this.all_connectors },
                 instForm: new window.Form({
                     name: this.institution.name,
-                    internal_id: this.institution.internal_id,
+                    local_id: this.institution.local_id,
                     is_active: this.institution.is_active,
                     fte: this.institution.fte,
                     institutiongroups: this.institution.groups,

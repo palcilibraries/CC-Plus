@@ -217,7 +217,7 @@ class InstitutionGroupController extends Controller
         $top_txt .= "rows without an ID in column A will be ignored. If required values are missing/invalid within\n";
         $top_txt .= "a given row, the row will be ignored.\n";
         $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
-        $top_txt .= "Any header row or columns beyond 'C' will be ignored.";
+        $top_txt .= "Any header row or columns beyond 'B' will be ignored.";
         $info_sheet->setCellValue('A1', $top_txt);
         $info_sheet->getStyle('A8:E8')->applyFromArray($head_style);
         $info_sheet->setCellValue('A8', 'Column Name');
@@ -233,13 +233,8 @@ class InstitutionGroupController extends Controller
         $info_sheet->setCellValue('B10', 'String');
         $info_sheet->setCellValue('C10', 'Institution Group Name');
         $info_sheet->setCellValue('D10', 'Yes');
-        $info_sheet->setCellValue('A11', 'Member Institutions');
-        $info_sheet->setCellValue('B11', 'Comma-separated list of integers');
-        $info_sheet->setCellValue('C11', 'Institution IDs to assign to the group');
-        $info_sheet->setCellValue('D11', 'No');
-        $info_sheet->setCellValue('E11', 'NULL');
         // Set row height and auto-width columns for the sheet
-        for ($r = 1; $r < 12; $r++) {
+        for ($r = 1; $r < 11; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
         $info_columns = array('A','B','C','D','E');
@@ -252,25 +247,17 @@ class InstitutionGroupController extends Controller
         $group_sheet->setTitle('Institution Groups');
         $group_sheet->setCellValue('A1', 'Id');
         $group_sheet->setCellValue('B1', 'Name');
-        $group_sheet->setCellValue('C1', 'Member Institution IDs');
         $row = 2;
         foreach ($groups as $group) {
             $group_sheet->getRowDimension($row)->setRowHeight(15);
             $group_sheet->setCellValue('A' . $row, $group->id);
             $group_sheet->setCellValue('B' . $row, $group->name);
-            // Make a CSV list of the member institution IDs and put in col-C
-            $inst_list = "";
-            foreach ($group->institutions as $inst) {
-                $inst_list .= ($inst_list=="") ? $inst->id : ",$inst->id";
-            }
-            $group_sheet->setCellValue('C' . $row, $inst_list);
             $row++;
         }
 
         // Auto-size the columns
         $group_sheet->getColumnDimension('A')->setAutoSize(true);
         $group_sheet->getColumnDimension('B')->setAutoSize(true);
-        $group_sheet->getColumnDimension('C')->setAutoSize(true);
 
         // Give the file a meaningful filename
         $fileName = "CCplus_" . session('ccp_con_key', '') . "_InstitutionGroups." . $type;
@@ -321,9 +308,8 @@ class InstitutionGroupController extends Controller
         $num_updated = 0;
         $num_created = 0;
 
-        // Get all the groups and institutions
+        // Get all the groups
         $groups = InstitutionGroup::get();
-        $institutions = Institution::get();
 
         // Process the input rows
         $group_ids_to_keep = array();
@@ -378,22 +364,6 @@ class InstitutionGroupController extends Controller
                         $num_updated++;
                     }
                     $group_ids_to_keep[] = $current_group->id;
-
-                    // Clear and reset member institutions
-                    $current_group->institutions()->detach();
-                    $_inst_list = preg_split('/,/', $row[2]);
-                    if (sizeof($_inst_list) > 0) {
-                        foreach ($_inst_list as $inst) {
-                            $_id = intval(trim($inst));
-                            if (is_numeric($_id)) {
-                                $institution = $institutions->where('id',$_id)->first();
-                                if ($institution) {
-                                    $current_group->institutions()->attach($_id);
-                                }
-                            }
-                        }
-                    }
-
                 }
             }
         }

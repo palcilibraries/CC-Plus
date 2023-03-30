@@ -407,7 +407,7 @@ class InstitutionController extends Controller
         abort_unless(auth()->user()->hasRole('Admin'), 403);
 
         // Get all institutions
-        $institutions = Institution::orderBy('name', 'ASC')->get();
+        $institutions = Institution::with('institutionGroups')->orderBy('name', 'ASC')->get();
 
         // Setup some styles arrays
         $head_style = [
@@ -436,7 +436,7 @@ class InstitutionController extends Controller
         $top_txt .= "Imports row with a new ID in column-A or a new Local ID in column-B are added as new institutions.\n";
         $top_txt .= "Missing or invalid, but not required, values in the other columns will be set to the 'Default'.\n\n";
         $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
-        $top_txt .= "Any header row or columns beyond 'F' will be ignored.";
+        $top_txt .= "Any header row or columns beyond 'G' will be ignored.";
         $info_sheet->setCellValue('A1', $top_txt);
         $info_sheet->setCellValue('A8', "NOTES: ");
         $info_sheet->mergeCells('B8:E9');
@@ -481,17 +481,22 @@ class InstitutionController extends Controller
         $info_sheet->setCellValue('C19', 'FTE count for the institution');
         $info_sheet->setCellValue('D19', 'No');
         $info_sheet->setCellValue('E19', 'NULL');
-        $info_sheet->setCellValue('A20', 'Notes');
-        $info_sheet->setCellValue('B20', 'Text-blob');
-        $info_sheet->setCellValue('C20', 'Notes or other details');
+        $info_sheet->setCellValue('A20', 'Group Assignment(s)');
+        $info_sheet->setCellValue('B20', 'Comma-separated list of integers');
+        $info_sheet->setCellValue('C20', 'Assign Institution to one/more groups');
         $info_sheet->setCellValue('D20', 'No');
         $info_sheet->setCellValue('E20', 'NULL');
+        $info_sheet->setCellValue('A21', 'Notes');
+        $info_sheet->setCellValue('B21', 'Text-blob');
+        $info_sheet->setCellValue('C21', 'Notes or other details');
+        $info_sheet->setCellValue('D21', 'No');
+        $info_sheet->setCellValue('E21', 'NULL');
 
         // Set row height and auto-width columns for the sheet
         for ($r = 1; $r < 20; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
-        $info_columns = array('A','B','C','D','E');
+        $info_columns = array('A','B','C','D','E','F');
         foreach ($info_columns as $col) {
             $info_sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -504,7 +509,8 @@ class InstitutionController extends Controller
         $inst_sheet->setCellValue('C1', 'Name');
         $inst_sheet->setCellValue('D1', 'Active');
         $inst_sheet->setCellValue('E1', 'FTE');
-        $inst_sheet->setCellValue('F1', 'Notes');
+        $inst_sheet->setCellValue('F1', 'Group IDs');
+        $inst_sheet->setCellValue('G1', 'Notes');
         $row = 2;
 
         // Align column-D for the data sheet on center
@@ -520,12 +526,18 @@ class InstitutionController extends Controller
             $_stat = ($inst->is_active) ? "Y" : "N";
             $inst_sheet->setCellValue('D' . $row, $_stat);
             $inst_sheet->setCellValue('E' . $row, $inst->fte);
-            $inst_sheet->setCellValue('F' . $row, $inst->notes);
+            // Make a CSV list of the group assignments and put into col-F
+            $group_list = "";
+            foreach ($inst->institutionGroups as $group) {
+                $group_list .= ($group_list=="") ? $group->id : ",$group->id";
+            }
+            $inst_sheet->setCellValue('F' . $row, $group_list);
+            $inst_sheet->setCellValue('G' . $row, $inst->notes);
             $row++;
         }
 
         // Auto-size the columns (skip notes in 'G')
-        $columns = array('A','B','C','D','E','F');
+        $columns = array('A','B','C','D','E','F','G');
         foreach ($columns as $col) {
             $inst_sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -573,6 +585,7 @@ class InstitutionController extends Controller
 
         // Get existing institution and inst-groups data
         $institutions = Institution::get();
+        $groups = InstitutionGroup::get();
 
         // Process the input rows
         $inst_skipped = 0;
@@ -647,7 +660,7 @@ class InstitutionController extends Controller
             // Enforce defaults and put institution data columns into an array
             $_active = ($row[3] == 'N') ? 0 : 1;
             $_fte = ($row[4] == '') ? null : $row[4];
-            $_notes = ($row[5] == '') ? null : $row[5];
+            $_notes = ($row[6] == '') ? null : $row[6];
             $_inst = array('name' => $_name, 'is_active' => $_active,  'local_id' => $localID,
                            'fte' => $_fte, 'notes' => $_notes);
 
@@ -665,6 +678,22 @@ class InstitutionController extends Controller
                 $current_inst->update($_inst);
                 $inst_updated++;
             }
+
+            // Clear and reset group membership(s)
+            $current_inst->institutionGroups()->detach();
+            $_group_list = preg_split('/,/', $row[5]);
+            if (sizeof($_group_list) > 0) {
+                foreach ($_group_list as $csv_value) {
+                    $_id = intval(trim($csv_value));
+                    if (is_numeric($_id)) {
+                        $group = $groups->where('id',$_id)->first();
+                        if ($group) {
+                            $current_inst->institutionGroups()->attach($_id);
+                        }
+                    }
+                }
+            }
+
             $seen_insts[] = $current_inst->id;
         }
 

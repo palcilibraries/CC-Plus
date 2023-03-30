@@ -31,8 +31,12 @@
         <template v-slot:item.action="{ item }">
           <span class="dt_action">
             <v-icon title="Edit Provider" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
-            &nbsp; &nbsp;
-            <v-icon title="Delete Provider" @click="destroy(item.id)">mdi-trash-can-outline</v-icon>
+            <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
+              <v-icon title="Delete Provider">mdi-trash-can-outline</v-icon>
+            </v-btn>
+            <v-btn v-else icon class="pl-4">
+              <v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon>
+            </v-btn>
           </span>
         </template>
         <v-alert slot="no-results" :value="true" color="error" icon="warning">

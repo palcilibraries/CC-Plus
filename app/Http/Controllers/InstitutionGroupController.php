@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\InstitutionGroup;
 use App\Institution;
+use App\Consortium;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -33,7 +34,9 @@ class InstitutionGroupController extends Controller
             $group->count = sizeof($members);
             $data[] = $group->toArray();
         }
-        return view('institutiongroups.index', compact('data'));
+        $cur_instance = Consortium::where('ccp_key', session('ccp_con_key'))->first();
+        $conso_name = $cur_instance->name;
+        return view('institutiongroups.index', compact('conso_name', 'data'));
     }
 
     /**
@@ -368,6 +371,7 @@ class InstitutionGroupController extends Controller
                     $_data = array('id' => $_gid, 'name' => $_name);
                     if (!$current_group) {      // Create
                         $current_group = InstitutionGroup::create($_data);
+                        $groups->push($current_group);
                         $num_created++;
                     } else {                   // Update
                         $current_group->update($_data);

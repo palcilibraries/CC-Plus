@@ -10,6 +10,7 @@ use App\SushiSetting;
 use App\HarvestLog;
 use App\GlobalProvider;
 use App\ConnectionField;
+use App\Consortium;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -112,7 +113,9 @@ class InstitutionController extends Controller
 
         // Not returning JSON, pass only what the index/vue-component needs to initialize the page
         } else {
-          return view('institutions.index', compact('all_groups', 'filters'));
+          $cur_instance = Consortium::where('ccp_key', session('ccp_con_key'))->first();
+          $conso_name = $cur_instance->name;
+          return view('institutions.index', compact('conso_name', 'all_groups', 'filters'));
         }
     }
 

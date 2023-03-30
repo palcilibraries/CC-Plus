@@ -7,6 +7,7 @@ use App\User;
 use App\Role;
 use App\Institution;
 use App\InstitutionGroup;
+use App\Consortium;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -141,7 +142,9 @@ class UserController extends Controller
                 $allowed_roles[] = $_role;
             }
             $data = array();
-            return view('users.index', compact('data', 'institutions', 'allowed_roles', 'all_groups', 'filters'));
+            $cur_instance = Consortium::where('ccp_key', session('ccp_con_key'))->first();
+            $conso_name = $cur_instance->name;
+            return view('users.index', compact('conso_name', 'data', 'institutions', 'allowed_roles', 'all_groups', 'filters'));
         }
 
     }

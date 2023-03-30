@@ -9,6 +9,7 @@ use App\GlobalProvider;
 use App\HarvestLog;
 use App\InstitutionGroup;
 use App\ConnectionField;
+use App\Consortium;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -117,7 +118,9 @@ class SushiSettingController extends Controller
             // Get InstitutionGroups
             $inst_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
 
-            return view('sushisettings.index',compact('institutions','inst_groups','providers','filters'));
+            $cur_instance = Consortium::where('ccp_key', session('ccp_con_key'))->first();
+            $conso_name = $cur_instance->name;
+            return view('sushisettings.index',compact('conso_name','institutions','inst_groups','providers','filters'));
         }
 
     }

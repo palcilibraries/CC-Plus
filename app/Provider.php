@@ -23,9 +23,9 @@ class Provider extends Model
    *
    * @var array
    */
-    protected $fillable = [ 'name', 'is_active', 'inst_id', 'day_of_month', 'global_id'  ];
+    protected $fillable = [ 'name', 'is_active', 'inst_id', 'day_of_month', 'global_id', 'restricted' ];
     protected $casts = ['id'=>'integer', 'is_active'=>'integer', 'inst_id'=>'integer', 'day_of_month' => 'integer',
-                        'global_id' => 'integer'];
+                        'global_id' => 'integer', 'restricted' => 'integer'];
 
   /**
    * The attributes that should be encrypted on save (password is already hashed)
@@ -40,7 +40,7 @@ class Provider extends Model
         }
       // Managers can manage providers for their own inst
         if (auth()->user()->hasRole("Manager")) {
-            return auth()->user()->inst_id == $this->inst_id;
+            return (auth()->user()->inst_id == $this->inst_id && !$this->restricted);
         }
         return false;
     }

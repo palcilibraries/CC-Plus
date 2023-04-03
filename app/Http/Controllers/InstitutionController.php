@@ -240,20 +240,24 @@ class InstitutionController extends Controller
         $set_provider_ids = $sushi_settings->pluck('prov_id')->values()->toArray();
         $all_providers = Provider::with('globalProv')->whereIn('inst_id', [1,$id])->orderBy('name', 'ASC')->get();
         $unset_conso_providers = array();
-        foreach ($all_providers as $prov) {
-            // Pull the providers' connection fields
-            $connectors = $fields->whereIn('id', $prov->globalProv->connectors);
 
-            // Flag active connectors for providers already connected
-            if (in_array($prov->id,$set_provider_ids)) {
-                foreach($connectors as $cnx) {
-                    $key = trim($cnx->name);
-                    if (!$all_connectors[$key]['active']) $all_connectors[$key]['active'] = true;
+        // Retrict connecting consortium providers to Admins
+        if ($thisUser->hasRole("Admin")) {
+            foreach ($all_providers as $prov) {
+                // Pull the providers' connection fields
+                $connectors = $fields->whereIn('id', $prov->globalProv->connectors);
+
+                // Flag active connectors for providers already connected
+                if (in_array($prov->id,$set_provider_ids)) {
+                    foreach($connectors as $cnx) {
+                        $key = trim($cnx->name);
+                        if (!$all_connectors[$key]['active']) $all_connectors[$key]['active'] = true;
+                    }
+                // Un-connected providers and their connectors go into the unset array
+                } else {
+                    $unset_conso_providers[] = array('id' => $prov->id, 'name' => $prov->name,
+                                                     'connectors' => $connectors->values()->toArray());
                 }
-            // Un-connected providers and their connectors go into the unset array
-            } else {
-                $unset_conso_providers[] = array('id' => $prov->id, 'name' => $prov->name,
-                                                 'connectors' => $connectors->values()->toArray());
             }
         }
 

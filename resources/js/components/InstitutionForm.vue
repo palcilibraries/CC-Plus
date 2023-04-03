@@ -156,7 +156,7 @@
               @keydown="sushiForm.errors.clear($event.target.name)">
           <input v-model="sushiForm.inst_id" id="institution.id" type="hidden">
           <v-row class="d-flex my-2" no-gutters>
-            <v-col v-if="mutable_unset_con.length > 0" class="d-flex pr-4" cols="4">
+            <v-col v-if="is_admin && mutable_unset_con.length > 0" class="d-flex pr-4" cols="4">
               <v-select :items="mutable_unset_con" v-model="sushiForm.prov_id" @change="onUnsetChange('conso')" outlined
                         placeholder="Connect a Consortium Provider" item-text="name" item-value="id" color="primary"
               ></v-select>

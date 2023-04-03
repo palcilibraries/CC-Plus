@@ -421,7 +421,7 @@ class SushiSettingController extends Controller
             return response()->json(['result' => false, 'msg' => $msg]);
         }
         // Set name if only one inst being exported
-        $inst_name = ($institutions->count() == 1) ? $institution[0]->name : "";
+        $inst_name = ($institutions->count() == 1) ? $institutions[0]->name : "";
 
         // Get provider record(s)
         $prov_filters = null;

@@ -228,7 +228,11 @@ class UserController extends Controller
             $_roles .= $role->name . ", ";
         }
         $_roles = rtrim(trim($_roles), ',');
-        $new_user['permission'] = $user->maxRoleName();
+        $max_role = $user->maxRoleName();
+        if ($max_role == "Admin") $max_role = "Consortium Admin";
+        if ($max_role == "Manager") $max_role = "Local Admin";
+        if ($max_role == "Viewer") $max_role = "Consortium Viewer";
+        $new_user['permission'] = $max_role;
         $new_user['role_string'] = $_roles;
         $new_user['roles'] = $new_roles;
 

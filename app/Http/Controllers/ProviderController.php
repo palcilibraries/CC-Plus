@@ -59,7 +59,7 @@ class ProviderController extends Controller
        // Pull unset global provider definitions
         $unset_global = GlobalProvider::whereNotIn('id',$existingIds)->orderBy('name', 'ASC')->get();
         $cur_instance = Consortium::where('ccp_key', session('ccp_con_key'))->first();
-        $conso_name = $cur_instance->name;
+        $conso_name = ($cur_instance) ? $cur_instance->name : "Template";
         return view('providers.index', compact('conso_name', 'providers', 'institutions', 'unset_global'));
     }
 

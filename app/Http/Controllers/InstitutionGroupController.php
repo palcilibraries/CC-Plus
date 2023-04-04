@@ -35,7 +35,7 @@ class InstitutionGroupController extends Controller
             $data[] = $group->toArray();
         }
         $cur_instance = Consortium::where('ccp_key', session('ccp_con_key'))->first();
-        $conso_name = $cur_instance->name;
+        $conso_name = ($cur_instance) ? $cur_instance->name : "Template";
         return view('institutiongroups.index', compact('conso_name', 'data'));
     }
 

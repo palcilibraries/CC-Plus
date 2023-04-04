@@ -119,7 +119,7 @@ class SushiSettingController extends Controller
             $inst_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
 
             $cur_instance = Consortium::where('ccp_key', session('ccp_con_key'))->first();
-            $conso_name = $cur_instance->name;
+            $conso_name = ($cur_instance) ? $cur_instance->name : "Template";
             return view('sushisettings.index',compact('conso_name','institutions','inst_groups','providers','filters'));
         }
 

@@ -114,7 +114,7 @@ class InstitutionController extends Controller
         // Not returning JSON, pass only what the index/vue-component needs to initialize the page
         } else {
           $cur_instance = Consortium::where('ccp_key', session('ccp_con_key'))->first();
-          $conso_name = $cur_instance->name;
+          $conso_name = ($cur_instance) ? $cur_instance->name : "Template";
           return view('institutions.index', compact('conso_name', 'all_groups', 'filters'));
         }
     }

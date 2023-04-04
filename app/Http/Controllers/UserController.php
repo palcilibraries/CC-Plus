@@ -143,7 +143,7 @@ class UserController extends Controller
             }
             $data = array();
             $cur_instance = Consortium::where('ccp_key', session('ccp_con_key'))->first();
-            $conso_name = $cur_instance->name;
+            $conso_name = ($cur_instance) ? $cur_instance->name : "Template";
             return view('users.index', compact('conso_name', 'data', 'institutions', 'allowed_roles', 'all_groups', 'filters'));
         }
 

@@ -181,6 +181,11 @@ class ProviderController extends Controller
         $input = $request->all();
         $prov_input = array_except($input,array('master_reports'));
 
+        // Disallow a manager restricting themselves from an institution-specific provider
+        if ($provider->inst_id != 1 && !$thisUser->hasRole('Admin')) {   // local-admin/Manager adding an institution-specific vendor?
+            $prov_input['restricted'] = 0;
+        }
+
       // Update the record and assign reports in master_reports
         $provider->update($prov_input);
         $provider->reports()->detach();
@@ -262,11 +267,26 @@ class ProviderController extends Controller
         // Get and validate inputs
         $this->validate($request, [ 'prov_id' => 'required', 'inst_id' => 'required' ]);
         $input = $request->all();
+
+        // Set the institution_id the provider will be connected to
         $inst_id = ($thisUser->hasRole("Admin")) ? $inst_id = $input['inst_id'] : $thisUser->inst_id;
+
+        // Only Admin-Role can connect a vendor to inst_id=1 (the consortium)
+        if ($inst_id == 1 && !$thisUser->hasRole('Admin')) {
+            return response()->json(['result' => false, 'msg' => 'Connect operation failed (403) - Forbidden']);
+        }
+
+        // Descide if local-admin changes are restricted from changing the provider
+        if ($inst_id != 1 && $thisUser->hasRole('Manager')) {   // local-admin/Manager adding an institution-specific vendor?
+            $restricted = 0;
+        } else {
+            $restricted = (isset($input['restricted'])) ? $input['restricted'] : 1;
+        }
 
         // Attach the provider and build an array (like index makes) of the added entries
         $gp = GlobalProvider::where('id',$input['prov_id'])->first();
-        $data = array('name' => $gp->name, 'inst_id' => $inst_id, 'is_active' => $gp->is_active, 'global_id' => $gp->id);
+        $data = array('name' => $gp->name, 'inst_id' => $inst_id, 'is_active' => $gp->is_active, 'global_id' => $gp->id,
+                      'restricted' => $restricted);
         $provider = Provider::create($data);
         $provider->load('institution:id,name','globalProv');
         $provider->active = ($provider->is_active) ? 'Active' : 'Inactive';

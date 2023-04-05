@@ -255,6 +255,7 @@ class InstitutionController extends Controller
                     }
                 // Un-connected providers and their connectors go into the unset array
                 } else {
+                    if (!$thisUser->hasRole('Admin') && $prov->restricted) continue;
                     $unset_conso_providers[] = array('id' => $prov->id, 'name' => $prov->name,
                                                      'connectors' => $connectors->values()->toArray());
                 }

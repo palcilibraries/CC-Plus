@@ -213,7 +213,7 @@ class SushiSettingController extends Controller
             $gp = GlobalProvider::where('id',$form_data['global_id'])->first();
             if ($gp) {
                 $provider_data = array('name' => $gp->name, 'global_id' => $gp->id, 'is_active' => $gp->is_active,
-                                       'inst_id' => $fields['inst_id']);
+                                       'inst_id' => $fields['inst_id'], 'restricted' => 0);
                 $new_provider = Provider::create($provider_data);
                 $fields['prov_id'] = $new_provider->id;
             } else {
@@ -240,13 +240,15 @@ class SushiSettingController extends Controller
      */
     public function update(Request $request)
     {
+        $thisUser = auth()->user();
        // Validate form inputs
         $this->validate($request, ['inst_id' => 'required', 'prov_id' => 'required']);
         $input = $request->all();
 
        // Ensure user is allowed to change the settings
+        $provider = Provider::findOrFail($input['prov_id']);
         $institution = Institution::findOrFail($input['inst_id']);
-        if (!$institution->canManage()) {
+        if (!$institution->canManage() || (!$thisUser->hasRole('Admin') && $provider->restricted)) {
             return response()->json(['result' => false, 'msg' => 'Invalid request']);
         }
 

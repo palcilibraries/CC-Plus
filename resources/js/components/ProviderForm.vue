@@ -20,6 +20,7 @@
 	    <v-simple-table v-if="!showForm" dense>
         <tr><td>Name</td><td>{{ mutable_prov.name }}</td></tr>
         <tr><td>Status</td><td>{{ status }}</td></tr>
+        <tr v-if="is_admin"><td>Restricted?</td><td>{{ restrictYN[mutable_prov.restricted] }}</td></tr>
 	      <tr><td>Serves</td><td>{{ inst_name }}</td></tr>
 	      <tr><td>SUSHI service URL</td><td>{{ mutable_prov.server_url_r5 }}</td></tr>
         <tr>
@@ -49,6 +50,12 @@
           </v-col>
           <v-col class="d-flex px-1" cols="3">
             <v-switch v-model="form.is_active" label="Active?"></v-switch>
+          </v-col>
+        </v-row>
+        <v-row v-if="is_admin" class="d-flex ma-0">
+          <v-col class="d-flex pa-0">
+            <v-switch v-model="form.restricted" label="Prevent Local Admins from modifying this provider" class="v-input--reverse"
+            ></v-switch>
           </v-col>
         </v-row>
         <v-row class="d-flex mt-1">
@@ -240,6 +247,7 @@
                 failure: '',
                 status: '',
                 statusvals: ['Inactive','Active'],
+                restrictYN: ['No','Yes'],
                 inst_name: 'Entire Consortium',
                 testData: '',
                 testStatus: '',
@@ -270,6 +278,7 @@
                     inst_id: this.provider.inst_id,
                     day_of_month: this.provider.day_of_month,
                     is_active: this.provider.is_active,
+                    restricted: this.provider.restricted,
                     report_state: this.provider.report_state,
                 }),
                 sushiForm: new window.Form({

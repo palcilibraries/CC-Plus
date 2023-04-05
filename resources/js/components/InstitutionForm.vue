@@ -210,17 +210,16 @@
                 <span v-else>{{ item.extra_args }}</span>
               </td>
               <td :class="item.status">{{ item.status }}</td>
-              <td v-if="is_manager || is_admin">
+              <td v-if="(is_manager && !item.provider.restricted) || is_admin">
                 <span class="dt_action">
                   <v-icon title="Settings and harvests" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
                   &nbsp; &nbsp;
                   <v-icon title="Delete connection" @click="destroySushi(item)">mdi-trash-can-outline</v-icon>
                 </span>
               </td>
+              <td v-else>&nbsp;</td>
             </tr>
           </template>
-          <tr v-if="is_manager || is_admin"><td colspan="6">&nbsp;</td></tr>
-          <tr v-else><td colspan="4">&nbsp;</td></tr>
         </v-data-table>
       </div>
       <v-dialog v-model="importDialog" persistent max-width="1200px">

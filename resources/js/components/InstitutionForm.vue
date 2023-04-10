@@ -167,6 +167,10 @@
               ></v-select>
             </v-col>
           </v-row>
+          <div class="status-message" v-if="sushiSuccess || sushiFailure">
+            <span v-if="sushiSuccess" class="good" role="alert" v-text="sushiSuccess"></span>
+            <span v-if="sushiFailure" class="fail" role="alert" v-text="sushiFailure"></span>
+          </div>
           <div v-if="showSushiForm" class="form-fields">
             <template v-for="cnx in new_provider.connectors">
               <v-text-field v-model="sushiForm[cnx.name]" :label='cnx.label' :id='cnx.name' outlined></v-text-field>
@@ -279,6 +283,8 @@
             return {
                 success: '',
                 failure: '',
+                sushiSuccess: '',
+                sushiFailure: '',
                 status: '',
                 statusvals: ['Inactive','Active'],
                 showInstForm: false,
@@ -349,6 +355,8 @@
             instFormSubmit (event) {
                 this.success = '';
                 this.failure = '';
+                this.sushiSuccess = '';
+                this.sushiFailure = '';
                 this.instForm.patch('/institutions/'+this.institution['id'])
                     .then( (response) => {
                         if (response.result) {
@@ -366,6 +374,8 @@
             editUser (userid) {
                 this.failure = '';
                 this.success = '';
+                this.sushiSuccess = '';
+                this.sushiFailure = '';
                 this.userInputForm = 'edit';
                 this.userSubmitLabel = 'Update User';
                 this.current_user = this.mutable_users[this.mutable_users.findIndex(u=> u.id == userid)];
@@ -380,6 +390,8 @@
             createUser () {
                 this.failure = '';
                 this.success = '';
+                this.sushiSuccess = '';
+                this.sushiFailure = '';
                 this.userInputForm = 'create';
                 this.userSubmitLabel = 'Save New User';
                 this.userForm.name = '';
@@ -414,6 +426,8 @@
                 this.sushiForm.extra_args = '';
                 this.failure = '';
                 this.success = '';
+                this.sushiSuccess = '';
+                this.sushiFailure = '';
                 this.testData = '';
                 this.testStatus = '';
                 this.showSushiForm = true;
@@ -425,6 +439,8 @@
             importSubmit (event) {
                 this.success = '';
                 this.failure = '';
+                this.sushiSuccess = '';
+                this.sushiFailure = '';
                 if (this.import_type == '') {
                     this.failure = 'An import type is required';
                     return;
@@ -460,6 +476,8 @@
             userFormSubmit (event) {
                 this.success = '';
                 this.failure = '';
+                this.sushiSuccess = '';
+                this.sushiFailure = '';
                 if (this.userForm.password != this.userForm.confirm_pass) {
                     this.failure = 'Passwords do not match! Please re-enter';
                     return;
@@ -501,6 +519,8 @@
                 if (!(this.is_admin || this.is_manager)) { return; }
                 this.failure = '';
                 this.success = '';
+                this.sushiSuccess = '';
+                this.sushiFailure = '';
                 this.testData = '';
                 this.testStatus = "... Working ...";
                 this.showTest = true;
@@ -521,21 +541,21 @@
                    .catch(error => {});
             },
             sushiFormSubmit (event) {
-                this.success = '';
-                this.failure = '';
+                this.sushiSuccess = '';
+                this.sushiFailure = '';
                 // All connectors are required - whether they work or not is a matter of testing+confirming
                 this.new_provider.connectors.forEach( (cnx) => {
                     if (this.sushiForm[cnx.name] == '' || this.sushiForm[cnx.name] == null) {
-                        this.failure = "Error: "+cnx.name+" must be supplied to connect to this provider!";
+                        this.sushiFailure = "Error: "+cnx.name+" must be supplied to connect to this provider!";
                     }
                 });
-                if (this.failure != '') return;
+                if (this.sushiFailure != '') return;
 
                 // crea() method on sushisettings controller to add to the table
                 this.sushiForm.post('/sushisettings')
 	                .then((response) => {
                       if (response.result) {
-                          this.success = response.msg;
+                          this.sushiSuccess = response.msg;
                           // Add the new connection to the settings rows and sort it by-name ascending
                           this.mutable_inst.sushiSettings.push(response.setting);
                           this.mutable_inst.sushiSettings.sort((a,b) => {
@@ -565,8 +585,8 @@
                           this.sushiForm.global_id = null;
                           this.dtKey += 1;
                       } else {
-                          this.success = '';
-                          this.failure = response.msg;
+                          this.sushiSuccess = '';
+                          this.sushiFailure = response.msg;
                       }
 	                });
             },

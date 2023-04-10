@@ -147,7 +147,7 @@ export default {
                   {
                     url: "/harvest/manual",
                     name: "Manual Harvest",
-                    role: "All",
+                    role: "Viewer",
                   },
                   // {
                   //   url: "/alerts",
@@ -186,6 +186,7 @@ export default {
         if (this.is_globaladmin) return true;
         if (this.is_admin && (item.role != 'GlobalAdmin')) return true;
         if (this.is_manager && (item.role != 'Admin' && item.role != 'GlobalAdmin')) return true;
+        if (this.is_viewer && item.role == 'Viewer') return true;
         if (item.role == 'All') return true;
         return false;
       },

@@ -32,7 +32,8 @@ class GlobalSettingSeeder extends Seeder
                                  ['id' => 7, 'name' => 'max_harvest_retries', 'value' => '10'],
                                  ['id' => 8, 'name' => 'max_name_length', 'value' => '191'],
                                  ['id' => 9, 'name' => 'log_login_fails', 'value' => '0'],
-                                 ['id' => 10, 'name' => 'debug_SQL_queries', 'value' => '0'],
+                                 ['id' => 10, 'name' => 'fiscalYr', 'value' => 'Jul-Jun'],
+                                 ['id' => 11, 'name' => 'debug_SQL_queries', 'value' => '0'],
                               ]);
         }
     }

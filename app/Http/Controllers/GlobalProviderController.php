@@ -366,111 +366,172 @@ class GlobalProviderController extends Controller
                             'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
                            ],
         ];
+        $bold_style = [
+            'font' => ['bold' => true,],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,],
+        ];
+        $centered_style = [
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,],
+        ];
+        $outline_style = [
+            'borders' => [ 'outline' => [ 'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THICK,],],
+        ];
 
         // Setup the spreadsheet and build the static ReadMe sheet
         $spreadsheet = new Spreadsheet();
         $info_sheet = $spreadsheet->getActiveSheet();
         $info_sheet->setTitle('HowTo Import');
-        $info_sheet->mergeCells('A1:D7');
-        $info_sheet->getStyle('A1:D7')->applyFromArray($info_style);
-        $info_sheet->getStyle('A1:D7')->getAlignment()->setWrapText(true);
-        $top_txt  = "The Providers tab represents a starting place for updating or importing settings. The table\n";
-        $top_txt .= "below describes the datatype and order that the import expects. Any Import rows without an\n";
-        $top_txt .= "ID value in column A and a name in column B will be ignored. If values are missing or invalid\n";
-        $top_txt .= "for columns (B-L), but not required, they will be set to the 'Default'.\n\n";
-        $top_txt .= "Any header row or columns beyond 'L' will be ignored. Once the data sheet contains everything\n";
-        $top_txt .= "to be updated or inserted, save the sheet as a CSV and import it into CC-Plus.";
-        $info_sheet->setCellValue('A1', $top_txt);
-        $info_sheet->getStyle('A8')->applyFromArray($head_style);
-        $info_sheet->setCellValue('A8', "NOTE:");
-        $info_sheet->mergeCells('B8:D10');
-        $info_sheet->getStyle('B8:D10')->applyFromArray($info_style);
-        $info_sheet->getStyle('B8:D10')->getAlignment()->setWrapText(true);
-        $note_txt  = "Provider imports cannot be used to delete existing providers; only additions and updates are\n";
-        $note_txt .= "supported. The recommended approach is to add to, or modify, a previously run full export\n";
-        $note_txt .= "to ensure that desired end result is achieved.";
-        $info_sheet->setCellValue('B8', $note_txt);
-        $info_sheet->getStyle('A12:E12')->applyFromArray($head_style);
-        $info_sheet->setCellValue('A12', 'Column Name');
-        $info_sheet->setCellValue('B12', 'Data Type');
-        $info_sheet->setCellValue('C12', 'Description');
-        $info_sheet->setCellValue('D12', 'Required');
-        $info_sheet->setCellValue('E12', 'Default');
-        $info_sheet->setCellValue('A13', 'Id');
-        $info_sheet->setCellValue('B13', 'Integer');
-        $info_sheet->setCellValue('C13', 'Unique CC-Plus Provider ID');
-        $info_sheet->setCellValue('D13', 'Yes');
-        $info_sheet->setCellValue('A14', 'Name');
-        $info_sheet->setCellValue('B14', 'String');
-        $info_sheet->setCellValue('C14', 'Provider name');
-        $info_sheet->setCellValue('D14', 'Yes');
-        $info_sheet->setCellValue('A15', 'Active');
-        $info_sheet->setCellValue('B15', 'String (Y or N)');
-        $info_sheet->setCellValue('C15', 'Make the provider active?');
-        $info_sheet->setCellValue('D15', 'No');
-        $info_sheet->setCellValue('E15', 'Y');
-        $info_sheet->setCellValue('A16', 'Server URL');
-        $info_sheet->setCellValue('B16', 'String');
-        $info_sheet->setCellValue('C16', 'URL for Provider SUSHI service');
-        $info_sheet->setCellValue('D16', 'Yes');
-        $info_sheet->setCellValue('E16', 'NULL');
-        $info_sheet->setCellValue('A17', 'Institution ID');
-        $info_sheet->setCellValue('B17', 'Integer');
-        $info_sheet->setCellValue('C17', 'Institution ID (see above)');
-        $info_sheet->setCellValue('D17', 'No');
-        $info_sheet->setCellValue('E17', '1');
-        $info_sheet->setCellValue('A18', 'DR Reports');
-        $info_sheet->setCellValue('B18', 'String (Y or N)');
-        $info_sheet->setCellValue('C18', 'Provider supplies DR reports?');
-        $info_sheet->setCellValue('D18', 'No');
-        $info_sheet->setCellValue('E18', 'Y');
-        $info_sheet->setCellValue('A19', 'IR Reports');
-        $info_sheet->setCellValue('B19', 'String (Y or N)');
-        $info_sheet->setCellValue('C19', 'Provider supplies IR reports?');
-        $info_sheet->setCellValue('D19', 'No');
-        $info_sheet->setCellValue('E19', 'Y');
-        $info_sheet->setCellValue('A20', 'PR Reports');
-        $info_sheet->setCellValue('B20', 'String (Y or N)');
-        $info_sheet->setCellValue('C20', 'Provider supplies PR reports?');
-        $info_sheet->setCellValue('D20', 'No');
-        $info_sheet->setCellValue('E20', 'Y');
-        $info_sheet->setCellValue('A21', 'TR Reports');
-        $info_sheet->setCellValue('B21', 'String (Y or N)');
-        $info_sheet->setCellValue('C21', 'Provider supplies TR reports?');
-        $info_sheet->setCellValue('D21', 'No');
-        $info_sheet->setCellValue('E21', 'Y');
-        $info_sheet->setCellValue('A22', 'Customer ID');
-        $info_sheet->setCellValue('B22', 'String (Y or N)');
-        $info_sheet->setCellValue('C22', 'Customer ID is required for Sushi connections');
-        $info_sheet->setCellValue('D22', 'No');
-        $info_sheet->setCellValue('E22', 'N');
-        $info_sheet->setCellValue('A23', 'Requestor ID');
-        $info_sheet->setCellValue('B23', 'String (Y or N)');
-        $info_sheet->setCellValue('C23', 'Requestor ID is required for Sushi connections');
-        $info_sheet->setCellValue('D23', 'No');
-        $info_sheet->setCellValue('E23', 'N');
-        $info_sheet->setCellValue('A24', 'API Key');
-        $info_sheet->setCellValue('B24', 'String (Y or N)');
-        $info_sheet->setCellValue('C24', 'API Key is required for Sushi connections');
-        $info_sheet->setCellValue('D24', 'No');
-        $info_sheet->setCellValue('E24', 'N');
-        $info_sheet->setCellValue('A25', 'Extra Arguments');
-        $info_sheet->setCellValue('B25', 'String (Y or N)');
-        $info_sheet->setCellValue('C25', 'Extra Arguments are required for Sushi connections');
-        $info_sheet->setCellValue('D25', 'No');
-        $info_sheet->setCellValue('E25', 'N');
-        $info_sheet->setCellValue('A26', 'Extra Args Pattern');
-        $info_sheet->setCellValue('B26', 'String');
-        $info_sheet->setCellValue('C26', 'ExtraArgs Pattern - ignored if Extra Args is "N"');
-        $info_sheet->setCellValue('D26', 'No');
-        $info_sheet->setCellValue('E26', 'NULL');
-        $info_sheet->setCellValue('C27', '(e.g.  &extra_cred=value&some_parm=value)');
+        for ($row=1; $row<7; $row++) {
+            $info_sheet->mergeCells("A" . $row . ":H" . $row);
+        }
+        $info_sheet->setCellValue('A2',"  * The Providers tab represents a starting place for updating or importing settings.");
+
+        $richText = new \PhpOffice\PhpSpreadsheet\RichText\RichText();
+        $approach = $richText->createTextRun("  * The recommended approach is to add to, or modify, a previously run full export.");
+        $approach->getFont()
+                 ->setColor( new \PhpOffice\PhpSpreadsheet\Style\Color( \PhpOffice\PhpSpreadsheet\Style\Color::COLOR_RED ) );
+        $info_sheet->setCellValue('A3', $richText);
+        $_txt = "  * Only additions and updates are supported. Import cannot be used to delete existing providers.";
+        $info_sheet->setCellValue('A4', $_txt);
+        $richText = new \PhpOffice\PhpSpreadsheet\RichText\RichText();
+        $richText->createText("  * Once updates to the Providers tab are complete, save the sheet as a ");
+        $saving = $richText->createTextRun("CSV UTF-8");
+        $saving->getFont()->setBold(true);
+        $richText->createText(" file and import it into CC-Plus.");
+        $info_sheet->setCellValue('A5', $richText);
+        $info_sheet->getStyle('A1:H6')->applyFromArray($outline_style);
+        for ($row=7; $row<13; $row++) {
+            $info_sheet->mergeCells("A" . $row . ":H" . $row);
+        }
+        $info_sheet->setCellValue( 'A8',"  * The table below describes the data type and order that the import expects.");
+        $info_sheet->setCellValue( 'A9',"  * Any Import rows without an ID value in column A and a name in column B are ignored.");
+        $info_sheet->setCellValue('A10',"  * If values are missing or invalid for columns D-M, they will be set to the default.");
+        $info_sheet->setCellValue('A11',"  * Any header row or columns beyond M will be ignored.");
+        $info_sheet->getStyle('A7:H12')->applyFromArray($outline_style);
+        $info_sheet->getStyle('A14:H14')->applyFromArray($head_style);
+        $info_sheet->setCellValue('A14', 'COL');
+        $info_sheet->setCellValue('B14', 'Column Name');
+        $info_sheet->setCellValue('C14', 'Required');
+        $info_sheet->setCellValue('D14', 'Data Type');
+        $info_sheet->setCellValue('E14', 'Valid Values');
+        $info_sheet->setCellValue('F14', 'Description');
+        $info_sheet->setCellValue('G14', 'Default if empty');
+        $info_sheet->setCellValue('H14', 'Notes');
+        $info_sheet->getStyle('A15:A27')->applyFromArray($centered_style);
+        $info_sheet->getStyle('C15:C17')->applyFromArray($bold_style);
+        $info_sheet->getStyle('E15:E27')->applyFromArray($centered_style);
+        $info_sheet->getStyle('F15:F17')->applyFromArray($head_style);
+        $info_sheet->getStyle('G15:G27')->applyFromArray($centered_style);
+        $info_sheet->setCellValue('A15', 'A');
+        $info_sheet->setCellValue('B15', 'Id');
+        $info_sheet->setCellValue('C15', 'Yes');
+        $info_sheet->setCellValue('D15', 'Integer');
+        $info_sheet->setCellValue('E15', '');
+        $info_sheet->setCellValue('F15', 'Unique CC-Plus Provider ID');
+        $info_sheet->setCellValue('G15', '');
+        $info_sheet->setCellValue('H15', 'Increments if empty');
+        $info_sheet->setCellValue('A16', 'B');
+        $info_sheet->setCellValue('B16', 'Name');
+        $info_sheet->setCellValue('C16', 'Yes');
+        $info_sheet->setCellValue('D16', 'String');
+        $info_sheet->setCellValue('E16', '');
+        $info_sheet->setCellValue('F16', 'Provider name');
+        $info_sheet->setCellValue('G16', '');
+        $info_sheet->setCellValue('H16', '');
+        $info_sheet->setCellValue('A17', 'C');
+        $info_sheet->setCellValue('B17', 'Server URL');
+        $info_sheet->setCellValue('C17', 'Yes');
+        $info_sheet->setCellValue('D17', 'String');
+        $info_sheet->setCellValue('E17', 'Valid URL');
+        $info_sheet->setCellValue('F17', 'URL for Provider SUSHI service');
+        $info_sheet->setCellValue('G17', '');
+        $info_sheet->setCellValue('H17', '');
+        $info_sheet->setCellValue('A18', 'D');
+        $info_sheet->setCellValue('B18', 'Active');
+        $info_sheet->setCellValue('C18', '');
+        $info_sheet->setCellValue('D18', 'String');
+        $info_sheet->setCellValue('E18', 'Y or N');
+        $info_sheet->setCellValue('F18', 'Make the provider active?');
+        $info_sheet->setCellValue('G18', 'Y');
+        $info_sheet->setCellValue('H18', '');
+        $info_sheet->setCellValue('A19', 'E');
+        $info_sheet->setCellValue('B19', 'DR');
+        $info_sheet->setCellValue('C19', '');
+        $info_sheet->setCellValue('D19', 'String');
+        $info_sheet->setCellValue('E19', 'Y or N');
+        $info_sheet->setCellValue('F19', 'Provider supplies DR reports?');
+        $info_sheet->setCellValue('G19', 'N');
+        $info_sheet->setCellValue('H19', '');
+        $info_sheet->setCellValue('A20', 'F');
+        $info_sheet->setCellValue('B20', 'IR');
+        $info_sheet->setCellValue('C20', '');
+        $info_sheet->setCellValue('D20', 'String');
+        $info_sheet->setCellValue('E20', 'Y or N');
+        $info_sheet->setCellValue('F20', 'Provider supplies IR reports?');
+        $info_sheet->setCellValue('G20', 'N');
+        $info_sheet->setCellValue('H20', '');
+        $info_sheet->setCellValue('A21', 'G');
+        $info_sheet->setCellValue('B21', 'PR');
+        $info_sheet->setCellValue('C21', '');
+        $info_sheet->setCellValue('D21', 'String');
+        $info_sheet->setCellValue('E21', 'Y or N');
+        $info_sheet->setCellValue('F21', 'Provider supplies PR reports?');
+        $info_sheet->setCellValue('G21', 'Y');
+        $info_sheet->setCellValue('H21', '');
+        $info_sheet->setCellValue('A22', 'H');
+        $info_sheet->setCellValue('B22', 'TR');
+        $info_sheet->setCellValue('C22', '');
+        $info_sheet->setCellValue('D22', 'String');
+        $info_sheet->setCellValue('E22', 'Y or N');
+        $info_sheet->setCellValue('F22', 'Provider supplies TR reports?');
+        $info_sheet->setCellValue('G22', 'N');
+        $info_sheet->setCellValue('H22', '');
+        $info_sheet->setCellValue('A23', 'I');
+        $info_sheet->setCellValue('B23', 'Customer ID');
+        $info_sheet->setCellValue('C23', '');
+        $info_sheet->setCellValue('D23', 'String');
+        $info_sheet->setCellValue('E23', 'Y or N');
+        $info_sheet->setCellValue('F23', 'Customer ID is required for Sushi connections');
+        $info_sheet->setCellValue('G23', 'Y');
+        $info_sheet->setCellValue('H23', '');
+        $info_sheet->setCellValue('A24', 'J');
+        $info_sheet->setCellValue('B24', 'Requestor ID');
+        $info_sheet->setCellValue('C24', '');
+        $info_sheet->setCellValue('D24', 'String');
+        $info_sheet->setCellValue('E24', 'Y or N');
+        $info_sheet->setCellValue('F24', 'Requestor ID is required for Sushi connections');
+        $info_sheet->setCellValue('G24', 'N');
+        $info_sheet->setCellValue('H24', '');
+        $info_sheet->setCellValue('A25', 'K');
+        $info_sheet->setCellValue('B25', 'API Key');
+        $info_sheet->setCellValue('C25', '');
+        $info_sheet->setCellValue('D25', 'String');
+        $info_sheet->setCellValue('E25', 'Y or N');
+        $info_sheet->setCellValue('F25', 'API Key is required for Sushi connections');
+        $info_sheet->setCellValue('G25', 'N');
+        $info_sheet->setCellValue('H25', '');
+        $info_sheet->setCellValue('A26', 'L');
+        $info_sheet->setCellValue('B26', 'Extra Arguments');
+        $info_sheet->setCellValue('C26', '');
+        $info_sheet->setCellValue('D26', 'String');
+        $info_sheet->setCellValue('E26', 'Y or N');
+        $info_sheet->setCellValue('F26', 'Extra Arguments are required for Sushi connections');
+        $info_sheet->setCellValue('G26', 'N');
+        $info_sheet->setCellValue('H26', '');
+        $info_sheet->setCellValue('A27', 'M');
+        $info_sheet->setCellValue('B27', 'Extra Args Pattern');
+        $info_sheet->setCellValue('C27', '');
+        $info_sheet->setCellValue('D27', 'String');
+        $info_sheet->setCellValue('E27', '');
+        $info_sheet->setCellValue('F27', 'ExtraArgs Pattern (e.g. &extra_cred=value&some_parm=value)');
+        $info_sheet->setCellValue('G27', 'NULL');
+        $info_sheet->setCellValue('H27', 'ignored if Extra Args is "N"');
 
         // Set row height and auto-width columns for the sheet
         for ($r = 1; $r < 28; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
-        $info_columns = array('A','B','C','D','E');
+        $info_columns = array('A','B','C','D','E','F','G','H');
         foreach ($info_columns as $col) {
             $info_sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -560,6 +621,7 @@ class GlobalProviderController extends Controller
 
         // Setup Mapping for report-COLUMN indeces to master_report ID's (ID => COL)
         $rpt_columns = array( 2 => 4, 4 => 5, 3 => 6, 1 => 7);
+        $col_defaults = array( 3 => 'N', 4 => 'N', 5 => 'N', 6 => 'Y', 7 => 'N', 8 => 'Y', 9 => 'N', 10 => 'N', 11 => 'N');
 
         // Process the input rows
         $cur_prov_id = 0;
@@ -600,19 +662,23 @@ class GlobalProviderController extends Controller
                 }
             }
 
-            // Dont store/create anything if name is still empty
-            if (strlen($_name) < 1) {
+            // Name and URL both required - skip if either is empty
+            if (strlen($_name) < 1 || strlen(trim($row[2])) < 1) {
                 $prov_skipped++;
                 continue;
             }
 
             // Enforce defaults
             $seen_provs[] = $cur_prov_id;
-            $_active = ($row[2] == 'N') ? 0 : 1;
-            $_url = ($row[3] == '') ? null : $row[3];
+            foreach ($col_defaults as $_col => $_val) {
+                if (strlen(trim($row[$_col])) < 1) {
+                    $row[$_col]  = $_val;
+                }
+            }
+            $_active = ($row[3] == 'N') ? 0 : 1;
 
             // Setup provider data as an array
-            $_prov = array('id' => $cur_prov_id, 'name' => $_name, 'is_active' => $_active, 'server_url_r5' => $_url);
+            $_prov = array('id' => $cur_prov_id, 'name' => $_name, 'is_active' => $_active, 'server_url_r5' => $row[2]);
 
             // Add reports to the array ($rpt_columns defined above)
             $reports = array();
@@ -628,7 +694,7 @@ class GlobalProviderController extends Controller
             }
             $_prov['connectors'] = $connectors;
             // Extra argument pattern gets saved only if ExtraArgs column = 'Y'
-            if ($row[10] == 'Y') {
+            if ($row[11] == 'Y') {
                 $_prov['extra_pattern'] = $row[12];
             }
 

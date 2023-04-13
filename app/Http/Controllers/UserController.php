@@ -102,6 +102,7 @@ class UserController extends Controller
                 // Setup array for this user data
                 $user = $rec->toArray();
                 $user['status'] = ($rec->is_active == 1) ? 'Active' : 'Inactive';
+                $user['fiscalYr'] = ($rec->fiscalYr) ? $rec->fiscalYr : config('ccplus.fiscalYr');
                 $user['roles'] = $role_ids;
 
                 // Set role_string to hold user's highest access right (other than viewer)
@@ -235,6 +236,7 @@ class UserController extends Controller
         $new_user['permission'] = $max_role;
         $new_user['role_string'] = $_roles;
         $new_user['roles'] = $new_roles;
+        $new_user['fiscalYr'] = ($user->fiscalYr) ? $user->fiscalYr : config('ccplus.fiscalYr');
 
         return response()->json(['result' => true, 'msg' => 'User successfully created', 'user' => $new_user]);
     }
@@ -271,6 +273,7 @@ class UserController extends Controller
             return response()->json(['result' => false, 'msg' => 'Edit (403) - Forbidden']);
         }
         $user->roles = $user->roles()->pluck('role_id')->all();
+        $user->fiscalYr = ($user->fiscalYr) ? $user->fiscalYr : config('ccplus.fiscalYr');
 
         // Admin gets a select-box of institutions, otherwise just the users' inst
         if ($thisUser->hasRole('Admin')) {
@@ -320,6 +323,15 @@ class UserController extends Controller
         }
         $input = array_except($input, array('confirm_pass'));
 
+        // check fiscalYr - save NULL if same as global setting
+        if (isset($input['fiscalYr'])) {
+            $months = array('January','February','March','April','May','June','July','August','September','October','November',
+                            'December');
+            if (!in_array($input['fiscalYr'], $months) || $input['fiscalYr'] == config('ccplus.fiscalYr')) {
+                $input['fiscalYr'] = null;
+            }
+        }
+
         // Only admins can change inst_id
         if (!$thisUser->hasRole("Admin")) {
             $input['inst_id'] = $thisUser->inst_id;
@@ -358,7 +370,8 @@ class UserController extends Controller
         $updated_user = $user->toArray();
         $updated_user['inst_name'] = $user->institution->name;
         $updated_user['status'] = ($user->is_active == 1) ? 'Active' : 'Inactive';
-        $updated_user['roles'] = $user->roles->toArray();
+        $updated_user['roles'] = $user->roles()->pluck('role_id')->all();
+        $updated_user['fiscalYr'] = ($user->fiscalYr) ? $user->fiscalYr : config('ccplus.fiscalYr');
 
         // Set role_string to hold user's highest access right (other than viewer)
         $access_role_ids = $user->roles->where('id','<>',$viewer_role_id)->pluck('id')->toArray();

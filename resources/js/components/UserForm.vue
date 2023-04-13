@@ -22,10 +22,14 @@
               <td>Name </td>
   	          <td>{{ mutable_user.name }}</td>
   	        </tr>
-	        <tr>
-	          <td>Email </td>
-	          <td>{{ mutable_user.email }}</td>
-	        </tr>
+  	        <tr>
+  	          <td>Email </td>
+  	          <td>{{ mutable_user.email }}</td>
+  	        </tr>
+            <tr>
+              <td>Fiscal Year Begins</td>
+              <td>{{ mutable_user.fiscalYr }}</td>
+            </tr>
             <tr>
               <td>Roles</td>
               <td>
@@ -48,14 +52,18 @@
         ></v-select>
         <v-text-field v-else outlined readonly label="Institution" :value="inst_name"></v-text-field>
         <input type="hidden" id="inst_id" name="inst_id" :value="user.inst_id">
-        <v-text-field outlined name="password" label="Password" id="password" :type="pw_show ? 'text' : 'password'"
-                      :append-icon="pw_show ? 'mdi-eye' : 'mdi-eye-off'" @click:append="pw_show = !pw_show"
+        <v-text-field outlined name="password" label="Password Reset" id="password" :type="pw_show ? 'text' : 'password'"
+                      :append-icon="pw_show ? 'mdi-eye-off' : 'mdi-eye'" @click:append="pw_show = !pw_show"
                       v-model="form.password" :rules="passwordRules">
         </v-text-field>
-        <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
-                      :type="pwc_show ? 'text' : 'password'" :append-icon="pwc_show ? 'mdi-eye' : 'mdi-eye-off'"
+        <v-text-field outlined name="confirm_pass" label="Password Reset Confirmation" id="confirm_pass"
+                      :type="pwc_show ? 'text' : 'password'" :append-icon="pwc_show ? 'mdi-eye-off' : 'mdi-eye'"
                       @click:append="pwc_show = !pwc_show" v-model="form.confirm_pass" :rules="passwordRules">
         </v-text-field>
+        <div class="field-wrapper">
+          <v-subheader v-text="'Fiscal Year Begins'"></v-subheader>
+          <v-select :items="months" v-model="form.fiscalYr" label="Month"></v-select>
+        </div>
         <div v-if="is_manager || is_admin" class="field-wrapper">
           <v-subheader v-text="'User Roles'"></v-subheader>
           <v-select :items="all_roles" v-model="form.roles" item-text="name" item-value="id" label="User Role(s)"
@@ -94,20 +102,21 @@
                 failure: '',
                 status: '',
                 statusvals: ['Inactive','Active'],
-				showForm: false,
+                showForm: false,
                 inst_name: '',
                 email: '',
                 password: '',
                 pw_show: false,
                 pwc_show: false,
                 mutable_user: { ...this.user },
+                months: ['January','February','March','April','May','June','July','August','September','October','November',
+                         'December'],
                 emailRules: [
                     v => !!v || 'E-mail is required',
-                    v => /.+@.+/.test(v) || 'E-mail must be valid'
+                    v => ( /.+@.+/.test(v) || v=='Administrator') || 'E-mail must be valid'
                 ],
                 passwordRules: [
-                    v => !!v || 'Password is required',
-                    v => v.length >= 8 || 'Password must be at least 8 characters'
+                    v => (v || '        ' ).length >= 8 || 'Password must be at least 8 characters'
                 ],
                 form: new window.Form({
                     name: this.user.name,
@@ -116,7 +125,8 @@
                     email: this.user.email,
                     password: '',
                     confirm_pass: '',
-                    roles: [ ...this.user.roles]
+                    roles: [ ...this.user.roles],
+                    fiscalYr: this.user.fiscalYr,
                 })
             }
         },

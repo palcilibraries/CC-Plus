@@ -153,18 +153,25 @@
               <div v-else>
                 <v-text-field outlined readonly label="Institution" :value="inst_name"></v-text-field>
               </div>
-              <v-text-field outlined name="password" label="Password" id="password" type="password"
-                            v-model="form.password" :rules="passwordRules">
+              <v-text-field outlined name="password" label="Reset Password" id="password" :rules="passwordRules"
+                            :type="pw_show ? 'text' : 'password'" :append-icon="pw_show ? 'mdi-eye-off' : 'mdi-eye'"
+                            @click:append="pw_show = !pw_show" v-model="form.password">
               </v-text-field>
-              <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
-                            type="password" v-model="form.confirm_pass" :rules="passwordRules">
+              <v-text-field outlined name="confirm_pass" label="Reset Password Confirmation" id="confirm_pass"
+                            :rules="passwordRules" :type="pwc_show ? 'text' : 'password'"
+                            :append-icon="pwc_show ? 'mdi-eye-off' : 'mdi-eye'" @click:append="pwc_show = !pwc_show"
+                            v-model="form.confirm_pass">
               </v-text-field>
+              <div class="field-wrapper">
+                <v-subheader v-text="'Fiscal Year Begins'"></v-subheader>
+                <v-select :items="months" v-model="form.fiscalYr" label="Month"></v-select>
+              </div>
               <div v-if="is_manager || is_admin" class="field-wrapper">
       	        <v-subheader v-text="'User Roles'"></v-subheader>
-        	    <v-select :items="allowed_roles" v-model="form.roles" :value="current_user.roles" item-text="name"
-         	              item-value="id" label="User Role(s)" multiple chips hint="Define roles for user"
-         	              persistent-hint
-        	    ></v-select>
+                <v-select :items="allowed_roles" v-model="form.roles" :value="current_user.roles" item-text="name"
+                          item-value="id" label="User Role(s)" multiple chips hint="Define roles for user"
+                          persistent-hint
+                ></v-select>
                 <div style="display: inline-block;">
                   Roles<br>
                   Admin: can create and manage settings for all users, institutions, and providers<br>
@@ -180,7 +187,7 @@
               <v-btn small color="primary" type="button" @click="formSubmit">Save User</v-btn>
             </v-col>
             <v-col class="d-flex">
-              <v-btn class='btn' x-small type="button" color="primary" @click="userDialog=false">Cancel</v-btn>
+              <v-btn small color="primary" type="button" @click="userDialog=false">Cancel</v-btn>
             </v-col>
           </v-card-actions>
         </v-form>
@@ -253,12 +260,15 @@
         mutable_institutions: [ ...this.institutions ],
         mutable_filters: this.filters,
         current_user: {},
+        pw_show: false,
+        pwc_show: false,
         dialogType: 'create',
         userDialog: false,
         instDialog: false,
         importDialog: false,
         search: '',
         status_options: ['ALL', 'Active', 'Inactive'],
+        months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
         form_key: 1,
         headers: [
           { text: 'User Name ', value: 'name' },
@@ -271,7 +281,7 @@
         ],
         emailRules: [
             v => !!v || 'E-mail is required',
-            v => /.+@.+/.test(v) || 'E-mail must be valid'
+            v => ( /.+@.+/.test(v) || v=='Administrator') || 'E-mail must be valid'
         ],
         form: new window.Form({
             name: '',
@@ -280,6 +290,7 @@
             email: '',
             password: '',
             confirm_pass: '',
+            fiscalYr: '',
             roles: []
         }),
         instForm: new window.Form({
@@ -420,6 +431,7 @@
             this.form.password = '';
             this.form.confirm_pass = '';
             this.form.roles = this.current_user.roles;
+            this.form.fiscalYr = this.current_user.fiscalYr;
             this.userDialog = true;
             this.importDialog = false;
         },

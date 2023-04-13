@@ -91,30 +91,44 @@
         </v-row>
         <v-row class="d-flex ma-0 pa-0" no-gutters>
           <v-col class="d-flex ma-0 pa-0">
-            <form method="POST" action="" @submit.prevent="userFormSubmit" @keydown="userForm.errors.clear($event.target.name)"
-                  class="in-page-form">
-              <v-text-field v-model="userForm.name" label="Name" outlined></v-text-field>
-              <v-text-field outlined required name="email" label="Email" type="email"
-                            v-model="userForm.email" :rules="emailRules">
-              </v-text-field>
-              <v-switch v-model="userForm.is_active" label="Active?"></v-switch>
-              <v-text-field outlined name="password" label="Password" id="password" type="password"
-                            v-model="userForm.password" :rules="passwordRules">
-              </v-text-field>
-              <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
-                            type="password" v-model="userForm.confirm_pass" :rules="passwordRules">
-              </v-text-field>
-      	      <div class="field-wrapper">
-      	        <v-subheader v-text="'User Roles'"></v-subheader>
-                  <v-select :items="all_roles" v-model="userForm.roles" item-text="name" item-value="id" label="User Role(s)"
-                            multiple chips hint="Define roles for user" persistent-hint
-      	        ></v-select>
-              </div>
-              <p>&nbsp;</p>
-              <v-btn small color="primary" type="submit" :disabled="userForm.errors.any()">{{ userSubmitLabel}}</v-btn>
-              <!-- <v-btn small color="primary" type="submit" :disabled="userForm.errors.any()">Save New User</v-btn> -->
-              <v-btn small type="button" @click="hideUserForm">cancel</v-btn>
-            </form>
+            <v-form class="in-page-form" :key="'UFrm'+form_key">
+              <v-card-text>
+                <div v-if="user_failure" class="status-message">
+                  <span v-if="user_failure" class="fail" role="alert" v-text="user_failure"></span>
+                </div>
+                <v-text-field v-model="userForm.name" label="Name" outlined></v-text-field>
+                <v-text-field outlined required name="email" label="Email" type="email"
+                              v-model="userForm.email" :rules="emailRules">
+                </v-text-field>
+                <v-switch v-model="userForm.is_active" label="Active?"></v-switch>
+                <v-text-field outlined name="password" label="Password" id="password" :type="pw_show ? 'text' : 'password'"
+                              :append-icon="pw_show ? 'mdi-eye-off' : 'mdi-eye'" @click:append="pw_show = !pw_show"
+                              v-model="userForm.password" :rules="passwordRules">
+                </v-text-field>
+                <v-text-field outlined name="confirm_pass" label="Confirm Password" id="confirm_pass"
+                              :append-icon="pwc_show ? 'mdi-eye-off' : 'mdi-eye'" @click:append="pwc_show = !pwc_show"
+                              :type="pwc_show ? 'text' : 'password'" v-model="userForm.confirm_pass" :rules="passwordRules">
+                </v-text-field>
+                <div class="field-wrapper">
+                  <v-subheader v-text="'Fiscal Year Begins'"></v-subheader>
+                  <v-select :items="months" v-model="userForm.fiscalYr" label="Month"></v-select>
+                </div>
+        	      <div class="field-wrapper">
+        	        <v-subheader v-text="'User Roles'"></v-subheader>
+                    <v-select :items="all_roles" v-model="userForm.roles" item-text="name" item-value="id" label="User Role(s)"
+                              multiple chips hint="Define roles for user" persistent-hint
+        	        ></v-select>
+                </div>
+              </v-card-text>
+              <v-card-actions>
+                <v-col class="d-flex">
+                  <v-btn small color="primary" type="button" @click="userFormSubmit">{{ userSubmitLabel}}</v-btn>
+                </v-col>
+                <v-col class="d-flex">
+                  <v-btn small color="primary" type="button" @click="hideUserForm">Cancel</v-btn>
+                </v-col>
+              </v-card-actions>
+            </v-form>
           </v-col>
         </v-row>
       </div>
@@ -285,6 +299,8 @@
                 failure: '',
                 sushiSuccess: '',
                 sushiFailure: '',
+                user_failure: '',
+                form_key: 1,
                 status: '',
                 statusvals: ['Inactive','Active'],
                 showInstForm: false,
@@ -309,6 +325,11 @@
                 }),
                 new_provider: { 'connectors': [] },
                 current_user: {},
+                pw_show: false,
+                pwc_show: false,
+                dialogType: 'create',
+                months: ['January','February','March','April','May','June','July','August','September','October','November',
+                         'December'],
                 userHeaders: [
                   { text: 'Name ', value: 'name' },
                   { text: 'Permission Level', value: '' },
@@ -317,11 +338,7 @@
                 ],
                 emailRules: [
                     v => !!v || 'E-mail is required',
-                    v => /.+@.+/.test(v) || 'E-mail must be valid'
-                ],
-                passwordRules: [
-                    v => !!v || 'Password is required',
-                    v => v.length >= 8 || 'Password must be at least 8 characters'
+                    v => ( /.+@.+/.test(v) || v=='Administrator') || 'E-mail must be valid'
                 ],
                 userForm: new window.Form({
                     name: '',
@@ -330,6 +347,7 @@
                     email: '',
                     password: '',
                     confirm_pass: '',
+                    fiscalYr: '',
                     roles: []
                 }),
                 sushiForm: new window.Form({
@@ -376,6 +394,7 @@
                 this.success = '';
                 this.sushiSuccess = '';
                 this.sushiFailure = '';
+                this.user_failure = '';
                 this.userInputForm = 'edit';
                 this.userSubmitLabel = 'Update User';
                 this.current_user = this.mutable_users[this.mutable_users.findIndex(u=> u.id == userid)];
@@ -383,6 +402,7 @@
                 this.userForm.inst_id = this.mutable_inst.id;
                 this.userForm.is_active = this.current_user.is_active;
                 this.userForm.email = this.current_user.email;
+                this.userForm.fiscalYr = this.current_user.fiscalYr;
                 this.userForm.password = '';
                 this.userForm.confirm_pass = '';
                 this.userForm.roles = this.current_user.roles;
@@ -392,12 +412,14 @@
                 this.success = '';
                 this.sushiSuccess = '';
                 this.sushiFailure = '';
+                this.user_failure = '';
                 this.userInputForm = 'create';
                 this.userSubmitLabel = 'Save New User';
                 this.userForm.name = '';
                 this.userForm.inst_id = this.mutable_inst.id;
                 this.userForm.is_active = 1;
                 this.userForm.email = '';
+                this.userForm.fiscalYr = this.institution.default_fiscalYr;
                 this.userForm.password = '';
                 this.userForm.confirm_pass = '';
                 this.userForm.roles = [1];
@@ -476,13 +498,18 @@
             userFormSubmit (event) {
                 this.success = '';
                 this.failure = '';
+                this.user_failure = '';
                 this.sushiSuccess = '';
                 this.sushiFailure = '';
                 if (this.userForm.password != this.userForm.confirm_pass) {
-                    this.failure = 'Passwords do not match! Please re-enter';
+                    this.user_failure = 'Passwords do not match! Please re-enter';
                     return;
                 }
                 if (this.userInputForm == 'edit') {
+                    if  (this.userForm.password.length>0 && this.userForm.password.length<8) {
+                        this.user_failure = 'Password must be at least 8 characters';
+                        return;
+                    }
                     this.userForm.patch('/users/'+this.current_user.id)
                         .then((response) => {
                             if (response.result) {
@@ -491,14 +518,17 @@
                                 Object.assign(this.mutable_users[idx], response.user);
                                 this.success = response.msg;
                             } else {
-                                this.failure = response.msg;
+                                this.user_failure = response.msg;
                             }
                         });
                 } else if (this.userInputForm == 'create') {
+                    if  (this.userForm.password.length<8) {
+                        this.user_failure = 'Password must be at least 8 characters';
+                        return;
+                    }
                     this.userForm.post('/users')
                         .then((response) => {
                             if (response.result) {
-                                this.failure = '';
                                 this.success = response.msg;
                                 // Add the new user to the mutable array and re-sort it
                                 this.mutable_users.push(response.user);
@@ -508,8 +538,7 @@
                                   return 0;
                                 });
                             } else {
-                                this.success = '';
-                                this.failure = response.msg;
+                                this.user_failure = response.msg;
                             }
                         });
                 }
@@ -708,7 +737,17 @@
             },
         },
         computed: {
-          ...mapGetters(['is_manager', 'is_admin'])
+          ...mapGetters(['is_manager', 'is_admin']),
+          passwordRules() {
+              if (this.userInputForm == 'create') {
+                  return [ v => !!v || 'Password is required',
+                           v => v.length >= 8 || 'Password must be at least 8 characters'
+                         ];
+              // formSubmit handles password validation for edit
+              } else {
+                  return [];
+              }
+          }
         },
         mounted() {
 

@@ -197,6 +197,7 @@ class InstitutionController extends Controller
         // Get most recent harvest and set can_delete flag
         $last_harvest = $sushi_settings->max('last_harvest');
         $institution['can_delete'] = ($id > 1 && is_null($last_harvest)) ? true : false;
+        $institution['default_fiscalYr'] = config('ccplus.fiscalYr');
 
         // Get institution users and map in max-role as "permission"
         $users = array();
@@ -207,10 +208,12 @@ class InstitutionController extends Controller
             if ($max_role == "Manager") $max_role = "Local Admin";
             if ($max_role == "Viewer") $max_role = "Consortium Viewer";
             $new_u['permission'] = $max_role;
+            $new_u['fiscalYr'] = ($_u->fiscalYr) ? $_u->fiscalYr : config('ccplus.fiscalYr');
             $users[] = $new_u;
         }
         $_name = array_column($users, "name");
         array_multisort($_name, SORT_ASC, $users);
+        $fiscalYr = config('ccplus.fiscalYr');
 
         // Related models we'll be passing
         $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();

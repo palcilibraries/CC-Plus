@@ -21,7 +21,7 @@ class CreateUsersTable extends Migration
             $table->string('password');
             $table->unsignedInteger('inst_id');
             $table->text('phone')->nullable();
-            $table->string('fiscalYr',7)->nullable();
+            $table->string('fiscalYr',10)->nullable();
             $table->boolean('optin_alerts')->default(0);
             $table->boolean('is_active')->default(1);
             $table->boolean('password_change_required')->default(0);

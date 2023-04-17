@@ -198,3 +198,48 @@ main #app {
     }
   }
 }
+//Login-page-specific styles
+.loginContainer {
+  width: 100%;
+	height: 100%;
+	display: flex;
+  justify-content: center;
+	margin-left: 0;
+	margin-right: 0;
+	background-color: #9fc5f8;
+}
+.loginBox {
+	display: flex;
+	overflow: auto;
+	margin-top: 100px;
+  width: 400px;
+	height: 440px;
+	border-radius: 5px;
+	background-color: #fff;
+	border: 2px solid #000000;
+}
+.img-top {
+  display: flex;
+	width: 100%;
+  flex-shrink: 0;
+	justify-content: center !important;
+}
+.login-form {
+	width: 100%;
+	margin-top: 1em;
+	margin-bottom: 1em;
+	margin-left: 2em;
+	margin-right: 2em;
+	padding: 1em;
+}
+.v-btn.login-primary {
+	background-color: #6fa8dc !important;
+	// background-color: #006699 !important;
+	border: #006699 !important;
+	color: #000 !important;
+}
+i.size-16 {
+  width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+}

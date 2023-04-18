@@ -93,6 +93,7 @@ class LoginController extends Controller
     {
         $user->last_login = now();
         $user->save();
+        session()->flash("success","");
         if ($user->email == config('ccplus.global_admin')) {
             return redirect("/global/instances");
         } else {

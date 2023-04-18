@@ -54,6 +54,10 @@ if ($consortia->count() == 1 ) {
         </v-col>
       </v-row>
     @endif
+    @if (Session::has('success') || Session::has('error'))
+      <script type="text/javascript"> toggleVisibility(); </script>
+    @endif
+    <div class="login-form-fields" no-gutters>
     <v-row class="d-flex mt-4" no-gutters>
       <v-col class="d-flex pa-0 justify-start" cols="12">
         @if( $preset_key == "" )
@@ -109,15 +113,18 @@ if ($consortia->count() == 1 ) {
       </v-col>
     </v-row>
     <v-row class="d-flex mt-4 align-center" no-gutters>
-      <v-col class="d-flex pa-1 justify-start" cols="6">
-        <v-btn x-small class="btn login-primary" type="submit">{{ __('Login') }}</v-btn>
+      <v-col class="d-flex justify-space-between">
+        <v-btn small class="btn login-primary" type="submit">{{ __('Login') }}</v-btn>
       </v-col>
-      <v-col class="d-flex pa-1 justify-end" cols="6">
+      <v-col class="d-flex justify-space-between">
         @if (Route::has('password.forgot.get'))
-          <v-btn x-small type="submit">{{ __('Forgot Your Password?') }}</v-btn>
+            <a href="{{ route('password.forgot.get') }}">
+              <v-btn small class="btn">{{ __('Forgot Your Password?') }}</v-btn>
+            </a>
         @endif
       </v-col>
     </v-row>
+    </div>
   </form>
 </div>
 @endsection

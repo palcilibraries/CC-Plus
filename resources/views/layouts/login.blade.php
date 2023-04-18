@@ -16,6 +16,7 @@
     <!-- Styles -->
     <link rel="stylesheet" href="{{ asset('/css/app.css') }}">
 </head>
+<!-- loginContainer has opacity:0  -->
 <body class="loginContainer">
     <v-app>
         @yield('content')
@@ -23,5 +24,9 @@
     <!-- Scripts -->
     <script src="{{ asset('js/app.js') }}"></script>
     @stack('scripts')
+    <!-- reveal the page -->
+    <script>
+      window.onload = function() {setTimeout(function(){document.body.style.opacity="100";},500);};
+    </script>
 </body>
 </html>

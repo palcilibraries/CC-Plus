@@ -47,16 +47,6 @@ if ($consortia->count() == 1 ) {
     <div class="img-top" no-gutters>
       <img src="/images/CC_Plus_Logo.png" alt="CC plus" height="50px" width="103px" />
     </div>
-    @if (Session::has('error'))
-      <v-row class="d-flex my-1" no-gutters>
-        <v-col class="d-flex pa-0 alert text-danger" cols="12" role="alert">
-          {{ Session::get('error') }}
-        </v-col>
-      </v-row>
-    @endif
-    @if (Session::has('success') || Session::has('error'))
-      <script type="text/javascript"> toggleVisibility(); </script>
-    @endif
     <div class="login-form-fields" no-gutters>
     <v-row class="d-flex mt-4" no-gutters>
       <v-col class="d-flex pa-0 justify-start" cols="12">
@@ -127,4 +117,9 @@ if ($consortia->count() == 1 ) {
     </div>
   </form>
 </div>
+@if (Session::has('error'))
+  <div class="login-errors" no-gutters>
+    <span class="d-flex mx-1 my-2 text-danger">{{ Session::get('error') }}</span>
+  </div>
+@endif
 @endsection

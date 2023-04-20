@@ -1,16 +1,8 @@
 @extends('layouts.app')
 @section('content')
-<div class="row">
-  <div class="col-lg-12 margin-tb">
-    <div class="pull-left">
-      <h3>Global Providers</h3>
-    </div>
-  </div>
-</div>
-<v-app>
-  <global-provider-data-table :providers="{{ json_encode($providers) }}"
-                              :master_reports="{{ json_encode($masterReports) }}"
-                              :all_connectors="{{ json_encode($all_connectors) }}"
-  ></global-provider-data-table>
-</v-app>
+<div class="d-flex pl-2"><h3>Global Providers</h3></div>
+<global-provider-data-table :providers="{{ json_encode($providers) }}"
+                            :master_reports="{{ json_encode($masterReports) }}"
+                            :all_connectors="{{ json_encode($all_connectors) }}"
+></global-provider-data-table>
 @endsection

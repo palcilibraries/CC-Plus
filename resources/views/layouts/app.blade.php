@@ -17,26 +17,35 @@
     <link rel="stylesheet" href="{{ asset('/css/app.css') }}">
 </head>
 
-<body class="container-fluid">
-    <v-app id="app">
-        <!-- Skip <topnav> if auth()->user() is undefined... -->
-        @if ( auth()->check() )
-            @if ( auth()->user()->hasRole('GlobalAdmin') )
-                <topnav :user="{{ json_encode(App\User::with('roles')->where('id',auth()->id())->first()->toArray()) }}"
-                        :consortia="{{ json_encode(\App\Consortium::get(['name','ccp_key'])->toArray() ) }}"
-                        :ccp_key="{{ json_encode( Session::get('ccp_con_key') ) }}"
-                ></topnav>
-            @else
-                <topnav :user="{{ json_encode(App\User::with('roles')->where('id',auth()->id())->first()->toArray()) }}"
-                ></topnav>
-            @endif
-        @endif
-        <main class="main_content">
-            @yield('content')
-        </main>
-    </v-app>
-    <!-- Scripts -->
-    <script src="{{ asset('js/app.js') }}"></script>
-    @stack('scripts')
+<!-- <body class="container-fluid"> -->
+<body class="body-container">
+  <v-app id="app" class="app-container">
+    @if ( auth()->check() )
+      @if ( auth()->user()->hasRole('GlobalAdmin') )
+        <topnav :user="{{ json_encode(App\User::with('roles')->where('id',auth()->id())->first()->toArray()) }}"
+                :consortia="{{ json_encode(\App\Consortium::get(['name','ccp_key'])->toArray() ) }}"
+                :ccp_key="{{ json_encode( Session::get('ccp_con_key') ) }}"
+        ></topnav>
+      @else
+        <topnav :user="{{ json_encode(App\User::with('roles')->where('id',auth()->id())->first()->toArray()) }}"
+        ></topnav>
+      @endif
+    @endif
+    <main class="main_content">
+      @yield('content')
+    </main>
+    <!-- <hr class="footer"> -->
+    <div class="footer-container">
+      <div class="footer_content">
+        <a href='https://github.com/palcilibraries/CC-Plus'>
+          <img src="/images/CC_Plus_Logo.png" alt="CC plus" height="45px" width="90px" />
+        </a>
+      </div>
+    </div>
+  </v-app>
+
+  <!-- Scripts -->
+  <script src="{{ asset('js/app.js') }}"></script>
+  @stack('scripts')
 </body>
 </html>

@@ -56,7 +56,10 @@ form .v-subheader,
 	margin-bottom: 1em;
 }
 .v-application--wrap {
-	display: block !important;
+	min-height: fit-content !important;
+	max-height:970px !important;
+	margin-left: 10px;
+	margin-right:10px;
 }
 main #app {
 	padding: 1em;
@@ -172,10 +175,21 @@ main #app {
 }
 /* new class - LSR: 11/28/22 */
 .main_content {
-  margin: 0 auto;
-  max-width: 1366px;
-  padding-top: 1.5rem !important;
-  padding-bottom: 1.5rem !important;
+	width: 1120px;
+	height: 800px;
+	overflow: auto;
+	padding: 0.5rem 1rem;
+}
+.footer_content {
+	width: 90%;
+	display: flex;
+	flex-shrink: 0;
+	justify-content: space-around;
+	overflow: auto;
+	margin-top: 10px;
+	padding-top: 10px;
+	padding-bottom: 10px;
+	border-top: 1px solid;
 }
 .dt_action {
   display: flex;
@@ -229,7 +243,7 @@ main #app {
 	border-bottom-left-radius: 5px;
 	border-bottom-right-radius: 5px;
 	background-color: #fff;
-	border: 2px solid #000000;
+	border: 1px solid #000000;
 }
 .img-top {
   display: flex;
@@ -261,4 +275,34 @@ i.size-16 {
   width: 16px;
   height: 16px;
   line-height: 16px;
+}
+.body-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.navbar-items {
+	background-color: #fff;
+	border: 1px solid #000000;
+}
+.nav-select {
+  padding-right: 0;
+  padding-left: 0;
+	align-items: center !important;
+}
+.app-container {
+  width: 1160px !important;
+	height:900px !important;
+}
+.footer-container {
+	margin: 0px;
+	display: flex;
+	flex-shrink: 0;
+	height: 60px;
+	width: 1140px;
+	padding-top: 20px;
+	padding-bottom: 20px;
+	background-color: #fff;
+	justify-content: center !important;
+	align-items: center !important;
 }

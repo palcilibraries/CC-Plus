@@ -1,7 +1,6 @@
 <template>
   <div>
-
-    <v-row class="d-flex mb-1 align-end">
+    <v-row class="d-flex mb-1 align-end" no-gutters>
       <v-col class="d-flex px-2" cols="3">
         <v-btn small color="primary" type="button" @click="importForm" class="section-action">
           Import Sushi Settings

@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid>
+  <div>
     <v-row class="d-flex align-center" no-gutters>
       <v-col><h3 class="d-flex section-title">Harvest Details</h3></v-col>
       <v-col class="d-flex justify-center harvest-status">Status: {{ mutable_harvest.status }}</v-col>
@@ -37,41 +37,41 @@
       <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </v-row>
     <v-row no-gutters>
-      <v-col cols="2" sm="1">Institution</v-col>
-      <v-col cols="4" sm="2">
+      <v-col class="d-flex px-4 justify-end" cols="2">Institution:</v-col>
+      <v-col class="d-flex px-4 justify-start" cols="4">
         <a :href="'/institutions/'+mutable_harvest.sushi_setting.institution.id">
             {{ mutable_harvest.sushi_setting.institution.name }}
         </a>
       </v-col>
     </v-row>
     <v-row no-gutters>
-      <v-col cols="2" sm="1">Provider</v-col>
-      <v-col cols="4" sm="2">
+      <v-col class="d-flex pr-4 justify-end" cols="2">Provider:</v-col>
+      <v-col class="d-flex pl-4 justify-start" cols="4">
         <a :href="'/providers/'+mutable_harvest.sushi_setting.provider.id">
           {{ mutable_harvest.sushi_setting.provider.name }}
         </a>
       </v-col>
     </v-row>
     <v-row no-gutters>
-      <v-col cols="2" sm="1">Report</v-col>
-      <v-col cols="4" sm="2">{{ mutable_harvest.report.name }}</v-col>
+      <v-col class="d-flex pr-4 justify-end" cols="2">Report:</v-col>
+      <v-col class="d-flex pl-4 justify-start" cols="4">{{ mutable_harvest.report.name }}</v-col>
     </v-row>
     <v-row no-gutters>
-      <v-col cols="2" sm="1">Usage Month</v-col>
-      <v-col cols="4" sm="2">{{ mutable_harvest.yearmon }}</v-col>
+      <v-col class="d-flex pr-4 justify-end" cols="2">Usage Month:</v-col>
+      <v-col class="d-flex pl-4 justify-start" cols="4">{{ mutable_harvest.yearmon }}</v-col>
     </v-row>
     <v-row no-gutters>
-      <v-col cols="2" sm="1">Attempts</v-col>
-      <v-col cols="2" sm="1">{{ mutable_harvest.attempts }}</v-col>
+      <v-col class="d-flex pr-4 justify-end" cols="2">Attempts:</v-col>
+      <v-col class="d-flex pl-4 justify-start" cols="2">{{ mutable_harvest.attempts }}</v-col>
     </v-row>
-    <v-row v-if="mutable_harvest.rawfile" no-gutters class="d-flex align-center">
-      <v-col cols="2" sm="1">Raw Data</v-col>
-      <v-col cols="2" sm="1">
+    <v-row no-gutters>
+      <v-col class="d-flex pr-4 justify-end" cols="2">Raw Data</v-col>
+      <v-col v-if="mutable_harvest.rawfile" class="d-flex pl-4 justify-start" cols="4">
         <a :href="'/harvests/'+mutable_harvest.id+'/raw'"><v-btn color="primary" x-small>download</v-btn></a>
       </v-col>
-    </v-row>
-    <v-row v-else class="d-flex my-2 align-center">
-      <v-col cols="8" sm="4"><strong>Raw Data is not available</strong></v-col>
+      <v-col v-else class="d-flex pl-4 justify-start" cols="4">
+        <strong><font color="red">Not available</font></strong></v-col>
+      </v-col>
     </v-row>
     <v-dialog v-model="errorDialog" max-width="500px">
       <v-card>
@@ -87,7 +87,7 @@
         </v-card-text>
       </v-card>
     </v-dialog>
-  </v-container>
+  </div>
 </template>
 
 <script>

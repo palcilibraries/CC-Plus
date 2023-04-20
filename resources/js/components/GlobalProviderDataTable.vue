@@ -1,47 +1,45 @@
 <template>
   <div>
-    <div>
-      <v-row class="d-flex mb-1 align-end">
-        <v-col class="d-flex px-2" cols="3">
-          <v-btn small color="primary" @click="createForm()">Add a Global Provider</v-btn>
-        </v-col>
-        <v-col class="d-flex px-2" cols="3">
-          <v-btn small color="primary" @click="enableImportForm">Import Providers</v-btn>
-        </v-col>
-        <v-col class="d-flex px-2" cols="3">
-          <a @click="doExport">
-            <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export providers to Excel
-          </a>
-        </v-col>
-        <v-col class="d-flex px-2" cols="3">
-          <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
-          ></v-text-field>
-        </v-col>
-      </v-row>
-      <div class="status-message" v-if="success || failure">
-        <span v-if="success" class="good" role="alert" v-text="success"></span>
-        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-      </div>
-      <v-data-table :headers="headers" :items="mutable_providers" item-key="prov_id" :options="mutable_options"
-                    :search="search" @update:options="updateOptions" :key="dtKey">
-        <template v-slot:item.action="{ item }">
-          <span class="dt_action">
-            <v-btn icon @click="editForm(item.id)">
-              <v-icon title="Edit Provider">mdi-cog-outline</v-icon>
-            </v-btn>
-            <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
-              <v-icon title="Delete Provider">mdi-trash-can-outline</v-icon>
-            </v-btn>
-            <v-btn v-else icon class="pl-4">
-              <v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon>
-            </v-btn>
-          </span>
-        </template>
-        <v-alert slot="no-results" :value="true" color="error" icon="warning">
-          Your search for "{{ search }}" found no results.
-        </v-alert>
-      </v-data-table>
+    <v-row class="d-flex mb-1 align-end" no-gutters>
+      <v-col class="d-flex px-2" cols="3">
+        <v-btn small color="primary" @click="createForm()">Add a Global Provider</v-btn>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <v-btn small color="primary" @click="enableImportForm">Import Providers</v-btn>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <a @click="doExport">
+          <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export providers to Excel
+        </a>
+      </v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
+        ></v-text-field>
+      </v-col>
+    </v-row>
+    <div class="status-message" v-if="success || failure">
+      <span v-if="success" class="good" role="alert" v-text="success"></span>
+      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
+    <v-data-table :headers="headers" :items="mutable_providers" item-key="prov_id" :options="mutable_options"
+                  :search="search" @update:options="updateOptions" :key="dtKey">
+      <template v-slot:item.action="{ item }">
+        <span class="dt_action">
+          <v-btn icon @click="editForm(item.id)">
+            <v-icon title="Edit Provider">mdi-cog-outline</v-icon>
+          </v-btn>
+          <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
+            <v-icon title="Delete Provider">mdi-trash-can-outline</v-icon>
+          </v-btn>
+          <v-btn v-else icon class="pl-4">
+            <v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon>
+          </v-btn>
+        </span>
+      </template>
+      <v-alert slot="no-results" :value="true" color="error" icon="warning">
+        Your search for "{{ search }}" found no results.
+      </v-alert>
+    </v-data-table>
     <v-dialog v-model="providerImportDialog" persistent max-width="1200px">
       <v-card>
         <v-card-title>Import Providers</v-card-title>

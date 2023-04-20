@@ -1,7 +1,6 @@
 <template>
   <div>
-
-    <v-row class="d-flex mb-1 align-end">
+    <v-row class="d-flex mb-1 align-end" no-gutters>
       <v-col class="d-flex px-2" cols="3">
         <v-btn small color="primary" @click="createForm">Create a User</v-btn>
       </v-col>
@@ -18,7 +17,7 @@
         ></v-text-field>
       </v-col>
     </v-row>
-    <v-row class="d-flex ma-0">
+    <v-row class="d-flex ma-0" no-gutters>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
         <div v-if="mutable_filters['inst'] != null" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;

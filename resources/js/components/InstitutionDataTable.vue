@@ -1,18 +1,18 @@
 <template>
   <div>
-    <v-row class="d-flex mb-1 align-end">
-      <v-col class="d-flex px-2" cols="3">
+    <v-row class="d-flex mb-1 align-end" no-gutters>
+      <v-col class="d-flex px-1" cols="3">
         <v-btn small color="primary" @click="createForm">Create an Institution</v-btn>
       </v-col>
-      <v-col class="d-flex px-2" cols="3">
+      <v-col class="d-flex px-1" cols="3">
         <v-btn small color="primary" @click="institutionImportForm">Import Institutions</v-btn>
       </v-col>
-      <v-col class="d-flex px-2" cols="3">
+      <v-col class="d-flex px-1" cols="3">
         <a @click="doInstExport">
           <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export Institutions to Excel
         </a>
       </v-col>
-      <v-col class="d-flex px-2" cols="3">
+      <v-col class="d-flex px-1" cols="3">
         <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
         ></v-text-field>
       </v-col>

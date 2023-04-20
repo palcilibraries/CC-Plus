@@ -85,7 +85,7 @@
       </div>
       <!-- User form is on -->
       <div v-else>
-        <v-row class="d-flex ma-2">
+        <v-row class="d-flex ma-2" no-gutters>
           <v-col v-if="userInputForm=='edit'"><h4>Edit user settings</h4></v-col>
           <v-col v-else><h4>Create new user</h4></v-col>
         </v-row>

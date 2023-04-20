@@ -1,44 +1,38 @@
 <template>
   <div>
-    <div v-if="!showForm">
-      <v-row>
-        <v-col>
-    	  <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
+    <div v-if="!showForm" class="d-flex ml-2">
+      <v-row class="d-flex ml-2" no-gutters>
+        <v-col class="d-flex px-4" cols="2">
+      	  <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
         </v-col>
-        <v-col v-if="is_manager">
+        <v-col v-if="is_manager" class="d-flex px-4" cols="2">
           <v-btn class='btn btn-danger' small type="button" @click="destroy(user.id)">Delete</v-btn>
         </v-col>
       </v-row>
-	  <div class="status-message" v-if="success || failure">
-		  <span v-if="success" class="good" role="alert" v-text="success"></span>
-		  <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-	  </div>
+	    <div class="status-message" v-if="success || failure">
+		    <span v-if="success" class="good" role="alert" v-text="success"></span>
+		    <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+	    </div>
     </div>
-	<div v-if="!showForm">
-      <v-row>
-        <v-col>
-          <v-simple-table>
-            <tr>
-              <td>Name </td>
-  	          <td>{{ mutable_user.name }}</td>
-  	        </tr>
-  	        <tr>
-  	          <td>Email </td>
-  	          <td>{{ mutable_user.email }}</td>
-  	        </tr>
-            <tr>
-              <td>Fiscal Year Begins</td>
-              <td>{{ mutable_user.fiscalYr }}</td>
-            </tr>
-            <tr>
-              <td>Roles</td>
-              <td>
-                <template v-for="role in all_roles">
-                  <v-chip v-if="mutable_user.roles.includes(role.id)">{{ role.name }}</v-chip>
-                </template>
-              </td>
-            </tr>
-          </v-simple-table>
+	  <div v-if="!showForm">
+      <v-row class="d-flex ml-2 mt-2" no-gutters>
+        <v-col class="d-flex px-4 justify-end" cols="2">Name:</v-col>
+        <v-col class="d-flex px-4">{{ mutable_user.name }}</v-col>
+      </v-row>
+      <v-row class="d-flex ml-2 mt-2" no-gutters>
+        <v-col class="d-flex px-4 justify-end" cols="2">Email:</v-col>
+        <v-col class="d-flex px-4">{{ mutable_user.email }}</v-col>
+      </v-row>
+      <v-row class="d-flex ml-2 mt-2" no-gutters>
+        <v-col class="d-flex px-4 justify-end" cols="2">Fiscal Year Begins:</v-col>
+        <v-col class="d-flex px-4">{{ mutable_user.fiscalYr }}</v-col>
+      </v-row>
+      <v-row class="d-flex ml-2 mt-2" no-gutters>
+        <v-col class="d-flex px-4 justify-end" cols="2">Roles:</v-col>
+        <v-col class="d-flex px-4">
+          <template v-for="role in all_roles">
+            <v-chip v-if="mutable_user.roles.includes(role.id)">{{ role.name }}</v-chip>
+          </template>
         </v-col>
       </v-row>
     </div>

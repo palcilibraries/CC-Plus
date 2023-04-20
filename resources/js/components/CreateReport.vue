@@ -4,7 +4,7 @@
       <v-btn color="gray" small @click="resetForm('all')">Reset Selections</v-btn>
     </div>
     <div v-if="this.is_admin || this.is_viewer">
-      <v-row class="d-flex align-mid">
+      <v-row class="d-flex align-mid" no-gutters>
         <v-col v-if="inst_group_id==0" class="d-flex ma-2" cols="3" sm="3">
           <v-select
             :items="institutions"
@@ -31,7 +31,7 @@
         </v-col>
       </v-row>
     </div>
-    <v-row class="mb-0 py-0">
+    <v-row class="mb-0 py-0" no-gutters>
       <v-col class="ma-2" cols="3" sm="3">
         <v-select
             :items="providers"
@@ -45,9 +45,9 @@
         ></v-select>
       </v-col>
     </v-row>
-    <v-row class="mb-0 py-0">
-      <span><h5>Choose a Report Type</h5></span>
-      <v-col class="ma-2" cols="12">
+    <h5>Choose a Report Type</h5>
+    <v-row class="mb-0 py-0" no-gutters>
+      <v-col class="ma-2 pa-0">
         <div v-if="working">
             <span>...Working... checking available data for requested Institution(s) and Provider(s)</span>
         </div>
@@ -113,10 +113,9 @@
         </div>
       </v-col>
     </v-row>
-
+    <h5 v-if="dialogs.date">Choose Report Dates</h5>
     <v-row v-if="dialogs.date" class="d-flex ma-0" no-gutters>
-        <span><h4>Choose Report Dates</h4></span>
-        <v-col class="ma-2" cols="12">
+        <v-col class="ma-2 pa-0">
           <v-radio-group v-model="dateRange" @change="onDateRangeChange">
             <v-radio :label="'Latest Month ['+maxYM+']'" value='latestMonth'></v-radio>
             <v-radio :label="'Latest Year ['+latestYear+']'" value='latestYear'></v-radio>
@@ -127,7 +126,7 @@
           </div>
         </v-col>
     </v-row>
-    <v-row v-if="dialogs.done">
+    <v-row v-if="dialogs.done" no-gutters>
       <v-btn color="primary" small @click="goRedirect">Finish</v-btn>
     </v-row>
   </v-form>

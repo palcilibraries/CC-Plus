@@ -126,7 +126,7 @@
         </v-expansion-panel-content>
       </v-expansion-panel>
     </v-expansion-panels>
-    <v-row class="d-flex pt-4">
+    <v-row class="d-flex pt-4" no-gutters>
       <v-col class="d-flex pa-2" cols="4" sm="2">
         <v-btn class='btn' small type="button" color="primary" @click="previewData">{{ preview_text }}</v-btn>
       </v-col>
@@ -138,7 +138,7 @@
       </v-col>
     </v-row>
     <div v-if="!configForm" class="status-message">
-      <v-row v-if="success || failure" class="d-flex pt-2">
+      <v-row v-if="success || failure" class="d-flex pt-2" no-gutters>
         <span v-if="success" class="good" role="alert" v-text="success"></span>
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
       </v-row>
@@ -164,7 +164,7 @@
         <v-card-text>
           <v-container fluid grid-list-md>
             <form method="POST" action="" @submit.prevent="" @keydown="form.errors.clear($event.target.name)">
-              <v-row class="d-flex pa-2">
+              <v-row class="d-flex pa-2" no-gutters>
                 <v-col v-if="form.save_id==input_save_id" class="d-flex px-2" cols="5">
                   <h5>Create a new saved configuration</h5>
                 </v-col>
@@ -173,7 +173,7 @@
                   <h5>Overwrite a saved configuration</h5>
                 </v-col>
               </v-row>
-              <v-row class="d-flex pa-2" width="100%">
+              <v-row class="d-flex pa-2" width="100%" no-gutters>
                 <v-col v-if="form.save_id==input_save_id" class="d-flex" cols="5">
                   <input name="save_id" id="save_id" value=0 type="hidden">
                   <v-text-field v-model="form.title" label="Name" outlined></v-text-field>
@@ -193,7 +193,7 @@
         </v-card-text>
         <v-spacer></v-spacer>
         <v-card-actions>
-          <v-row class="d-flex justify-center">
+          <v-row class="d-flex justify-center" no-gutters>
             <v-col class="d-flex px-2" cols="3">
               <v-btn class='btn' small type="button" color="green" @click="saveConfig">Save</v-btn>
             </v-col>

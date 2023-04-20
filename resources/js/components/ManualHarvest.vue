@@ -6,7 +6,7 @@
   	<form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
   	      @keydown="form.errors.clear($event.target.name)">
       <div v-if="this.is_admin">
-        <v-row class="d-flex align-mid">
+        <v-row class="d-flex align-mid" no-gutters>
           <v-col v-if="form.inst_group_id==0" class="d-flex ma-2" cols="3" sm="3">
             <v-autocomplete
               :items="institutions"
@@ -35,12 +35,14 @@
           </v-col>
         </v-row>
       </div>
-      <v-row v-else>
-        <v-col class="ma-2" cols="6" sm="4">
-          <h5>Institution : {{ inst_name }}</h5>
-        </v-col>
-      </v-row>
-      <v-row v-if="available_providers.length>0">
+      <div v-else>
+        <v-row class="d-flex align-mid" no-gutters>
+          <v-col class="ma-2" cols="6" sm="4">
+            <h5>Institution : {{ inst_name }}</h5>
+          </v-col>
+        </v-row>
+      </div>
+      <v-row v-if="available_providers.length>0" no-gutters>
         <v-col class="ma-2" cols="3" sm="3">
           <v-autocomplete
             :items="available_providers"
@@ -54,7 +56,7 @@
           ></v-autocomplete>
         </v-col>
       </v-row>
-      <v-row v-if="available_reports.length>0">
+      <v-row v-if="available_reports.length>0" no-gutters>
         <v-col class="ma-2" cols="6" sm="4">
           <v-select
             :items="available_reports"
@@ -69,13 +71,13 @@
           ></v-select>
         </v-col>
       </v-row>
-      <v-row v-if="form.reports.length>0" class="d-flex flex-row ma-2 align-center">
+      <v-row v-if="form.reports.length>0" class="d-flex flex-row ma-2 align-center" no-gutters>
         <v-col class="d-flex pa-2" cols="2" sm="2"><h5>Month(s) to Harvest</h5></v-col>
         <v-col class="d-flex pa-2">
           <date-range minym="2019-01" :maxym="maxYM" ymfrom="" ymto=""></date-range>
         </v-col>
       </v-row>
-      <v-row v-if="form.reports.length>0">
+      <v-row v-if="form.reports.length>0" no-gutters>
         <v-col class="ma-2" cols="12">
           <span>Queue the harvest(s) to begin</span>
           <v-radio-group v-model="form.when" row>
@@ -88,10 +90,10 @@
         <span v-if="success" class="good" role="alert" v-text="success"></span>
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
       </div>
-      <v-row v-if="form.reports.length>0">
+      <v-row v-if="form.reports.length>0" no-gutters>
         <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Submit</v-btn>
       </v-row>
-      <v-row v-else-if="form.inst.length>0 && form.prov.length>0 && available_reports.length==0">
+      <v-row v-else-if="form.inst.length>0 && form.prov.length>0 && available_reports.length==0" no-gutters>
         <span class="form-fail" role="alert">No reports defined or available for selected Provider/Institution.</span>
       </v-row>
     </form>

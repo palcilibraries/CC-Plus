@@ -1,49 +1,47 @@
 <template>
   <div>
-    <div>
-      <v-row class="d-flex ma-0">
-        <v-col v-if="mutable_unset.length > 0" class="d-flex pa-0" cols="3">
-          <v-autocomplete :items="mutable_unset" v-model="new_provider" label="Unconnected Providers"
-                          item-text="name" item-value="id" outlined
-          ></v-autocomplete>
-        </v-col>
-        <v-col v-else class="d-flex" cols="3">&nbsp;</v-col>
-        <v-col v-if="new_provider != null" class="d-flex px-2" cols="1">
-          <v-btn small color="primary" @click="connectUnset">Connect</v-btn>
-        </v-col>
-        <v-col v-else  class="d-flex px-2" cols="1">&nbsp;</v-col>
-        <v-col cols="5">&nbsp;</v-col>
-        <v-col class="d-flex px-2" cols="3">
-          <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
-          ></v-text-field>
-        </v-col>
-      </v-row>
-      <div class="status-message" v-if="success || failure">
-        <span v-if="success" class="good" role="alert" v-text="success"></span>
-        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-      </div>
-      <v-data-table :headers="headers" :items="mutable_providers" item-key="id" :options="mutable_options"
-                    :search="search" @update:options="updateOptions" :key="'mp'+dtKey">
-        <template v-slot:item.inst_name="{ item }">
-          <span v-if="item.inst_id==1">{{ item.institution.name }}</span>
-          <span v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></span>
-        </template>
-        <template v-slot:item.action="{ item }">
-          <span class="dt_action">
-            <v-icon title="Edit Provider" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
-            <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
-              <v-icon title="Delete Provider">mdi-trash-can-outline</v-icon>
-            </v-btn>
-            <v-btn v-else icon class="pl-4">
-              <v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon>
-            </v-btn>
-          </span>
-        </template>
-        <v-alert slot="no-results" :value="true" color="error" icon="warning">
-          Your search for "{{ search }}" found no results.
-        </v-alert>
-      </v-data-table>
+    <v-row class="d-flex ma-0" no-gutters>
+      <v-col v-if="mutable_unset.length > 0" class="d-flex pa-0" cols="3">
+        <v-autocomplete :items="mutable_unset" v-model="new_provider" label="Unconnected Providers"
+                        item-text="name" item-value="id" outlined
+        ></v-autocomplete>
+      </v-col>
+      <v-col v-else class="d-flex" cols="3">&nbsp;</v-col>
+      <v-col v-if="new_provider != null" class="d-flex px-2" cols="1">
+        <v-btn small color="primary" @click="connectUnset">Connect</v-btn>
+      </v-col>
+      <v-col v-else  class="d-flex px-2" cols="1">&nbsp;</v-col>
+      <v-col cols="5">&nbsp;</v-col>
+      <v-col class="d-flex px-2" cols="3">
+        <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
+        ></v-text-field>
+      </v-col>
+    </v-row>
+    <div class="status-message" v-if="success || failure">
+      <span v-if="success" class="good" role="alert" v-text="success"></span>
+      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
+    <v-data-table :headers="headers" :items="mutable_providers" item-key="id" :options="mutable_options"
+                  :search="search" @update:options="updateOptions" :key="'mp'+dtKey">
+      <template v-slot:item.inst_name="{ item }">
+        <span v-if="item.inst_id==1">{{ item.institution.name }}</span>
+        <span v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></span>
+      </template>
+      <template v-slot:item.action="{ item }">
+        <span class="dt_action">
+          <v-icon title="Edit Provider" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
+          <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
+            <v-icon title="Delete Provider">mdi-trash-can-outline</v-icon>
+          </v-btn>
+          <v-btn v-else icon class="pl-4">
+            <v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon>
+          </v-btn>
+        </span>
+      </template>
+      <v-alert slot="no-results" :value="true" color="error" icon="warning">
+        Your search for "{{ search }}" found no results.
+      </v-alert>
+    </v-data-table>
   </div>
 </template>
 

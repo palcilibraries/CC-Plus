@@ -1,65 +1,65 @@
 <template>
-    <nav class="navbar navbar-expand navbar-light bg-dev">
-      <div class="container">
-        <!-- <a class="navbar-brand" href="/"> -->
-	      <a class="navbar-brand" :href=homeUrl>
-          <img src="/images/CC_Plus_Logo.png" alt="CC plus" height="50px" width="103px" />
-        </a>
-        <div id="navbarSupportedContent" class="collapse navbar-collapse">
+    <nav class="navbar navbar-expand navbar-light">
+        <div id="navbarSupportedContent" class="collapse navbar-collapse navbar-items">
             <!-- Left Side Of Navbar -->
             <ul class="navbar-nav mr-auto">
               <div v-for="item in navList">
-                <li v-if="item.children && isVisible(item)" class="nav-item dropdown">
-                  <a id="navbarDropdown" class="nav-link dropdown-toggle" :href="item.url" :title="item.name"
-                     role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                     {{ item.name }}<span class="caret"></span>
-                  </a>
-                  <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <div v-for="child in item.children">
-                      <li v-if="isVisible(child)">
-                        <a class="dropdown-item":href="child.url" :title="child.name">{{ child.name }}</a>
-                      </li>
+                <div v-if="isVisible(item)">
+                  <li v-if="item.children" class="nav-item dropdown py-1">
+                    <a id="navbarDropdown" class="nav-link dropdown-toggle" :href="item.url" :title="item.name"
+                       role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                       {{ item.name }}<span class="caret"></span>
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                      <div v-for="child in item.children">
+                        <li v-if="isVisible(child)">
+                          <a class="dropdown-item":href="child.url" :title="child.name">{{ child.name }}</a>
+                        </li>
+                      </div>
                     </div>
-                  </div>
-                </li>
-                <li v-else-if="isVisible(item)" class="nav-item" >
+                  </li>
+                  <li v-else-if="item.url == homeUrl" class="nav-item py-1">
+                    <a class="nav-link" :href="item.url" :title="item.name"><v-icon title="Home" alt="Home">mdi-home</v-icon></a>
+                  </li>
+                  <li v-else class="nav-item" >
                     <a class="nav-link" :href="item.url" :title="item.name">{{ item.name }}</a>
-                </li>
+                  </li>
+                </div>
               </div>
             </ul>
 
             <!-- Right Side Of Navbar -->
             <ul class="navbar-nav ml-auto">
-                <li v-if="is_globaladmin && ccp_key!=''" class="nav-item">
-                    <v-select :items="consortia" v-model="cur_key" label="Instance" item-text="name"
-                              item-value="ccp_key" @change="changeInstance" dense outlined
-                    ></v-select>
-                </li>
+              <li v-if="is_globaladmin && ccp_key!=''" class="nav-item py-1">
+                <v-select :items="consortia" v-model="cur_key" label="Instance" item-text="name"
+                          item-value="ccp_key" @change="changeInstance" dense outlined hide-details
+                ></v-select>
+              </li>
                 <!-- Authentication Links -->
-                <li v-if="this.user['id']==0" class="nav-item">
-                    <a class="nav-link" href="/login">Login</a>
-                </li>
-                <li v-else class="nav-item dropdown">
-                    <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
-                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        {{ user["name"] }}<span class="caret"></span>
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                        <div v-if="!is_globaladmin">
-                          <a class="dropdown-item" :href="profile_url">Profile</a>
-                        </div>
-                        <a class="dropdown-item" href="/logout"
-                           onclick="event.preventDefault();
-                                         document.getElementById('logout-form').submit();">Logout</a>
-                        <form id="logout-form" action="/logout" method="POST" style="display: none;">
-                            @csrf
-                        </form>
-                    </div>
-                </li>
+              <li v-if="this.user['id']==0" class="nav-item">
+                <a class="nav-link" href="/login">Login</a>
+              </li>
+              <li v-else class="nav-item dropdown py-1">
+                <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
+                      data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      {{ user["name"] }}<span class="caret"></span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                  <li v-if="!is_globaladmin" class="nav-item" >
+                    <a class="dropdown-item" :href="profile_url">Profile</a>
+                  </li>
+                  <li class="nav-item" >
+                    <a class="dropdown-item" href="/logout" onclick="event.preventDefault();
+                              document.getElementById('logout-form').submit();">Logout</a>
+                    <form id="logout-form" action="/logout" method="POST" style="display: none;">
+                      @csrf
+                    </form>
+                  </li>
+                </div>
+              </li>
             </ul>
         </div>
-      </div>
-  </nav>
+    </nav>
 </template>
 
 <script>
@@ -106,11 +106,6 @@ export default {
                   {
                     url: "/institutions",
                     name: "Institutions",
-                    role: "Admin",
-                  },
-                  {
-                    url: "/institution/groups",
-                    name: "Groups",
                     role: "Admin",
                   },
                   // {
@@ -172,6 +167,11 @@ export default {
                     role: "All",
                   },
                   {
+                    url: "/institution/groups",
+                    name: "Groups",
+                    role: "Admin",
+                  },
+                  {
                     url: "/reports/counter",
                     name: "Counter Types",
                     role: "All",
@@ -183,11 +183,15 @@ export default {
     },
     methods: {
       isVisible(item) {
-        if (this.is_globaladmin) return true;
-        if (this.is_admin && (item.role != 'GlobalAdmin')) return true;
-        if (this.is_manager && (item.role != 'Admin' && item.role != 'GlobalAdmin')) return true;
-        if (this.is_viewer && item.role == 'Viewer') return true;
         if (item.role == 'All') return true;
+        if (this.is_globaladmin) return true;
+        if (this.is_admin) {
+            return (item.role != 'GlobalAdmin');
+        } else if (this.is_manager) {
+            return (item.role != 'Admin' && item.role != 'GlobalAdmin');
+        } else if (this.is_viewer) {
+            return (item.role == 'Viewer');
+        }
         return false;
       },
       changeInstance (event) {
@@ -228,7 +232,6 @@ export default {
             this.consortia.push({'ccp_key': 'con_template', 'name': 'Template'});
             if (this.consortia.some(con => con.ccp_key == this.ccp_key)) this.cur_key = this.ccp_key;
         }
-// Managers (without view or Admin rights) have Admin replaced by "My institution"
         // Managers (without view or Admin rights) have Home replaced by "My institution"
         if (this.is_manager && !(this.is_globaladmin || this.is_admin || this.is_viewer)) {
             // var idx1 = this.navList.findIndex(nav => nav.name == "Admin");
@@ -242,6 +245,3 @@ export default {
     }
 }
 </script>
-
-<style>
-</style>

@@ -203,7 +203,7 @@ class GlobalProviderController extends Controller
       $orig_isActive = $provider->is_active;
 
       // Validate form inputs
-      $this->validate($request, [ 'name' => 'required', 'is_active' => 'required', 'server_url_r5' => 'required' ]);
+      $this->validate($request, [ 'name' => 'required', 'is_active' => 'required' ]);
       $input = $request->all();
       $isActive = ($input['is_active']) ? 1 : 0;
 
@@ -227,7 +227,7 @@ class GlobalProviderController extends Controller
       // Update the record in the global table
       $provider->name = $input['name'];
       $provider->is_active = $isActive;
-      $provider->server_url_r5 = $input['server_url_r5'];
+      $provider->server_url_r5 = (isset($input['server_url_r5'])) ? $input['server_url_r5'] : null;
 
       // Turn array of connection checkboxes into an array of IDs
       $extraArgs = false;
@@ -264,7 +264,7 @@ class GlobalProviderController extends Controller
       // Set connection field labels in an array for the datatable display
       $provider['connection_fields'] = array();
       foreach ($all_connectors as $fld) {
-          if ( in_array($fld->id, $gp->connectors) ) {
+          if ( in_array($fld->id, $provider->connectors) ) {
               $provider['connection_fields'][] = $fld->label;
           }
       }

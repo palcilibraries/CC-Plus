@@ -262,12 +262,13 @@ class GlobalProviderController extends Controller
       $provider['report_state'] = (isset($input['report_state'])) ? $input['report_state'] : array();
 
       // Set connection field labels in an array for the datatable display
-      $provider['connection_fields'] = array();
+      $field_labels = array();
       foreach ($all_connectors as $fld) {
-          if ( in_array($fld->id, $provider->connectors) ) {
-              $provider['connection_fields'][] = $fld->label;
+          if ( in_array($fld->id, $new_connectors) ) {
+              $field_labels[] = $fld->label;
           }
       }
+      $provider['connection_fields'] = $field_labels;
 
       // Get connector fields
       $fields = $all_connectors->whereIn('id',$provider->connectors)->pluck('name')->toArray();

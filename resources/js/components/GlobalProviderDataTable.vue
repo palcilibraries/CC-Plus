@@ -17,12 +17,28 @@
         ></v-text-field>
       </v-col>
     </v-row>
+    <v-row class="d-flex pa-1 align-center" no-gutters>
+      <v-col class="d-flex px-2 align-center" cols="2">
+        <v-select :items="status_options" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
+                  label="Limit by Status"
+        ></v-select> &nbsp;
+      </v-col>
+    </v-row>
     <div class="status-message" v-if="success || failure">
       <span v-if="success" class="good" role="alert" v-text="success"></span>
       <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
     <v-data-table :headers="headers" :items="mutable_providers" item-key="prov_id" :options="mutable_options"
-                  :search="search" @update:options="updateOptions" :key="dtKey">
+                  :search="search" @update:options="updateOptions" :loading="loading" :key="dtKey">
+      <template v-slot:item.status="{ item }">
+        <span v-if="item.status=='Active'"><v-icon large color="green" title="Active">mdi-toggle-switch</v-icon></span>
+        <span v-if="item.status=='Inactive'"><v-icon large color="red" title="Inactive">mdi-toggle-switch-off</v-icon></span>
+      </template>
+      <template v-slot:item.connection_fields="{ item }">
+        <v-row v-for="cnx in item.connection_fields" :key="item.id+cnx" class="d-flex ma-0">
+          <v-col class="d-flex pa-0">{{ cnx }}</v-col>
+        </v-row>
+      </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
           <v-btn icon @click="editForm(item.id)">
@@ -149,6 +165,7 @@
             providers: { type:Array, default: () => [] },
             master_reports: { type:Array, default: () => [] },
             all_connectors: { type:Array, default: () => [] },
+            filters: { type:Object, default: () => {} }
            },
     data () {
       return {
@@ -161,12 +178,16 @@
         current_provider_id: null,
         import_type: '',
         import_types: ['Add or Update', 'Full Replacement'],
+        mutable_filters: this.filters,
+        status_options: ['ALL', 'Active', 'Inactive'],
+        loading: true,
         search: '',
         headers: [
-          { text: 'Provider ', value: 'name', align: 'start' },
-          { text: 'Master Reports', value: 'reports_string' },
-          { text: 'Sushi Connections', value: 'connection_count', align: 'center' },
           { text: 'Status', value: 'status' },
+          { text: 'Provider ', value: 'name', align: 'start' },
+          { text: 'Connection Count', value: 'connection_count', align: 'center' },
+          { text: 'Available Reports', value: 'reports_string' },
+          { text: 'Required Credentials', value: 'connection_fields' },
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],
@@ -254,6 +275,27 @@
                      }
                  });
              this.providerImportDialog = false;
+        },
+        updateFilters() {
+            this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            this.updateRecords();
+        },
+        clearFilter(filter) {
+            this.mutable_filters[filter] = [];
+            this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            this.updateRecords();
+        },
+        updateRecords() {
+            this.success = "";
+            this.failure = "";
+            this.loading = true;
+            let _filters = JSON.stringify(this.mutable_filters);
+            axios.get("/global/providers?json=1&filters="+_filters)
+                 .then((response) => {
+                     this.mutable_providers = response.data.providers;
+                 })
+                 .catch(err => console.log(err));
+            this.loading = false;
         },
         formSubmit (event) {
             this.success = '';
@@ -366,6 +408,8 @@
       });
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);
+      // Load providers
+      this.updateRecords();
       this.dtKey += 1;           // force re-render of the datatable
 
       // Subscribe to store updates

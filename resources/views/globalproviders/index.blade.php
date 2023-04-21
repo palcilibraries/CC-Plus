@@ -4,5 +4,6 @@
 <global-provider-data-table :providers="{{ json_encode($providers) }}"
                             :master_reports="{{ json_encode($masterReports) }}"
                             :all_connectors="{{ json_encode($all_connectors) }}"
+                            :filters="{{ json_encode($filters) }}"
 ></global-provider-data-table>
 @endsection

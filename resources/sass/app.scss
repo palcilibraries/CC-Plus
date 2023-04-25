@@ -233,7 +233,7 @@ main #app {
 	background-color: #fff;
 	border: 2px solid #000000;
 }
-.login-errors {
+.login-notices {
 	display: flex;
 	overflow: auto;
 	align-items: center;
@@ -243,7 +243,7 @@ main #app {
 	border-bottom-left-radius: 5px;
 	border-bottom-right-radius: 5px;
 	background-color: #fff;
-	border: 1px solid #000000;
+	border: 2px solid #000000;
 }
 .img-top {
   display: flex;

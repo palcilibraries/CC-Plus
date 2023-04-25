@@ -6,8 +6,8 @@
             }
         },
         methods: {
-            toggleVisibility() {
-                const input = this.$refs.password;
+            toggleVisibility(field) {
+                var input = this.$refs[field];
                 if (input.type === 'password') {
                     input.type = 'text';
                     this.visible = true;

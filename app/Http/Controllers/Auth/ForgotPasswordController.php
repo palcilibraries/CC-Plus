@@ -32,7 +32,7 @@ class ForgotPasswordController extends Controller
     */
     public function showForgotForm()
     {
-        if (env('MAIL_HOST') == "smtp.mailtrap.io" || is_null(env('MAIL_USERNAME')) ) {
+        if (env('MAIL_HOST') == "smtp.mailtrap.io" && is_null(env('MAIL_USERNAME')) ) {
             return back()->withInput()->with('error', 'Email service has not yet been properly configured.');
         }
        return view('auth.forgotPassword');
@@ -81,14 +81,12 @@ class ForgotPasswordController extends Controller
             'password_confirmation' => 'required',
             'consortium' => 'required'
         ]);
-
         $resets_table = config('database.connections.consodb.database') . ".password_resets";
         $updatePassword = DB::table($resets_table)->where(['email' => $request->email, 'token' => $request->token])
                             ->first();
         if (!$updatePassword) {
             return back()->withInput()->with('error', 'Invalid token - Password reset failed!');
         }
-
         $user = User::where('email', $request->email)->update(['password' => Hash::make($request->password)]);
         DB::table($resets_table)->where(['email'=> $request->email])->delete();
         return redirect('/login')->with('message', 'Your password has been successfully updated!');

@@ -1,60 +1,80 @@
-@extends('layouts.app')
-
+@extends('layouts.login')
 @section('content')
-<main class="login-form">
-  <div class="cotainer">
-      <div class="row justify-content-center">
-          <div class="col-md-8">
-              <div class="card">
-                  <div class="card-header">Reset Password</div>
-                  <div class="card-body">
-
-                      <form action="{{ route('password.reset.post') }}" method="POST">
-                          @csrf
-                          <input type="hidden" name="token" value="{{ $token }}">
-                          <input type="hidden" name="consortium" value="{{ $consortium }}">
-
-                          <div class="form-group row">
-                              <label for="email_address" class="col-md-4 col-form-label text-md-right">E-Mail Address</label>
-                              <div class="col-md-6">
-                                  <input type="text" id="email_address" class="form-control" name="email" required autofocus>
-                                  @if ($errors->has('email'))
-                                      <span class="text-danger">{{ $errors->first('email') }}</span>
-                                  @endif
-                              </div>
-                          </div>
-
-                          <div class="form-group row">
-                              <label for="password" class="col-md-4 col-form-label text-md-right">Password</label>
-                              <div class="col-md-6">
-                                  <input type="password" id="password" class="form-control" name="password" required autofocus>
-                                  @if ($errors->has('password'))
-                                      <span class="text-danger">{{ $errors->first('password') }}</span>
-                                  @endif
-                              </div>
-                          </div>
-
-                          <div class="form-group row">
-                              <label for="password-confirm" class="col-md-4 col-form-label text-md-right">Confirm Password</label>
-                              <div class="col-md-6">
-                                  <input type="password" id="password-confirm" class="form-control" name="password_confirmation" required autofocus>
-                                  @if ($errors->has('password_confirmation'))
-                                      <span class="text-danger">{{ $errors->first('password_confirmation') }}</span>
-                                  @endif
-                              </div>
-                          </div>
-
-                          <div class="col-md-6 offset-md-4">
-                              <button type="submit" class="btn btn-primary">
-                                  Reset Password
-                              </button>
-                          </div>
-                      </form>
-
-                  </div>
-              </div>
-          </div>
-      </div>
-  </div>
-</main>
+<div class="loginBox" id="app">
+  <form class="login-form" method="POST" action="{{ route('password.reset.post') }}">
+    @csrf
+    <input type="hidden" name="token" value="{{ $token }}">
+    <input type="hidden" name="consortium" value="{{ $consortium }}">
+    <div class="img-top" no-gutters>
+      <img src="/images/CC_Plus_Logo.png" alt="CC plus" height="50px" width="103px" />
+    </div>
+    <div class="login-form-fields" no-gutters>
+      <v-row class="d-flex mt-4" no-gutters>
+        <v-col class="d-flex pa-2 justify-start" cols="12">
+          <clear-input inline-template>
+            <div class="input-group">
+              <input id="email" type="text" class="form-control" name="email" ref="email" value="{{ old('email') }}" required
+                    autofocus autocomplete="email" placeholder="Email address" aria-label="Email" aria-describedby="email-addon">
+              <span title="Clear" alt="Clear" @click="clearInput('email')" class="input-group-text" id="email-addon"
+                    style="border-left: none; border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                <i class="mdi size-16 mdi-close-circle-outline"></i>
+              </span>
+              @if ($errors->has('password'))
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $errors->first('email') }}</strong>
+                </span>
+              @endif
+            </div>
+          </clear-input>
+        </v-col>
+      </v-row>
+      <v-row class="d-flex mt-4" no-gutters>
+        <v-col class="d-flex pa-2 justify-start" cols="12">
+          <password-visibility inline-template>
+            <div class="input-group">
+              <input id="password" type="password" ref="password" class="form-control" name="password" placeholder="Password"
+                    required autofocus autocomplete="current-password" aria-label="Password" aria-describedby="password-addon">
+              <span :title="!visible ? 'show password?' : 'hide password?'" @click="toggleVisibility('password')"
+                    class="input-group-text" id="password-addon"
+                    style="border-left: none; border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                <i class="mdi size-16" :class="[!visible ? 'mdi-eye' : 'mdi-eye-off']"></i>
+              </span>
+              @if ($errors->has('password'))
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $errors->first('password') }}</strong>
+                </span>
+              @endif
+            </div>
+          </password-visibility>
+        </v-col>
+      </v-row>
+      <v-row class="d-flex mt-4" no-gutters>
+        <v-col class="d-flex pa-2 justify-start" cols="12">
+          <password-visibility inline-template>
+            <div class="input-group">
+              <input id="password_confirmation" type="password" ref="confirmpass" class="form-control" name="password_confirmation"
+                     placeholder="Confirm Password" required autofocus autocomplete="current-confirmpass"
+                     aria-label="Confirm Password" aria-describedby="confirmpass-addon">
+              <span :title="!visible ? 'show password?' : 'hide password?'" @click="toggleVisibility('confirmpass')"
+                    class="input-group-text" id="confirmpass-addon"
+                    style="border-left: none; border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                <i class="mdi size-16" :class="[!visible ? 'mdi-eye' : 'mdi-eye-off']"></i>
+              </span>
+              @if ($errors->has('confirmpass'))
+                <span class="invalid-feedback" role="alert">
+                    <strong>{{ $errors->first('confirmpass') }}</strong>
+                </span>
+              @endif
+            </div>
+          </password-visibility>
+        </v-col>
+      </v-row>
+      <v-row class="d-flex mt-4 align-center" no-gutters>
+        <v-col class="d-flex justify-center">
+          <v-btn small class="btn login-primary" type="submit">Reset Password</v-btn>
+        </v-col>
+      </v-row>
+    </div>
+  </form>
+</div>
 @endsection

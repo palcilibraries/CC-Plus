@@ -58,7 +58,7 @@ if ($consortia->count() == 1 ) {
             @endforeach
           </select>
         @else
-          {{ Form::Label('consortium', 'Logging into Consortium: ' . $preset_name) }}
+          <strong>{{ $preset_name }}</strong>
           <input type='hidden' name='consortium' value='{{ $preset_key }}' />
         @endif
       </v-col>
@@ -88,7 +88,7 @@ if ($consortia->count() == 1 ) {
           <div class="input-group">
             <input id="password" type="password" ref="password" class="form-control" name="password" placeholder="Password"
                    required autocomplete="current-password" aria-label="Password" aria-describedby="password-addon">
-            <span :title="!visible ? 'show password?' : 'hide password?'" @click="toggleVisibility"
+            <span :title="!visible ? 'show password?' : 'hide password?'" @click="toggleVisibility('password')"
                   class="input-group-text" id="password-addon"
                   style="border-left: none; border-top-left-radius: 0; border-bottom-left-radius: 0;">
               <i class="mdi size-16" :class="[!visible ? 'mdi-eye' : 'mdi-eye-off']"></i>
@@ -118,8 +118,13 @@ if ($consortia->count() == 1 ) {
   </form>
 </div>
 @if (Session::has('error'))
-  <div class="login-errors" no-gutters>
+  <div class="login-notices" no-gutters>
     <span class="d-flex mx-1 my-2 text-danger">{{ Session::get('error') }}</span>
+  </div>
+@endif
+@if (Session::has('message'))
+  <div class="login-notices" no-gutters>
+    <span class="d-flex mx-1 my-2 alert alert-success">{{ Session::get('message') }}</span>
   </div>
 @endif
 @endsection

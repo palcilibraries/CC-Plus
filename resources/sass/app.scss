@@ -57,9 +57,7 @@ form .v-subheader,
 }
 .v-application--wrap {
 	min-height: fit-content !important;
-	max-height:970px !important;
-	margin-left: 10px;
-	margin-right:10px;
+	max-height: 90vh;
 }
 main #app {
 	padding: 1em;
@@ -150,23 +148,23 @@ main #app {
 	margin-top: 2em;
 }
 .status-message {
-    position: relative;
-    margin-bottom: 1rem;
-    margin-bottom: 1rem;
-	border-radius: 0.25rem;
-	font-weight: bold;
+  position: relative;
+  margin-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.25rem;
+  font-weight: bold;
 }
 .good {
 	display: block;
-    padding: 0.75rem 1.25rem;
-    border: 1px solid #1b5e20;
-    background-color: #66bb6a;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid #1b5e20;
+  background-color: #66bb6a;
 }
 .fail {
 	display: block;
-    padding: 0.75rem 1.25rem;
-    border: 1px solid #d50000;
-    background-color: #ff5252;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid #d50000;
+  background-color: #ff5252;
 }
 .harvest-status {
 	margin-top: 1em;
@@ -175,21 +173,22 @@ main #app {
 }
 /* new class - LSR: 11/28/22 */
 .main_content {
-	width: 1120px;
-	height: 800px;
+	width: 96%;
+	height: 100vh;
+	margin: 0px auto;
 	overflow: auto;
-	padding: 0.5rem 1rem;
+	padding: 0px;
 }
 .footer_content {
-	width: 90%;
+	width: 96%;
 	display: flex;
 	flex-shrink: 0;
 	justify-content: space-around;
 	overflow: auto;
-	margin-top: 10px;
+	margin: 0px;
 	padding-top: 10px;
 	padding-bottom: 10px;
-	border-top: 1px solid;
+	border-top: 1px #39aae0 solid;
 }
 .dt_action {
   display: flex;
@@ -281,6 +280,9 @@ i.size-16 {
   flex-wrap: wrap;
   justify-content: center;
 }
+.navbar {
+	margin-bottom: 1em;
+}
 .navbar-items {
 	background-color: #fff;
 	border: 1px solid #000000;
@@ -291,18 +293,17 @@ i.size-16 {
 	align-items: center !important;
 }
 .app-container {
-  width: 1160px !important;
-	height:900px !important;
+  width: 82%;
+	height: 100vh;
+	margin: 0px auto;
 }
 .footer-container {
-	margin: 0px;
 	display: flex;
-	flex-shrink: 0;
-	height: 60px;
-	width: 1140px;
-	padding-top: 20px;
-	padding-bottom: 20px;
+	justify-content: center;
+	margin: 0px;
+	position: fixed;
+	width: 82%;
+	padding: 0px;
+	bottom: 0px;
 	background-color: #fff;
-	justify-content: center !important;
-	align-items: center !important;
 }

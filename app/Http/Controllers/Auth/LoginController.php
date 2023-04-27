@@ -95,7 +95,7 @@ class LoginController extends Controller
         $user->save();
         session()->flash("success","");
         if ($user->email == config('ccplus.global_admin')) {
-            return redirect("/global/instances");
+            return redirect("/global/home");
         } else {
             return redirect("/");
         }

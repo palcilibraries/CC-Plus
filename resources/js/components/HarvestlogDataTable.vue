@@ -316,13 +316,13 @@
       },
     },
     beforeCreate() {
-        // Load existing store data
-		this.$store.commit('initialiseStore');
-	},
+      // Load existing store data
+      this.$store.commit('initialiseStore');
+    },
     beforeMount() {
-        // Set page name in the store
-        this.$store.dispatch('updatePageName','harvestlogs');
-	},
+      // Set page name in the store
+      this.$store.dispatch('updatePageName','harvestlogs');
+    },
     mounted() {
       // Update any null/empty filters w/ store-values
       Object.keys(this.all_filters).forEach( (key) =>  {

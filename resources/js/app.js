@@ -48,7 +48,8 @@ Vue.component('manual-harvest', require('./components/ManualHarvest.vue').defaul
 Vue.component('alert-data-table', require('./components/AlertDataTable.vue').default);
 Vue.component('alert-summary-table', require('./components/AlertSummaryTable.vue').default);
 Vue.component('globaladmin-dashboard', require('./components/GlobalAdminDashboard.vue').default);
-Vue.component('globalsettings', require('./components/GlobalSettings.vue').default);
+Vue.component('global-instances', require('./components/GlobalInstances.vue').default);
+Vue.component('global-settings', require('./components/GlobalSettings.vue').default);
 Vue.component('global-provider-data-table', require('./components/GlobalProviderDataTable.vue').default);
 Vue.component('sushisettings-data-table', require('./components/SushiSettingsDataTable.vue').default);
 Vue.component('password-visibility', require('./components/PasswordVisibility.vue').default);

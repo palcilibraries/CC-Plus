@@ -132,8 +132,8 @@
                 </v-list>
               </v-col>
             </v-row>
-            <v-row v-if="form.connector_state.extra_args" class="d-flex ma-0">
-              <v-col class="d-flex px-2" cols="12">
+            <v-row v-if="form.connector_state['extra_args']" class="d-flex ma-0">
+              <v-col class="d-flex px-2" cols="8">
                 <v-text-field v-model="form.extra_pattern" label="Extra Arguments Pattern" outlined dense></v-text-field>
               </v-col>
             </v-row>

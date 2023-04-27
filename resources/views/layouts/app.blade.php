@@ -16,8 +16,6 @@
     <!-- Styles -->
     <link rel="stylesheet" href="{{ asset('/css/app.css') }}">
 </head>
-
-<!-- <body class="container-fluid"> -->
 <body class="body-container">
   <v-app id="app" class="app-container">
     @if ( auth()->check() )

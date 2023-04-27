@@ -77,27 +77,7 @@ export default {
             homeUrl: "/",
             navList: [
               { url: "/", name: "Home", role: "All" },
-              {
-                name: "Global Admin",
-                role: "GlobalAdmin",
-                children: [
-                  {
-                    url: "/global/providers",
-                    name: "Global Providers",
-                    role: "GlobalAdmin",
-                  },
-                  {
-                    url: "/global/instances",
-                    name: "Instances",
-                    role: "GlobalAdmin",
-                  },
-                  {
-                    url: "/global/config",
-                    name: "System Config",
-                    role: "GlobalAdmin",
-                  },
-                ]
-              },
+              { url: "/global/home", name: "Global Admin", role: "GlobalAdmin" },
               {
                 url: "#",
                 name: "Admin",

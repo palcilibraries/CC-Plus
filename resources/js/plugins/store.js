@@ -62,6 +62,7 @@ export const store = new Vuex.Store({
                                          groupDesc: [], multiSort: false, mustSort: false }
                            },
       },
+      panels: [0],
       report_data: [],
   },
   mutations: {
@@ -149,6 +150,9 @@ export const store = new Vuex.Store({
     SET_REPORTDATA(state, data) {
         state.report_data = data;
     },
+    SET_PANELS(state, data) {
+        state.panels = data;
+    },
   },
   actions: {
     updateAccess({ commit }, access) {
@@ -205,6 +209,9 @@ export const store = new Vuex.Store({
     updateReportData({ commit }, data) {
       commit('SET_REPORTDATA', data);
     },
+    updatePanels({ commit }, panels) {
+      commit('SET_PANELS', panels);
+    },
   },
   getters: {
     is_globaladmin: state => { return state.globaladmin },
@@ -214,19 +221,26 @@ export const store = new Vuex.Store({
     user_inst_id: state => { return state.user_inst_id },
     page_name: (state) => {  return state.page_name },
     all_filters: state => {
-        return state.page_options[state.page_name].filters;
+        return (state.page_name != '' && state.page_name != null) ?
+          state.page_options[state.page_name].filters : [];
     },
     datatable_options: (state) => {
-        return state.page_options[state.page_name].datatable;
+        return (state.page_name != '' && state.page_name != null) ?
+          state.page_options[state.page_name].datatable : [];
     },
     filter_by_fromYM: state => {
-        return state.page_options[state.page_name].filters.fromYM;
+        return (state.page_name != '' && state.page_name != null) ?
+          state.page_options[state.page_name].filters.fromYM : null;
     },
     filter_by_toYM: state => {
-        return state.page_options[state.page_name].filters.toYM;
+        return (state.page_name != '' && state.page_name != null) ?
+          state.page_options[state.page_name].filters.toYM : null;
     },
     report_data: state => {
       return state.report_data
+    },
+    panel_data: state => {
+      return state.panels;
     },
   },
 });

@@ -88,7 +88,7 @@ Route::resource('/alertsettings', 'AlertSettingController')
 Route::post('/alertsettings-fields-refresh', 'AlertSettingController@fieldsRefresh')->middleware(['auth','role:Admin,Manager']);
 // Global admin routes
 Route::get('/admin', 'AdminController@index')->name('adminHome')->middleware(['auth','role:Admin,Manager']);
-Route::get('/global/instances', 'GlobalAdminController@index')->name('global.instances')->middleware('auth','role:GlobalAdmin');
+Route::get('/global/home', 'GlobalAdminController@index')->name('global.home')->middleware('auth','role:GlobalAdmin');
 Route::resource('/global/config', 'GlobalSettingController')->middleware('auth','role:GlobalAdmin');
 Route::resource('/global/providers', 'GlobalProviderController', ['as' => 'global'])->middleware('auth','role:GlobalAdmin');
 Route::post('/global/providers/import', 'GlobalProviderController@import')->name('global.providers.import');

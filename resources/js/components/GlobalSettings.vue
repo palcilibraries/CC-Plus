@@ -1,7 +1,5 @@
 <template>
-  <div>
-    <h3>System-Wide Configuration Settings</h3>
-    <p>&nbsp;</p>
+  <div class="d-flex mt-2">
     <form>
       <v-row class="d-flex ma-0" no-gutters>
         <template v-for="key in Object.keys(this.mutable_settings)">
@@ -43,7 +41,7 @@
         formSubmit (event) {
             this.success = '';
             this.failure = '';
-            axios.post('/globalsettings', {
+            axios.post('/global/config', {
                 all_globals: this.mutable_settings
             })
             .then( (response) => {

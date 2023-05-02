@@ -97,7 +97,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="provDialog" persistent max-width="500px">
+    <v-dialog v-model="provDialog" persistent content-class="ccplus-dialog">
       <v-card>
         <v-container grid-list-sm>
           <v-form v-model="formValid">
@@ -232,7 +232,7 @@
         createForm () {
             this.failure = '';
             this.success = '';
-            this.dialog_title = "Add New Global Provider";
+            this.dialog_title = "Add Global Provider";
             this.form.name = this.new_provider.name;
             this.form.is_active = this.new_provider.is_active;
             this.form.server_url_r5 = this.new_provider.server_url_r5;

@@ -319,3 +319,11 @@ i.size-16 {
 	max-width: 450px;
 	overflow: auto;
 }
+.warning-message {
+  position: relative;
+  margin-bottom: 1rem;
+	padding: 0.5rem 1.0rem;
+	border: 1px solid #f00;
+  border-radius: 0.25rem;
+	font-weight: bold;
+}

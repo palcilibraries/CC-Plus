@@ -40,6 +40,10 @@
                             :rules="[rules.required]"  hint="Cannot be modified once created!"
               ></v-text-field>
             </v-row>
+            <v-row v-if="dialogType=='create' && form.ccp_key.length>0" class="d-flex mx-2 mb-2 warning-message">
+              Once created, the database key cannot be changed from within the CC-Plus application.
+              Changes are possible at the operating system level only.
+            </v-row>
             <v-row class="d-flex mx-2">
               <v-text-field v-model="form.admin_user" label="Username" readonly outlined dense></v-text-field>
             </v-row>

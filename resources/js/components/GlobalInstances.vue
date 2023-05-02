@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-row class="d-flex mt-2 justify-center" no-gutters>
-      <v-btn small color="primary" @click="createForm">Create new consortium instance</v-btn>
+      <v-btn small color="primary" @click="createForm">Add Consortium Instance</v-btn>
     </v-row>
     <div class="status-message" v-if="success || failure">
       <span v-if="success" class="good" role="alert" v-text="success"></span>
@@ -22,87 +22,59 @@
         </tr>
       </template>
     </v-data-table>
-    <v-dialog v-model="consoDialog" persistent max-width="800px">
-      <v-card>
-        <v-card-title>
-          <span v-if="dialogType=='edit'">Edit Consortium settings</span>
-          <span v-else>Creating a new consortium instance</span>
-        </v-card-title>
-        <v-container>
-          <v-card-text>
-            <v-form class="in-page-form">
-              <div v-if="dialogType=='create'" class="field-wrapper">
-                <p>
-                  <strong>Note:</strong><br />The Database prefix key is used to define a new database. Once
-                  created, this key cannot be modified by the CC+ application. If you <em><strong>really,
-                  really</strong></em> need to change this later, it has to be done at the Operating System level.
-                </p>
-                <v-row class="d-flex ma-0" no-gutters>
-                  <v-col class="d-flex pa-0" cols="3">Database Prefix Key</v-col>
-                  <v-col class="d-flex px-2">
-                    <v-text-field v-model="form.ccp_key" label="ccp_key" outlined></v-text-field>
-                  </v-col>
-                </v-row>
-                <v-row class="d-flex ma-0" no-gutters>
-                  <v-col class="d-flex pa-0" cols="3">Admin Username/Email</v-col>
-                  <v-col class="d-flex px-2">
-                    <v-text-field v-model="form.admin_user" label="username" outlined></v-text-field>
-                  </v-col>
-                </v-row>
-                <v-row class="d-flex ma-0" no-gutters>
-                  <v-col class="d-flex pa-0" cols="3">Admin Password</v-col>
-                  <v-col class="d-flex px-2">
-                    <v-text-field v-model="form.admin_pass" label="admin_pass" type="password" outlined
-                                   :rules="passwordRules"
-                    ></v-text-field>
-                  </v-col>
-                </v-row>
-                <v-row class="d-flex ma-0" no-gutters>
-                  <v-col class="d-flex pa-0" cols="3">Admin Password Confirm</v-col>
-                  <v-col class="d-flex px-2">
-                    <v-text-field v-model="form.admin_confirm_pass" label="admin_confirm_pass" type="password" outlined
-                                  :rules="passwordRules"
-                    ></v-text-field>
-                  </v-col>
-                </v-row>
-              </div>
-              <div v-else>
-                <v-row class="d-flex my-2" no-gutters>
-                  <v-col class="d-flex pa-0" cols="3">Database Key</v-col>
-                  <v-col class="d-flex px-2"><strong>{{ current_consortium.ccp_key }}</strong></v-col>
-                </v-row>
-              </div>
-              <v-row class="d-flex ma-0" no-gutters>
-                <v-col class="d-flex pa-0" cols="3">Consortium Name</v-col>
-                <v-col class="d-flex px-2">
-                  <v-text-field v-model="form.name" :value="current_consortium.name" label="name" outlined></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row class="d-flex ma-0" no-gutters>
-                <v-col class="d-flex pa-0" cols="3">Consortium Email</v-col>
-                <v-col class="d-flex px-2">
-                  <v-text-field v-model="form.email" :value="current_consortium.email" label="email" outlined></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row class="d-flex ma-0" no-gutters>
-                <v-col class="d-flex pa-0" cols="3">Is Active</v-col>
-                <v-col class="d-flex px-2">
-                  <v-switch v-model="form.is_active" :value="current_consortium.is_active" label="Active?"></v-switch>
-                </v-col>
-              </v-row>
-            </v-form>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-col class="d-flex">
-              <v-btn x-small color="primary" @click="formSubmit">Save Consortium</v-btn>
-            </v-col>
-            <v-col class="d-flex">
-              <v-btn x-small color="primary" @click="consoDialog=false">Cancel</v-btn>
-            </v-col>
-          </v-card-actions>
+    <v-dialog v-model="consoDialog" content-class="ccplus-dialog" persistent>
+        <v-container grid-list-sm>
+          <v-form v-model="formValid">
+            <v-row class="d-flex ma-0">
+              <v-col class="d-flex pt-2 justify-center">
+                <h3 v-if="dialogType=='edit'" align="center">Edit Consortium settings</h3>
+                <h3 v-else align="center">Create new consortium instance</h3>
+              </v-col>
+            </v-row>
+            <v-row class="d-flex mx-2">
+              <v-text-field v-model="form.name" :value="current_consortium.name" label="Consortium name" outlined dense required
+              ></v-text-field>
+            </v-row>
+            <v-row class="d-flex mx-2">
+              <v-text-field v-model="form.ccp_key" label="Database Prefix Key" outlined dense :readonly="dialogType=='edit'"
+                            :rules="[rules.required]"  hint="Cannot be modified once created!"
+              ></v-text-field>
+            </v-row>
+            <v-row class="d-flex mx-2">
+              <v-text-field v-model="form.admin_user" label="Username" readonly outlined dense></v-text-field>
+            </v-row>
+            <v-row class="d-flex mx-2">
+              <v-text-field id="admin_pass" name="admin_pass" label="Administrator Password" outlined dense
+                            :type="pw_show ? 'text' : 'password'" :append-icon="pw_show ? 'mdi-eye-off' : 'mdi-eye'"
+                            @click:append="pw_show = !pw_show" v-model="form.admin_pass" :rules="passwordRules"
+                            :required="dialogType=='create'"
+              ></v-text-field>
+            </v-row>
+            <v-row class="d-flex mx-2">
+              <v-text-field id="admin_confirm_pass" name="admin_confirm_pass" label="Confirm password" outlined dense
+                            :type="pwc_show ? 'text' : 'password'" :append-icon="pwc_show ? 'mdi-eye-off' : 'mdi-eye'"
+                            @click:append="pwc_show = !pwc_show" v-model="form.admin_confirm_pass" :rules="passwordRules"
+                            :required="dialogType=='create'"
+              ></v-text-field>
+            </v-row>
+            <v-row class="d-flex mx-2">
+              <v-text-field v-model="form.email" :value="current_consortium.email" label="Email of Consortium Administrator"
+                            outlined dense clearable
+              ></v-text-field>
+            </v-row>
+            <v-row class="d-flex mx-2 align-center">
+              <v-col class="d-flex px-2" cols="4">
+                <v-switch v-model="form.is_active" :value="current_consortium.is_active" label="Active?" dense></v-switch>
+              </v-col>
+              <v-col class="d-flex px-2" cols="4">
+                <v-btn x-small color="primary" @click="formSubmit" :disabled="!formValid">Save Consortium</v-btn>
+              </v-col>
+              <v-col class="d-flex px-2" cols="4">
+                <v-btn x-small color="primary" type="button" @click="consoDialog=false">Cancel</v-btn>
+              </v-col>
+            </v-row>
+          </v-form>
         </v-container>
-      </v-card>
     </v-dialog>
   </div>
 </template>
@@ -131,12 +103,15 @@
         hide_counter_footer: true,
         consoDialog: false,
         dialogType: "create",
+        formValid: true,
+        pw_show: false,
+        pwc_show: false,
         form: new window.Form({
             ccp_key: '',
             name: '',
             email: '',
             is_active: 1,
-            admin_user: '',
+            admin_user: 'Administrator',
             admin_pass: '',
             admin_confirm_pass: '',
         }),
@@ -144,6 +119,9 @@
             v => !!v || 'E-mail is required',
             v => /.+@.+/.test(v) || 'E-mail must be valid'
         ],
+        rules: {
+          required: value => !!value || 'Field is required',
+        },
       }
     },
     methods: {
@@ -167,6 +145,10 @@
           } else if (this.dialogType == 'create') {
             if (this.form.admin_pass != this.form.admin_confirm_pass) {
                 this.dialogError = 'Passwords do not match! Please re-enter';
+                return;
+            }
+            if (this.form.ccp_key == '' || this.form.ccp_key == null) {
+                this.dialogError = 'Database Key is Required';
                 return;
             }
             this.form.post('/consortia')
@@ -231,7 +213,7 @@
           this.form.name = this.current_consortium.name;
           this.form.is_active = this.current_consortium.is_active;
           this.form.email = this.current_consortium.email;
-          this.form.admin_user = '';
+          this.form.admin_user = 'Administrator';
           this.form.admin_pass = '';
           this.form.admin_confirm_pass = '';
           this.consoDialog = true;
@@ -248,7 +230,7 @@
           this.form.name = '';
           this.form.email = '';
           this.form.is_active = 1;
-          this.form.admin_user = '';
+          this.form.admin_user = 'Administrator';
           this.form.admin_pass = '';
           this.form.admin_confirm_pass = '';
           this.consoDialog = true;

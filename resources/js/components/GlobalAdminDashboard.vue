@@ -54,7 +54,6 @@
       current_panels: {
          handler () {
              this.$store.dispatch('updatePanels',this.panels);
-console.log('called updatePanels');
          },
          deep: true
        }

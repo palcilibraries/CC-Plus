@@ -23,7 +23,7 @@ class Report extends Model
      * @var array
      */
     protected $fillable = [
-        'name', 'legend', 'type', 'revision', 'parent_id', 'inherited_fields'
+        'name', 'legend', 'revision', 'parent_id', 'inherited_fields'
     ];
     protected $casts =['id'=>'integer', 'parent_id'=>'integer'];
 

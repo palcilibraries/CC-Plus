@@ -19,23 +19,23 @@
     </v-row>
     <v-row class="d-flex ma-0" no-gutters>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if="mutable_filters['inst'] != null" class="x-box">
+        <div v-if="filters['inst'] != null" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-select :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters('inst')"
+        <v-select :items="mutable_institutions" v-model="filters['inst']" @change="updateFilters('inst')"
                   label="Limit by Institution"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <v-select :items="status_options" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
+        <v-select :items="status_options" v-model="filters['stat']" @change="updateFilters('stat')"
                   label="Limit by Status"
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="3">
-        <div v-if="mutable_filters['roles'].length>0" class="x-box">
+        <div v-if="filters['roles'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('roles')"/>&nbsp;
         </div>
-        <v-select :items="allowed_roles" v-model="mutable_filters['roles']" @change="updateFilters('inst')" multiple
+        <v-select :items="allowed_roles" v-model="filters['roles']" @change="updateFilters('inst')" multiple
                   label="Limit by Role(s)"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
@@ -119,118 +119,10 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="userDialog" persistent max-width="800px">
-      <v-card>
-        <v-card-title>
-          <span v-if="dialogType=='edit'">Edit user settings</span>
-          <span v-else>Create a new user</span>
-        </v-card-title>
-        <v-form class="in-page-form" :key="'UFrm'+form_key">
-          <v-card-text>
-            <div class="status-message" v-if="user_success || user_failure">
-              <span v-if="user_success" class="good" role="alert" v-text="user_success"></span>
-              <span v-if="user_failure" class="fail" role="alert" v-text="user_failure"></span>
-            </div>
-            <v-container grid-list-md>
-              <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-              <v-text-field outlined required name="email" label="Email" type="email"
-                            v-model="form.email" :rules="emailRules">
-              </v-text-field>
-              <v-row class="d-flex ma-0" no-gutters>
-                  <v-col class="d-flex pa-0" cols="3">
-                      <v-switch v-model="form.is_active" label="Active?"></v-switch>
-                  </v-col>
-                  <v-col class="d-flex pa-0" cols="3">
-                      <v-btn small color="primary" @click="createInst">Create an Institution</v-btn>
-                  </v-col>
-              </v-row>
-              <div v-if="is_admin">
-                  <v-select outlined required :items="mutable_institutions" v-model="form.inst_id" item-value="id"
-                            item-text="name" value="current_user.inst_id" label="Institution" @change="changeInst"
-                  ></v-select>
-              </div>
-              <div v-else>
-                <v-text-field outlined readonly label="Institution" :value="inst_name"></v-text-field>
-              </div>
-              <v-text-field outlined name="password" label="Reset Password" id="password" :rules="passwordRules"
-                            :type="pw_show ? 'text' : 'password'" :append-icon="pw_show ? 'mdi-eye-off' : 'mdi-eye'"
-                            @click:append="pw_show = !pw_show" v-model="form.password">
-              </v-text-field>
-              <v-text-field outlined name="confirm_pass" label="Reset Password Confirmation" id="confirm_pass"
-                            :rules="passwordRules" :type="pwc_show ? 'text' : 'password'"
-                            :append-icon="pwc_show ? 'mdi-eye-off' : 'mdi-eye'" @click:append="pwc_show = !pwc_show"
-                            v-model="form.confirm_pass">
-              </v-text-field>
-              <div class="field-wrapper">
-                <v-subheader v-text="'Fiscal Year Begins'"></v-subheader>
-                <v-select :items="months" v-model="form.fiscalYr" label="Month"></v-select>
-              </div>
-              <div v-if="is_manager || is_admin" class="field-wrapper">
-      	        <v-subheader v-text="'User Roles'"></v-subheader>
-                <v-select :items="allowed_roles" v-model="form.roles" :value="current_user.roles" item-text="name"
-                          item-value="id" label="User Role(s)" multiple chips hint="Define roles for user"
-                          persistent-hint
-                ></v-select>
-                <div style="display: inline-block;">
-                  Roles<br>
-                  Admin: can create and manage settings for all users, institutions, and providers<br>
-                  Manager: can manage settings for their own institutions and can create and manage users within their institution<br>
-                  User: can view statistics for their own institution<br>
-                  Viewer: can view statistics for all institutions
-                </div>
-              </div>
-            </v-container>
-          </v-card-text>
-          <v-card-actions>
-            <v-col class="d-flex">
-              <v-btn small color="primary" type="button" @click="formSubmit">Save User</v-btn>
-            </v-col>
-            <v-col class="d-flex">
-              <v-btn small color="primary" type="button" @click="userDialog=false">Cancel</v-btn>
-            </v-col>
-          </v-card-actions>
-        </v-form>
-      </v-card>
-    </v-dialog>
-    <v-dialog v-model="instDialog" persistent max-width="500px">
-      <v-card>
-        <v-card-title>
-          <span>Create a new institution</span>
-        </v-card-title>
-        <v-form class="in-page-form">
-          <v-card-text>
-            <div class="status-message" v-if="inst_failure">
-              <span v-if="inst_failure" class="fail" role="alert" v-text="inst_failure"></span>
-            </div>
-            <v-container grid-list-md>
-              <v-text-field v-model="instForm.name" label="Name" outlined></v-text-field>
-              <v-text-field v-model="instForm.local_id" label="Local Identifier" outlined></v-text-field>
-              <v-switch v-model="instForm.is_active" label="Active?"></v-switch>
-              <div class="field-wrapper">
-                <v-subheader v-text="'FTE'"></v-subheader>
-                <v-text-field v-model="instForm.fte" label="FTE" hide-details single-line type="number"></v-text-field>
-              </div>
-              <div class="field-wrapper has-label">
-                <v-subheader v-text="'Belongs To'"></v-subheader>
-                <v-select :items="all_groups" v-model="instForm.institutiongroups" item-text="name" item-value="id"
-                          label="Institution Group(s)" multiple chips persistent-hint
-                          hint="Assign group membership for this institution"
-                ></v-select>
-              </div>
-              <v-textarea v-model="instForm.notes" label="Notes" auto-grow></v-textarea>
-            </v-container>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-col class="d-flex">
-              <v-btn small color="primary" type="button" @click="submitNewInst">Save Institution</v-btn>
-            </v-col>
-            <v-col class="d-flex">
-              <v-btn class='btn' x-small type="button" color="primary" @click="instDialog=false">Cancel</v-btn>
-            </v-col>
-          </v-card-actions>
-        </v-form>
-      </v-card>
+    <v-dialog v-model="userDialog" persistent content-class="ccplus-dialog">
+      <user-dialog :dtype="dialogType" :user="current_user" :allowed_roles="allowed_roles" :institutions="mutable_institutions"
+                   :groups="all_groups" @user-complete="userDialogDone"
+      ></user-dialog>
     </v-dialog>
   </div>
 </template>
@@ -245,30 +137,22 @@
             allowed_roles: { type:Array, default: () => [] },
             institutions: { type:Array, default: () => [] },
             all_groups: { type:Array, default: () => [] },
-            filters: { type:Object, default: () => {} }
            },
     data () {
       return {
         success: '',
         failure: '',
-        user_success: '',
-        user_failure: '',
-        inst_failure: '',
-        inst_name: '',
         mutable_users: [ ...this.users ],
         mutable_institutions: [ ...this.institutions ],
-        mutable_filters: this.filters,
+        filters: { inst:null, stat:'ALL', roles:[] },
         current_user: {},
         pw_show: false,
         pwc_show: false,
         dialogType: 'create',
         userDialog: false,
-        instDialog: false,
         importDialog: false,
         search: '',
         status_options: ['ALL', 'Active', 'Inactive'],
-        months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
-        form_key: 1,
         headers: [
           { text: 'User Name ', value: 'name' },
           { text: 'Institution', value: 'institution.name' },
@@ -278,80 +162,12 @@
           { text: 'Last Login', value: 'last_login' },
           { text: '', value: '', sortable: false },
         ],
-        emailRules: [
-            v => !!v || 'E-mail is required',
-            v => ( /.+@.+/.test(v) || v=='Administrator') || 'E-mail must be valid'
-        ],
-        form: new window.Form({
-            name: '',
-            inst_id: null,
-            is_active: 1,
-            email: '',
-            password: '',
-            confirm_pass: '',
-            fiscalYr: '',
-            roles: []
-        }),
-        instForm: new window.Form({
-            name: '',
-            local_id: '',
-            is_active: 1,
-            fte: 0,
-            institutiongroups: [],
-            notes: '',
-        }),
         dtKey: 1,
         mutable_options: {},
         csv_upload: null,
       }
     },
     methods: {
-        formSubmit (event) {
-            this.success = '';
-            this.failure = '';
-            this.user_failure = '';
-            if (this.form.password != this.form.confirm_pass) {
-                this.user_failure = 'Passwords do not match! Please re-enter';
-                return;
-            }
-            if (this.dialogType == 'edit') {
-                if  (this.form.password.length>0 && this.form.password.length<8) {
-                    this.user_failure = 'Password must be at least 8 characters';
-                    return;
-                }
-                this.form.patch('/users/'+this.current_user.id)
-                    .then((response) => {
-                        if (response.result) {
-                            // Update mutable_users record with newly saved values...
-                            var idx = this.mutable_users.findIndex(u => u.id == this.current_user.id);
-                            Object.assign(this.mutable_users[idx], response.user);
-                            this.success = response.msg;
-                            this.userDialog = false;
-                        } else {
-                            this.user_failure = response.msg;
-                        }
-                    });
-            } else if (this.dialogType == 'create') {
-                this.form.post('/users')
-                    .then((response) => {
-                        if (response.result) {
-                            this.success = response.msg;
-                            // Add the new user to the mutable array and re-sort it
-                            this.mutable_users.push(response.user);
-                            this.mutable_users.sort((a,b) => {
-                              if ( a.name < b.name ) return -1;
-                              if ( a.name > b.name ) return 1;
-                              return 0;
-                            });
-                            this.dtKey += 1;           // force re-render of the datatable
-                            this.userDialog = false;
-                        } else {
-                            this.success = '';
-                            this.user_failure = response.msg;
-                        }
-                    });
-            }
-        },
         doExport () {
             window.location.assign('/users/export/xlsx');
         },
@@ -383,33 +199,38 @@
             })
             .catch({});
         },
-        submitNewInst (event) {
-            // report errors to the inst-dialog and success to the user-dialog
-            this.user_success = '';
-            this.inst_failure = '';
-            this.instForm.post('/institutions')
-                .then( (response) => {
-                    if (response.result) {
-                        this.inst_failure = '';
-                        this.user_success = response.msg;
-                        // Add the new institution onto the mutable array and re-sort it
-                        this.mutable_institutions.push(response.institution);
-                        this.mutable_institutions.sort((a,b) => {
-                          if ( a.name < b.name ) return -1;
-                          if ( a.name > b.name ) return 1;
-                          return 0;
-                        });
-                        // apply new new institution ID to the user form; don't change if already set
-                        if (this.form.inst_id == null) {
-                            this.form.inst_id = response.institution.id;
-                            this.form_key += 1;
-                        }
-                        this.instDialog = false;
-                    } else {
-                        this.user_success = '';
-                        this.inst_failure = response.msg;
-                    }
+        userDialogDone ({ result, msg, user, new_inst }) {
+            this.success = '';
+            this.failure = '';
+            // Dialog may have created institutions and still not return success
+            if (new_inst.length>0) {
+                // Add any new institutions onto the mutable array and re-sort it
+                for (const inst of new_inst) {
+                    this.mutable_institutions.push(inst);
+                }
+                this.mutable_institutions.sort((a,b) => {
+                  if ( a.name < b.name ) return -1;
+                  if ( a.name > b.name ) return 1;
+                  return 0;
                 });
+                this.dtKey += 1;
+                this.$emit('new-inst', new_inst);
+            }
+            if (result == 'Success') {
+                this.success = msg;
+                // Add the new institution onto the mutable array and re-sort it
+                this.mutable_users.push(user);
+                this.mutable_users.sort((a,b) => {
+                  if ( a.name < b.name ) return -1;
+                  if ( a.name > b.name ) return 1;
+                  return 0;
+                });
+            } else if (result == 'Fail') {
+                this.failure = msg;
+            } else if (result != 'Cancel') {
+                this.failure = 'Unexpected Result returned from dialog - programming error!';
+            }
+            this.userDialog = false;
         },
         importForm () {
             this.csv_upload = null;
@@ -419,65 +240,34 @@
         editForm (userid) {
             this.failure = '';
             this.success = '';
-            this.user_success = '';
-            this.user_failure = '';
             this.dialogType = "edit";
             this.current_user = this.mutable_users[this.mutable_users.findIndex(u=> u.id == userid)];
-            this.form.name = this.current_user.name;
-            this.form.inst_id = this.current_user.inst_id;
-            this.form.is_active = this.current_user.is_active;
-            this.form.email = this.current_user.email;
-            this.form.password = '';
-            this.form.confirm_pass = '';
-            this.form.roles = this.current_user.roles;
-            this.form.fiscalYr = this.current_user.fiscalYr;
             this.userDialog = true;
             this.importDialog = false;
         },
         createForm () {
             this.failure = '';
             this.success = '';
-            this.user_success = '';
-            this.user_failure = '';
             this.dialogType = "create";
             var _inst = (this.is_admin) ? null : this.institutions[0].id;
             this.current_user = {roles: [1], inst_id: _inst};
-            this.form.name = '';
-            this.form.inst_id = _inst;
-            this.form.is_active = 1;
-            this.form.email = '';
-            this.form.password = '';
-            this.form.confirm_pass = '';
-            this.form.roles = [1];
             this.userDialog = true;
             this.importDialog = false;
         },
-        createInst () {
-            this.failure = '';
-            this.success = '';
-            this.instForm.name = '';
-            this.instForm.local_id = '';
-            this.instForm.is_active = 1;
-            this.instForm.fte = 0;
-            this.instForm.institutiongroups = [];
-            this.instForm.notes = '';
-            this.instDialog = true;
-        },
-
         updateFilters() {
-            this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            this.$store.dispatch('updateAllFilters',this.filters);
             this.updateRecords();
         },
         clearFilter(filter) {
-            if (filter == 'inst') this.mutable_filters['inst'] = null;
-            if (filter == 'roles') this.mutable_filters['roles'] = [];
-            this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            if (filter == 'inst') this.filters['inst'] = null;
+            if (filter == 'roles') this.filters['roles'] = [];
+            this.$store.dispatch('updateAllFilters',this.filters);
             this.updateRecords();
         },
         updateRecords() {
             this.success = "";
             this.failure = "";
-            let _filters = JSON.stringify(this.mutable_filters);
+            let _filters = JSON.stringify(this.filters);
             axios.get("/users?json=1&filters="+_filters)
                  .then((response) => {
                      this.mutable_users = response.data.users;
@@ -516,27 +306,9 @@
             });
             this.$store.dispatch('updateDatatableOptions',this.mutable_options);
         },
-        changeInst () {
-            let view_role = this.allowed_roles.find(r => r.name == "Viewer");
-            if (!view_role) return;
-
-            // Assigning to consortium staff turns on Viewer role
-            if (this.form.inst_id == 1) {
-                if (!this.form.roles.includes(view_role.id)) this.form.roles.push(view_role.id);
-            // Assigning to a non-consortium staff inst turns Viewer role OFF in the form if the user does not have it already
-            // (in case set to consortium staff and then change to another before submitting)
-            } else {
-                let _user = this.users.find(u => u.id == this.current_user.id);
-                if (_user) {
-                    if (!_user.roles.includes(view_role.id) && this.form.roles.includes(view_role.id)) {
-                        this.form.roles.splice(this.form.roles.indexOf(view_role.id), 1);
-                    }
-                }
-            }
-        },
     },
     computed: {
-      ...mapGetters(['is_manager','is_admin','datatable_options']),
+      ...mapGetters(['is_admin','all_filters','datatable_options']),
       passwordRules() {
           if (this.dialogType == 'create') {
               return [ v => !!v || 'Password is required',
@@ -557,35 +329,16 @@
         this.$store.dispatch('updatePageName','users');
 	  },
     mounted() {
-      if (!this.is_admin) {
-          this.inst_name = this.institutions[0].name;
-      }
-
-      // Apply any defined prop-based filters (and overwrite existing store values)
-      var count = 0;
-      Object.assign(this.mutable_filters, this.all_filters);
-      Object.keys(this.filters).forEach( (key) =>  {
-        if (this.filters[key] != null) {
-          if (this.filters[key].length>0) {
-            count++;
-            this.mutable_filters[key] = this.filters[key];
-          }
-        }
-      });
-
+      // Apply any existing store filters
+      Object.assign(this.filters, this.all_filters);
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);
-
-      // Update store and apply filters if some have been set
-      if (count>0) this.$store.dispatch('updateAllFilters',this.mutable_filters);
-
       // Load settings
       this.updateRecords();
       this.dtKey += 1;           // update the datatable
 
       // Subscribe to store updates
       this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
-
       console.log('UserData Component mounted.');
     }
   }

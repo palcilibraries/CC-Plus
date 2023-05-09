@@ -78,38 +78,7 @@ export default {
             navList: [
               { url: "/", name: "Home", role: "All" },
               { url: "/global/home", name: "Global Admin", role: "GlobalAdmin" },
-              {
-                url: "#",
-                name: "Admin",
-                role: "Admin",
-                children: [
-                  {
-                    url: "/institutions",
-                    name: "Institutions",
-                    role: "Admin",
-                  },
-                  // {
-                  //   url: "/institutions/types",
-                  //   name: "Institution Types",
-                  //   role: "Admin",
-                  // },
-                  {
-                    url: "/users",
-                    name: "Users",
-                    role: "Admin",
-                  },
-                  {
-                    url: "/providers",
-                    name: "Providers",
-                    role: "Admin",
-                  },
-                  {
-                    url: "/sushisettings",
-                    name: "Sushi Settings",
-                    role: "Admin",
-                  },
-                ]
-              },
+              { url: "/consoadmin", name: "Consortium Admin", role: "Admin"},
               {
                 name: "Harvests",
                 role: "All",

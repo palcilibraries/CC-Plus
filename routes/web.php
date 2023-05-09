@@ -96,3 +96,4 @@ Route::get('/global/providers/export/{type}', 'GlobalProviderController@export')
 Route::resource('/consortia', 'ConsortiumController')->middleware('auth','role:GlobalAdmin');
 Route::post('/change-instance', 'GlobalAdminController@changeInstance')->name('global.changeInstance')
      ->middleware('auth','role:GlobalAdmin');
+Route::get('/consoadmin', 'AdminController@index')->name('admin.home')->middleware('auth','role:Admin');

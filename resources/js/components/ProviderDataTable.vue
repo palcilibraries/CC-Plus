@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-row class="d-flex ma-0" no-gutters>
+    <v-row class="d-flex mt-2" no-gutters>
       <v-col v-if="mutable_unset.length > 0" class="d-flex pa-0" cols="3">
         <v-autocomplete :items="mutable_unset" v-model="new_provider" label="Unconnected Providers"
                         item-text="name" item-value="id" outlined
@@ -24,12 +24,12 @@
     <v-data-table :headers="headers" :items="mutable_providers" item-key="id" :options="mutable_options"
                   :search="search" @update:options="updateOptions" :key="'mp'+dtKey">
       <template v-slot:item.inst_name="{ item }">
-        <span v-if="item.inst_id==1">{{ item.institution.name }}</span>
+        <span v-if="item.inst_id==1">{{ item.inst_name }}</span>
         <span v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></span>
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
-          <v-icon title="Edit Provider" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
+          <v-icon title="Edit Provider" @click="goEdit(item.id)">mdi-exit-to-app</v-icon>
           <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
             <v-icon title="Delete Provider">mdi-trash-can-outline</v-icon>
           </v-btn>
@@ -97,6 +97,7 @@
                         return 0;
                     });
                     this.new_provider = null;
+                    this.$emit('connect-prov', response.data.added);
                 } else {
                     this.failure = response.data.msg;
                 }
@@ -130,15 +131,9 @@
                   axios.delete('/providers/'+provid)
                        .then( (response) => {
                            if (response.data.result) {
+                               this.success = 'Provider successfully deleted';
                                this.mutable_providers.splice(this.mutable_providers.findIndex(p=>p.id == provid),1);
-                               this.mutable_unset.push(response.data.global_provider);
-                               // re-sort the mutable unset globals list
-                               this.mutable_unset.sort((a,b) => {
-                                   if ( a.name < b.name ) return -1;
-                                   if ( a.name > b.name ) return 1;
-                                   return 0;
-                               });
-                               this.success = "Global Provider successfully deleted.";
+                               this.$emit('disconnect-prov', { provid, global_prov: response.data.global_provider });
                            } else {
                                this.success = '';
                                this.failure = response.data.msg;

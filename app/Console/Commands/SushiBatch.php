@@ -117,7 +117,7 @@ class SushiBatch extends Command
         }
 
         // Get connection fields
-        $all_connection_fields = ConnectionField->get();
+        $all_connection_fields = ConnectionField::get();
 
        // Get Provider data as a collection regardless of whether we just need one
         if ($prov_id == 0) {

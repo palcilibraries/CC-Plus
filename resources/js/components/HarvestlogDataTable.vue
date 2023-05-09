@@ -55,10 +55,10 @@
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if="mutable_filters['stat'].length>0" class="x-box">
-          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('stat')"/>&nbsp;
+        <div v-if="mutable_filters['harv_stat'].length>0" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('harv_stat')"/>&nbsp;
         </div>
-        <v-select :items="statuses" v-model="mutable_filters['stat']" @change="updateFilters()" multiple
+        <v-select :items="statuses" v-model="mutable_filters['harv_stat']" @change="updateFilters()" multiple
                   label="Status(es)" item-text="name" item-value="name"
         ></v-select>
       </v-col>

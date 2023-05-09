@@ -29,17 +29,17 @@
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-select :items="mutable_institutions" v-model="mutable_filters['inst']" @change="updateFilters('inst')" multiple
+        <v-autocomplete :items="mutable_institutions" v-model="mutable_filters['inst']" @change="updateFilters('inst')" multiple
                   label="Institution(s)"  item-text="name" item-value="id"
-        ></v-select>
+        ></v-autocomplete>
       </v-col>
       <v-col v-if="mutable_filters['inst'].length==0" class="d-flex px-2" cols="2">
         <div v-if="mutable_filters['group'] != 0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('group')"/>&nbsp;
         </div>
-        <v-select :items="inst_groups" v-model="mutable_filters['group']"  @change="updateFilters('group')"
+        <v-autocomplete :items="inst_groups" v-model="mutable_filters['group']"  @change="updateFilters('group')"
                   label="Institution Group"  item-text="name" item-value="id" hint="Limit the display to an institution group"
-        ></v-select>
+        ></v-autocomplete>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2">
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
@@ -50,10 +50,10 @@
         ></v-select>
       </v-col>
       <v-col class="d-flex px-4 align-center" cols="2">
-        <div v-if="mutable_filters['stat'].length>0" class="x-box">
-            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('stat')"/>&nbsp;
+        <div v-if="mutable_filters['harv_stat'].length>0" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('harv_stat')"/>&nbsp;
         </div>
-        <v-select :items="statuses" v-model="mutable_filters['stat']" @change="updateFilters('stat')" multiple
+        <v-select :items="statuses" v-model="mutable_filters['harv_stat']" @change="updateFilters('harv_stat')" multiple
                   label="Harvest Status"
         ></v-select> &nbsp;
       </v-col>
@@ -162,7 +162,8 @@
                 providers: { type:Array, default: () => [] },
                 institutions: { type:Array, default: () => [] },
                 inst_groups: { type:Array, default: () => [] },
-                filters: { type:Object, default: () => {} }
+                filters: { type:Object, default: () => {} },
+                refresh_key: { type:Number, default: 1 },
                },
         data() {
             return {
@@ -209,6 +210,13 @@
                     status: 'Enabled'
 				        }),
             }
+        },
+        watch: {
+          refresh_key: {
+             handler () {
+               this.updateSettings(); // Re-load settings
+             },
+           }
         },
         methods: {
           importForm () {

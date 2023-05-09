@@ -116,6 +116,9 @@ class SushiBatch extends Command
             return 0;
         }
 
+        // Get connection fields
+        $all_connection_fields = ConnectionField->get();
+
        // Get Provider data as a collection regardless of whether we just need one
         if ($prov_id == 0) {
             $providers = Provider::with('SushiSettings', 'SushiSettings.institution', 'SushiSettings.provider',
@@ -160,6 +163,10 @@ class SushiBatch extends Command
                     continue;
                 }
 
+                // setup array of required connectors for buildUri
+                $connectors = $all_connection_fields->whereIn('id',$setting->provider->globalProv->connectors)
+                                                    ->pluck('name')->toArray();
+
                // Create a new processor object
                 $C5processor = new Counter5Processor($provider->id, $setting->inst_id, $begin, $end, $replace);
 
@@ -172,7 +179,7 @@ class SushiBatch extends Command
 
                    // Create a new Sushi object
                     $sushi = new Sushi($begin, $end);
-                    $request_uri = $sushi->buildUri($setting, 'reports', $report);
+                    $request_uri = $sushi->buildUri($setting, $connectors, 'reports', $report);
 
                    // Set output filename for raw data. Create the folder path, if necessary
                     if (!is_null(config('ccplus.reports_path'))) {

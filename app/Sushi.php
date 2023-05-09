@@ -129,10 +129,11 @@ class Sushi extends Model
     * Build and return a SUSHI request URI based on a setting and report
     *
     * @param SushiSetting $setting
+    * @param Array $connectors
     * @param Report $_report
     * @return string $request_uri
     */
-    public function buildUri($setting, $method = "reports", $report = "")
+    public function buildUri($setting, $connectors, $method = "reports", $report = "")
     {
        // Begin setting up the URI by cleaning/standardizing the server_url_r5 string in the setting
         $_url = rtrim($setting->provider->globalProv->server_url_r5);    // remove trailing whitespace
@@ -143,12 +144,10 @@ class Sushi extends Model
         $request_uri = $_uri . '/' . $method;
 
        // Construct and execute the Request
-        $uri_auth = "?customer_id=" . urlencode($setting->customer_id);
-        if (!is_null($setting->requestor_id)) {
-            $uri_auth .= "&requestor_id=" . urlencode($setting->requestor_id);
-        }
-        if (!is_null($setting->API_key)) {
-            $uri_auth .= "&api_key=" . urlencode($setting->API_key);
+        $uri_auth = "";
+        foreach ($connectors as $cnx) {
+            $uri_auth .= ($uri_auth == "") ? "?" . "&";
+            $uri_auth .= $cnx . "=" . urlencode( $setting->{$cnx} );
         }
 
         // Return the URI if we're not building a report request

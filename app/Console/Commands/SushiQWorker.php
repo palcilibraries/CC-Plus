@@ -17,6 +17,7 @@ use App\CcplusError;
 use App\Severity;
 use App\Alert;
 use App\GlobalProvider;
+use App\ConnectionField;
 use \ubfr\c5tools\JsonR5Report;
 use \ubfr\c5tools\CheckResult;
 use \ubfr\c5tools\ParseException;
@@ -49,6 +50,7 @@ class SushiQWorker extends Command
     protected $description = 'Process the CC-Plus Sushi Queue for a Consortium';
     private $all_consortia;
     private $global_providers;
+    private $connection_fields;
 
     /**
      * Create a new command instance.
@@ -59,6 +61,7 @@ class SushiQWorker extends Command
     {
         parent::__construct();
         $this->global_providers = GlobalProvider::where('is_active', true)->get();
+        $this->connection_fields = ConnectionField::get();
     }
 
     /**
@@ -241,8 +244,11 @@ class SushiQWorker extends Command
                 $job->harvest->rawfile = $raw_filename;
             }
 
+            // setup array of required connectors for buildUri
+            $connectors = $this->connection_fields->whereIn('id',$setting->provider->globalProv->connectors)
+                                                  ->pluck('name')->toArray();
            // Construct URI for the request
-            $request_uri = $sushi->buildUri($setting, 'reports', $report);
+            $request_uri = $sushi->buildUri($setting, $connectors, 'reports', $report);
 
            // Make the request
             $request_status = $sushi->request($request_uri);

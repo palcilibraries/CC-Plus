@@ -55,6 +55,8 @@ Vue.component('sushisettings-data-table', require('./components/SushiSettingsDat
 Vue.component('password-visibility', require('./components/PasswordVisibility.vue').default);
 Vue.component('clear-input', require('./components/ClearInput.vue').default);
 Vue.component('consoadmin-dashboard', require('./components/ConsoAdminDashboard.vue').default);
+Vue.component('institution-dialog', require('./components/InstitutionDialog.vue').default);
+Vue.component('user-dialog', require('./components/UserDialog.vue').default);
 
 /**
  * Create a fresh Vue application instance with Vuetify.

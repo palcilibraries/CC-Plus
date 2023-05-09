@@ -119,10 +119,6 @@
             admin_pass: '',
             admin_confirm_pass: '',
         }),
-        emailRules: [
-            v => !!v || 'E-mail is required',
-            v => /.+@.+/.test(v) || 'E-mail must be valid'
-        ],
         rules: {
           required: value => !!value || 'Field is required',
         },

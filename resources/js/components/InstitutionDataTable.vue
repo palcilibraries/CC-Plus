@@ -51,7 +51,7 @@
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
           <v-btn icon @click="goEdit(item.id)">
-            <v-icon title="Edit Institution" >mdi-cog-outline</v-icon>
+            <v-icon title="Edit Institution" >mdi-exit-to-app</v-icon>
           </v-btn>
           <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
             <v-icon title="Delete Institution">mdi-trash-can-outline</v-icon>
@@ -114,42 +114,8 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="instDialog" persistent max-width="500px">
-      <v-card>
-        <v-card-title>
-          <span>Create a new institution</span>
-        </v-card-title>
-        <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
-              @keydown="form.errors.clear($event.target.name)">
-          <v-card-text>
-            <v-container grid-list-md>
-              <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-              <v-switch v-model="form.is_active" label="Active?"></v-switch>
-              <div class="field-wrapper">
-                <v-subheader v-text="'FTE'"></v-subheader>
-                <v-text-field v-model="form.fte" label="FTE" hide-details single-line type="number"></v-text-field>
-              </div>
-              <div class="field-wrapper has-label">
-                <v-subheader v-text="'Belongs To'"></v-subheader>
-                <v-select :items="mutable_groups" v-model="form.institutiongroups" item-text="name" item-value="id"
-                          label="Institution Group(s)" multiple chips persistent-hint
-                          hint="Assign group membership for this institution"
-                ></v-select>
-              </div>
-              <v-textarea v-model="form.notes" label="Notes" auto-grow></v-textarea>
-            </v-container>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-col class="d-flex">
-              <v-btn class='btn' x-small color="primary" type="submit">Save New Institution</v-btn>
-            </v-col>
-            <v-col class="d-flex">
-              <v-btn class='btn' x-small type="button" color="primary" @click="instDialog=false">Cancel</v-btn>
-            </v-col>
-          </v-card-actions>
-        </form>
-      </v-card>
+    <v-dialog v-model="instDialog" persistent content-class="ccplus-dialog">
+      <institution-dialog dtype="create" :groups="all_groups" @inst-complete="instDialogDone"></institution-dialog>
     </v-dialog>
     <v-dialog v-model="groupingDialog" persistent max-width="500px">
       <v-card>
@@ -214,7 +180,6 @@
         groupingType: '',
         newGroupName: '',
         addToGroupID: null,
-        mutable_filters: this.filters,
         status_options: ['ALL', 'Active', 'Inactive'],
         headers: [
           { text: 'Institution ', value: 'name', align: 'start' },
@@ -226,6 +191,7 @@
         footer_props: { 'items-per-page-options': [10,50,100,-1] },
         mutable_institutions: [ ...this.institutions],
         mutable_groups: [ ...this.all_groups],
+        mutable_filters: {},
         form: new window.Form({
             name: '',
             is_active: 1,
@@ -237,34 +203,30 @@
         mutable_options: {},
         csv_upload: null,
         import_type: '',
-        import_types: ['Add or Update', 'Full Replacement']
+        import_types: ['Add or Update', 'Full Replacement'],
+        added_insts: [],
       }
     },
     methods: {
         institutionImportForm () {
             this.csv_upload = null;
             this.instDialog = false;
-            this.institutionImportDialog = true;
             this.settingsImportDialog = false;
+            this.institutionImportDialog = true;
         },
         settingsImportForm () {
             this.csv_upload = null;
             this.import_type = '';
-            this.settingsImportDialog = true;
+            this.instDialog = false;
             this.institutionImportDialog = false;
-            this.provDialog = false;
+            this.settingsImportDialog = true;
         },
         createForm () {
             this.failure = '';
             this.success = '';
-            this.form.name = '';
-            this.form.is_active = 1;
-            this.form.fte = 0;
-            this.form.institutiongroups = [];
-            this.form.notes = '';
-            this.instDialog = true;
             this.settingsImportDialog = false;
             this.institutionImportDialog = false;
+            this.instDialog = true;
         },
         updateFilters() {
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
@@ -284,6 +246,36 @@
                      this.mutable_institutions = response.data.institutions;
                  })
                  .catch(err => console.log(err));
+        },
+        instDialogDone ({ result, msg, inst }) {
+            this.success = '';
+            this.failure = '';
+            if (result == 'Success') {
+                this.success = msg;
+                // Add the new institution onto the mutable array and re-sort it
+                this.mutable_institutions.push(inst);
+                this.mutable_institutions.sort((a,b) => {
+                  if ( a.name < b.name ) return -1;
+                  if ( a.name > b.name ) return 1;
+                  return 0;
+                });
+                // apply new new institution ID to the user form; don't change if already set
+                if (this.form.inst_id == null) {
+                    this.form.inst_id = inst.id;
+                    this.form_key += 1;
+                }
+                // Add inst to the array we'll emit to caller
+                this.added_insts.push(inst);
+            } else if (result == 'Fail') {
+                this.failure = msg;
+            } else if (result != 'Cancel') {
+                this.failure = 'Unexpected Result returned from dialog - programming error!';
+            }
+            this.instDialog = false;
+            // return new inst as a 1-item array
+            var new_inst = [];
+            new_inst.push(inst);
+            this.$emit('new-inst', new_inst);
         },
         processBulk() {
             this.success = "";
@@ -347,6 +339,7 @@
               return true;
           })
           .catch({});
+          this.$emit('bulk-update', mutable_institutions);
         },
         groupUpdate() {
           this.success = '';
@@ -407,6 +400,7 @@
             this.mutable_institutions[_idx].groups = group_str;
           });
           this.groupingDialog = false;
+          this.$emit('groups-updated', {groups: this.mutable_groups, insts: this.mutable_institutions});
         },
         institutionImportSubmit (event) {
             this.success = '';
@@ -435,30 +429,7 @@
                  });
              this.institutionImportDialog = false;
         },
-        formSubmit (event) {
-            this.success = '';
-            this.failure = '';
-            this.form.post('/institutions')
-                .then( (response) => {
-                    if (response.result) {
-                        this.failure = '';
-                        this.success = response.msg;
-                        // Add the new institution onto the mutable array and re-sort it
-                        this.mutable_institutions.push(response.institution);
-                        this.mutable_institutions.sort((a,b) => {
-                          if ( a.name < b.name ) return -1;
-                          if ( a.name > b.name ) return 1;
-                          return 0;
-                        });
-                    } else {
-                        this.success = '';
-                        this.failure = response.msg;
-                    }
-                });
-            this.instDialog = false;
-        },
         destroy (instid) {
-            var self = this;
             Swal.fire({
               title: 'Are you sure?',
               text: "Deleting an institution cannot be reversed, only manually recreated."+
@@ -475,17 +446,19 @@
                   axios.delete('/institutions/'+instid)
                        .then( (response) => {
                            if (response.data.result) {
-                               window.location.assign("/institutions");
+                               this.success = 'Institution Deleted';
+                               this.mutable_institutions.splice(this.mutable_institutions.findIndex(ii=> instid == ii.id),1);
+                               this.$emit('drop-inst', instid);
                            } else {
-                               self.success = '';
-                               self.failure = response.data.msg;
+                               this.success = '';
+                               this.failure = response.data.msg;
                            }
                        })
                        .catch({});
               }
             })
             .catch({});
-        },
+      },
         goEdit (instId) {
             window.location.assign('/institutions/'+instId+'/edit');
         },
@@ -501,6 +474,10 @@
             });
             this.$store.dispatch('updateDatatableOptions',this.mutable_options);
         },
+        isEmpty(obj) {
+          for (var i in obj) return false;
+          return true;
+        }
     },
     computed: {
       ...mapGetters(['all_filters','page_name','datatable_options'])
@@ -514,6 +491,12 @@
       this.$store.dispatch('updatePageName','institutions');
     },
     mounted() {
+      if ( this.isEmpty(this.filters) ) {
+          this.mutable_filters = { stat: "", groups: [] };
+      } else {
+          this.mutable_filters = { ...this.filters };
+      }
+
       // Apply any defined prop-based filters (and overwrite existing store values)
       var count = 0;
       Object.assign(this.mutable_filters, this.all_filters);

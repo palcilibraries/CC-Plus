@@ -36,7 +36,7 @@ class SushiSettingController extends Controller
         $json = ($request->input('json')) ? true : false;
 
         // Assign optional inputs to $filters array
-        $filters = array('inst' => [], 'group' => 0, 'prov' => [], 'stat' => []);
+        $filters = array('inst' => [], 'group' => 0, 'prov' => [], 'harv_stat' => []);
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
@@ -74,8 +74,8 @@ class SushiSettingController extends Controller
                                   ->when(sizeof($filters['prov']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('prov_id', $filters['prov']);
                                   })
-                                  ->when(sizeof($filters['stat']) > 0, function ($qry) use ($filters) {
-                                      return $qry->whereIn('status', $filters['stat']);
+                                  ->when(sizeof($filters['harv_stat']) > 0, function ($qry) use ($filters) {
+                                      return $qry->whereIn('status', $filters['harv_stat']);
                                   })
                                   ->get();
 

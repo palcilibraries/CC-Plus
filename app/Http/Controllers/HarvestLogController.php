@@ -38,7 +38,7 @@ class HarvestLogController extends Controller
         $conso_db = config('database.connections.consodb.database');
 
         // Assign optional inputs to $filters array
-        $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'stat' => [], 'updated' => null, 'group' => [],
+        $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'harv_stat' => [], 'updated' => null, 'group' => [],
                          'fromYM' => null, 'toYM' => null);
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
@@ -160,8 +160,8 @@ class HarvestLogController extends Controller
                 ->when(sizeof($filters['rept']) > 0, function ($qry) use ($filters) {
                     return $qry->whereIn('report_id', $filters['rept']);
                 })
-                ->when(sizeof($filters['stat']) > 0, function ($qry) use ($filters) {
-                    return $qry->whereIn('status', $filters['stat']);
+                ->when(sizeof($filters['harv_stat']) > 0, function ($qry) use ($filters) {
+                    return $qry->whereIn('status', $filters['harv_stat']);
                 })
                 ->when($filters['fromYM'], function ($qry) use ($filters) {
                     return $qry->where('yearmon', '>=', $filters['fromYM']);

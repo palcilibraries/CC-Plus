@@ -422,6 +422,7 @@
                          this.success = response.data.msg;
                          // Replace mutable array with response institutions
                          this.mutable_institutions = response.data.inst_data;
+                         this.$emit('bulk-update', mutable_institutions);
                      } else {
                          this.success = '';
                          this.failure = response.data.msg;

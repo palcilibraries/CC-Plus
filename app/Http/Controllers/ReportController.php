@@ -65,21 +65,6 @@ class ReportController extends Controller
      */
     public function index(Request $request)
     {
-        // Get and map the standard Counter reports
-        $master_reports = Report::with('reportFields', 'children')
-                                ->orderBy('id', 'asc')
-                                ->where('parent_id', '=', 0)
-                                ->get();
-        $counter_reports = array();
-        foreach ($master_reports as $master) {
-            $counter_reports[] = array('id' => $master->id, 'name' => $master->name, 'legend' => $master->legend,
-                                       'master' => "--Master--", 'field_count' => $master->reportFields->count());
-            foreach ($master->children as $child) {
-                $counter_reports[] = array('id' => $child->id, 'name' => $child->name, 'legend' => $child->legend,
-                                           'master' => $master->name, 'field_count' => $child->fieldCount());
-            }
-        }
-        return view('reports.view', compact('counter_reports'));
     }
 
     /**

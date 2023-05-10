@@ -67,8 +67,7 @@ Route::post('/sushisettings-test', 'SushiSettingController@test')->name('harvest
 Route::post('/sushisettings/import', 'SushiSettingController@import')->name('sushisettings.import');
 Route::get('/sushi-export', 'SushiSettingController@export')->name('sushisettings.export');
 // Reports
-Route::get('/reports', 'ReportController@index')->name('reports.index')->middleware('auth');
-Route::get('/reports/counter', 'ReportController@index')->name('reports.counter')->middleware('auth');
+Route::get('/reports', 'SavedReportController@index')->name('reports.index')->middleware('auth');
 Route::get('/reports/create', 'ReportController@create')->name('reports.create')->middleware('auth');
 Route::get('/reports/preview', 'ReportController@preview')->name('reports.preview')->middleware('auth');
 Route::get('/reports/{id}', 'ReportController@show')->name('reports.show')->middleware('auth');

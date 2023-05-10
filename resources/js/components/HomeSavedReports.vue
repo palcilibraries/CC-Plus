@@ -1,5 +1,15 @@
 <template>
-  <v-container fluid grid-list-lg saved-report>
+  <div>
+    <v-row class="d-flex mb-1 align-end" no-gutters>
+      <v-col class="d-flex px-1" cols="3">
+        <h3>My Reports</h3>
+      </v-col>
+      <v-col class="d-flex px-1" cols="3">
+        <a class="btn v-btn v-btn--contained v-size--small section-action" href="/reports/create">Configure a Report</a>
+      </v-col>
+    </v-row>
+<!-- new tabular layout needded... -->
+
     <div v-if="mutable_reports.length>=1">
       <v-layout row wrap>
         <v-flex v-for="report in mutable_reports" :key="report.id">
@@ -33,8 +43,12 @@
         </v-flex>
       </v-layout>
     </div>
-    <!-- done with saved reports... -->
-  </v-container>
+    <div v-else>
+      <p>You Have No Saved Reports (yet)</p>
+    </div>
+    <!-- Counter reports -->
+    <view-reports :counter_reports="counter_reports"></view-reports>
+  </div>
 </template>
 
 <script>
@@ -44,6 +58,7 @@
   export default {
     props: {
             reports: { type:Array, default: () => [] },
+            counter_reports: { type:Array, default: () => [] },
            },
     data () {
       return {

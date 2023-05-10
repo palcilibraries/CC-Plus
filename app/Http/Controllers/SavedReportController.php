@@ -30,9 +30,68 @@ class SavedReportController extends Controller
      */
     public function index()
     {
+      // Get and map the standard Counter reports
+      $master_reports = Report::with('reportFields', 'children', 'reportFields.reportFilter')
+                              ->where('parent_id',0)->orderBy('name', 'asc')->get();
+
+      // Setup array of counter reports; [0] holds intro info, [1]->[n] hold report-series-by-master
+      $counter_reports = array();
+      $intro = array('series' => " >>> ", 'text' => "Select a tab to view standard COUNTER-5 report definitions by type",
+                     'reports' => array());
+      $counter_reports[] = $intro;
+
+      // Procoess all master reports
+      foreach ($master_reports as $master) {
+          $title = preg_replace('/Master /','',$master->legend) . 's';
+          $series = array('series' => $title, 'text' => '', 'reports' => array());
+          $rpt = array('id' => $master->id, 'name' => $master->name, 'legend' => $master->legend, 'master' => "--Master--",
+                       'field_count' => $master->reportFields->count());
+
+          // Get report fields and filters for master
+          $fields = $master->reportFields->where('active', true)->values();
+
+          // Set any connected filters to 'All'
+          $field_data = array();
+          foreach ($fields as $field) {
+              $rec = array('name' => $field->legend);
+              $rec['filter'] =  ($field->reportFilter) ? "All" : '';
+              $field_data[] = $rec;
+          }
+          $rpt['fields'] = $field_data;
+          $series['reports'][] = $rpt;
+
+          // Build report records for children of this master, including fields and filters
+          foreach ($master->children as $child) {
+              $rpt = array('id' => $child->id, 'name' => $child->name, 'legend' => $child->legend,
+                          'master' => $master->name, 'field_count' => $child->fieldCount());
+              $field_data = array();
+              $inherited = $child->parsedInherited();
+              foreach ($inherited as $key => $value) {
+                  $field = $master->reportFields->find($key);
+                  if (!$field) continue;
+                  $rec = array('name' => $field->legend, 'filter' => '');
+
+                  // Get filter preset if present
+                  if ($field->reportFilter) {
+                      if ($value > 0) {
+                          if ($field->reportFilter->model) {
+                              $rec['filter'] = $field->reportFilter->model::where('id', $value)->value('name');
+                          }
+                      } else {
+                          $rec['filter'] = 'All';
+                      }
+                  }
+                  $field_data[] = $rec;
+              }
+              $rpt['fields'] = $field_data;
+              $series['reports'][] = $rpt;
+          }
+          $counter_reports[] = $series;
+      }
+
       // Get formatted array of saved user reports
       $report_data = $this->savedUserReports(auth()->id());
-      return view('savedreports.my-saved', compact('report_data'));
+      return view('savedreports.my-saved', compact('report_data','counter_reports'));
     }
 
     /**

@@ -120,11 +120,6 @@ export default {
                     name: "Groups",
                     role: "Admin",
                   },
-                  {
-                    url: "/reports/counter",
-                    name: "Counter Types",
-                    role: "All",
-                  },
                 ]
               },
             ]

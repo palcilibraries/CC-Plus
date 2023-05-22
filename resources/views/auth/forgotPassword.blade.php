@@ -10,8 +10,30 @@ if ( sizeof($consortia) == 0 ) {
   exit();
 }
 
-// If only one active consortia, force it using $preset_key
-$preset_key = ($consortia->count()==1 ) ? $consortia[0]->ccp_key : "";
+// Allow a consortia key as an input variable (value is ignored)
+//   as in http://.../login?CCP_KEY_VALUE
+// will preset the form to authenticate against the named consortium,
+// and keep the select box from being displayed
+//
+$preset_key = "";
+$preset_name = "";
+if ( sizeof(request()->query()) > 0 ) {
+  $input_key = array_key_first(request()->query());
+  foreach ( $consortia as $con) {
+    if ( $con->ccp_key == $input_key) {
+      $preset_key = $input_key;
+      $preset_name = $con->name;
+    }
+  }
+}
+
+// If only one active consortia, force it as the $preset_key
+// (will override any preset attempted in the URI)
+//
+if ($consortia->count() == 1 ) {
+  $preset_key = $consortia[0]->ccp_key;
+  $preset_name = $consortia[0]->name;
+}
 ?>
 
 <div class="loginBox" id="app">

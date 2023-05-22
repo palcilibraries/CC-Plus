@@ -108,7 +108,7 @@ if ($consortia->count() == 1 ) {
       </v-col>
       <v-col class="d-flex justify-space-between">
         @if (Route::has('password.forgot.get'))
-            <a href="{{ route('password.forgot.get') }}">
+            <a href="{{ route('password.forgot.get', [$preset_key]) }}">
               <v-btn small class="btn">{{ __('Forgot Your Password?') }}</v-btn>
             </a>
         @endif

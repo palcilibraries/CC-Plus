@@ -43,7 +43,6 @@ class ProviderController extends Controller
 
         // Map columns to simplify the datatable
         $providers = $provider_data->map( function ($rec) use ($thisUser) {
-            $rec->active = ($rec->is_active) ? 'Active' : 'Inactive';
             $rec->inst_name = ($rec->institution->id == 1) ? 'Entire Consortium' : $rec->institution->name;
             $rec->day_of_month = $rec->day_of_month;
             $last_harvest = $rec->sushiSettings->max('last_harvest');
@@ -60,7 +59,8 @@ class ProviderController extends Controller
         $unset_global = GlobalProvider::whereNotIn('id',$existingIds)->orderBy('name', 'ASC')->get();
         $cur_instance = Consortium::where('ccp_key', session('ccp_con_key'))->first();
         $conso_name = ($cur_instance) ? $cur_instance->name : "Template";
-        return view('providers.index', compact('conso_name', 'providers', 'institutions', 'unset_global'));
+        $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
+        return view('providers.index', compact('conso_name', 'providers', 'institutions', 'unset_global', 'master_reports'));
     }
 
     /**
@@ -176,8 +176,8 @@ class ProviderController extends Controller
         $was_active = $provider->is_active;
         $fields = ConnectionField::whereIn('id',$provider->globalProv->connectors)->get()->values()->toArray();
 
-      // Validate form inputs
-        $this->validate($request, ['is_active' => 'required', 'inst_id' => 'required',]);
+        // Validate form inputs
+        $this->validate($request, ['is_active' => 'required']);
         $input = $request->all();
         $prov_input = array_except($input,array('master_reports'));
 
@@ -186,13 +186,13 @@ class ProviderController extends Controller
             $prov_input['restricted'] = 0;
         }
 
-      // Update the record and assign reports in master_reports
+        // Update the record and assign reports in master_reports
         $provider->update($prov_input);
-        $provider->reports()->detach();
+        $all_master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
         if (!is_null($request->input('report_state'))) {
+            $provider->reports()->detach();
             $report_state = $request->input('report_state');
             // attach reports to the provider, but only if the requested one(s) are in global:master_reports
-            $all_master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
             $global_master_list = $provider->globalProv->master_reports;
             foreach ($global_master_list as $id) {
                 $master = $all_master_reports->where('id',$id)->first();
@@ -202,14 +202,13 @@ class ProviderController extends Controller
                 }
             }
         }
-
         if ($thisUser->hasRole("Admin")) {
             $settings = SushiSetting::with('institution')->where('prov_id',$provider->id)->get();
         } else {
             $settings = SushiSetting::with('institution')
                                     ->where('prov_id',$provider->id)->where('inst_id', $thisUser->inst_id)->get();
         }
-      // If is_active is changing, check and update related sushi settings
+        // If is_active is changing, check and update related sushi settings
         if ($was_active != $provider->is_active) {
             foreach ($settings as $setting) {
               // skip disabled settings
@@ -242,7 +241,15 @@ class ProviderController extends Controller
             }
         }
 
-      // Return updated provider data
+        // return flags for enabled master-reports
+        $rpt_state = [];
+        foreach ($all_master_reports as $rpt) {
+            $rpt_state[$rpt->name] = ($provider->reports->where('name',$rpt->name)->first()) ? true : false;
+        }
+        $provider->report_state = $rpt_state;
+        $provider->reports_string = ($provider->reports) ? $this->makeReportString($provider->reports) : 'None';
+
+        // Return updated provider data
         $provider->load('reports:reports.id,reports.name');
         $last_harvest = $settings->max('last_harvest');
         $provider['can_delete'] = (is_null($last_harvest)) ? true : false;
@@ -289,7 +296,6 @@ class ProviderController extends Controller
                       'restricted' => $restricted);
         $provider = Provider::create($data);
         $provider->load('institution:id,name','globalProv');
-        $provider->active = ($provider->is_active) ? 'Active' : 'Inactive';
         $provider->inst_name = ($provider->institution->id == 1) ? 'Entire Consortium' : $provider->institution->name;
         $provider->can_delete = true;
         $provider->day_of_month = 15;

@@ -101,7 +101,6 @@ class UserController extends Controller
 
                 // Setup array for this user data
                 $user = $rec->toArray();
-                $user['status'] = ($rec->is_active == 1) ? 'Active' : 'Inactive';
                 $user['fiscalYr'] = ($rec->fiscalYr) ? $rec->fiscalYr : config('ccplus.fiscalYr');
                 $user['roles'] = $role_ids;
 
@@ -224,7 +223,6 @@ class UserController extends Controller
         $_roles = "";
         $new_user = $user->toArray();
         $new_user['inst_name'] = $user->institution->name;
-        $new_user['status'] = ($user->is_active == 1) ? 'Active' : 'Inactive';
         foreach ($user->roles as $role) {
             $_roles .= $role->name . ", ";
         }
@@ -306,17 +304,18 @@ class UserController extends Controller
         }
 
         // Set form fields to be validated
-        $fields = array(
-            'name' => 'required',
-            'password' => 'same:confirm_pass',
-            'roles' => 'required',
-            'inst_id' => 'required'
-        );
+        $fields = array();
         //  Validate email address if it is NOT 'Administrator'(users table require unique anyway)
-        if ($request->email != 'Administrator') {
-            $fields['email'] = 'required|email|unique:consodb.users,email,' . $id;
+        if (isset($request->password)) {
+            $fields['password'] = 'same:confirm_pass';
         }
-        $this->validate($request, $fields);
+        //  Validate email address if it is NOT 'Administrator'(users table require unique anyway)
+        if (isset($request->email) && $request->email != 'Administrator') {
+            $fields['email'] = 'email|unique:consodb.users,email,' . $id;
+        }
+        if ( count($fields)>0 ) {
+            $this->validate($request, $fields);
+        }
         $input = $request->all();
         if (empty($input['password'])) {
             $input = array_except($input, array('password'));
@@ -337,39 +336,46 @@ class UserController extends Controller
             $input['inst_id'] = $thisUser->inst_id;
         }
 
-        // Make sure roles include "User"
-        $user_role_id = Role::where('name', '=', 'User')->value('id');
-        $new_roles = isset($input['roles']) ? $input['roles'] : array();
-        if (!in_array($user_role_id, $new_roles)) {
-            array_unshift($new_roles, $user_role_id);
-        }
-
-        // Update the user record
-        $input = array_except($input, array('roles'));
-        $user->update($input);
-
-        // Update roles (silently ignore roles if user saving their own record)
+        // Only assess/update roles if they arrive as input
         $all_roles = Role::orderBy('id', 'ASC')->get(['name', 'id']);
         $viewer_role_id = Role::where('name', '=', 'Viewer')->value('id');
-        if (auth()->id() != $id) {
-            $user->roles()->detach();
-            foreach ($new_roles as $r) {
-                // Current user must be an admin to set Viewer role
-                if (!$thisUser->hasRole("Admin") && $r == $viewer_role_id) {
-                    continue;
-                }
-                // ignore roles higher than current user's max
-                if ($thisUser->maxRole() >= $r) {
-                    $user->roles()->attach($r);
+        if (isset($input['roles'])) {
+
+            // Make sure roles include "User"
+            $user_role_id = Role::where('name', '=', 'User')->value('id');
+            $new_roles = $input['roles'];
+            if (!in_array($user_role_id, $new_roles)) {
+                array_unshift($new_roles, $user_role_id);
+            }
+
+            // Update the user record
+            $input = array_except($input, array('roles'));
+            $user->update($input);
+
+            // Update roles (silently ignore roles if user saving their own record)
+            if (auth()->id() != $id) {
+                $user->roles()->detach();
+                foreach ($new_roles as $r) {
+                    // Current user must be an admin to set Viewer role
+                    if (!$thisUser->hasRole("Admin") && $r == $viewer_role_id) {
+                        continue;
+                    }
+                    // ignore roles higher than current user's max
+                    if ($thisUser->maxRole() >= $r) {
+                        $user->roles()->attach($r);
+                    }
                 }
             }
+            $input = array_except($input, array('roles'));
         }
+
+        // Update the user record and re-load roles
+        $user->update($input);
         $user->load(['institution:id,name','roles']);
 
         // Setup array to hold updated user record
         $updated_user = $user->toArray();
         $updated_user['inst_name'] = $user->institution->name;
-        $updated_user['status'] = ($user->is_active == 1) ? 'Active' : 'Inactive';
         $updated_user['roles'] = $user->roles()->pluck('role_id')->all();
         $updated_user['fiscalYr'] = ($user->fiscalYr) ? $user->fiscalYr : config('ccplus.fiscalYr');
 
@@ -723,7 +729,6 @@ class UserController extends Controller
         // Recreate the users list (like index does) to be returned to the caller
         $user_data = User::with('roles', 'institution:id,name')->orderBy('name', 'ASC')->get();
         $users = $user_data->map(function($user) {
-            $user->status = ($user->is_active == 1) ? 'Active' : 'Inactive';
             $_roles = "";
             foreach ($user->roles as $role) {
                 $_roles .= $role->name . ", ";

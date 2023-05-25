@@ -19,11 +19,11 @@
     </v-row>
     <v-row class="d-flex ma-0" no-gutters>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if="filters['inst'] != null" class="x-box">
+        <div v-if="filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
         <v-select :items="mutable_institutions" v-model="filters['inst']" @change="updateFilters('inst')"
-                  label="Limit by Institution"  item-text="name" item-value="id"
+                  label="Limit by Institution"  item-text="name" item-value="id" multiple
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
@@ -46,24 +46,27 @@
     </div>
     <v-data-table :headers="headers" :items="mutable_users" item-key="id" :options="mutable_options"
                   :key="'DT'+dtKey" :search="search" @update:options="updateOptions">
-      <template v-slot:item="{ item }">
-        <tr>
-          <td>{{ item.name }}</td>
-          <td><a :href="'/institutions/'+item.inst_id+'/edit'">{{ item.institution.name }}</a></td>
-          <td v-if="item.status">Active</td>
-          <td><a target="_blank" :href="'mailto:'+item.email">{{ item.email }}</a></td>
-          <td>{{ item.role_string }}</td>
-          <td>{{ item.last_login }}</td>
-          <td class="dt_action">
-            <v-icon title="Edit User Settings" @click="editForm(item.id)">mdi-cog-outline</v-icon>
-            &nbsp; &nbsp;
-            <v-icon title="Delete User" @click="destroy(item.id)">mdi-trash-can-outline</v-icon>
-          </td>
-        </tr>
-      </template>
-      <v-alert slot="no-results" :value="true" color="error" icon="warning">
-        Your search for "{{ search }}" found no results.
-      </v-alert>
+        <template v-slot:item.status="{ item }">
+          <span v-if="item.is_active">
+            <v-icon large color="green" title="Active" @click="changeStatus(item.id,0)">mdi-toggle-switch</v-icon>
+          </span>
+          <span v-else>
+            <v-icon large color="red" title="Inactive" @click="changeStatus(item.id,1)">mdi-toggle-switch-off</v-icon>
+          </span>
+        </template>
+        <template v-slot:item.action="{ item }">
+          <span class="dt_action">
+            <v-btn icon @click="editForm(item.id)">
+              <v-icon title="Edit User Settings">mdi-cog-outline</v-icon>
+            </v-btn>
+            <v-btn icon class="pl-4" @click="destroy(item.id)">
+              <v-icon title="Delete User">mdi-trash-can-outline</v-icon>
+            </v-btn>
+          </span>
+        </template>
+        <v-alert slot="no-results" :value="true" color="error" icon="warning">
+          Your search for "{{ search }}" found no results.
+        </v-alert>
     </v-data-table>
     <v-dialog v-model="importDialog" persistent max-width="1200px">
       <v-card>
@@ -121,7 +124,7 @@
     </v-dialog>
     <v-dialog v-model="userDialog" persistent content-class="ccplus-dialog">
       <user-dialog :dtype="dialogType" :user="current_user" :allowed_roles="allowed_roles" :institutions="mutable_institutions"
-                   :groups="all_groups" @user-complete="userDialogDone"
+                   :groups="all_groups" @user-complete="userDialogDone" :key='udKey'
       ></user-dialog>
     </v-dialog>
   </div>
@@ -144,23 +147,24 @@
         failure: '',
         mutable_users: [ ...this.users ],
         mutable_institutions: [ ...this.institutions ],
-        filters: { inst:null, stat:'ALL', roles:[] },
+        filters: { inst: [], stat:'ALL', roles:[] },
         current_user: {},
         pw_show: false,
         pwc_show: false,
         dialogType: 'create',
         userDialog: false,
         importDialog: false,
+        udKey: 0,
         search: '',
         status_options: ['ALL', 'Active', 'Inactive'],
         headers: [
+          { text: 'Status', value: 'status' },
           { text: 'User Name ', value: 'name' },
           { text: 'Institution', value: 'institution.name' },
-          { text: 'Status', value: 'status' },
           { text: 'Email', value: 'email' },
           { text: 'Roles', value: 'role_string' },
           { text: 'Last Login', value: 'last_login' },
-          { text: '', value: '', sortable: false },
+          { text: '', value: 'action', sortable: false },
         ],
         dtKey: 1,
         mutable_options: {},
@@ -213,18 +217,22 @@
                   if ( a.name > b.name ) return 1;
                   return 0;
                 });
-                this.dtKey += 1;
                 this.$emit('new-inst', new_inst);
             }
             if (result == 'Success') {
+                if (this.dialogType == 'edit') {
+                    let _idx = this.mutable_users.findIndex(u=> u.id == user.id);
+                    this.mutable_users[_idx] = user;
+                } else if (this.dialogType == 'create') {
+                    this.mutable_users.push(user);
+                    this.mutable_users.sort((a,b) => {
+                      if ( a.name < b.name ) return -1;
+                      if ( a.name > b.name ) return 1;
+                      return 0;
+                    });
+                }
                 this.success = msg;
-                // Add the new institution onto the mutable array and re-sort it
-                this.mutable_users.push(user);
-                this.mutable_users.sort((a,b) => {
-                  if ( a.name < b.name ) return -1;
-                  if ( a.name > b.name ) return 1;
-                  return 0;
-                });
+                this.dtKey += 1;
             } else if (result == 'Fail') {
                 this.failure = msg;
             } else if (result != 'Cancel') {
@@ -242,6 +250,7 @@
             this.success = '';
             this.dialogType = "edit";
             this.current_user = this.mutable_users[this.mutable_users.findIndex(u=> u.id == userid)];
+            this.udKey += 1;
             this.userDialog = true;
             this.importDialog = false;
         },
@@ -251,6 +260,7 @@
             this.dialogType = "create";
             var _inst = (this.is_admin) ? null : this.institutions[0].id;
             this.current_user = {roles: [1], inst_id: _inst};
+            this.udKey += 1;
             this.userDialog = true;
             this.importDialog = false;
         },
@@ -259,7 +269,7 @@
             this.updateRecords();
         },
         clearFilter(filter) {
-            if (filter == 'inst') this.filters['inst'] = null;
+            if (filter == 'inst') this.filters['inst'] = [];
             if (filter == 'roles') this.filters['roles'] = [];
             this.$store.dispatch('updateAllFilters',this.filters);
             this.updateRecords();
@@ -305,6 +315,16 @@
                 }
             });
             this.$store.dispatch('updateDatatableOptions',this.mutable_options);
+        },
+        changeStatus(userId, state) {
+          axios.patch('/users/'+userId, { is_active: state })
+               .then( (response) => {
+                 if (response.data.result) {
+                   var _idx = this.mutable_users.findIndex(uu=>uu.id == userId);
+                   this.mutable_users[_idx].is_active = state;
+                 }
+               })
+               .catch(error => {});
         },
     },
     computed: {

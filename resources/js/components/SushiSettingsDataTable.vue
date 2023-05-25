@@ -9,7 +9,12 @@
       <v-col class="d-flex px-2" cols="3">
         <a @click="doExport"><v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel</a>
       </v-col>
-      <v-col class="d-flex px-2" cols="3">&nbsp;</v-col>
+      <v-col v-if="mutable_institutions.length>1" class="d-flex px-2" cols="3">
+        <v-btn small color="primary" type="button" @click="newSetting" class="section-action">
+          Add a Connection
+        </v-btn>
+      </v-col>
+      <v-col v-else class="d-flex px-2" cols="3">&nbsp;</v-col>
       <v-col class="d-flex px-2" cols="3">
         <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details
         ></v-text-field>
@@ -25,7 +30,7 @@
         <span class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
       </v-col>
       <v-col v-else class="d-flex" cols="2">&nbsp;</v-col>
-      <v-col v-if="mutable_filters['group']==0" class="d-flex px-2 align-center" cols="2">
+      <v-col v-if="mutable_filters['group']==0 && mutable_institutions.length>1" class="d-flex px-2 align-center" cols="2">
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
@@ -33,7 +38,7 @@
                   label="Institution(s)"  item-text="name" item-value="id"
         ></v-autocomplete>
       </v-col>
-      <v-col v-if="mutable_filters['inst'].length==0" class="d-flex px-2" cols="2">
+      <v-col v-if="is_admin && mutable_filters['inst'].length==0" class="d-flex px-2" cols="2">
         <div v-if="mutable_filters['group'] != 0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('group')"/>&nbsp;
         </div>
@@ -41,7 +46,7 @@
                   label="Institution Group"  item-text="name" item-value="id" hint="Limit the display to an institution group"
         ></v-autocomplete>
       </v-col>
-      <v-col class="d-flex px-2 align-center" cols="2">
+      <v-col v-if="mutable_providers.length>0" class="d-flex px-2 align-center" cols="2">
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
@@ -105,7 +110,7 @@
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
-          <v-icon title="Settings and harvests" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
+          <v-icon title="Edit Sushi Settings" @click="editSetting(item)">mdi-cog-outline</v-icon>
           &nbsp; &nbsp;
           <v-icon title="Delete connection" @click="destroy(item)">mdi-trash-can-outline</v-icon>
         </span>
@@ -147,6 +152,10 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="sushiDialog" persistent content-class="ccplus-dialog">
+      <sushi-dialog :dtype="sushiDialogType" :institutions="sushi_insts" :providers="sushi_provs" @sushi-done="sushiDialogDone"
+      ></sushi-dialog>
+    </v-dialog>
   </div>
 </template>
 
@@ -163,7 +172,7 @@
                 institutions: { type:Array, default: () => [] },
                 inst_groups: { type:Array, default: () => [] },
                 filters: { type:Object, default: () => {} },
-                refresh_key: { type:Number, default: 1 },
+                unset: { type:Array, default: () => [] },
                },
         data() {
             return {
@@ -174,15 +183,20 @@
                 search: '',
                 showTest: false,
                 importDialog: false,
+                sushiDialog: false,
                 csv_upload: null,
                 mutable_settings: [],
-                mutable_filters: this.filters,
                 mutable_options: {},
+                mutable_filters: {inst: [], group: 0, prov: [], harv_stat: []},
                 statuses: ['Enabled','Disabled','Suspended','Incomplete'],
                 mutable_institutions: [ ...this.institutions ],
                 mutable_providers: [ ...this.providers ],
+                mutable_unset: [...this.unset],
                 loading: true,
                 connectors: [],
+                sushi_insts: [],
+                sushi_provs: [],
+                sushiDialogType: '',
                 // Actual headers array is built from these in mounted()
                 header_fields: [
                   { label: 'Status', name: 'status' },
@@ -210,13 +224,6 @@
                     status: 'Enabled'
 				        }),
             }
-        },
-        watch: {
-          refresh_key: {
-             handler () {
-               this.updateSettings(); // Re-load settings
-             },
-           }
         },
         methods: {
           importForm () {
@@ -376,6 +383,20 @@
             })
             .catch({});
           },
+          editSetting (item) {
+              this.sushi_provs = [];
+              this.sushi_insts = [];
+              this.sushi_provs.push(item.provider);
+              this.sushi_insts.push(item.institution);
+              this.sushiDialogType = 'edit';
+              this.sushiDialog = true;
+          },
+          newSetting() {
+              this.sushi_provs = [ ...this.providers ];
+              this.sushi_insts = [ ...this.institutions ];
+              this.sushiDialogType = 'create';
+              this.sushiDialog = true;
+          },
           destroy (setting) {
               let msg = "Deleting this setting is not reversible!<br /><br />No harvested data will be removed";
               msg += " or changed. <br><br><strong>NOTE:</strong> all harvest log records connected to this";
@@ -410,40 +431,52 @@
               })
               .catch({});
           },
-          goEdit (settingId) {
-              window.location.assign('/sushisettings/'+settingId+'/edit');
-          },
           goEditInst (instId) {
               window.location.assign('/institutions/'+instId);
           },
           goEditProv (provId) {
               window.location.assign('/providers/'+provId);
           },
-          testSettings (event) {
-              this.failure = '';
+          sushiDialogDone ({ result, msg, setting }) {
               this.success = '';
-              this.testData = '';
-              this.testStatus = "... Working ...";
-              this.showTest = true;
-              var testArgs = {'prov_id' : this.form.prov_id};
-              if (this.connectors.some(c => c.name === 'requestor_id')) testArgs['requestor_id'] = this.form.requestor_id;
-              if (this.connectors.some(c => c.name === 'customer_id')) testArgs['customer_id'] = this.form.customer_id;
-              if (this.connectors.some(c => c.name === 'API_key')) testArgs['API_key'] = this.form.API_key;
-              if (this.connectors.some(c => c.name === 'extra_args')) testArgs['extra_args'] = this.form.extra_args;
-              axios.post('/sushisettings-test', testArgs)
-                   .then((response) => {
-                      if (response.data.result == '') {
-                          this.testStatus = "No results!";
-                      } else {
-                          this.testStatus = response.data.result;
-                          this.testData = response.data.rows;
+              this.failure = '';
+              if (result == 'Success') {
+                  this.success = msg;
+                  this.mutable_settings.push(setting);
+                  this.mutable_settings.sort((a,b) => {
+                    if ( a.provider.name < b.provider.name ) return -1;
+                    if ( a.provider.name > b.provider.name ) return 1;
+                    return 0;
+                  });
+                  // Remove the provider from the appropriate unset array
+                  this.mutable_unset.splice(this.mutable_unset.findIndex(p => p.id==setting.provider.id),1);
+
+                  // Check provider connectors to see if a new connector was just enabled
+                  let new_cnx = false;
+                  this.provider.global_prov.connectors.forEach( (cnx) => {
+                      if (!new_cnx && !this.mutable_connectors[cnx.name]['active']) {
+                        this.mutable_connectors[cnx.name]['active'] = true;
+                        new_cnx = true;
                       }
-                  })
-                 .catch(error => {});
+                  });
+                  // If new connector enabled, rebuild headers
+                  if (new_cnx) this.updateHeaders();
+                  this.sushi_provs = { 'global_prov': {'connectors': []} };
+                  this.dtKey += 1;
+              } else if (result == 'Fail') {
+                  this.failure = msg;
+              } else if (result != 'Cancel') {
+                  this.failure = 'Unexpected Result returned from sushiDialog - programming error!';
+              }
+              this.sushiDialog = false;
           },
+          isEmpty(obj) {
+            for (var i in obj) return false;
+            return true;
+          }
         },
         computed: {
-          ...mapGetters(['all_filters','page_name']),
+          ...mapGetters(['all_filters','page_name','is_admin','is_manager']),
         },
         beforeCreate() {
           // Load existing store data
@@ -457,28 +490,32 @@
         },
         mounted() {
           // Apply any defined prop-based filters (and overwrite existing store values)
-          var count = 0;
-          Object.assign(this.mutable_filters, this.all_filters);
-          Object.keys(this.filters).forEach( (key) =>  {
-            if (this.filters[key] != null) {
-              let count_it = false;
-              if ( key == 'group') {
-                  if ( this.filters['group'] != 0) count_it = true;
-              } else {
-                  if (this.filters[key].length>0) count_it = true;
+          if (typeof(this.all_filters) != 'undefined') {
+              Object.assign(this.mutable_filters, this.all_filters);
+          }
+          if ( !this.isEmpty(this.filters) ) {
+            var count = 0;
+            Object.keys(this.filters).forEach( (key) =>  {
+              if (this.filters[key] != null) {
+                let count_it = false;
+                if ( key == 'group') {
+                    if ( this.filters['group'] != 0) count_it = true;
+                } else {
+                    if (this.filters[key].length>0) count_it = true;
+                }
+                if (count_it) {
+                    count++;
+                    this.mutable_filters[key] = this.filters[key];
+                }
               }
-              if (count_it) {
-                  count++;
-                  this.mutable_filters[key] = this.filters[key];
-              }
-            }
-          });
+            });
+
+            // Update store and apply filters if some have been set
+            if (count>0) this.$store.dispatch('updateAllFilters',this.mutable_filters);
+          }
 
           // Set datatable options with store-values
           Object.assign(this.mutable_options, this.datatable_options);
-
-          // Update store and apply filters if some have been set
-          if (count>0) this.$store.dispatch('updateAllFilters',this.mutable_filters);
 
           // Load settings and update column headers
           this.updateSettings();

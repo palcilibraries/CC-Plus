@@ -107,7 +107,7 @@
         this.form.institutiongroups = [];
         this.form.notes = '';
       }
-      console.log('UserData Component mounted.');
+      console.log('InstitutionDialog Component mounted.');
     }
   }
 </script>

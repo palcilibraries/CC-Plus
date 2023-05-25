@@ -18,12 +18,21 @@
           <h3>Institutions</h3>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
-          <institution-data-table :institutions="mutable_institutions" :filters="inst_filters" :all_groups="mutable_groups"
-                                  @new-inst="newInst" @drop-inst="dropInst" @bulk-update="replaceInst"
-                                  @groups-updated="groupsUpdated" :key="instKey"
+          <institution-data-table :key="instKey" :institutions="mutable_institutions" :filters="inst_filters"
+                                  :all_groups="mutable_groups" @new-inst="newInst" @drop-inst="dropInst" @bulk-update="bulkInst"
+                                  @change-inst="updInst" @refresh-groups="refreshGroups"
           ></institution-data-table>
         </v-expansion-panel-content>
 	    </v-expansion-panel>
+      <v-expansion-panel>
+  	    <v-expansion-panel-header>
+          <h3>Institution Groups</h3>
+        </v-expansion-panel-header>
+  	    <v-expansion-panel-content>
+          <institution-groups :key="groupKey" :groups="mutable_groups" @update-groups="updateGroups"></institution-groups>
+        </v-expansion-panel-content>
+	    </v-expansion-panel>
+
       <!-- Institution Types - would go here, if that becomes a thing again-->
       <!--
       <v-expansion-panel>
@@ -41,8 +50,9 @@
           <h3>Providers</h3>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
-          <provider-data-table :providers="mutable_providers" :institutions="mutable_institutions" :unset_global="mutable_unset"
-                               @connect-prov="connectProv" @disconnect-prov="disconnectProv" :key="provKey"
+          <provider-data-table :key="provKey" :providers="mutable_providers" :institutions="mutable_institutions"
+                               :master_reports="master_reports" :unset_global="mutable_unset"
+                               @connect-prov="connectProv" @disconnect-prov="disconnectProv" @change-prov="updProv"
           ></provider-data-table>
         </v-expansion-panel-content>
 	    </v-expansion-panel>
@@ -52,8 +62,8 @@
           <h3>Sushi Connections</h3>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
-          <sushisettings-data-table :providers="mutable_providers" :institutions="mutable_institutions" :filters="sushi_filters"
-                                    :inst_groups="mutable_groups" :refresh_key="refreshSushi" :key="sushiKey"
+          <sushisettings-data-table :key="sushiKey" :providers="mutable_providers" :institutions="mutable_institutions"
+                                    :filters="sushi_filters" :inst_groups="mutable_groups" :unset="mutable_unset"
           ></sushisettings-data-table>
   	    </v-expansion-panel-content>
 	    </v-expansion-panel>
@@ -78,7 +88,9 @@
         instKey: 1,
         provKey: 1,
         sushiKey: 1,
-        refreshSushi: 1,
+        groupKey: 1,
+        refreshSushiInst: null,
+        refreshSushiProv: null,
         mutable_institutions: [...this.institutions],
         mutable_providers: [...this.providers],
         mutable_unset: [...this.unset_global],
@@ -107,6 +119,7 @@
             return 0;
           });
           this.instKey += 1;
+          this.groupKey += 1;
         }
       },
       dropInst (instId) {
@@ -114,19 +127,42 @@
         this.instKey += 1;
         this.provKey += 1; // inform the provider component of the change
         this.sushiKey += 1;
-        this.refreshSushi += 1;
-    },
-      replaceInst (institutions) {
+        this.groupKey += 1;
+      },
+      bulkInst (institutions) {
         this.mutable_institutions = [ ...institutions ];
         this.instKey += 1;
         this.provKey += 1; // inform the provider component of the change
         this.sushiKey += 1;
+        this.groupKey += 1;
       },
-      groupsUpdated ( {groups, institutions} ) {
+      // Replace mutable groups and mutable_institutions with emitted arrays
+      refreshGroups ( {groups, insts} ) {
         this.mutable_groups = [...groups];
-        this.mutable_institutions = [...institutions];
-        this.userKey += 1;
+        this.mutable_institutions = [...insts];
         this.instKey += 1;
+        this.sushiKey += 1;
+        this.userKey += 1;
+        this.groupKey += 1;
+      },
+      // Replace mutable groups, and update mutable institutions 'groups' string values
+      updateGroups ( {groups, membership} ) {
+        this.mutable_groups = [...groups];
+        if (typeof(membership) == 'undefined') return;
+        if (membership.length == 0) return;
+        for (let idx=0; idx<this.mutable_institutions.length; idx++) {
+            let btInst = membership.find(ii => ii.id == this.mutable_institutions[idx].id);
+            if (btInst) {
+              this.mutable_institutions[idx].groups = btInst.groups;
+            }
+        }
+        this.groupKey += 1;
+        this.instKey += 1;
+      },
+      updInst (instId) {
+        this.sushiKey += 1;
+      },
+      updProv (provId) {
         this.sushiKey += 1;
       },
       connectProv (prov) {
@@ -150,7 +186,8 @@
         });
         this.provKey += 1;
         this.sushiKey += 1;
-        this.refreshSushi += 1;
+        this.refreshSushiProv = provid;
+        this.refreshSushiInst = null;
       },
     },
     computed: {

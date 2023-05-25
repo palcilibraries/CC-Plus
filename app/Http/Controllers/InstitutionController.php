@@ -104,7 +104,6 @@ class InstitutionController extends Controller
                     $inst->groups .= ($inst->groups == "") ? "" : ", ";
                     $inst->groups .= $group->name;
                 }
-                $inst->status = ($inst->is_active) ? 'Active' : 'Inactive';
                 $harvest_count = $inst->sushiSettings->whereNotNull('last_harvest')->count();
                 $inst->can_delete = ($harvest_count > 0 || $inst->id == 1) ? false : true;
                 return $inst;
@@ -316,35 +315,45 @@ class InstitutionController extends Controller
     public function update(Request $request, $id)
     {
         $thisUser = auth()->user();
-        $institution = Institution::findOrFail($id);
+        $institution = Institution::with('institutionGroups')->findOrFail($id);
         if (!$institution->canManage()) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
         $was_active = $institution->is_active;
 
        // Validate form inputs
-        $this->validate($request, ['name' => 'required', 'is_active' => 'required']);
+        $this->validate($request, ['is_active' => 'required']);
         $input = $request->all();
 
        // Make sure that local ID is unique if not set null
-        $newID = (isset($input['local_id'])) ? trim($input['local_id']) : null;
-        if ($institution->local_id != $newID) {
-            if (strlen($newID) > 0) {
-                $existing_inst = Institution::where('local_id',$newID)->first();
-                if ($existing_inst) {
-                    return response()->json(['result' => false,
-                                             'msg' => 'Local ID already assigned to another institution.']);
+        if (isset($input['local_id'])) {
+            $newID = trim($input['local_id']);
+            if ($institution->local_id != $newID) {
+                if (strlen($newID) > 0) {
+                    $existing_inst = Institution::where('local_id',$newID)->first();
+                    if ($existing_inst) {
+                        return response()->json(['result' => false,
+                                                 'msg' => 'Local ID already assigned to another institution.']);
+                    }
+                    $input['local_id'] = $newID;
+                } else {
+                    $input['local_id'] = null;
                 }
-                $input['local_id'] = $newID;
-            } else {
-                $input['local_id'] = null;
             }
         }
 
        // if not admin (user is a local-admin for their institution), only update FTE and notes
         if (!$thisUser->hasRole("Admin")) {
-            $limitedFields = array('fte' => $input['fte'], 'notes' => $input['notes']);
-            $institution->update($limitedFields);
+            if ( isset($input['fte']) || isset($input['notes']) ) {
+                $limitedFields = array();
+                if (isset($input['fte'])) {
+                    $limitedFields['fte'] = $input['fte'];
+                }
+                if (isset($input['notes'])) {
+                    $limitedFields['notes'] = $input['notes'];
+                }
+                $institution->update($limitedFields);
+            }
 
        // Admins update everything from $input
         } else {
@@ -374,12 +383,18 @@ class InstitutionController extends Controller
              // Return updated institution data
               $settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
               $harvest_count = $settings->whereNotNull('last_harvest')->count();
-              $institution['can_delete'] = ($harvest_count > 0 || $institution->id == 1) ? false : true;
-              $institution['sushiSettings'] = $settings->toArray();
+              $institution->can_delete = ($harvest_count > 0 || $institution->id == 1) ? false : true;
+              $institution->sushiSettings = $settings->toArray();
         }
 
-         return response()->json(['result' => true, 'msg' => 'Settings successfully updated',
-                                  'institution' => $institution]);
+        // Tack on a tring for all the group memberships
+        $institution->groups = "";
+        foreach ($institution->institutionGroups as $group) {
+            $institution->groups .= ($institution->groups == "") ? "" : ", ";
+            $institution->groups .= $group->name;
+        }
+
+         return response()->json(['result' => true, 'msg' => 'Settings successfully updated', 'institution' => $institution]);
     }
 
     /**

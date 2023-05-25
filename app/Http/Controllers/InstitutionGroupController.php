@@ -78,10 +78,17 @@ class InstitutionGroupController extends Controller
             $group->institutions = array();
         }
 
-        $group->not_members = Institution::whereNotIn('id', $new_members)->get(['id','name'])->toArray();
+        // Get alll institutions' data and pull out not-members
+        $institutionData = Institution::orderBy('name', 'ASC')->get(['id','name']);
+        $group->not_members = $institutionData->except($new_members);
         $group->count = sizeof($new_members);
 
-        return response()->json(['result' => true, 'msg' => 'Group created successfully', 'group' => $group]);
+        // Rebuild the groups-membership strings for all institutions
+        $institutionData->load('institutionGroups');
+        $belongsTo = $this->groupsByInst($institutionData);
+
+        return response()->json(['result' => true, 'msg' => 'Group created successfully', 'group' => $group,
+                                 'belongsTo' => $belongsTo]);
     }
 
     /**
@@ -131,15 +138,19 @@ class InstitutionGroupController extends Controller
         foreach ($request->institutions as $inst) {
             $group->institutions()->attach($inst['id']);
         }
-
-        // Build returned group data the way index() does
         $member_ids = $group->institutions->pluck('id')->toArray();
-        $group->not_members = Institution::whereNotIn('id',$member_ids)->get(['id','name'])->toArray();
-        $data = $group->toArray();
-        $data['institutions'] = $request->institutions;
-        $data['count'] = sizeof($data['institutions']);
 
-        return response()->json(['result' => true, 'msg' => 'Group updated successfully', 'group' => $data]);
+        // Get all institutions' data and save not-members
+        $institutionData = Institution::orderBy('name', 'ASC')->get(['id','name']);
+        $group->not_members = $institutionData->except($member_ids);
+        $group->load('institutions:id,name');
+        $group->count = $group->institutions->count();
+        // Rebuild the groups-membership strings for all institutions
+        $institutionData->load('institutionGroups');
+        $belongsTo = $this->groupsByInst($institutionData);
+
+        return response()->json(['result' => true, 'msg' => 'Group updated successfully', 'group' => $group,
+                                 'belongsTo' => $belongsTo]);
     }
 
     /**
@@ -167,8 +178,17 @@ class InstitutionGroupController extends Controller
         }
         $group->count = sizeof($member_institutions) + $count;
 
+        // Get alll institutions' data and pull out not-members
+        $institutionData = Institution::orderBy('name', 'ASC')->get(['id','name']);
+        $group->not_members = $institutionData->except($member_institutions);
+
+        // Rebuild the groups-membership strings for all institutions
+        $institutionData->load('institutionGroups');
+        $belongsTo = $this->groupsByInst($institutionData);
+
         // Build returned group data the way index() does
-        return response()->json(['result' => true, 'msg' => 'Group updated successfully', 'count' => $count, 'group' => $group]);
+        return response()->json(['result' => true, 'msg' => 'Group updated successfully', 'count' => $count, 'group' => $group,
+                                 'belongsTo' => $belongsTo]);
     }
 
     /**
@@ -181,7 +201,12 @@ class InstitutionGroupController extends Controller
     {
         $group = InstitutionGroup::findOrFail($id);
         $group->delete();
-        return response()->json(['result' => true, 'msg' => 'Group successfully deleted']);
+
+        // Rebuild the groups-membership strings for all institutions
+        $institutions = Institution::with('institutionGroups')->orderBy('name', 'ASC')->get(['id','name']);
+        $belongsTo = $this->groupsByInst($institutions);
+
+        return response()->json(['result' => true, 'msg' => 'Group successfully deleted', 'belongsTo' => $belongsTo]);
     }
 
     /**
@@ -376,7 +401,11 @@ class InstitutionGroupController extends Controller
         }
 
         // Get the new full list of group names
-        $new_groups = InstitutionGroup::orderBy('id', 'ASC')->get();
+        $new_groups = InstitutionGroup::with('institution:id,name')->orderBy('name', 'ASC')->get();
+
+        // Rebuild the groups-membership strings for all institutions
+        $institutions = Institution::with('institutionGroups')->orderBy('name', 'ASC')->get(['id','name']);
+        $belongsTo = $this->groupsByInst($institutions);
 
         // return the current full list of groups with a success message
         $msg  = 'Institution Groups imported successfully : ';
@@ -385,6 +414,28 @@ class InstitutionGroupController extends Controller
         if ($num_skipped > 0) {
             $msg .= ($num_skipped > 0) ? " (" . $num_skipped . " existing names/ids skipped)" : ".";
         }
-        return response()->json(['result' => true, 'msg' => $msg, 'groups' => $new_groups->toArray()]);
+        return response()->json(['result' => true, 'msg' => $msg, 'groups' => $new_groups->toArray(), 'belongsTo' => $belongsTo]);
     }
+
+
+    /**
+     * Return an array of "belongs-to" strings for all instatitutions
+     *
+     * @param  Institution $institutions
+     * @return Array $belongsTo
+     */
+    private function groupsByInst($institutions)
+    {
+        $belongsTo = [];
+        foreach ($institutions as $inst) {
+            $string = "";
+            foreach ($inst->institutionGroups as $group) {
+                $string .= ($string =="") ? "" : ", ";
+                $string .= $group->name;
+            }
+            $belongsTo[] = array('id' => $inst->id, 'groups' => $string);
+        }
+        return $belongsTo;
+    }
+
 }

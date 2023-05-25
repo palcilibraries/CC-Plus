@@ -64,7 +64,7 @@ class SushiSettingController extends Controller
         if ($json) {
 
             // Get sushi settings
-            $data = SushiSetting::with('institution:id,name,is_active','provider:id,name,is_active')
+            $data = SushiSetting::with('institution:id,name,is_active','provider','provider.globalProv')
                                   ->when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('inst_id', $filters['inst']);
                                   })
@@ -91,7 +91,7 @@ class SushiSettingController extends Controller
             $seen_connectors = array();
             $global_connectors = ConnectionField::get();
             $providerIds = $data->unique('prov_id')->pluck('prov_id')->toArray();
-            $providers = Provider::whereIn('id',$providerIds)->get();
+            $providers = Provider::with('globalProv')->whereIn('id',$providerIds)->get();
             foreach ($providers as $prov) {
                 // There are only 4... if they're all set, skip checking
                 if (sizeof($seen_connectors) < 4) {
@@ -253,11 +253,12 @@ class SushiSettingController extends Controller
         }
 
         // Get the settings record
-        $setting = SushiSetting::where('inst_id',$input['inst_id'])->where('prov_id',$input['prov_id'])->first();
+        $setting = SushiSetting::with('institution','provider','provider.globalProv')
+                               ->where('inst_id',$input['inst_id'])->where('prov_id',$input['prov_id'])
+                               ->first();
         if (!$setting) {
             $setting = SushiSetting::create($input);
         }
-        $setting->load('institution','provider','provider.globalProv');
 
         // Get required connectors
         $connectors = ConnectionField::whereIn('id',$setting->provider->globalProv->connectors)->pluck('name')->toArray();

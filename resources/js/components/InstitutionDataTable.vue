@@ -48,6 +48,14 @@
     <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_institutions" show-select
                   item-key="id" :options="mutable_options" @update:options="updateOptions"
                   :footer-props="footer_props" :search="search" :key="'indt'+dtKey">
+      <template v-slot:item.status="{ item }">
+        <span v-if="item.is_active">
+          <v-icon large color="green" title="Active" @click="changeStatus(item.id,0)">mdi-toggle-switch</v-icon>
+        </span>
+        <span v-else>
+          <v-icon large color="red" title="Inactive" @click="changeStatus(item.id,1)">mdi-toggle-switch-off</v-icon>
+        </span>
+      </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
           <v-btn icon @click="goEdit(item.id)">
@@ -115,7 +123,7 @@
       </v-card>
     </v-dialog>
     <v-dialog v-model="instDialog" persistent content-class="ccplus-dialog">
-      <institution-dialog dtype="create" :groups="all_groups" @inst-complete="instDialogDone"></institution-dialog>
+      <institution-dialog dtype="create" :groups="all_groups" @inst-complete="instDialogDone" :key="idKey"></institution-dialog>
     </v-dialog>
     <v-dialog v-model="groupingDialog" persistent max-width="500px">
       <v-card>
@@ -170,6 +178,7 @@
         failure: '',
         dialog_failure: '',
         instDialog: false,
+        idKey: 0,
         institutionImportDialog: false,
         settingsImportDialog: false,
         groupingDialog: false,
@@ -182,9 +191,9 @@
         addToGroupID: null,
         status_options: ['ALL', 'Active', 'Inactive'],
         headers: [
+          { text: 'Status', value: 'status' },
           { text: 'Institution ', value: 'name', align: 'start' },
           { text: 'Local ID ', value: 'local_id', align: 'start' },
-          { text: 'Status', value: 'status' },
           { text: 'Group(s)', value: 'groups' },
           { text: '', value: 'action', sortable: false },
         ],
@@ -247,35 +256,50 @@
                  })
                  .catch(err => console.log(err));
         },
+        changeStatus(instId, state) {
+          axios.patch('/institutions/'+instId, { is_active: state })
+               .then( (response) => {
+                 if (response.data.result) {
+                   var _idx = this.mutable_institutions.findIndex(ii=>ii.id == instId);
+                   this.mutable_institutions[_idx].is_active = state;
+                   this.$emit('change-inst', instId);
+                 }
+               })
+               .catch(error => {});
+        },
         instDialogDone ({ result, msg, inst }) {
             this.success = '';
             this.failure = '';
-            if (result == 'Success') {
-                this.success = msg;
-                // Add the new institution onto the mutable array and re-sort it
-                this.mutable_institutions.push(inst);
-                this.mutable_institutions.sort((a,b) => {
-                  if ( a.name < b.name ) return -1;
-                  if ( a.name > b.name ) return 1;
-                  return 0;
-                });
-                // apply new new institution ID to the user form; don't change if already set
-                if (this.form.inst_id == null) {
-                    this.form.inst_id = inst.id;
-                    this.form_key += 1;
+            if (result != 'Cancel') {
+                if (result == 'Success') {
+                    this.success = msg;
+                    // Add the new institution onto the mutable array and re-sort it
+                    this.mutable_institutions.push(inst);
+                    this.mutable_institutions.sort((a,b) => {
+                      if ( a.name < b.name ) return -1;
+                      if ( a.name > b.name ) return 1;
+                      return 0;
+                    });
+                    // apply new new institution ID to the user form; don't change if already set
+                    if (this.form.inst_id == null) {
+                        this.form.inst_id = inst.id;
+                        this.form_key += 1;
+                    }
+                    // Add inst to the array we'll emit to caller
+                    this.added_insts.push(inst);
+                    // return new inst as a 1-item array
+                    var new_inst = [];
+                    new_inst.push(inst);
+                    this.$emit('new-inst', new_inst);
+                } else if (result == 'Fail') {
+                    this.failure = msg;
+                } else  {
+                    this.failure = 'Unexpected Result returned from dialog - programming error!';
                 }
-                // Add inst to the array we'll emit to caller
-                this.added_insts.push(inst);
-            } else if (result == 'Fail') {
-                this.failure = msg;
-            } else if (result != 'Cancel') {
-                this.failure = 'Unexpected Result returned from dialog - programming error!';
             }
             this.instDialog = false;
-            // return new inst as a 1-item array
-            var new_inst = [];
-            new_inst.push(inst);
-            this.$emit('new-inst', new_inst);
+            this.dtKey += 1;
+            this.idKey += 1;
         },
         processBulk() {
             this.success = "";
@@ -315,7 +339,6 @@
                 var state = (this.bulkAction == 'Set Active') ? 1 : 0;
                 var new_status = (state == 1) ? 'Active' : 'Inactive';
                 this.selectedRows.forEach( (inst) => {
-                    // axios.post('/sushisettings-update', {
                     axios.patch('/institutions/'+inst.id, {
                       name: inst.name,
                       is_active: state
@@ -400,7 +423,7 @@
             this.mutable_institutions[_idx].groups = group_str;
           });
           this.groupingDialog = false;
-          this.$emit('groups-updated', {groups: this.mutable_groups, insts: this.mutable_institutions});
+          this.$emit('refresh-groups', {groups: this.mutable_groups, insts: this.mutable_institutions});
         },
         institutionImportSubmit (event) {
             this.success = '';

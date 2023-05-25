@@ -36,92 +36,76 @@
         </v-alert>
       </v-data-table>
     </div>
-    <v-dialog v-model="importDialog" persistent max-width="800px">
-      <v-card>
-        <v-card-title>Import Institution Groups</v-card-title>
-        <v-card-text>
-          <v-container grid-list-md>
-            <v-row class="d-flex mb-2"><v-col class="d-flex pa-0">
-              <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
-              ></v-file-input>
-            </v-col></v-row>
-            <v-row class="d-flex ma-0"><v-col class="d-flex pa-0">
-              <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
-            </v-col></v-row>
-          </v-container>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-col class="d-flex">
+    <v-dialog v-model="importDialog" persistent content-class="ccplus-dialog">
+      <v-container grid-list-md>
+        <v-row class="d-flex ma-2" no-gutters>
+          <v-col class="d-flex pa-4 justify-center">
+            <h4 align="center">Import Institution Groups</h4>
+          </v-col>
+        </v-row>
+        <v-row class="d-flex ma-2" no-gutters>
+          <v-col class="d-flex pa-4">
+            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+            ></v-file-input>
+          </v-col>
+        </v-row>
+        <v-row class="d-flex ma-2" no-gutters>
+          <v-col class="d-flex pa-4">
+            <v-select :items="import_types" v-model="import_type" label="Import Type" outlined></v-select>
+          </v-col>
+        </v-row>
+        <v-spacer></v-spacer>
+        <v-row class="d-flex ma-2" no-gutters>
+          <v-col class="d-flex px-2 justify-center" cols="6">
             <v-btn x-small color="primary" type="submit" @click="importSubmit">Run Import</v-btn>
           </v-col>
-          <v-col class="d-flex">
+          <v-col class="d-flex px-2 justify-center" cols="6">
             <v-btn class='btn' x-small type="button" color="primary" @click="importDialog=false">Cancel</v-btn>
           </v-col>
-        </v-card-actions>
-      </v-card>
+        </v-row>
+      </v-container>
     </v-dialog>
-    <v-dialog v-model="createDialog" persistent max-width="800px">
-      <v-card>
-        <v-card-title>Create an Institution Group</v-card-title>
-        <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
-              @keydown="form.errors.clear($event.target.name)">
-          <v-card-text>
-            <v-container grid-list-md>
-              <v-row class="d-flex ma-0"><v-col class="d-flex pa-0">
-                <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-              </v-col></v-row>
-            </v-container>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-col class="d-flex">
-              <v-btn x-small color="primary" type="submit" :disabled="form.errors.any()">Save New Group</v-btn>
+    <v-dialog v-model="groupDialog" persistent content-class="ccplus-dialog">
+      <v-container grid-list-md>
+        <v-form v-model="formValid">
+          <v-row class="d-flex ma-2" no-gutters>
+            <v-col v-if="dtype=='edit'" class="d-flex pt-4 justify-center"><h4 align="center">Edit Group settings</h4></v-col>
+            <v-col v-else class="d-flex pt-4 justify-center"><h4 align="center">Create New Group</h4></v-col>
+          </v-row>
+          <v-row class="d-flex ma-2" no-gutters>
+            <v-text-field v-model="form.name" label="Name" outlined dense></v-text-field>
+          </v-row>
+          <div v-if="groupDialogType=='edit'">
+            <v-row class="d-flex ma-2" no-gutters>
+              <v-col class="px-2">
+                <p><strong>Current Members</strong></p>
+                <template v-for="inst in current_group.institutions">
+                  <v-row no-gutters>{{ inst.name }}</v-row>
+                </template>
+              </v-col>
+              <v-col class="px-2">
+                <v-autocomplete :items="current_group.not_members" v-model="curInst" return-object
+                  item-text="name" item-value="id" label="Add Institution" @change="addInst"
+                  hint="Add institution to the group" persistent-hint dense
+                ></v-autocomplete>
+                <v-autocomplete :items="current_group.institutions" v-model="curInst" return-object
+                  item-text="name" item-value="id" label="Remove Institution" @change="delInst"
+                  hint="Remove institution from the group" persistent-hint dense
+                ></v-autocomplete>
+              </v-col>
+            </v-row>
+          </div>
+          <v-spacer></v-spacer>
+          <v-row class="d-flex ma-2" no-gutters>
+            <v-col class="d-flex px-2 justify-center" cols="6">
+              <v-btn class='btn' x-small color="primary" @click="formSubmit" :disabled="!formValid">Save Group</v-btn>
             </v-col>
-            <v-col class="d-flex">
-              <v-btn class='btn' x-small type="button" color="primary" @click="createDialog=false">Cancel</v-btn>
+            <v-col class="d-flex px-2 justify-center" cols="6">
+              <v-btn class='btn' x-small type="button" color="primary" @click="cancelDialog">Cancel</v-btn>
             </v-col>
-          </v-card-actions>
-        </form>
-      </v-card>
-    </v-dialog>
-    <v-dialog v-model="editDialog" persistent max-width="800px">
-      <v-card>
-        <v-card-title>Edit an Institution Group</v-card-title>
-        <form method="POST" action="" @submit.prevent="formSubmit" @keydown="form.errors.clear($event.target.name)"
-              class="in-page-form">
-          <v-card-text>
-            <v-container grid-list-md>
-              <v-row><v-col>
-                <v-text-field v-model="form.name" label="Name" outlined></v-text-field>
-              </v-col></v-row>
-              <v-row>
-                <v-col>
-                  <p><strong>Current Members</strong></p>
-                  <template v-for="inst in current_group.institutions">
-                    <v-row no-gutters>{{ inst.name }}</v-row>
-                  </template>
-                </v-col>
-                <v-col>
-                  <v-autocomplete :items="current_group.not_members" v-model="curInst" return-object
-                    item-text="name" item-value="id" label="Add Institution" @change="addInst"
-                    hint="Add institution to the group" persistent-hint></v-autocomplete>
-                  <v-autocomplete :items="current_group.institutions" v-model="curInst" return-object
-                    item-text="name" item-value="id" label="Remove Institution" @change="delInst"
-                    hint="Remove institution from the group" persistent-hint></v-autocomplete>
-                </v-col>
-              </v-row>
-            </v-container>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
-              Save This Group
-            </v-btn>
-  	        <v-btn small type="button" @click="editDialog=false">cancel</v-btn>
-          </v-card-actions>
-        </form>
-      </v-card>
+          </v-row>
+        </v-form>
+      </v-container>
     </v-dialog>
   </div>
 </template>
@@ -145,6 +129,7 @@
           { text: 'Member Count', value: 'count', align: 'center' },
           { text: '', value: 'action', sortable: false },
         ],
+        formValid: true,
         form: new window.Form({
             name: '',
             institutions: [],
@@ -153,9 +138,10 @@
         search: '',
         mutable_options: {},
         csv_upload: null,
+        dtype: null,
         importDialog: false,
-        createDialog: false,
-        editDialog: false,
+        groupDialog: false,
+        groupDialogType: '',
         import_type: '',
         import_types: ['Full Replacement', 'New Additions']
       }
@@ -165,21 +151,20 @@
             this.csv_upload = null;
             this.import_type = '';
             this.importDialog = true;
-            this.createDialog = false;
-            this.editDialog = false;
+            this.groupDialog = false;
         },
         createForm () {
             this.form.name = '';
-            this.createDialog = true;
             this.importDialog = false;
-            this.editDialog = false;
+            this.groupDialog = true;
+            this.groupDialogType = 'create';
         },
         editForm (groupid) {
             this.current_group = this.mutable_groups[this.mutable_groups.findIndex(g=> g.id == groupid)];
             this.form.name = this.current_group.name;
-            this.editDialog = true;
-            this.createDialog = false;
             this.importDialog = false;
+            this.groupDialog = true;
+            this.groupDialogType = 'edit';
         },
         importSubmit (event) {
             this.success = '';
@@ -192,6 +177,7 @@
                 return;
             }
             this.failure = '';
+            var membership = [];
             let formData = new FormData();
             formData.append('csvfile', this.csv_upload);
             formData.append('type', this.import_type);
@@ -205,13 +191,15 @@
                          this.failure = '';
                          this.success = response.data.msg;
                          // Replace mutable array with response groups
-                         this.mutable_groups = response.data.groups;
+                         this.mutable_groups = [...response.data.groups];
+                         membership = [...response.data.belongsTo];
                      } else {
                          this.success = '';
                          this.failure = response.data.msg;
                      }
                  });
             this.importDialog = false;
+            this.$emit('update-groups', {groups: this.mutable_groups, membership: membership});
         },
         doExport () {
             window.location.assign('/institution/groups/export/xlsx');
@@ -220,7 +208,8 @@
         formSubmit (event) {
             this.success = '';
             this.failure = '';
-            if (this.editDialog) {
+            var membership = [];
+            if (this.groupDialogType == 'edit') {
                 this.form.institutions = this.current_group.institutions;
                 this.form.patch('/institution/groups/'+this.current_group.id)
                     .then((response) => {
@@ -228,19 +217,22 @@
                             // Update mutable_types record with new value
                             var idx = this.mutable_groups.findIndex(g => g.id == this.current_group.id);
                             Object.assign(this.mutable_groups[idx], response.group);
+                            membership = [...response.belongsTo];
                             this.success = response.msg;
+                            this.$emit('update-groups', {groups: this.mutable_groups, membership: response.belongsTo});
                         } else {
                             this.failure = response.msg;
+                            return;
                         }
                     });
-                this.editDialog = false;
-            } else {
+            } else if (this.groupDialogType == 'create') {
                 this.form.institutions = [];
                 this.form.post('/institution/groups')
                 .then( (response) => {
                     if (response.result) {
                         this.failure = '';
                         this.success = response.msg;
+                        membership = [...response.belongsTo];
                         // Add the new group into the mutable array
                         this.mutable_groups.push(response.group);
                         this.mutable_groups.sort((a,b) => {
@@ -248,13 +240,16 @@
                           if ( a.name > b.name ) return 1;
                           return 0;
                         });
+                        this.$emit('update-groups', {groups: this.mutable_groups, membership: response.belongsTo});
                     } else {
                         this.success = '';
                         this.failure = response.msg;
+                        return;
                     }
                 });
-                this.createDialog = false;
             }
+            this.groupDialog = false;
+            this.groupDialogType = '';
         },
         // Delete a group
         destroy(groupid) {
@@ -318,18 +313,22 @@
             });
             this.$store.dispatch('updateDatatableOptions',this.mutable_options);
         },
+        cancelDialog () {
+            this.groupDialog = false;
+            this.groupDialogType = '';
+        },
     },
     computed: {
       ...mapGetters(['datatable_options'])
     },
     beforeCreate() {
-        // Load existing store data
-		this.$store.commit('initialiseStore');
-	},
+      // Load existing store data
+  		this.$store.commit('initialiseStore');
+  	},
     beforeMount() {
-        // Set page name in the store
-        this.$store.dispatch('updatePageName','institutiongroups');
-	},
+      // Set page name in the store
+      this.$store.dispatch('updatePageName','institutiongroups');
+  	},
     mounted() {
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);

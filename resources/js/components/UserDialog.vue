@@ -19,7 +19,7 @@
             <v-col class="d-flex justify-center" cols="6">
               <v-switch name="is_active" label="Active?" v-model="form.is_active" dense></v-switch>
             </v-col>
-            <v-col class="d-flex justify-center" cols="6">
+            <v-col v-if="mutable_institutions.length>1" class="d-flex justify-center" cols="6">
               <v-btn small color="primary" @click="instDialog=true">Create an Institution</v-btn>
             </v-col>
           </v-row>
@@ -75,7 +75,7 @@
       </v-card-actions>
     </v-card>
     <v-dialog v-model="instDialog" persistent content-class="ccplus-dialog">
-      <institution-dialog dtype="create" :groups="groups" @inst-complete="instDialogDone"></institution-dialog>
+      <institution-dialog dtype="create" :groups="groups" @inst-complete="instDialogDone" :key="idKey"></institution-dialog>
     </v-dialog>
   </div>
 </template>
@@ -98,12 +98,13 @@
         success: '',
         failure: '',
         form_key: 1,
+        idKey: 0,
         formValid: true,
         pw_show: false,
         pwc_show: false,
         inst_name: '',
         instDialog: false,
-        mutable_user: this.user,
+        mutable_user: { ...this.user },
         mutable_institutions: [ ...this.institutions ],
         added_insts: [],
         form: new window.Form({
@@ -134,7 +135,7 @@
                   this.failure = 'Password must be at least 8 characters';
                   return;
               }
-              this.form.patch('/users/'+user.id)
+              this.form.patch('/users/'+this.user.id)
                   .then((response) => {
                       var _user   = (response.result) ? response.user : null;
                       var _result = (response.result) ? 'Success' : 'Fail';
@@ -164,7 +165,7 @@
           // Assigning to a non-consortium staff inst turns Viewer role OFF in the form if the user does not have it already
           // (in case set to consortium staff and then change to another before submitting)
           } else {
-              if (!user.roles.includes(view_role.id) && this.form.roles.includes(view_role.id)) {
+              if (!this.user.roles.includes(view_role.id) && this.form.roles.includes(view_role.id)) {
                   this.form.roles.splice(this.form.roles.indexOf(view_role.id), 1);
               }
           }
@@ -194,6 +195,7 @@
               this.failure = 'Unexpected Result returned from dialog - programming error!';
           }
           this.instDialog = false;
+          this.idKey += 1;
       },
     },
     computed: {

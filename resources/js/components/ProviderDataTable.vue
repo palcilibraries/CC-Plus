@@ -23,13 +23,21 @@
     </div>
     <v-data-table :headers="headers" :items="mutable_providers" item-key="id" :options="mutable_options"
                   :search="search" @update:options="updateOptions" :key="'mp'+dtKey">
+      <template v-slot:item.status="{ item }">
+        <span v-if="item.is_active">
+          <v-icon large color="green" title="Active" @click="changeStatus(item.id,0)">mdi-toggle-switch</v-icon>
+        </span>
+        <span v-else>
+          <v-icon large color="red" title="Inactive" @click="changeStatus(item.id,1)">mdi-toggle-switch-off</v-icon>
+        </span>
+      </template>
       <template v-slot:item.inst_name="{ item }">
         <span v-if="item.inst_id==1">{{ item.inst_name }}</span>
         <span v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></span>
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
-          <v-icon title="Edit Provider" @click="goEdit(item.id)">mdi-exit-to-app</v-icon>
+          <v-icon title="Edit Provider" @click="editProvider(item.id)">mdi-cog-outline</v-icon>
           <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
             <v-icon title="Delete Provider">mdi-trash-can-outline</v-icon>
           </v-btn>
@@ -42,6 +50,11 @@
         Your search for "{{ search }}" found no results.
       </v-alert>
     </v-data-table>
+    <v-dialog v-model="provDialog" persistent content-class="ccplus-dialog">
+      <provider-dialog dtype="edit" :provider="cur_provider" :institutions="institutions" :master_reports="master_reports"
+                       @prov-complete="provDialogDone" :key="dialogKey"
+      ></provider-dialog>
+    </v-dialog>
   </div>
 </template>
 
@@ -53,6 +66,7 @@
             providers: { type:Array, default: () => [] },
             institutions: { type:Array, default: () => [] },
             unset_global: { type:Array, default: () => [] },
+            master_reports: { type:Array, default: () => [] },
            },
     data () {
       return {
@@ -60,9 +74,9 @@
         failure: '',
         inst_name: '',
         headers: [
+          { text: 'Status', value: 'status' },
           { text: 'Provider ', value: 'name', align: 'start' },
           { text: 'Master Reports', value: 'reports_string' },
-          { text: 'Status', value: 'active' },
           { text: 'Serves', value: 'inst_name' },
           { text: 'Harvest Day', value: 'day_of_month', align: 'center' },
           { text: '', value: 'action', sortable: false }
@@ -70,9 +84,12 @@
         mutable_unset: [ ...this.unset_global ],
         mutable_providers: [ ...this.providers ],
         dtKey: 1,
+        dialogKey: 1,
         mutable_options: {},
         search: '',
         new_provider: null,
+        cur_provider: {},
+        provDialog: false,
       }
     },
     methods:{
@@ -105,6 +122,17 @@
             .catch(error => {});
             this.dtKey += 1;    // re-render the datatable
         },
+        changeStatus(provId, state) {
+          axios.patch('/providers/'+provId, { is_active: state })
+               .then( (response) => {
+                 if (response.data.result) {
+                   var _idx = this.mutable_providers.findIndex(p=>p.id == provId);
+                   this.mutable_providers[_idx].is_active = state;
+                   this.$emit('change-prov', provId);
+                 }
+               })
+               .catch(error => {});
+        },
         updateOptions(options) {
             if (Object.keys(this.mutable_options).length === 0) return;
             Object.keys(this.mutable_options).forEach( (key) =>  {
@@ -113,6 +141,27 @@
                 }
             });
             this.$store.dispatch('updateDatatableOptions',this.mutable_options);
+        },
+        editProvider (provId) {
+            this.cur_provider = this.mutable_providers.find(p => p.id == provId);
+            this.provDialog = true;
+            this.dialogKey += 1;
+        },
+        provDialogDone ({ result, msg, prov }) {
+            this.success = '';
+            this.failure = '';
+            if (result == 'Success') {
+                let _idx = this.mutable_providers.findIndex(p=> p.id == prov.id);
+                this.mutable_providers[_idx] = prov;
+                this.success = msg;
+                this.dtKey += 1;
+                this.$emit('change-prov', prov.id);
+            } else if (result == 'Fail') {
+                this.failure = msg;
+            } else if (result != 'Cancel') {
+                this.failure = 'Unexpected Result returned from dialog - programming error!';
+            }
+            this.provDialog = false;
         },
         destroy (provid) {
             Swal.fire({

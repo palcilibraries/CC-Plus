@@ -135,6 +135,7 @@
           this.success = '';
           this.failure = '';
           this.form.inst_id = this.sushi_inst.id;
+          this.form.prov_id = this.sushi_prov.id;
           this.form.status = this.statusval;
           // All connectors are required - whether they work or not is a matter of testing+confirming
           this.sushi_prov.connectors.forEach( (cnx) => {
@@ -233,7 +234,7 @@
           this.form.requestor_id = this.setting.requestor_id;
           this.form.API_key = this.setting.API_key;
           this.form.extra_args = this.setting.extra_args;
-          this.form.status = this.setting.status;
+          this.statusval = this.setting.status;
           this.sushi_prov = { ...this.setting.provider};
           this.sushi_inst = { ...this.setting.institution};
       } else {

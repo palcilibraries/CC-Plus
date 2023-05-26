@@ -153,7 +153,8 @@
       </v-card>
     </v-dialog>
     <v-dialog v-model="sushiDialog" persistent content-class="ccplus-dialog">
-      <sushi-dialog :dtype="sushiDialogType" :institutions="sushi_insts" :providers="sushi_provs" @sushi-done="sushiDialogDone"
+      <sushi-dialog :dtype="sushiDialogType" :institutions="sushi_insts" :providers="sushi_provs" :setting="current_setting"
+                    :all_settings="mutable_settings" @sushi-done="sushiDialogDone" :key="sdKey"
       ></sushi-dialog>
     </v-dialog>
   </div>
@@ -196,12 +197,13 @@
                 connectors: [],
                 sushi_insts: [],
                 sushi_provs: [],
+                current_setting: {},
                 sushiDialogType: '',
                 // Actual headers array is built from these in mounted()
                 header_fields: [
                   { label: 'Status', name: 'status' },
-                  { label: 'Institution ', name: 'inst_name' },
-                  { label: 'Provider ', name: 'prov_name' },
+                  { label: 'Institution ', name: 'institution.name' },
+                  { label: 'Provider ', name: 'provider.name' },
                   { label: '', name: 'customer_id' },
                   { label: '', name: 'requestor_id' },
                   { label: '', name: 'API_key' },
@@ -214,6 +216,7 @@
                 bulkAction: null,
                 selectedRows: [],
                 dtKey: 1,
+                sdKey: 1,
                 form: new window.Form({
                     inst_id: null,
                     prov_id: null,
@@ -384,14 +387,16 @@
             .catch({});
           },
           editSetting (item) {
+              this.sdKey += 1;
+              this.current_setting = item;
               this.sushi_provs = [];
               this.sushi_insts = [];
-              this.sushi_provs.push(item.provider);
-              this.sushi_insts.push(item.institution);
               this.sushiDialogType = 'edit';
               this.sushiDialog = true;
           },
           newSetting() {
+              this.sdKey += 1;
+              this.current_setting = {};
               this.sushi_provs = [ ...this.providers ];
               this.sushi_insts = [ ...this.institutions ];
               this.sushiDialogType = 'create';
@@ -440,7 +445,7 @@
           sushiDialogDone ({ result, msg, setting }) {
               this.success = '';
               this.failure = '';
-              if (result == 'Success') {
+              if (result == 'Created') {
                   this.success = msg;
                   this.mutable_settings.push(setting);
                   this.mutable_settings.sort((a,b) => {
@@ -450,24 +455,27 @@
                   });
                   // Remove the provider from the appropriate unset array
                   this.mutable_unset.splice(this.mutable_unset.findIndex(p => p.id==setting.provider.id),1);
-
                   // Check provider connectors to see if a new connector was just enabled
                   let new_cnx = false;
-                  this.provider.global_prov.connectors.forEach( (cnx) => {
-                      if (!new_cnx && !this.mutable_connectors[cnx.name]['active']) {
-                        this.mutable_connectors[cnx.name]['active'] = true;
+                  setting.provider.connectors.forEach( (cnx) => {
+                      let existing_cnx = this.connectors.find(c => c.name == cnx.name);
+                      if (typeof(existing_cnx) == 'undefined') {
+                        this.connectors.push(cnx);
                         new_cnx = true;
                       }
                   });
                   // If new connector enabled, rebuild headers
                   if (new_cnx) this.updateHeaders();
-                  this.sushi_provs = { 'global_prov': {'connectors': []} };
+                  this.dtKey += 1;
+              } else if (result == 'Updated') {
+                  this.mutable_settings[this.mutable_settings.findIndex(s => s.id == setting.id)] = setting;
                   this.dtKey += 1;
               } else if (result == 'Fail') {
                   this.failure = msg;
               } else if (result != 'Cancel') {
                   this.failure = 'Unexpected Result returned from sushiDialog - programming error!';
               }
+              this.sushi_provs = [{ 'global_prov': {'connectors': []} }];
               this.sushiDialog = false;
           },
           isEmpty(obj) {

@@ -48,6 +48,7 @@ class ProviderController extends Controller
             $last_harvest = $rec->sushiSettings->max('last_harvest');
             $rec->can_delete = (is_null($last_harvest)) ? true : false;
             $rec->reports_string = ($rec->reports) ? $this->makeReportString($rec->reports) : 'None';
+            $rec->connectors = $rec->globalProv->connectionFields();
             return $rec;
         })->toArray();
 
@@ -248,6 +249,7 @@ class ProviderController extends Controller
         }
         $provider->report_state = $rpt_state;
         $provider->reports_string = ($provider->reports) ? $this->makeReportString($provider->reports) : 'None';
+        $provider->connectors = $provider->globalProv->connectionFields();
 
         // Return updated provider data
         $provider->load('reports:reports.id,reports.name');
@@ -300,6 +302,7 @@ class ProviderController extends Controller
         $provider->can_delete = true;
         $provider->day_of_month = 15;
         $provider->SushiSettings = [];
+        $provider->connectors = $provider->globalProv->connectionFields();
         // Attach reports to be be pulled
         foreach ($gp->master_reports as $r) {
             $provider->reports()->attach($r);

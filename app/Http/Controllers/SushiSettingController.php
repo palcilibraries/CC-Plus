@@ -79,13 +79,6 @@ class SushiSettingController extends Controller
                                   })
                                   ->get();
 
-            // Add stuff to simplify the datatable
-            $settings = $data->map( function($setting) {
-                $setting->inst_name = $setting->institution->name;
-                $setting->prov_name = $setting->provider->name;
-                return $setting;
-            });
-
             // Build an array of connection_fields used across all providers (whether connected or not)
             $all_connectors = array();
             $seen_connectors = array();
@@ -104,6 +97,10 @@ class SushiSettingController extends Controller
                     }
                 }
             }
+            $settings = $data->map( function ($rec) {
+                $rec->provider->connectors = $rec->provider->globalProv->connectionFields();
+                return $rec;
+            });
             return response()->json(['settings' => $settings, 'connectors' => $all_connectors], 200);
 
         // Not returning JSON, the index/vue-component still needs these to setup the page
@@ -114,6 +111,10 @@ class SushiSettingController extends Controller
 
             // Get all providers, regardless of is_active
             $providers = Provider::with('globalProv')->orderBy('name', 'ASC')->get();
+            $providers = $provider_data->map( function ($rec) {
+                $rec->connectors = $rec->globalProv->connectionFields();
+                return $rec;
+            });
 
             // Get InstitutionGroups
             $inst_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
@@ -223,7 +224,8 @@ class SushiSettingController extends Controller
         // create the new sushi setting record
         $setting = SushiSetting::create($fields);
         $setting->load('institution', 'provider', 'provider.globalProv');
-        // Set status string based on is_active and add in a string for next_harvest
+        $setting->provider->connectors = $setting->provider->globalProv->connectionFields();
+        // Set string for next_harvest
         if (!$setting->provider->is_active || !$setting->institution->is_active || $setting->status != 'Enabled') {
             $setting['next_harvest'] = null;
         } else {
@@ -290,6 +292,16 @@ class SushiSettingController extends Controller
             $updates['status'] = $new_status;
         }
         $setting->update($updates);
+
+        // Finish setting up the return object
+        $setting->provider->connectors = $setting->provider->globalProv->connectionFields();
+        // Set string for next_harvest
+        if (!$setting->provider->is_active || !$setting->institution->is_active || $setting->status != 'Enabled') {
+            $setting['next_harvest'] = null;
+        } else {
+            $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
+            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->day_of_month,date("Y")));
+        }
 
         return response()->json(['result' => true, 'msg' => 'Setting updated successfully', 'setting' => $setting]);
     }

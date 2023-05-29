@@ -97,12 +97,13 @@ class InstitutionController extends Controller
                                        ->orderBy('name', 'ASC')
                                        ->get(['id','name','local_id','is_active']);
 
-            // Add group memberships and status as strings
+            // Add group memberships
             $institutions = $inst_data->map( function($inst) {
-                $inst->groups = "";
+                $inst->group_string = "";
+                $inst->groups = $inst->institutionGroups()->pluck('institution_group_id')->all();
                 foreach ($inst->institutionGroups as $group) {
-                    $inst->groups .= ($inst->groups == "") ? "" : ", ";
-                    $inst->groups .= $group->name;
+                    $inst->group_string .= ($inst->group_string == "") ? "" : ", ";
+                    $inst->group_string .= $group->name;
                 }
                 $harvest_count = $inst->sushiSettings->whereNotNull('last_harvest')->count();
                 $inst->can_delete = ($harvest_count > 0 || $inst->id == 1) ? false : true;
@@ -160,8 +161,8 @@ class InstitutionController extends Controller
 
         // Attach groups and build a string of the names
         $_groups = "";
-        if (isset($input['institutiongroups'])) {
-            foreach ($request->input('institutiongroups') as $g) {
+        if (isset($input['institution_groups'])) {
+            foreach ($request->input('institution_groups') as $g) {
                 $institution->institutionGroups()->attach($g);
                 $group = InstitutionGroup::where('id', $g)->first();
                 $_groups .= ($group) ? $group->name . ", " : "";
@@ -190,7 +191,7 @@ class InstitutionController extends Controller
         }
 
         // Get the institution and sushi settings
-        $institution = Institution::with('users', 'users.roles')->findOrFail($id);
+        $institution = Institution::with('users', 'users.roles','institutionGroups')->findOrFail($id);
         $sushi_settings = SushiSetting::with('provider','provider.globalProv')->where('inst_id',$institution->id)->get();
 
         // Get most recent harvest and set can_delete flag
@@ -359,12 +360,13 @@ class InstitutionController extends Controller
         } else {
             // Update the record and assign groups
              $institution->update($input);
-             if (isset($input['institutiongroups'])) {
+             if (isset($input['institution_groups'])) {
                  $institution->institutionGroups()->detach();
-                 foreach ($request->input('institutiongroups') as $g) {
+                 foreach ($request->input('institution_groups') as $g) {
                      $institution->institutionGroups()->attach($g);
                  }
              }
+             $institution->load('institutionGroups');
 
              // If changing from active to inactive, suspend related sushi settings
               $settings = array();
@@ -388,13 +390,14 @@ class InstitutionController extends Controller
         }
 
         // Tack on a tring for all the group memberships
-        $institution->groups = "";
+        $institution->groups = $institution->institutionGroups()->pluck('institution_group_id')->all();
+        $institution->group_string = "";
         foreach ($institution->institutionGroups as $group) {
-            $institution->groups .= ($institution->groups == "") ? "" : ", ";
-            $institution->groups .= $group->name;
+            $institution->group_string .= ($institution->group_string == "") ? "" : ", ";
+            $institution->group_string .= $group->name;
         }
 
-         return response()->json(['result' => true, 'msg' => 'Settings successfully updated', 'institution' => $institution]);
+        return response()->json(['result' => true, 'msg' => 'Settings successfully updated', 'institution' => $institution]);
     }
 
     /**

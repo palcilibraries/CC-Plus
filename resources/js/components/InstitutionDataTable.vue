@@ -194,7 +194,7 @@
           { text: 'Status', value: 'status' },
           { text: 'Institution ', value: 'name', align: 'start' },
           { text: 'Local ID ', value: 'local_id', align: 'start' },
-          { text: 'Group(s)', value: 'groups' },
+          { text: 'Group(s)', value: 'group_string' },
           { text: '', value: 'action', sortable: false },
         ],
         footer_props: { 'items-per-page-options': [10,50,100,-1] },
@@ -205,7 +205,7 @@
             name: '',
             is_active: 1,
             fte: 0,
-            institutiongroups: [],
+            institution_groups: [],
             notes: '',
         }),
         dtKey: 1,
@@ -417,10 +417,10 @@
           // Update "Group(s)" string for affected institutons
           this.selectedRows.forEach( (inst) => {
             var _idx = this.mutable_institutions.findIndex(i=>i.id == inst.id);
-            let group_str = this.mutable_institutions[_idx].groups;
+            let group_str = this.mutable_institutions[_idx].group_string;
             group_str += (group_str.length > 0) ? ', ' : '';
             group_str += the_group_name;
-            this.mutable_institutions[_idx].groups = group_str;
+            this.mutable_institutions[_idx].group_string = group_str;
           });
           this.groupingDialog = false;
           this.$emit('refresh-groups', {groups: this.mutable_groups, insts: this.mutable_institutions});
@@ -482,7 +482,7 @@
               }
             })
             .catch({});
-      },
+        },
         goEdit (instId) {
             window.location.assign('/institutions/'+instId+'/edit');
         },

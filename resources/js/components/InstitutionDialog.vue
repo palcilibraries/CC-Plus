@@ -6,10 +6,10 @@
         <v-col v-else class="d-flex pt-4 justify-center"><h4 align="center">Create an Institution</h4></v-col>
       </v-row>
       <v-row class="d-flex mx-2" no-gutters>
-        <v-text-field v-model="form.name" label="Name" outlined dense></v-text-field>
+        <v-text-field v-model="form.name" label="Name" outlined dense :readonly="!is_admin"></v-text-field>
       </v-row>
       <v-row class="d-flex mx-2" no-gutters>
-        <v-switch v-model="form.is_active" label="Active?" dense></v-switch>
+        <v-switch v-model="form.is_active" label="Active?" dense :readonly="!is_admin"></v-switch>
       </v-row>
       <v-row class="d-flex mx-2" no-gutters>
         <v-col class="d-flex px-2" cols="1">FTE</v-col>
@@ -20,8 +20,8 @@
       <v-row class="d-flex mx-2 mt-2" no-gutters>
         <div class="field-wrapper has-label">
           <v-subheader v-text="'Belongs To'"></v-subheader>
-          <v-select :items="groups" v-model="form.institutiongroups" item-text="name" item-value="id"
-                    label="Institution Group(s)" multiple chips persistent-hint
+          <v-select :items="groups" v-model="form.institution_groups" item-text="name" item-value="id"
+                    label="Institution Group(s)" multiple chips persistent-hint  :readonly="!is_admin"
                     hint="Assign group membership for this institution"
           ></v-select>
         </div>
@@ -45,6 +45,7 @@
 </template>
 
 <script>
+  import { mapGetters } from 'vuex';
   import axios from 'axios';
   export default {
     props: {
@@ -64,7 +65,7 @@
             local_id: '',
             is_active: 1,
             fte: 0,
-            institutiongroups: [],
+            institution_groups: [],
             notes: '',
         }),
       }
@@ -91,20 +92,23 @@
         this.$emit('inst-complete', { result:'Cancel', msg:null, inst:null });
       },
     },
+    computed: {
+      ...mapGetters(['is_admin']),
+    },
     mounted() {
       if (this.dtype == 'edit') {
         this.form.name = this.institution.name;
         this.form.local_id = this.institution.local_id;
         this.form.is_active = this.institution.is_active;
         this.form.fte = this.institution.fte;
-        this.form.institutiongroups = this.institution.groups;
+        this.form.institution_groups = this.institution.groups;
         this.form.notes = this.institution.notes;
       } else if (this.dtype == 'create') {
         this.form.name = '';
         this.form.local_id = '';
         this.form.is_active = 1;
         this.form.fte = 0;
-        this.form.institutiongroups = [];
+        this.form.institution_groups = [];
         this.form.notes = '';
       }
       console.log('InstitutionDialog Component mounted.');

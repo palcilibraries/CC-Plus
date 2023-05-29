@@ -50,9 +50,9 @@
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
-        <v-select :items="mutable_providers" v-model="mutable_filters['prov']" @change="updateFilters('prov')" multiple
+        <v-autocomplete :items="mutable_providers" v-model="mutable_filters['prov']" @change="updateFilters('prov')" multiple
                   label="Provider(s)" item-text="name" item-value="id"
-        ></v-select>
+        ></v-autocomplete>
       </v-col>
       <v-col class="d-flex px-4 align-center" cols="2">
         <div v-if="mutable_filters['harv_stat'].length>0" class="x-box">
@@ -110,6 +110,8 @@
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
+          <v-icon title="Manual Harvest" @click="goHarvest(item)">mdi-exit-to-app</v-icon>
+          &nbsp; &nbsp;
           <v-icon title="Edit Sushi Settings" @click="editSetting(item)">mdi-cog-outline</v-icon>
           &nbsp; &nbsp;
           <v-icon title="Delete connection" @click="destroy(item)">mdi-trash-can-outline</v-icon>
@@ -441,6 +443,9 @@
           },
           goEditProv (provId) {
               window.location.assign('/providers/'+provId);
+          },
+          goHarvest(setting) {
+              window.location.assign("/harvests/create?inst="+setting.inst_id+"&prov="+setting.prov_id);
           },
           sushiDialogDone ({ result, msg, setting }) {
               this.success = '';

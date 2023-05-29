@@ -126,7 +126,7 @@
             }),
             maxYM: '',
             inst_name: '',
-            available_providers: this.providers,
+            available_providers: [ ...this.providers],
             available_reports: [],
         }
     },
@@ -159,7 +159,7 @@
         // Update mutable providers when inst-group changes
         onGroupChange(groupid) {
             if (groupid == 0) {
-                this.available_providers = this.providers;
+                this.available_providers = [ ...this.providers];
             } else {
                 this.updateProviders();
             }
@@ -169,7 +169,7 @@
         // Update mutable providers when inst changes
         onInstChange(inst_list) {
             if (inst_list.length == 0) {
-                this.available_providers = this.providers;
+                this.available_providers = [ ...this.providers];
             } else {
                 this.updateProviders();
             }
@@ -181,7 +181,7 @@
             let inst_ids = JSON.stringify(this.form.inst);
             axios.get('/available-providers?inst_ids='+inst_ids+'&group_id='+this.form.inst_group_id)
                  .then((response) => {
-                     this.available_providers = response.data.providers;
+                     this.available_providers = [ ...response.data.providers];
                  })
                  .catch(error => {});
         },
@@ -189,7 +189,7 @@
             this.failure = '';
             // If no providers, set to available to all
             if (prov_list.length == 0) {
-                this.available_reports = this.all_reports;
+                this.available_reports = [ ...this.all_reports];
             // Update available reports when providers changes
             } else {
                 this.available_reports = [];

@@ -50,10 +50,6 @@ Route::post('/providers/connect', 'ProviderController@connect')->name('providers
 Route::get('/available-providers', 'HarvestLogController@availableProviders')->middleware(['auth']);
 // Sushi and Harvests
 Route::resource('/harvests', 'HarvestLogController')->middleware(['auth','cache.headers:no_store']);
-Route::prefix('harvest')->group(function () {
-    Route::get('log', 'HarvestLogController@index')->name('harvests.log')->middleware(['auth','cache.headers:no_store']);
-    Route::get('manual', 'HarvestLogController@create')->name('harvests.manual')->middleware(['auth','role:Admin,Manager']);
-});
 Route::get('/harvests/{id}/raw', 'HarvestLogController@downloadRaw')->name('harvests.download')
      ->middleware(['auth','role:Admin,Manager']);
 Route::post('/update-harvest-status', 'HarvestLogController@updateStatus')->name('harvests.changeStatus')

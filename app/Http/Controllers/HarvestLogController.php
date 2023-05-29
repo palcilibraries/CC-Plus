@@ -63,7 +63,8 @@ class HarvestLogController extends Controller
         // Managers and users only see their own insts
         $show_all = $thisUser->hasAnyRole(["Admin","Viewer"]);
         if (!$show_all) {
-            $filters['inst'] = array($thisUser->inst_id);
+            $user_inst = $thisUser->inst_id;
+            $filters['inst'] = array($user_inst);
         }
 
         // Make sure dates are sensible
@@ -77,33 +78,48 @@ class HarvestLogController extends Controller
         }
 
         // Get all groups regardless of JSON or not
-        $groups = InstitutionGroup::with('institutions:id')->orderBy('name', 'ASC')->get(['id','name']);
+        $groups = array();
+        if ($show_all) {
+            $groups = InstitutionGroup::with('institutions')->orderBy('name', 'ASC')->get(['id','name']);
+        }
 
         // Build arrays for the filter-options. Skip if returning JSON
         if (!$json) {
-            // Setup array of institutions
+            // Get IDs of all possible prov_ids from the sushisettings table
+            $possible_providers = SushiSetting::distinct('prov_id')->pluck('prov_id')->toArray();
+
+            // Setup arrays for institutions and providers
             if ($show_all) {
-                $inst_data = Institution::where('id', '<>', 1)->orderBy('name', 'ASC')->get(['id', 'name']);
-                $institutions = $inst_data->toArray();
+                $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
+                                           ->where('id', '<>', 1)->where('is_active', true)
+                                           ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+                $provider_data = Provider::with('reports')
+                                     ->whereIn('id', $possible_providers)->where('is_active', true)
+                                     ->orderBy('name', 'ASC')->get(['id','name']);
+
+                // Copy available_providers into the groups (to simplify the vue component)
+                foreach ($groups as $group) {
+                    $insts = $group->institutions->pluck('id')->toArray();
+                    $available_providers = SushiSetting::whereIn('inst_id',$insts)->pluck('prov_id')->toArray();
+                    $group->providers = $provider_data->whereIn('id',$available_providers)->toArray();
+                }
+                $providers = $provider_data->toArray();
             } else {
-                $inst_data = Institution::whereIn('id', $filters['inst'])->get(['id', 'name']);
-                $institutions = $inst_data->toArray();
+                $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
+                                           ->where('id', '=', $user_inst)
+                                           ->get(['id','name'])->toArray();
+                $providers = Provider::with('reports')
+                                     ->whereIn('id', $possible_providers)->where('is_active', true)
+                                     ->where(function ($query) use ($user_inst) {
+                                         $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
+                                     })
+                                     ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
             }
 
-            // Build an array of $providers
-            if ($show_all) {
-                $providers = Provider::orderBy('name', 'ASC')->get(['id', 'name'])->toArray();
-            } else {
-                $providers = DB::table($conso_db . '.providers as prv')
-                          ->join($conso_db . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
-                          ->where('prv.inst_id', 1)
-                          ->orWhere('prv.inst_id', $thisUser->inst_id)
-                          ->orderBy('prv.name', 'ASC')
-                          ->get(['prv.id','prv.name'])
-                          ->toArray();
-            }
-            // Get available reports and make sure dates are set right
-            $reports = Report::where('parent_id', '=', 0)->get(['id', 'name'])->toArray();
+            // Get reports for all that exist in the relationship table
+            $table = config('database.connections.consodb.database') . '.' . 'provider_report';
+            $report_ids = DB::table($table)->distinct('report_id')->pluck('report_id')->toArray();
+            $reports = Report::whereIn('id', $report_ids)->orderBy('id', 'asc')->get()->toArray();
 
             // Query for min and max yearmon values
             $bounds = array();

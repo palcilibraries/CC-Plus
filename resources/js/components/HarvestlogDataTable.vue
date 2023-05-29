@@ -1,6 +1,5 @@
 <template>
   <div>
-    <h3>Harvest Log</h3>
     <div class="d-flex pa-0 align-center">
       <div v-if="datesFromTo!='|'" class="x-box">
         <img src="/images/red-x-16.png" width="100%" alt="clear date range" @click="clearFilter('date_range')"/>&nbsp;

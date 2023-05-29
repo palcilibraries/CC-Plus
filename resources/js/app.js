@@ -32,6 +32,7 @@ Vue.component('institution-data-table', require('./components/InstitutionDataTab
 Vue.component('institution-group-form', require('./components/InstitutionGroupForm.vue').default);
 Vue.component('institution-types', require('./components/InstitutionTypes.vue').default);
 Vue.component('institution-groups', require('./components/InstitutionGroups.vue').default);
+Vue.component('harvesting', require('./components/Harvesting.vue').default);
 Vue.component('harvestlog-data-table', require('./components/HarvestlogDataTable.vue').default);
 Vue.component('harvestlog-summary-table', require('./components/HarvestlogSummaryTable.vue').default);
 Vue.component('harvestlog-form', require('./components/HarvestlogForm.vue').default);

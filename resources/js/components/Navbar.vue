@@ -4,30 +4,29 @@
             <!-- Left Side Of Navbar -->
             <ul class="navbar-nav mr-auto">
               <div v-for="item in navList">
-                <div v-if="isVisible(item)">
-                  <li v-if="item.children" class="nav-item dropdown py-1">
-                    <a id="navbarDropdown" class="nav-link dropdown-toggle" :href="item.url" :title="item.name"
-                       role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                       {{ item.name }}<span class="caret"></span>
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                      <div v-for="child in item.children">
-                        <li v-if="isVisible(child)">
-                          <a class="dropdown-item":href="child.url" :title="child.name">{{ child.name }}</a>
-                        </li>
-                      </div>
+                <li v-if="isVisible(item) && item.name == 'Home'">
+                  <a class="nav-link" :href="homeUrl" :title="item.name">
+                    <v-icon title="Home" alt="Home" class="align-center">mdi-home</v-icon>
+                  </a>
+                </li>
+                <li v-else-if="isVisible(item) && item.children" class="nav-item dropdown py-1">
+                  <a id="navbarDropdown" class="nav-link dropdown-toggle" :href="item.url" :title="item.name"
+                     role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                     {{ item.name }}<span class="caret"></span>
+                  </a>
+                  <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                    <div v-for="child in item.children">
+                      <li v-if="isVisible(child)">
+                        <a class="dropdown-item":href="child.url" :title="child.name">{{ child.name }}</a>
+                      </li>
                     </div>
-                  </li>
-                  <li v-else-if="item.url == homeUrl" class="nav-item py-1">
-                    <a class="nav-link" :href="item.url" :title="item.name"><v-icon title="Home" alt="Home">mdi-home</v-icon></a>
-                  </li>
-                  <li v-else class="nav-item" >
-                    <a class="nav-link" :href="item.url" :title="item.name">{{ item.name }}</a>
-                  </li>
-                </div>
+                  </div>
+                </li>
+                <li v-else-if="isVisible(item)" class="nav-item" >
+                  <a class="nav-link" :href="item.url" :title="item.name">{{ item.name }}</a>
+                </li>
               </div>
             </ul>
-
             <!-- Right Side Of Navbar -->
             <ul class="navbar-nav ml-auto">
               <li v-if="is_globaladmin && ccp_key!=''" class="nav-item py-1">
@@ -79,27 +78,8 @@ export default {
               { url: "/", name: "Home", role: "All" },
               { url: "/global/home", name: "Global Admin", role: "GlobalAdmin" },
               { url: "/consoadmin", name: "Consortium Admin", role: "Admin"},
-              {
-                name: "Harvests",
-                role: "All",
-                children: [
-                  {
-                    url: "/harvest/log",
-                    name: "Log",
-                    role: "All",
-                  },
-                  {
-                    url: "/harvest/manual",
-                    name: "Manual Harvest",
-                    role: "Viewer",
-                  },
-                  // {
-                  //   url: "/alerts",
-                  //   name: "Alerts",
-                  //   role: "All",
-                  // },
-                ]
-              },
+              { url: "#", name: "My Institution", role: "ManagerOnly"},
+              { url: "/harvests", name: "Harvesting", role: "All"},
               {
                 url: "#",
                 name: "Reports",
@@ -115,11 +95,6 @@ export default {
                     name: "Create",
                     role: "All",
                   },
-                  {
-                    url: "/institution/groups",
-                    name: "Groups",
-                    role: "Admin",
-                  },
                 ]
               },
             ]
@@ -128,6 +103,7 @@ export default {
     methods: {
       isVisible(item) {
         if (item.role == 'All') return true;
+        if (item.role == 'ManagerOnly') return (this.is_manager && !this.is_admin);
         if (this.is_globaladmin) return true;
         if (this.is_admin) {
             return (item.role != 'GlobalAdmin');
@@ -176,14 +152,26 @@ export default {
             this.consortia.push({'ccp_key': 'con_template', 'name': 'Template'});
             if (this.consortia.some(con => con.ccp_key == this.ccp_key)) this.cur_key = this.ccp_key;
         }
-        // Managers (without view or Admin rights) have Home replaced by "My institution"
-        if (this.is_manager && !(this.is_globaladmin || this.is_admin || this.is_viewer)) {
-            // var idx1 = this.navList.findIndex(nav => nav.name == "Admin");
-            var idx1 = this.navList.findIndex(nav => nav.name == "Home");
-            this.navList[idx1].name = "My Institution";
+        // Set homeUrl based on role
+        var _idx = null;
+        if (this.is_globaladmin) {
+            this.homeUrl = "/global/home";
+        } else if (this.is_admin) {
+            this.homeUrl = "/consoadmin";
+        } else if (this.is_manager) {
             this.homeUrl = "/institutions/"+this.user.inst_id;
-            this.navList[idx1].url = this.homeUrl;
-            this.navList[idx1].children = null;
+            _idx = this.navList.findIndex(nav => nav.name == "My Institution");
+            this.navList[_idx].url = this.homeUrl;
+        } else {  // Viewer abd un-priv users set to my-reports
+            this.homeUrl = "/my-reports";
+        }
+
+        // Basic users see "Harvests" as a link, not a dropdown with children
+        if (!this.is_admin && !this.is_manager && !this.is_viewer) {
+        // } else if (!this.is_admin && !this.is_manager && !this.is_viewer) {
+            _idx = this.navList.findIndex(nav => nav.name == "Harvests");
+            this.navList[_idx].url = "/harvest/log";
+            this.navList[_idx].children = null;
         }
         console.log('Navbar Component mounted.');
     }

@@ -20,9 +20,10 @@ class GlobalProvider extends Model
    *
    * @var array
    */
-    protected $attributes = ['name' => '', 'is_active' => 1, 'master_reports' => '{}', 'connectors' => '{}',
-                             'server_url_r5' => '', 'extra_pattern' => null];
-    protected $fillable = ['id', 'name', 'is_active', 'master_reports', 'connectors', 'server_url_r5', 'extra_pattern'];
+    protected $attributes = ['registry_id' => null, 'name' => '', 'abbrev' => null, 'is_active' => 1, 'master_reports' => '{}',
+                             'connectors' => '{}', 'server_url_r5' => '', 'notifications_url' => null, 'extra_pattern' => null];
+    protected $fillable = ['id', 'registry_id', 'name', 'abbrev', 'is_active', 'master_reports', 'connectors', 'server_url_r5',
+                           'notifications_url', 'extra_pattern'];
     protected $casts = ['id'=>'integer', 'is_active'=>'integer', 'master_reports' => 'array', 'connectors' => 'array'];
 
     // Return the ConnectionField detail based on connectors array

@@ -15,12 +15,15 @@ class CreateGlobalProvidersTable extends Migration
     {
         Schema::create('global_providers', function (Blueprint $table) {
           $table->Increments('id');
+          $table->string('registry_id')->nullable();
           $table->string('name');
+          $table->string('abbrev')->nullable();
           $table->index('name');
           $table->boolean('is_active')->default(1);
           $table->json('master_reports')->default(1);
           $table->json('connectors')->default(1);
           $table->string('server_url_r5')->nullable();
+          $table->string('notifications_url')->nullable();
           $table->string('extra_pattern')->nullable();
         });
     }

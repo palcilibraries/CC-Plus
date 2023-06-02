@@ -11,15 +11,6 @@
           <global-instances :consortia="consortia"></global-instances>
   	    </v-expansion-panel-content>
 	    </v-expansion-panel>
-      <!-- Settings -->
-      <v-expansion-panel>
-  	    <v-expansion-panel-header>
-          <h3>Global Settings</h3>
-  	    </v-expansion-panel-header>
-  	    <v-expansion-panel-content>
-          <global-settings :settings="settings"></global-settings>
-  	    </v-expansion-panel-content>
-	    </v-expansion-panel>
       <!-- Providers -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
@@ -30,6 +21,15 @@
                                       :all_connectors="all_connectors" :filters="provider_filters"
           ></global-provider-data-table>
         </v-expansion-panel-content>
+	    </v-expansion-panel>
+      <!-- Settings -->
+      <v-expansion-panel>
+  	    <v-expansion-panel-header>
+          <h3>Global Settings</h3>
+  	    </v-expansion-panel-header>
+  	    <v-expansion-panel-content>
+          <global-settings :settings="settings"></global-settings>
+  	    </v-expansion-panel-content>
 	    </v-expansion-panel>
     </v-expansion-panels>
   </div>

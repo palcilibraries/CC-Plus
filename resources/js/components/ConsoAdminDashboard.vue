@@ -1,17 +1,6 @@
 <template>
   <div>
     <v-expansion-panels multiple focusable v-model="panels">
-      <!-- Users -->
-      <v-expansion-panel>
-  	    <v-expansion-panel-header>
-          <h3>Users</h3>
-  	    </v-expansion-panel-header>
-  	    <v-expansion-panel-content>
-          <user-data-table :institutions="mutable_institutions" :allowed_roles="roles" :all_groups="mutable_groups"
-                           @new-inst="newInst" :key="userKey"
-          ></user-data-table>
-  	    </v-expansion-panel-content>
-	    </v-expansion-panel>
       <!-- Institutions -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
@@ -31,6 +20,17 @@
   	    <v-expansion-panel-content>
           <institution-groups :key="groupKey" :groups="mutable_groups" @update-groups="updateGroups"></institution-groups>
         </v-expansion-panel-content>
+	    </v-expansion-panel>
+      <!-- Users -->
+      <v-expansion-panel>
+  	    <v-expansion-panel-header>
+          <h3>Users</h3>
+  	    </v-expansion-panel-header>
+  	    <v-expansion-panel-content>
+          <user-data-table :institutions="mutable_institutions" :allowed_roles="roles" :all_groups="mutable_groups"
+                           @new-inst="newInst" :key="userKey"
+          ></user-data-table>
+  	    </v-expansion-panel-content>
 	    </v-expansion-panel>
 
       <!-- Institution Types - would go here, if that becomes a thing again-->

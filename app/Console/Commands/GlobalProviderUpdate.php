@@ -84,7 +84,7 @@ class GlobalProviderUpdate extends Command
         // Walk the array by-platform
         foreach ($json as $platform) {
 
-            if (is_null($plaftorm->id)) continue;
+            if (is_null($platform->id)) continue;
 
             // Get reports available
             $reportIds = $master_reports->whereIn('name',array_column($platform->reports,'report_id'))->pluck('id')->toArray();

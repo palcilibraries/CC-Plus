@@ -7,7 +7,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Client;
 use DB;
 use App\Report;
-use App\Consortium;
 use App\GlobalProvider;
 use App\ConnectionField;
 
@@ -68,7 +67,7 @@ class GlobalProviderUpdate extends Command
             return false;
         }
 
-        // Pull global provider
+        // Pull master reports
         $master_reports = Report::where('parent_id', '=', 0)->get(['id','name']);
         // Pull connection fields and map a static array to what the API sends back
         $fields = ConnectionField::get();
@@ -84,6 +83,8 @@ class GlobalProviderUpdate extends Command
 
         // Walk the array by-platform
         foreach ($json as $platform) {
+
+            if (is_null($plaftorm->id)) continue;
 
             // Get reports available
             $reportIds = $master_reports->whereIn('name',array_column($platform->reports,'report_id'))->pluck('id')->toArray();
@@ -108,9 +109,7 @@ class GlobalProviderUpdate extends Command
                 $server_url_r5 = $details->url;
                 $notifications_url = $details->notifications_url;
                 foreach ($api_connectors as $key => $cnx) {
-                    if ($key == 'customer_id_info') {
-                        $connectors[] = $cnx['id'];
-                    } else if ($details->{$key}) {
+                    if ($key == 'customer_id_info' || $details->{$key}) {
                         $connectors[] = $cnx['id'];
                     }
                 }

@@ -86,7 +86,7 @@ class GlobalProviderController extends Controller
                 $provider['reports_string'] = ($gp->master_reports) ?
                                               $this->makeReportString($gp->master_reports) : 'None';
 
-                // Build arrays of booleans for connecion fields and reports for the U/I chackboxes
+                // Build arrays of booleans for connection fields and reports for the U/I chackboxes
                 $provider['connector_state'] = $this->connectorState($gp->connectors);
                 $provider['report_state'] = $this->reportState($gp->master_reports);
 
@@ -203,9 +203,10 @@ class GlobalProviderController extends Controller
       $orig_isActive = $provider->is_active;
 
       // Validate form inputs
-      $this->validate($request, [ 'name' => 'required', 'is_active' => 'required' ]);
+      $this->validate($request, [ 'is_active' => 'required' ]);
       $input = $request->all();
       $isActive = ($input['is_active']) ? 1 : 0;
+      $provider->is_active = $isActive;
 
       // Pull all connection fields and master reports
       $all_connectors = ConnectionField::get();
@@ -215,70 +216,88 @@ class GlobalProviderController extends Controller
       // NOTE:: adding to the global master list doesn't automatically enable new reports in the instance tables.
       $dropped_reports = array();
       $original_reports = $provider->master_reports;
-      foreach ($original_reports as $mr) {
-          $_master = $masterReports->where('id', $mr)->first();
-          if (!$_master) continue;
-          if (!isset($input['report_state'][$_master->name])) continue;
-          if (!$input['report_state'][$_master->name]) {
-              $dropped_reports[] = $mr;
+      if (isset($input['report_state'])) {
+          foreach ($original_reports as $mr) {
+              $_master = $masterReports->where('id', $mr)->first();
+              if (!$_master) continue;
+              if (!isset($input['report_state'][$_master->name])) continue;
+              if (!$input['report_state'][$_master->name]) {
+                  $dropped_reports[] = $mr;
+              }
           }
       }
 
       // Update the record in the global table
-      $provider->name = $input['name'];
-      $provider->is_active = $isActive;
-      $provider->server_url_r5 = (isset($input['server_url_r5'])) ? $input['server_url_r5'] : null;
+      $input_name = (isset($input['name'])) ? $input['name'] : $orig_name;
+      if (isset($input['name'])) {
+          $provider->name = $input_name;
+      }
+      if (isset($input['server_url_r5'])) {
+          $provider->server_url_r5 = (isset($input['server_url_r5'])) ? $input['server_url_r5'] : null;
+      }
 
       // Turn array of connection checkboxes into an array of IDs
-      $extraArgs = false;
       $new_connectors = array();
-      foreach ($all_connectors as $cnx) {
-          if (!isset($input['connector_state'][$cnx->name])) continue;
-          if ($input['connector_state'][$cnx->name]) {
-              if ($cnx->name == 'extra_args') $extraArgs = true;
-              $new_connectors[] = $cnx->id;
+      $connectors_changed = false;
+      if (isset($input['connector_state'])) {
+          $extraArgs = false;
+          foreach ($all_connectors as $cnx) {
+              if (!isset($input['connector_state'][$cnx->name])) continue;
+              if ($input['connector_state'][$cnx->name]) {
+                  if ($cnx->name == 'extra_args') $extraArgs = true;
+                  $new_connectors[] = $cnx->id;
+              }
+          }
+          $connectors_changed = ($provider->connectors != $new_connectors);
+          $provider->connectors = $new_connectors;
+          if (isset($input['extra_pattern'])) {
+              $provider->extra_pattern = ($extraArgs) ? $input['extra_pattern'] : null;
           }
       }
-      $connectors_changed = ($provider->connectors != $new_connectors);
-      $provider->connectors = $new_connectors;
-      $provider->extra_pattern = ($extraArgs) ? $input['extra_pattern'] : null;
 
       // Turn array of report checkboxes into an array of IDs
-      $master_reports = array();
       $reports_string = "";
-      foreach ($masterReports as $rpt) {
-        if (!isset($input['report_state'][$rpt->name])) continue;
-        if ($input['report_state'][$rpt->name]) {
-            $master_reports[] = $rpt->id;
-            $reports_string .= ($reports_string=="") ? "" : ", ";
-            $reports_string .= $rpt->name;
-        }
+      if (isset($input['report_state'])) {
+          $master_reports = array();
+          foreach ($masterReports as $rpt) {
+            if (!isset($input['report_state'][$rpt->name])) continue;
+            if ($input['report_state'][$rpt->name]) {
+                $master_reports[] = $rpt->id;
+                $reports_string .= ($reports_string=="") ? "" : ", ";
+                $reports_string .= $rpt->name;
+            }
+          }
+          $provider->master_reports = $master_reports;
       }
-      $provider->master_reports = $master_reports;
       $provider->save();
       $provider['status'] = ($provider->is_active) ? "Active" : "Inactive";
-      $provider['connector_state'] = $input['connector_state'];
+      $provider['connector_state'] = (isset($input['connector_state'])) ? $input['connector_state'] : array();
       $provider['reports_string'] = ($reports_string == "") ? 'None' : $reports_string;
       $provider['report_state'] = (isset($input['report_state'])) ? $input['report_state'] : array();
 
       // Set connection field labels in an array for the datatable display
-      $field_labels = array();
-      foreach ($all_connectors as $fld) {
-          if ( in_array($fld->id, $new_connectors) ) {
-              $field_labels[] = $fld->label;
+      $provider['connector_state'] = array();
+      $provider['connection_fields'] = array();
+      if (isset($input['connector_state'])) {
+          $provider['connector_state'] = $input['connector_state'];
+          $field_labels = array();
+          foreach ($all_connectors as $fld) {
+              if ( in_array($fld->id, $new_connectors) ) {
+                  $field_labels[] = $fld->label;
+              }
           }
+          $provider['connection_fields'] = $field_labels;
       }
-      $provider['connection_fields'] = $field_labels;
 
       // Get connector fields
       $fields = $all_connectors->whereIn('id',$provider->connectors)->pluck('name')->toArray();
       $unused_fields = $all_connectors->whereNotIn('id',$provider->connectors)->pluck('name')->toArray();
 
       // If changes implicate consortia-provider settings, Loop through all consortia instances
-      if ($input['name']!=$orig_name || $isActive!=$orig_isActive || count($dropped_reports)>0 || $connectors_changed) {
+      if ($input_name != $orig_name || $isActive!=$orig_isActive || count($dropped_reports)>0 || $connectors_changed) {
           $instances = Consortium::get();
           $keepDB  = config('database.connections.consodb.database');
-          $prov_updates = array('name' => $input['name']);
+          $prov_updates = array('name' => $input_name);
           // only update is_active if the global state is changing (otherwise leave consortium state as-is)
           if ($isActive != $orig_isActive) {
               $prov_updates['is_active'] = $isActive;
@@ -296,7 +315,7 @@ class GlobalProviderController extends Controller
               $con_prov = Provider::where('global_id',$id)->first();
               if (!$con_prov) continue;
               $was_active = $con_prov->is_active;
-              if ($input['name']!=$orig_name || $isActive!=$orig_isActive) {
+              if ($input_name!=$orig_name || $isActive!=$orig_isActive) {
                   $con_prov->update($prov_updates);
               }
 

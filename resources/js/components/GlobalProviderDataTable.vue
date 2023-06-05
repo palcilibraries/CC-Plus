@@ -31,8 +31,12 @@
     <v-data-table :headers="headers" :items="mutable_providers" item-key="prov_id" :options="mutable_options"
                   :search="search" @update:options="updateOptions" :loading="loading" :key="dtKey">
       <template v-slot:item.status="{ item }">
-        <span v-if="item.status=='Active'"><v-icon large color="green" title="Active">mdi-toggle-switch</v-icon></span>
-        <span v-if="item.status=='Inactive'"><v-icon large color="red" title="Inactive">mdi-toggle-switch-off</v-icon></span>
+        <span v-if="item.status=='Active'">
+          <v-icon large color="green" title="Active" @click="changeStatus(item.id,0)">mdi-toggle-switch</v-icon>
+        </span>
+        <span v-else-if="item.status=='Inactive'">
+          <v-icon large color="red" title="Inactive" @click="changeStatus(item.id,1)">mdi-toggle-switch-off</v-icon>
+        </span>
       </template>
       <template v-slot:item.connection_fields="{ item }">
         <v-row v-for="cnx in item.connection_fields" :key="item.id+cnx" class="d-flex ma-0">
@@ -275,6 +279,19 @@
                      }
                  });
              this.providerImportDialog = false;
+        },
+        changeStatus(gpId, state) {
+            axios.patch('/global/providers/'+gpId, { is_active: state })
+               .then( (response) => {
+                 if (response.data.result) {
+                   var _idx = this.mutable_providers.findIndex(ii=>ii.id == gpId);
+                   this.mutable_providers[_idx].is_active = state;
+                   this.mutable_providers[_idx].status = response.data.provider.status;
+                   this.$emit('change-prov', gpId);
+                   this.dtKey += 1;
+                 }
+               })
+               .catch(error => {});
         },
         updateFilters() {
             this.$store.dispatch('updateAllFilters',this.mutable_filters);

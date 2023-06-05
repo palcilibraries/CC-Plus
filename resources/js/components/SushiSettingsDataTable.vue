@@ -93,24 +93,24 @@
         </span>
       </template>
       <template v-slot:item.customer_id="{ item }">
-        <span v-if="item.customer_id=='-missing-'" class="Incomplete">missing+required</span>
+        <span v-if="item.customer_id=='-missing-'" class="Incomplete">required</span>
         <span v-else>{{ item.customer_id }}</span>
       </template>
       <template v-slot:item.requestor_id="{ item }">
-        <span v-if="item.requestor_id=='-missing-'" class="Incomplete">missing+required</span>
+        <span v-if="item.requestor_id=='-missing-'" class="Incomplete">required</span>
         <span v-else>{{ item.requestor_id }}</span>
       </template>
       <template v-slot:item.API_key="{ item }">
-        <span v-if="item.API_key=='-missing-'" class="Incomplete">missing+required</span>
+        <span v-if="item.API_key=='-missing-'" class="Incomplete">required</span>
         <span v-else>{{ item.API_key }}</span>
       </template>
       <template v-slot:item.extra_args="{ item }">
-        <span v-if="item.extra_args=='-missing-'" class="Incomplete">missing+required</span>
+        <span v-if="item.extra_args=='-missing-'" class="Incomplete">required</span>
         <span v-else>{{ item.extra_args }}</span>
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
-          <v-icon title="Manual Harvest" @click="goHarvest(item)">mdi-exit-to-app</v-icon>
+          <v-icon title="Manual Harvest in new tab" @click="goHarvest(item)">mdi-open-in-new</v-icon>
           &nbsp; &nbsp;
           <v-icon title="Edit Sushi Settings" @click="editSetting(item)">mdi-cog-outline</v-icon>
           &nbsp; &nbsp;
@@ -445,7 +445,8 @@
               window.location.assign('/providers/'+provId);
           },
           goHarvest(setting) {
-              window.location.assign("/harvests/create?inst="+setting.inst_id+"&prov="+setting.prov_id);
+              window.open("/harvests/create?inst="+setting.inst_id+"&prov="+setting.prov_id, "_blank");
+              // window.location.assign("/harvests/create?inst="+setting.inst_id+"&prov="+setting.prov_id);
           },
           sushiDialogDone ({ result, msg, setting }) {
               this.success = '';
@@ -549,7 +550,7 @@
   font-style: italic;
 }
 .Incomplete {
-  color: #dd0000;
+  color: #ff9900;
   font-style: italic;
 }
 .isInactive {

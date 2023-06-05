@@ -163,19 +163,19 @@
                </span>
             </td>
             <td v-if="connectors.some(c => c.name === 'customer_id')">
-              <span v-if="item.customer_id=='-missing-'" class="Incomplete"><em>missing+required</em></span>
+              <span v-if="item.customer_id=='-missing-'" class="Incomplete"><em>required</em></span>
               <span v-else>{{ item.customer_id }}</span>
             </td>
             <td v-if="connectors.some(c => c.name === 'requestor_id')">
-              <span v-if="item.requestor_id=='-missing-'" class="Incomplete"><em>missing+required</em></span>
+              <span v-if="item.requestor_id=='-missing-'" class="Incomplete"><em>required</em></span>
               <span v-else>{{ item.requestor_id }}</span>
             </td>
             <td v-if="connectors.some(c => c.name === 'API_key')">
-              <span v-if="item.API_key=='-missing-'" class="Incomplete"><em>missing+required</em></span>
+              <span v-if="item.API_key=='-missing-'" class="Incomplete"><em>required</em></span>
               <span v-else>{{ item.API_key }}</span>
             </td>
             <td v-if="connectors.some(c => c.name === 'extra_args')">
-              <span v-if="item.extra_args=='-missing-'" class="Incomplete"><em>missing+required</em></span>
+              <span v-if="item.extra_args=='-missing-'" class="Incomplete"><em>required</em></span>
               <span v-else>{{ item.extra_args }}</span>
             </td>
             <td :class="item.status">{{ item.status }}</td>
@@ -548,7 +548,7 @@
   font-style: italic;
 }
 .Incomplete {
-  color: #dd0000;
+  color: #ff9900;
   font-style: italic;
 }
 .isInactive {

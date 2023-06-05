@@ -204,8 +204,8 @@
                 // Actual headers array is built from these in mounted()
                 header_fields: [
                   { label: 'Status', name: 'status' },
-                  { label: 'Institution ', name: 'institution.name' },
-                  { label: 'Provider ', name: 'provider.name' },
+                  { label: 'Institution ', name: 'inst_name' },
+                  { label: 'Provider ', name: 'prov_name' },
                   { label: '', name: 'customer_id' },
                   { label: '', name: 'requestor_id' },
                   { label: '', name: 'API_key' },

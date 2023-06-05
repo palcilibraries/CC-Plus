@@ -98,7 +98,11 @@ class SushiSettingController extends Controller
                 }
             }
             $settings = $data->map( function ($rec) {
-                $rec->provider->connectors = $rec->provider->globalProv->connectionFields();
+                if ($rec->provider->globalProv) {
+                    $rec->provider->connectors = $rec->provider->globalProv->connectionFields();
+                }
+                $rec->inst_name = $rec->institution->name;
+                $rec->prov_name = $rec->provider->name;
                 return $rec;
             });
             return response()->json(['settings' => $settings, 'connectors' => $all_connectors], 200);
@@ -210,15 +214,17 @@ class SushiSettingController extends Controller
         }
         // if global_id is not null, we need to create a provider record on-the-fly as an institution-specific
         // provider before creating the sushisetting record.
-        if (!is_null($form_data['global_id'])) {
-            $gp = GlobalProvider::where('id',$form_data['global_id'])->first();
-            if ($gp) {
-                $provider_data = array('name' => $gp->name, 'global_id' => $gp->id, 'is_active' => $gp->is_active,
-                                       'inst_id' => $fields['inst_id'], 'restricted' => 0);
-                $new_provider = Provider::create($provider_data);
-                $fields['prov_id'] = $new_provider->id;
-            } else {
-                return response()->json(['result' => false, 'msg' => 'Database error! Cannot find global provider record!']);
+        if (isset($form_data['global_id'])) {
+            if (!is_null($form_data['global_id'])) {
+                $gp = GlobalProvider::where('id',$form_data['global_id'])->first();
+                if ($gp) {
+                    $provider_data = array('name' => $gp->name, 'global_id' => $gp->id, 'is_active' => $gp->is_active,
+                                           'inst_id' => $fields['inst_id'], 'restricted' => 0);
+                    $new_provider = Provider::create($provider_data);
+                    $fields['prov_id'] = $new_provider->id;
+                } else {
+                    return response()->json(['result' => false, 'msg' => 'Database error! Cannot find global provider record!']);
+                }
             }
         }
         // create the new sushi setting record

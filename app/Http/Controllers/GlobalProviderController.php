@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use DB;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Client;
 
 class GlobalProviderController extends Controller
 {
@@ -411,6 +413,99 @@ class GlobalProviderController extends Controller
         }
 
         return response()->json(['result' => true, 'msg' => 'Global Provider successfully deleted']);
+    }
+
+    /**
+     * Pull and return a fresh copy of the registry data for a given provider
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function registryRefresh(Request $request)
+    {
+      global $masterReports, $allConnectors;
+
+      // Validate form inputs
+      $this->validate($request, [ 'id' => 'required' ]);
+      $input = $request->all();
+      $provider = GlobalProvider::where('id', $input['id'])->first();
+      if (!$provider) {
+          return response()->json(['result' => false, 'msg' => "Global Provider Not Found!"]);
+      }
+      if (is_null($provider->registry_id) || $provider->registry_id == '') {
+          return response()->json(['result' => false, 'msg' => "COUNTER Registry ID undefined!"]);
+      }
+
+      // Get masterreports and connection_fields
+      $this->getMasterReports();
+      $this->getConnectionFields();
+
+      // Pull connection fields and map a static array to what the API sends back
+      $api_connectors = array('customer_id_info'      => array('field' => 'customer_id', 'id' => null, 'label' => ''),
+                              'requestor_id_required' => array('field' => 'requestor_id', 'id' => null, 'label' => ''),
+                              'api_key_required'      => array('field' => 'API_key', 'id' => null, 'label' => '')
+                             );
+      foreach ($api_connectors as $key => $cnx) {
+          $fld = $allConnectors->where('name', $cnx['field'])->first();
+          if (!$fld) continue;
+          $api_connectors[$key]['id'] = $fld->id;
+          $api_connectors[$key]['label'] = $fld->label;
+      }
+
+      // Setup the client request for the registry JSON
+      $client = new Client();   //GuzzleHttp\Client
+      $options = [
+          'headers' => ['User-Agent' => "Mozilla/5.0 (CC-Plus custom) Firefox/80.0"]
+      ];
+      $registry_url = "https://registry.projectcounter.org/api/v1/platform/" . $provider->registry_id . "/?format=json";
+      // Make the request
+      try {
+          $result = $client->request('GET', $registry_url, $options);
+      } catch (\Exception $e) {
+          return response()->json(['result' => false, 'msg' => "API request Failed: " . $e->getMessage()]);
+      }
+      // Get JSON from the response and do basic error checks
+      $json = json_decode($result->getBody());
+      if (json_last_error() !== JSON_ERROR_NONE) {
+          return response()->json(['result' => false, 'msg' => "Error decoding JSON returned by registry!"]);
+      }
+      if (!is_object($json)) {
+          return response()->json(['result' => false, 'msg' => "Error getting registry details - invalid datatype received!"]);
+      }
+      // Setup provider data to be returned
+      $return_data = array();
+      $return_data['registry_id'] = $json->id;
+      $return_data['name'] = $json->name;
+      $return_data['abbrev'] = $json->abbrev;
+      // Get reports available
+      $available = $masterReports->whereIn('name',array_column($json->reports,'report_id'));
+      $reportIds = $available->pluck('id')->toArray();
+      $return_data['report_state'] = $this->reportState($reportIds);
+      $return_data['master_reports'] = $reportIds;
+      $reportNames = $available->pluck('name')->toArray();
+      $return_data['reports_string'] = "";
+      foreach ($reportNames as $rpt) {
+          $return_data['reports_string'] .= ($return_data['reports_string'] == '') ? '' : ', ';
+          $return_data['reports_string'] .= $rpt;
+      }
+
+      $services = $json->sushi_services[0];
+      $return_data['server_url_r5'] = $services->url;
+      $return_data['notifications_url'] = $services->notifications_url;
+      // Get connection fields (for now, assumes customer_id is always required)
+      $field_labels = array();
+      foreach ($api_connectors as $key => $cnx) {
+          if ($key == 'customer_id_info' || $services->{$key}) {
+              $connectors[] = $cnx['id'];
+              $field_labels[] = $cnx['label'];
+          }
+      }
+      $return_data['connectors'] = $connectors;
+      $return_data['connection_fields'] = $field_labels;
+      $return_data['connection_count'] = count($connectors);
+      $return_data['connector_state'] = $this->connectorState($connectors);
+
+      return response()->json(['result' => true, 'prov' => $return_data]);
     }
 
     /**

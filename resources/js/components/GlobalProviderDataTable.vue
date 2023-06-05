@@ -18,6 +18,15 @@
       </v-col>
     </v-row>
     <v-row class="d-flex pa-1 align-center" no-gutters>
+      <v-col class="d-flex px-2" cols="2">
+        <v-select :items='bulk_actions' v-model='bulkAction' label="Bulk Actions" @change="processBulk()"
+                  :disabled='selectedRows.length==0'
+        ></v-select>
+      </v-col>
+      <v-col v-if="selectedRows.length>0" class="d-flex px-4 align-center" cols="2">
+        <span class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
+      </v-col>
+      <v-col v-else class="d-flex" cols="2">&nbsp;</v-col>
       <v-col class="d-flex px-2 align-center" cols="2">
         <v-select :items="status_options" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
                   label="Limit by Status"
@@ -28,8 +37,8 @@
       <span v-if="success" class="good" role="alert" v-text="success"></span>
       <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
-    <v-data-table :headers="headers" :items="mutable_providers" item-key="prov_id" :options="mutable_options"
-                  :search="search" @update:options="updateOptions" :loading="loading" :key="dtKey">
+    <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_providers" :loading="loading" show-select
+                  item-key="id" :options="mutable_options" @update:options="updateOptions" :search="search" :key="dtKey">
       <template v-slot:item.status="{ item }">
         <span v-if="item.status=='Active'">
           <v-icon large color="green" title="Active" @click="changeStatus(item.id,0)">mdi-toggle-switch</v-icon>
@@ -48,10 +57,10 @@
           <v-btn icon @click="editForm(item.id)">
             <v-icon title="Edit Provider">mdi-cog-outline</v-icon>
           </v-btn>
-          <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
+          <v-btn v-if="item.can_delete" icon @click="destroy(item.id)">
             <v-icon title="Delete Provider">mdi-trash-can-outline</v-icon>
           </v-btn>
-          <v-btn v-else icon class="pl-4">
+          <v-btn v-else icon>
             <v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon>
           </v-btn>
         </span>
@@ -141,6 +150,14 @@
                 <v-text-field v-model="form.extra_pattern" label="Extra Arguments Pattern" outlined dense></v-text-field>
               </v-col>
             </v-row>
+            <v-row class="d-flex mx-2">
+              <v-col class="d-flex px-2" cols="8">
+                <v-text-field v-model="form.registry_id" label="COUNTER Registry ID" outlined dense></v-text-field>
+              </v-col>
+              <v-col class="d-flex px-2" cols="4">
+                <v-btn x-small color="primary" type="button" @click="registryRefresh(null)">Refresh from Registry</v-btn>
+              </v-col>
+            </v-row>
             <v-row class="d-flex mx-2 mb-2 align-center">
               <v-col class="d-flex px-2" cols="4">
                 <v-switch v-model="form.is_active" label="Active?" dense></v-switch>
@@ -184,6 +201,9 @@
         import_types: ['Add or Update', 'Full Replacement'],
         mutable_filters: this.filters,
         status_options: ['ALL', 'Active', 'Inactive'],
+        bulk_actions: [ 'Enable', 'Disable', 'Refresh Registry', 'Delete' ],
+        bulkAction: null,
+        selectedRows: [],
         loading: true,
         search: '',
         headers: [
@@ -195,15 +215,18 @@
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],
-        new_provider: {'id': null, 'name': '', 'is_active': 1, 'report_state': {}, 'connector_state': {}, 'server_url_r5': '',
-                       'extra_pattern': null},
+        new_provider: {'registry_id': '', 'id': null, 'name': '', 'is_active': 1, 'report_state': {}, 'connector_state': {},
+                       'server_url_r5': '', 'extra_pattern': null, 'notifications_url': ''},
         formValid: true,
         form: new window.Form({
+            registry_id: '',
             name: '',
+            abbrev: '',
             is_active: 1,
             server_url_r5: '',
             connector_state: [],
             report_state: [],
+            notifications_url: '',
             extra_pattern: null,
         }),
         dayRules: [
@@ -223,12 +246,15 @@
             this.dialog_title = "Edit Global Provider";
             let _prov = this.mutable_providers.find(p => p.id == gp_id);
             this.current_provider_id = gp_id;
+            this.form.registry_id = _prov.registry_id;
             this.form.name = _prov.name;
+            this.form.abbrev = _prov.abbrev;
             this.form.is_active = _prov.is_active;
             this.form.server_url_r5 = _prov.server_url_r5;
             this.form.connector_state = _prov.connector_state;
             this.form.report_state = _prov.report_state;
             this.form.extra_pattern = _prov.extra_pattern;
+            this.form.notifications_url = _prov.notifications_url;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
             this.provDialog = true;
@@ -237,12 +263,15 @@
             this.failure = '';
             this.success = '';
             this.dialog_title = "Add Global Provider";
+            this.form.registry_id = this.new_provider.registry_id;
             this.form.name = this.new_provider.name;
+            this.form.abbrev = this.new_provider.abbrev;
             this.form.is_active = this.new_provider.is_active;
             this.form.server_url_r5 = this.new_provider.server_url_r5;
             this.form.connector_state = this.new_provider.connector_state;
             this.form.report_state = this.new_provider.report_state;
             this.form.extra_pattern = this.new_provider.extra_pattern;
+            this.form.notifications_url = this.new_provider.notifications_url;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
             this.provDialog = true;
@@ -292,6 +321,96 @@
                  }
                })
                .catch(error => {});
+        },
+        processBulk() {
+            this.success = "";
+            this.failure = "";
+            let msg = "Bulk processing will process each requested provider sequentially.<br><br>";
+            if (this.bulkAction == 'Enable') {
+                msg += "Enabling these providers will make them conifgurable by instance administrators.<br/>";
+                msg += "Until the required credentials are defined, however, no report retrieval will be performed<br />";
+                msg += "by the CC-Plus automated harvesting system.";
+            } else if (this.bulkAction == 'Disable') {
+                msg += "Disabling these providers will disable all related consortium-level provider definitions.<br/>";
+                msg += "This means that no automated report harvesting will happen for these providers, and the<br />";
+                msg += "instance administrators will not be able to set or manage the status as long as they are disabled.";
+            } else if (this.bulkAction == 'Refresh Registry') {
+                msg += "You are about to refresh the definitions for the selected providers to the what is kept in the<br/>";
+                msg += "online COUNTER registry. This has the potential to affect harvesting, which reports are available,<br />";
+                msg += "and the credentials required to harvest the reports.";
+            } else if (this.bulkAction == 'Delete') {
+                msg += "CAUTION!!<br />Deleting these provider records is not reversible! Providers with harvested";
+                msg += " data will NOT be deleted.<br />";
+                msg += " NOTE: ALL provider and sushi definitions associated with the selected providers, across all";
+                msg += " instances in this system will also be deleted!<br />";
+            } else {
+                this.failure = "Unrecognized Bulk Action in processBulk!";
+                return;
+            }
+            Swal.fire({
+              title: 'Are you sure?', html: msg, icon: 'warning', showCancelButton: true,
+              confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, Proceed!'
+            })
+            .then( (result) => {
+              if (result.value) {
+                  this.success = "Working...";
+                  if (this.bulkAction == 'Delete') {
+                      this.selectedRows.forEach( (provider) => {
+                          if (provider.can_delete) {
+                              axios.delete('/global/providers/'+provider.id)
+                                 .then( (response) => {
+                                     if (response.data.result) {
+                                         this.mutable_providers.splice(this.mutable_providers.findIndex(p=>p.id == provider.id),1);
+                                     }
+                                 })
+                                 .catch({});
+                          }
+                      });
+                      this.success = "Selected providers successfully deleted.";
+                  } else if (this.bulkAction == 'Refresh Registry') {
+                      this.selectedRows.forEach( (provider) => {
+                          this.registryRefresh(provider.id);
+                      });
+                      this.success = "Selected providers successfully updated.";
+                  } else {
+                    let state = (this.bulkAction == 'Enable') ? 1 : 0;
+                    this.selectedRows.forEach( (provider) => {
+                      axios.patch('/global/providers/'+provider.id, { is_active: state })
+                         .then( (response) => {
+                           if (response.data.result) {
+                             var _idx = this.mutable_providers.findIndex(ii=>ii.id == provider.id);
+                             this.mutable_providers[_idx].is_active = state;
+                             this.mutable_providers[_idx].status = response.data.provider.status;
+                             this.$emit('change-prov', gpId);
+                           }
+                         })
+                         .catch(error => {});
+                      });
+                      this.success = "Selected providers successfully updated.";
+                  }
+              }
+              this.bulkAction = '';
+              this.dtKey += 1;           // update the datatable
+              return true;
+          })
+          .catch({});
+        },
+        registryRefresh(gpId) {
+            let provider_id = (gpId == null) ? this.current_provider_id : gpId;
+            axios.post('/global/providers/registry-refresh', { id: provider_id })
+                 .then( (response) => {
+                   if (response.data.result) {
+                     this.form.name = response.data.prov.name;
+                     this.form.abbrev = response.data.prov.abbrev;
+                     this.form.server_url_r5 = response.data.prov.server_url_r5;
+                     this.form.connector_state = response.data.prov.connector_state;
+                     this.form.report_state = response.data.prov.report_state;
+                     this.form.notifications_url = response.data.prov.notifications_url;
+                   } else {
+                     this.success = '';
+                     this.failure = response.data.msg;
+                   }
+           });
         },
         updateFilters() {
             this.$store.dispatch('updateAllFilters',this.mutable_filters);

@@ -27,8 +27,11 @@
         <span v-if="item.is_active">
           <v-icon large color="green" title="Active" @click="changeStatus(item.id,0)">mdi-toggle-switch</v-icon>
         </span>
-        <span v-else>
+        <span v-else-if="item.global_prov.is_active">
           <v-icon large color="red" title="Inactive" @click="changeStatus(item.id,1)">mdi-toggle-switch-off</v-icon>
+        </span>
+        <span v-else>
+          <v-icon large color="red" title="Inactive Global Provider">mdi-toggle-switch-off</v-icon>
         </span>
       </template>
       <template v-slot:item.inst_name="{ item }">

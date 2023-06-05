@@ -53,7 +53,7 @@
               <div style="display: inline-block;">
                 Roles<br>
                 Admin: can create and manage settings for all users, institutions, and providers<br>
-                Manager: can manage settings for their own institutions and can create and manage users within their institution<br>
+                Local Admin: can manage settings for their own institutions and can create and manage users within their institution<br>
                 User: can view statistics for their own institution<br>
                 Viewer: can view statistics for all institutions
               </div>

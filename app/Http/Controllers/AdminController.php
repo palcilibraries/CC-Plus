@@ -30,8 +30,12 @@ class AdminController extends Controller
         $conso_name = ($cur_instance) ? $cur_instance->name : "Template";
 
         // Get all roles
-        $roles = Role::orderBy('id', 'ASC')->get(['name', 'id']);
-        $viewRoleId = $roles->where('name', 'Viewer')->first()->id;
+        $role_data = Role::orderBy('id', 'ASC')->get(['name', 'id']);
+        $roles = array();
+        foreach ($role_data as $_role) {
+            if ($_role->name == "Manager") $_role->name = "Local Admin";
+            $roles[] = $_role;
+        }
 
         // Get institutions
         $institutionData = Institution::orderBy('name', 'ASC')->get(['id','name']);

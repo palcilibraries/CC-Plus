@@ -10,6 +10,7 @@ export const store = new Vuex.Store({
       viewer: false,
       globaladmin: false,
       user_inst_id: 0,
+      dashboard: '',
       page_name: 'default',
       page_options: {
           default: { filters: {fromYM: "", toYM: "", inst: [], prov: [], rept: [], stat: ''},
@@ -57,12 +58,11 @@ export const store = new Vuex.Store({
                              datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                          groupDesc: [], multiSort: false, mustSort: false }
                            },
-          consoadminhome: { filters: {inst: [], prov: [], roles: [], stat: '', group: 0, groups: [], harv_stat: []},
-                             datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
-                                         groupDesc: [], multiSort: false, mustSort: false }
-                           },
+          globaladminhome: { panels: [] },
+          consoadminhome: { panels: [] },
+          showinstitution: { panels: [] },
+          harvesting: { panels: [] },
       },
-      panels: [0],
       report_data: [],
   },
   mutations: {
@@ -99,6 +99,9 @@ export const store = new Vuex.Store({
     },
     SET_PAGENAME(state, name) {
         state.page_name = name;
+    },
+    SET_DASHBOARD(state, name) {
+        state.dashboard = name;
     },
     SET_USERINST(state, inst_id) {
         state.user_inst_id = inst_id;
@@ -151,7 +154,8 @@ export const store = new Vuex.Store({
         state.report_data = data;
     },
     SET_PANELS(state, data) {
-        state.panels = data;
+        if (state.dashboard != '' && state.dashboard != null)
+           Object.assign(state.page_options[state.dashboard].panels, data);
     },
   },
   actions: {
@@ -163,6 +167,9 @@ export const store = new Vuex.Store({
     },
     updatePageName({ commit }, name) {
       commit('SET_PAGENAME', name);
+    },
+    updateDashboard({ commit }, name) {
+      commit('SET_DASHBOARD', name);
     },
     updateAllFilters({ commit }, filters) {
       commit('SET_ALL_FILTERS', filters);
@@ -240,7 +247,8 @@ export const store = new Vuex.Store({
       return state.report_data
     },
     panel_data: state => {
-      return state.panels;
+      return (state.dashboard != '' && state.dashboard != null) ?
+        state.page_options[state.dashboard].panels : [];
     },
   },
 });

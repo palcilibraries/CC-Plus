@@ -57,21 +57,41 @@
         return {
             failure: '',
             success: '',
-            panels: [0],     // default to first panel is open
+            panels: [],     // default to all panels closed
             harvest_provs: [],
             harvest_insts: [],
         }
     },
-    methods: {
+    watch: {
+      current_panels: {
+         handler () {
+             this.$store.dispatch('updatePanels',this.panels);
+         },
+       }
     },
     computed: {
-        ...mapGetters(['is_manager', 'is_admin']),
+        ...mapGetters(['is_manager', 'is_admin', 'panel_data']),
+        current_panels() { return this.panels; }
+    },
+    beforeCreate() {
+        // Load existing store data
+        this.$store.commit('initialiseStore');
+	  },
+    beforeMount() {
+        // Set page name in the store
+        this.$store.dispatch('updateDashboard','harvesting');
     },
     mounted() {
         this.harvest_provs = [ ...this.providers];
         this.harvest_provs.unshift({'id':0, 'name':'All Providers'});
         this.harvest_insts = [ ...this.institutions];
         this.harvest_insts.unshift({'id':0, 'name':'Entire Consortium'});
+
+        // Set datatable options with store-values
+        Object.assign(this.panels, this.panel_data);
+
+        // Subscribe to store updates
+        this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
         console.log('Harvesting Component mounted.');
     }
   }

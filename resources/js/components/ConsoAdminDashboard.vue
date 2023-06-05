@@ -83,7 +83,7 @@
     },
     data () {
       return {
-        panels: [0],     // default to first panel is open
+        panels: [],     // default to all panels closed
         userKey: 1,
         instKey: 1,
         provKey: 1,
@@ -104,7 +104,6 @@
          handler () {
              this.$store.dispatch('updatePanels',this.panels);
          },
-         deep: true
        }
     },
     methods: {
@@ -200,7 +199,7 @@
   	},
     beforeMount() {
       // Set page name in the store
-      this.$store.dispatch('updatePageName','consoadminhome');
+      this.$store.dispatch('updateDashboard','consoadminhome');
   	},
     mounted() {
 

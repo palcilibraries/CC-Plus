@@ -47,7 +47,7 @@
     },
     data () {
       return {
-        panels: [0],     // default to first panel is open
+        panels: [],     // default to all panels closed
       }
     },
     watch: {
@@ -55,7 +55,6 @@
          handler () {
              this.$store.dispatch('updatePanels',this.panels);
          },
-         deep: true
        }
     },
     methods: {
@@ -70,7 +69,7 @@
   	},
     beforeMount() {
       // Set page name in the store
-      this.$store.dispatch('updatePageName','globaladminhome');
+      this.$store.dispatch('updateDashboard','globaladminhome');
   	},
     mounted() {
       // Set datatable options with store-values

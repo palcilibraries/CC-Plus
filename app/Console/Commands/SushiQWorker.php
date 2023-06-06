@@ -374,7 +374,8 @@ class SushiQWorker extends Command
                          ->join($_db . '.providers as prv', 'prv.id', '=', 'sus.prov_id')
                          ->where($_db . '.harv.status', 'Active')
                          ->select($_db . '.prv.global_id')
-                         ->get();
+                         ->pluck('global_id')
+                         ->toArray();
             $_urls = $this->global_providers->whereIn('id',$_globalIds)->pluck('server_url_r5')->toArray();
             foreach ($_urls as $_url) {
                 // Test HOST of url , since https://sushi.prov.com/R5  and https://sushi.prov.com/R5/reports

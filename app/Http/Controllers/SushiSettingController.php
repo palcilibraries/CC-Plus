@@ -336,9 +336,9 @@ class SushiSettingController extends Controller
 
        // Begin setting up the URI by cleaning/standardizing the server_url_r5 string in the setting
         $_url = rtrim($provider->globalProv->server_url_r5);    // remove trailing whitespace
-        $_url = preg_replace('/\/?reports\/?/i', '', $_url); // take off any methods with any bounding slashes
-        $_url = preg_replace('/\/?status\/?/i', '', $_url);  //   "   "   "     "      "   "     "        "
-        $_url = preg_replace('/\/?members\/?/i', '', $_url); //   "   "   "     "      "   "     "        "
+        $_url = preg_replace('/\/reports\/?$/i', '', $url);  // take off any methods with any leading slashes
+        $_url = preg_replace('/\/status\/?$/i', '', $_url);  //   "   "   "     "      "   "     "        "
+        $_url = preg_replace('/\/members\/?$/i', '', $_url); //   "   "   "     "      "   "     "        "
         $_uri = rtrim($_url, '/');                           // remove any remaining trailing slashes
 
        // If we got extra_args, try to clean it up and strip any leading "&" or "?"

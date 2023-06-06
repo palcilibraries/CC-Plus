@@ -146,7 +146,7 @@ class Sushi extends Model
        // Construct and execute the Request
         $uri_auth = "";
         foreach ($connectors as $cnx) {
-            $uri_auth .= ($uri_auth == "") ? "?" . "&";
+            $uri_auth .= ($uri_auth == "") ? "?" : "&";
             $uri_auth .= $cnx . "=" . urlencode( $setting->{$cnx} );
         }
 

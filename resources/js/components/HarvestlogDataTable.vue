@@ -201,8 +201,8 @@
             this.selectedRows = [];
         },
         updateLogRecords() {
-            self.success = "";
-            self.failure = "";
+            this.success = "";
+            this.failure = "";
             this.loading = true;
             if (this.filter_by_toYM != null) this.mutable_filters['toYM'] = this.filter_by_toYM;
             if (this.filter_by_fromYM != null) this.mutable_filters['fromYM'] = this.filter_by_fromYM;
@@ -243,10 +243,8 @@
                 msg += " changed. <br><br><strong>NOTE:</strong> all failure/warning records connected to this harvest";
                 msg += " will also be deleted.";
             }
-            var self = this;
             Swal.fire({
               title: 'Are you sure?',
-              // text: msg,
               html: msg,
               icon: 'warning',
               showCancelButton: true,
@@ -255,51 +253,50 @@
               confirmButtonText: 'Yes, Proceed!'
             }).then((result) => {
               if (result.value) {
-                self.success = "Working...";
-                if (self.bulkAction == 'Delete') {
-                    for (let idx=0; idx<self.selectedRows.length; idx++) {
-                      var harvest=self.selectedRows[idx];
-                      if (self.status_changeable.includes(harvest.status)) {
+                this.success = "Working...";
+                if (this.bulkAction == 'Delete') {
+                    for (let idx=0; idx<this.selectedRows.length; idx++) {
+                      var harvest=this.selectedRows[idx];
+                      if (this.status_changeable.includes(harvest.brief_status)) {
                         axios.delete('/harvests/'+harvest.id)
                         .then( (response) => {
                           if (response.data.result) {
-                            self.mutable_harvests.splice(self.mutable_harvests.findIndex(h=>h.id == harvest.id),1);
-                            self.selectedRows.splice(idx,1);
+                            this.mutable_harvests.splice(this.mutable_harvests.findIndex(h=>h.id == harvest.id),1);
+                            this.selectedRows.splice(idx,1);
                           } else {
-                            self.failure = response.data.msg;
+                            this.failure = response.data.msg;
                             return false;
                           }
                         })
                         .catch({});
                       }
                     }
-                    if (self.failure == '') self.success = "Selected harvests successfully deleted.";
+                    if (this.failure == '') this.success = "Selected harvests successfully deleted.";
                 } else {
-                    self.selectedRows.every(harvest => {
-                      if (self.status_changeable.includes(harvest.status)) {
+                    this.selectedRows.forEach(harvest => {
+                      if (this.status_changeable.includes(harvest.brief_status)) {
                         axios.post('/update-harvest-status', {
                                    id: harvest.id,
-                                   status: self.bulkAction
+                                   status: this.bulkAction
                         })
-                        .then( function(response) {
+                        .then( (response) => {
                           if (response.data.result) {
-                            let harvIdx = self.mutable_harvests.findIndex(h=>h.id===harvest.id);
-                            Object.assign(self.mutable_harvests[harvIdx] , response.data.harvest);
+                            var harvIdx = this.mutable_harvests.findIndex(h=>h.id===harvest.id);
+                            this.mutable_harvests[harvIdx].status = response.data.status;
+                            this.mutable_harvests[harvIdx].brief_status = response.data.status;
                           } else {
-                            self.failure = response.data.msg;
+                            this.failure = response.data.msg;
                             return false;
                           }
                         })
                         .catch(error => {});
                       }
-                      return true;
                     });
-                    // }
-                    if (self.failure == '') self.success = "Selected harvests successfully updated.";
+                    if (this.failure == '') this.success = "Selected harvests successfully updated.";
                 }
               }
-              self.bulkAction = '';
               this.dtKey += 1;           // force re-render of the datatable
+              this.bulkAction = '';
           })
           .catch({});
         },

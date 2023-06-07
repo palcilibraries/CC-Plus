@@ -201,6 +201,7 @@ class HarvestLogController extends Controller
                 $rec['prov_name'] = $harvest->sushiSetting->provider->name;
                 $rec['report_name'] = $harvest->report->name;
                 $rec['status'] = $harvest->status;
+                $rec['brief_status'] = $harvest->status;
                 if ($harvest->status != 'Success' && $harvest->failedHarvests) {
                     $max_id = $harvest->failedHarvests->max('id');
                     $last = $harvest->failedHarvests->where('id',$max_id)->first();
@@ -590,7 +591,7 @@ class HarvestLogController extends Controller
                 }
             }
         }
-        return response()->json(['result' => true, 'harvest' => $harvest]);
+        return response()->json(['result' => true, 'status' => $harvest->status]);
     }
 
    /**

@@ -78,7 +78,8 @@
         </v-col>
       </v-row>
       <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_harvests" :loading="loading" show-select
-                    item-key="id" :options="mutable_options" @update:options="updateOptions" :key="dtKey">
+                    item-key="id" :options="mutable_options" @update:options="updateOptions" :footer-props="footer_props"
+                    :key="dtKey">
         <template v-slot:item.action="{ item }">
           <span class="dt_action">
             <v-icon title="Edit Details" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
@@ -88,7 +89,7 @@
     </div>
     <div v-else>
       <v-data-table :headers="headers" :items="mutable_harvests" :loading="loading" item-key="id"
-                     :options="mutable_options" @update:options="updateOptions">
+                    :options="mutable_options" @update:options="updateOptions" :footer-props="footer_props">
         <template v-slot:item.action="{ item }">
           <v-btn class='btn' x-small type="button" :href="'/harvests/'+item.id+'/edit'">Details</v-btn>
         </template>
@@ -122,6 +123,7 @@
           { text: 'Status', value: 'status' },
           { text: '', value: 'action', sortable: false },
         ],
+        footer_props: { 'items-per-page-options': [10,50,100,-1] },
         mutable_harvests: this.harvests,
         mutable_filters: this.filters,
         inst_filter: null,

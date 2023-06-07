@@ -498,7 +498,7 @@ class SushiSettingController extends Controller
         $top_txt .= "The data rows on the 'Settings' tab provide reference values for the Provider-ID and";
         $top_txt .= " Institution-ID columns.\n\n";
         $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
-        $top_txt .= "Any header row or columns beyond 'H' will be ignored. Columns J-K are informational only.";
+        $top_txt .= "Any header row or columns beyond 'G' will be ignored. Columns I-J are informational only.";
         $info_sheet->setCellValue('A1', $top_txt);
         $info_sheet->setCellValue('A10', "NOTES: ");
         $info_sheet->mergeCells('B10:E12');
@@ -537,7 +537,7 @@ class SushiSettingController extends Controller
         $info_sheet->setCellValue('B20', 'String');
         $info_sheet->setCellValue('C20', 'Enabled , Disabled, Suspended, or Incomplete');
         $info_sheet->setCellValue('D20', 'No');
-        $info_sheet->setCellValue('E20', 'Disabled');
+        $info_sheet->setCellValue('E20', 'Enabled');
         $info_sheet->setCellValue('A21', 'Customer ID');
         $info_sheet->setCellValue('B21', 'String');
         $info_sheet->setCellValue('C21', 'SUSHI customer ID , provider-specific');
@@ -582,16 +582,15 @@ class SushiSettingController extends Controller
         $active_column_cells = "D2:D" . strval($settings->count()+1);
         $inst_sheet->getStyle($active_column_cells)->applyFromArray($centered_style);
         $inst_sheet->setTitle('Settings');
-        $inst_sheet->setCellValue('A1', 'CC+ System ID');
-        $inst_sheet->setCellValue('B1', 'Local ID');
-        $inst_sheet->setCellValue('C1', 'Provider ID');
+        $inst_sheet->setCellValue('A1', 'Institution ID (CC+ System ID)');
+        $inst_sheet->setCellValue('B1', 'Local Institution Identifier');
+        $inst_sheet->setCellValue('C1', 'Provider ID (CC+ System ID)');
         $inst_sheet->setCellValue('D1', 'Status');
         $inst_sheet->setCellValue('E1', 'Customer ID');
         $inst_sheet->setCellValue('F1', 'Requestor ID');
         $inst_sheet->setCellValue('G1', 'API Key');
-        $inst_sheet->setCellValue('H1', 'Support Email');
-        $inst_sheet->setCellValue('J1', 'Institution-Name');
-        $inst_sheet->setCellValue('K1', 'Provider-Name');
+        $inst_sheet->setCellValue('I1', 'Institution-Name');
+        $inst_sheet->setCellValue('J1', 'Provider-Name');
         $row = 2;
         foreach ($settings as $setting) {
             $inst_sheet->getRowDimension($row)->setRowHeight(15);
@@ -602,14 +601,13 @@ class SushiSettingController extends Controller
             $inst_sheet->setCellValue('E' . $row, $setting->customer_id);
             $inst_sheet->setCellValue('F' . $row, $setting->requestor_id);
             $inst_sheet->setCellValue('G' . $row, $setting->API_key);
-            $inst_sheet->setCellValue('H' . $row, $setting->support_email);
-            $inst_sheet->setCellValue('J' . $row, $setting->institution->name);
-            $inst_sheet->setCellValue('K' . $row, $setting->provider->name);
+            $inst_sheet->setCellValue('I' . $row, $setting->institution->name);
+            $inst_sheet->setCellValue('J' . $row, $setting->provider->name);
             $row++;
         }
 
         // Auto-size the columns
-        $columns = array('A','B','C','D','E','F','G','H','I','J','K');
+        $columns = array('A','B','C','D','E','F','G','H','I','J');
         foreach ($columns as $col) {
             $inst_sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -734,29 +732,28 @@ class SushiSettingController extends Controller
             }
 
             // Put settings (except status) into an array for the update call
-            $_args = array('customer_id' => $row[4], 'requestor_id' => $row[5], 'API_key' => $row[6], 'support_email' => $row[7]);
-
-            // Figure out/assign status
-            $_args['status'] = (in_array($row[3], array('Enabled','Disabled','Suspended','Incomplete'))) ? $row[3] : null;
-            if (is_null($_args['status'])) {
-                $_args['status'] = ($row[3] == 1) ? 'Enabled' : 'Disabled';
+            $_args = array('customer_id' => $row[4], 'requestor_id' => $row[5], 'API_key' => $row[6]);
+            // Mark any missing connectors
+            $missing_count = 0;
+            $required_connectors = $all_connectors->whereIn('id',$current_prov->globalProv->connectors)
+                                                  ->pluck('name')->toArray();
+            foreach ($required_connectors as $cnx) {
+                if ( is_null($_args[$cnx]) || trim($_args[$cnx]) == '' ) {
+                    $_args[$cnx] = "-missing-";
+                    $missing_count++;
+                }
             }
+
+            // Figure out/assign status - default to Enabled
+            $_args['status'] = (in_array($row[3], array('Enabled','Disabled','Suspended','Incomplete'))) ? $row[3] : 'Enabled';
+            // Override status to Suspended if the institution or provider is not active
             if (!$current_inst->is_active || !$current_prov->is_active) {
                 $_args['status'] = 'Suspended';
-            } else if ($_args['status'] =='Enabled') {
-                $required_connectors = $all_connectors->whereIn('id',$current_prov->globalProv->connectors)
-                                                      ->pluck('name')->toArray();
-                $missing_count = 0;
-                foreach ($required_connectors as $cnx) {
-                    if ( is_null($_args[$cnx]) || trim($_args[$cnx]) == '' ) {
-                        $_args[$cnx] = "-missing-";
-                        $missing_count++;
-                    }
-                }
-                if ($missing_count>0) {
-                    $_args['status'] = 'Incomplete';
-                    $incomplete++;
-                }
+            }
+            // Override status to Incomplete if required fields not aet & it was about to be set to Enabled
+            if ($_args['status'] == 'Enabled' && $missing_count>0) {
+                $_args['status'] = 'Incomplete';
+                $incomplete++;
             }
 
             // Update or create the settings

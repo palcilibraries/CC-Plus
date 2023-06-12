@@ -297,7 +297,7 @@ class SushiQWorker extends Command
                 FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => $sushi->step,
                                       'error_id' => $error->id, 'detail' => $sushi->detail, 'created_at' => $ts]);
                 $this->line($ts . " " . $ident . "SUSHI Exception (" . $sushi->error_code . ") : " .
-                            $sushi->message . $sushi->detail);
+                            $sushi->message . $sushi->detail . "(URL: " . $request_uri . ")");
             }
 
            // If we have a validated report, processs and save it

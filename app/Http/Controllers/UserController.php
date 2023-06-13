@@ -34,7 +34,8 @@ class UserController extends Controller
 
         // Admins see all, managers see only their inst, eveyone else gets an error
         $thisUser = auth()->user();
-        abort_unless($thisUser->hasAnyRole(['Admin']), 403);
+        abort_unless($thisUser->hasAnyRole(['Admin', 'Manager']), 403);
+        $show_all = ($thisUser->hasRole('Admin'));
 
         $json = ($request->input('json')) ? true : false;
 
@@ -60,6 +61,12 @@ class UserController extends Controller
                     $filters[$key] = $request->input($key);
                 }
             }
+        }
+
+        // Managers only see users from their institution
+        if (!$show_all) {
+            $user_inst = $thisUser->inst_id;
+            $filters['inst'] = array($user_inst);
         }
 
         // Get all roles
@@ -92,17 +99,10 @@ class UserController extends Controller
                 // exclude any users that cannot be managed by thisUser from the displayed list
                 if (!$rec->canManage()) continue;
 
-                // Skip user if role-filter is set and the user doesn;t have match(es)
-                $role_ids = $rec->roles->pluck('id')->toArray();  // Get user's roles as array of IDs
-                if ( count($filters['roles']) > 0 ) {
-                    $rolesXsect = array_intersect($filters['roles'], $role_ids);
-                    if ( count($rolesXsect) == 0 ) continue;
-                }
-
                 // Setup array for this user data
                 $user = $rec->toArray();
                 $user['fiscalYr'] = ($rec->fiscalYr) ? $rec->fiscalYr : config('ccplus.fiscalYr');
-                $user['roles'] = $role_ids;
+                $user['roles'] = $rec->roles->pluck('id')->toArray();  // Get user's roles as array of IDs
 
                 // Set role_string to hold user's highest access right (other than viewer)
                 $access_role_ids = $rec->roles->where('id','<>',$viewRoleId)->pluck('id')->toArray();
@@ -123,7 +123,7 @@ class UserController extends Controller
         // not-json
         } else {
             // Admin gets a select-box of institutions (built-in create option), otherwise just the users' inst
-            if ($thisUser->hasRole('Admin')) {
+            if ($show_all) {
                 $institutions = Institution::orderBy('name', 'ASC')->get(['id','name'])->toArray();
             } else {
                 $institutions = Institution::where('id', '=', $thisUser->inst_id)

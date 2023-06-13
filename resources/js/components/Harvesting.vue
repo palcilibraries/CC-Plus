@@ -57,7 +57,7 @@
         return {
             failure: '',
             success: '',
-            panels: [],     // default to all panels closed
+            panels: [1],     // default to Logs open and manual closed
             harvest_provs: [],
             harvest_insts: [],
         }

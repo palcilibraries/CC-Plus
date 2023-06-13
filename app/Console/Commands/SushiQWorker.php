@@ -120,6 +120,7 @@ class SushiQWorker extends Command
         $this->all_consortia = Consortium::where('is_active', true)->get();
 
        // Set error-severity so we only have to query for it once
+        $all_severities = Severity::get();
         $severities_error = Severity::where('name', '=', 'Error')->value('id');
 
        // Keep looping as long as there are jobs we can do
@@ -280,7 +281,7 @@ class SushiQWorker extends Command
             } else {    // Fail
                 $error_msg = '';
                // Turn severity string into an ID
-                $severity_id = Severity::where('name', 'LIKE', $sushi->severity . '%')->value('id');
+                $severity_id = $all_severities->where('name', 'LIKE', $sushi->severity . '%')->value('id');
                 if ($severity_id === null) {  // if not found, set to 'Error' and prepend it to the message
                     $severity_id = $severities_error;
                     $error_msg .= $sushi->severity . " : ";
@@ -296,8 +297,11 @@ class SushiQWorker extends Command
                 );
                 FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => $sushi->step,
                                       'error_id' => $error->id, 'detail' => $sushi->detail, 'created_at' => $ts]);
+                if ($sushi->error_code != 10) {
+                    $sushi->detail .= " (URL: " . $request_uri . ")";
+                }
                 $this->line($ts . " " . $ident . "SUSHI Exception (" . $sushi->error_code . ") : " .
-                            $sushi->message . $sushi->detail . "(URL: " . $request_uri . ")");
+                            $sushi->message . $sushi->detail;
             }
 
            // If we have a validated report, processs and save it

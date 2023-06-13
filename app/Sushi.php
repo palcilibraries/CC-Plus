@@ -146,8 +146,15 @@ class Sushi extends Model
        // Construct and execute the Request
         $uri_auth = "";
         foreach ($connectors as $cnx) {
-            $uri_auth .= ($uri_auth == "") ? "?" : "&";
-            $uri_auth .= $cnx . "=" . urlencode( $setting->{$cnx} );
+            $argv = ($uri_auth == "") ? "?" : "&";
+            if ($cnx == 'extra_args') {
+                // Remove leading '& or '?' and traiiling '=' from provider extra_pattern
+                $pattern = rtrim(ltrim(trim($setting->provider->globalProv->extra_pattern),'&?'),'=');
+                $argv .= $pattern . "=" . urlencode( $setting->{$cnx} );
+            } else {
+                $argv .= $cnx . "=" . urlencode( $setting->{$cnx} );
+            }
+            $uri_auth .= $argv;
         }
 
         // Return the URI if we're not building a report request

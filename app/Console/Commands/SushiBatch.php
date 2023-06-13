@@ -14,6 +14,7 @@ use App\Institution;
 use App\Counter5Processor;
 use App\FailedHarvest;
 use App\HarvestLog;
+use App\ConnectionField;
 
 /*
  * NOTE:

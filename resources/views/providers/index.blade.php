@@ -9,7 +9,6 @@
 </div>
 <provider-data-table :providers="{{ json_encode($providers) }}"
                      :institutions="{{ json_encode($institutions) }}"
-                     :unset_global="{{ json_encode($unset_global) }}"
                      :master_reports="{{ json_encode($master_reports) }}"
 ></provider-data-table>
 @endsection

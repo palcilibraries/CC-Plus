@@ -48,7 +48,7 @@
         </span>
       </template>
       <template v-slot:item.connection_fields="{ item }">
-        <v-row v-for="cnx in item.connection_fields" :key="item.id+cnx" class="d-flex ma-0">
+        <v-row v-for="cnx in item.connection_fields" :key="item.id+cnx" class="d-flex ma-0" no-gutters>
           <v-col class="d-flex pa-0">{{ cnx }}</v-col>
         </v-row>
       </template>
@@ -114,16 +114,25 @@
       <v-card>
         <v-container grid-list-sm>
           <v-form v-model="formValid">
-            <v-row class="d-flex ma-2">
+            <v-row class="d-flex ma-2" no-gutters>
               <v-col class="d-flex pt-4 justify-center"><h4 align="center">{{ dialog_title }}</h4></v-col>
             </v-row>
-            <v-row class="d-flex mx-2">
-              <v-text-field v-model="form.name" label="Name" outlined dense></v-text-field>
+            <v-row class="d-flex mx-2" no-gutters>
+              <v-col class="d-flex pr-2" cols="10">
+                <v-text-field v-model="form.name" label="Name" outlined dense></v-text-field>
+              </v-col>
+              <v-col class="d-flex px-2" cols="2">
+                <div class="idbox">
+                  <v-icon title="CC+ Provider ID">mdi-web</v-icon>&nbsp; {{ current_provider_id }}
+                </div>
+              </v-col>
             </v-row>
-            <v-row class="d-flex mx-2">
-              <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined dense></v-text-field>
+            <v-row class="d-flex mx-2" no-gutters>
+              <v-col class="d-flex pr-2">
+                <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined dense></v-text-field>
+              </v-col>
             </v-row>
-            <v-row class="d-flex mx-2">
+            <v-row class="d-flex mx-2" no-gutters>
               <v-col class="d-flex pr-2" cols="6">
                 <v-list dense>
                   <v-list-item class="verydense"><strong>Connection Fields</strong></v-list-item>
@@ -145,21 +154,21 @@
                 </v-list>
               </v-col>
             </v-row>
-            <v-row v-if="form.connector_state['extra_args']" class="d-flex ma-0">
-              <v-col class="d-flex px-2" cols="8">
+            <v-row v-if="form.connector_state['extra_args']" class="d-flex ma-0" no-gutters>
+              <v-col class="d-flex pr-2" cols="8">
                 <v-text-field v-model="form.extra_pattern" label="Extra Arguments Pattern" outlined dense></v-text-field>
               </v-col>
             </v-row>
-            <v-row class="d-flex mx-2">
-              <v-col class="d-flex px-2" cols="8">
+            <v-row class="d-flex mx-2" no-gutters>
+              <v-col class="d-flex pr-2" cols="8">
                 <v-text-field v-model="form.registry_id" label="COUNTER Registry ID" outlined dense></v-text-field>
               </v-col>
               <v-col class="d-flex px-2" cols="4">
                 <v-btn x-small color="primary" type="button" @click="registryRefresh(null)">Refresh from Registry</v-btn>
               </v-col>
             </v-row>
-            <v-row class="d-flex mx-2 mb-2 align-center">
-              <v-col class="d-flex px-2" cols="4">
+            <v-row class="d-flex mx-2 mb-1 align-center" no-gutters>
+              <v-col class="d-flex pr-2" cols="4">
                 <v-switch v-model="form.is_active" label="Active?" dense></v-switch>
               </v-col>
               <v-col class="d-flex px-2" cols="4">

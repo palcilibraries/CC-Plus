@@ -32,7 +32,7 @@ class SushiSettingController extends Controller
     public function index(Request $request)
     {
         $thisUser = auth()->user();
-        abort_unless($thisUser->hasAnyRole(['Admin']), 403);
+        abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
         $json = ($request->input('json')) ? true : false;
 
         // Assign optional inputs to $filters array
@@ -527,7 +527,7 @@ class SushiSettingController extends Controller
         $info_sheet->setCellValue('D17', 'Yes - If LocalID not given');
         $info_sheet->setCellValue('A18', 'LocalID');
         $info_sheet->setCellValue('B18', 'String');
-        $info_sheet->setCellValue('C18', 'Local institution identifier');
+        $info_sheet->setCellValue('C18', 'Local Institution identifier');
         $info_sheet->setCellValue('D18', 'Yes - If CC+ System ID not given');
         $info_sheet->setCellValue('A19', 'Provider ID');
         $info_sheet->setCellValue('B19', 'Integer > 1');

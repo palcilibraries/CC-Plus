@@ -6,7 +6,19 @@
         <v-col v-else class="d-flex pt-4 justify-center"><h4 align="center">Create a Provider</h4></v-col>
       </v-row>
       <v-row class="d-flex mx-2 my-0" no-gutters>
-        <v-text-field v-model="form.name" label="Name" outlined dense></v-text-field>
+        <v-col class="d-flex px-2" cols="8">
+          <v-text-field v-model="form.name" label="Name" outlined dense></v-text-field>
+        </v-col>
+        <v-col class="d-flex px-2" cols="2">
+          <div class="idbox">
+            <v-icon title="CC+ Provider ID">mdi-home-outline</v-icon>&nbsp; {{ provider.conso_id }}
+          </div>
+        </v-col>
+        <v-col v-if="is_globaladmin" class="d-flex px-2" cols="2">
+          <div class="idbox">
+            <v-icon title="CC+ Provider ID (Global)">mdi-web</v-icon>&nbsp; {{ provider.id }}
+          </div>
+        </v-col>
       </v-row>
       <v-row class="d-flex mx-2 my-0" no-gutters>
         <v-col class="d-flex px-2 justify-start" cols="3">
@@ -18,9 +30,14 @@
         </v-col>
       </v-row>
       <v-row v-if="is_admin && provider.inst_id!=1" class="d-flex mx-2 my-0" no-gutters>
-        <v-col class="d-flex pa-0" cols="9">
-          <v-select :items="institutions" v-model="form.inst_id" label="Serves" item-text="name" item-value="id" outlined
+        <v-col class="d-flex pa-0" cols="10">
+          <v-select :items="institutions" v-model="form.inst_id" label="Serves" item-text="name" item-value="id" outlined dense
           ></v-select>
+        </v-col>
+        <v-col class="d-flex px-2" cols="2">
+          <div class="idbox">
+            <v-icon title="CC+ Institution ID">mdi-home-outline</v-icon>&nbsp; {{ form.inst_id }}
+          </div>
         </v-col>
       </v-row>
       <v-row class="d-flex mx-2 my-0" no-gutters>
@@ -94,7 +111,7 @@
     methods: {
       saveProv (event) {
           if (this.dtype == 'edit') {
-            this.form.patch('/providers/'+this.provider['id'])
+            this.form.patch('/providers/'+this.provider['conso_id'])
                 .then( (response) => {
                     var _prov   = (response.result) ? response.provider : null;
                     var _result = (response.result) ? 'Success' : 'Fail';
@@ -117,7 +134,7 @@
       },
     },
     computed: {
-      ...mapGetters(['is_admin'])
+      ...mapGetters(['is_admin','is_globaladmin'])
     },
     mounted() {
       if (this.dtype == 'edit') {
@@ -139,7 +156,7 @@
     }
   }
 </script>
-<style>
+<style scoped>
 .verydense {
   max-height: 16px;
 }

@@ -327,3 +327,15 @@ i.size-16 {
   border-radius: 0.25rem;
 	font-weight: bold;
 }
+.idbox {
+  display: flex;
+	height: 40px;
+  max-width: fit-content;
+	align-items: center;
+  justify-content: center;
+	margin-bottom: 1em;
+	padding: .5em;
+	border: 1px solid #dadada;
+  background-color: #fff;
+	border-radius: 5px;
+}

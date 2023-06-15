@@ -18,7 +18,7 @@
       </v-col>
     </v-row>
     <v-row class="d-flex ma-0" no-gutters>
-      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+      <v-col v-if="is_admin" class="d-flex px-2 align-center" cols="2" sm="2">
         <div v-if="filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>

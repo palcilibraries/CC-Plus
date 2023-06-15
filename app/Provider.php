@@ -23,6 +23,8 @@ class Provider extends Model
    *
    * @var array
    */
+    protected $attributes = ['name' => '', 'is_active' => 1, 'inst_id' => 1, 'day_of_month' => 15, 'global_id' => null,
+                             'restricted' => 1];
     protected $fillable = [ 'name', 'is_active', 'inst_id', 'day_of_month', 'global_id', 'restricted' ];
     protected $casts = ['id'=>'integer', 'is_active'=>'integer', 'inst_id'=>'integer', 'day_of_month' => 'integer',
                         'global_id' => 'integer', 'restricted' => 'integer'];

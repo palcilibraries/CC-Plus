@@ -233,8 +233,9 @@ class ProviderController extends Controller
                 } else {
                     $setting_updates = array('status' => 'Incomplete');
                     foreach ($fields as $fld) {
-                        if ($setting->$fld == null || $setting->$fld == '') {
-                            $setting_updates[$fld] = "-missing-";
+                        $name = $fld['name'];
+                        if ($setting->$name == null || $setting->$name == '') {
+                            $setting_updates[$name] = "-missing-";
                         }
                     }
                     $setting->update($setting_updates);
@@ -262,56 +263,83 @@ class ProviderController extends Controller
     }
 
     /**
-     * Connect one or more global providers as a consortium provider
+     * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function connect(Request $request)
     {
-        // verify access for requesting user
         $thisUser = auth()->user();
         abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
 
-        // Get and validate inputs
-        $this->validate($request, [ 'prov_id' => 'required', 'inst_id' => 'required' ]);
-        $input = $request->all();
-
-        // Set the institution_id the provider will be connected to
-        $inst_id = ($thisUser->hasRole("Admin")) ? $inst_id = $input['inst_id'] : $thisUser->inst_id;
-
-        // Only Admin-Role can connect a vendor to inst_id=1 (the consortium)
-        if ($inst_id == 1 && !$thisUser->hasRole('Admin')) {
-            return response()->json(['result' => false, 'msg' => 'Connect operation failed (403) - Forbidden']);
+        if (is_null($request->input('inst_id')) || is_null($request->input('global_id'))) {
+            return response()->json(['result' => false, 'msg' => 'Store Failed: missing input arguments!']);
         }
 
-        // Descide if local-admin changes are restricted from changing the provider
-        if ($inst_id != 1 && $thisUser->hasRole('Manager')) {   // local-admin/Manager adding an institution-specific vendor?
-            $restricted = 0;
+        // Create the provider
+        $global_provider = GlobalProvider::findOrFail($request->input('global_id'));
+        $provider = new Provider;
+        $provider->name = $global_provider->name;
+        $provider->inst_id = $request->input('inst_id');
+        $provider->restricted = ($request->input('inst_id') == 1) ? 1 : 0;
+        $provider->global_id = $request->input('global_id');
+        $provider->is_active = $global_provider->is_active;
+        $provider->save();
+
+        // Setup return object
+        $provider->load('institution');
+
+        // Enable all available reports (based on the global provider)
+        $reports_string = '';
+        $report_state = array();
+        $all_master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
+        $global_reports = $global_provider->master_reports;
+        foreach ($all_master_reports as $mr) {
+          if ( in_array($mr->id, $global_provider->master_reports) ) {
+              $provider->reports()->attach($mr->id);
+              $reports_string .= ($reports_string == "") ? "" : ", ";
+              $reports_string .= $mr->name;
+              $report_state[$mr->name] = true;
+          } else {
+              $report_state[$mr->name] = false;
+          }
+        }
+
+        // Create a sushi-setting to give a "starting point" for connecting it later
+        $sushi_setting = new SushiSetting;
+        $sushi_setting->inst_id = $request->input('inst_id');
+        $sushi_setting->prov_id = $provider->id;
+        // Add required conenction fields to sushi args
+        foreach ($global_provider->connectionFields() as $cnx) {
+            $sushi_setting->{$cnx['name']} = "-missing-";
+        }
+        $sushi_setting->status = "Incomplete";
+        $sushi_setting->save();
+
+        // Setup return object; start by getting names of connected institutions
+        if ($thisUser->hasRole("Admin")) {
+            $conso_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest','reports:id,name',
+                                              'globalProv')->get();
         } else {
-            $restricted = (isset($input['restricted'])) ? $input['restricted'] : 1;
+            $conso_providers = Provider::where('global_id', $global_provider->id)->whereIn('inst_id', [1,$thisUser->inst_id])
+                                       ->with('institution:id,name','sushiSettings:id,prov_id,last_harvest',
+                                              'reports:id,name','globalProv')->get();
         }
-
-        // Attach the provider and build an array (like index makes) of the added entries
-        $gp = GlobalProvider::where('id',$input['prov_id'])->first();
-        $data = array('name' => $gp->name, 'inst_id' => $inst_id, 'is_active' => $gp->is_active, 'global_id' => $gp->id,
-                      'restricted' => $restricted);
-        $provider = Provider::create($data);
-        $provider->load('institution:id,name','globalProv');
-        $provider->inst_name = ($provider->institution->id == 1) ? 'Entire Consortium' : $provider->institution->name;
-        $provider->can_delete = true;
-        $provider->day_of_month = 15;
-        $provider->SushiSettings = [];
-        $provider->connectors = $provider->globalProv->connectionFields();
-        // Attach reports to be be pulled
-        foreach ($gp->master_reports as $r) {
-            $provider->reports()->attach($r);
-        }
-        $provider->reports_string = ($provider->reports) ? $this->makeReportString($provider->reports) : 'None';
-
-        // Pull unset global provider definitions
-        $message = "Successfully connected : " . $provider-> name;
-        return response()->json(['result' => true, 'msg' => $message, 'added' => $provider ]);
+        // connected array returned from theis function is always either the consortium or a single institution
+        $global_provider->connected = array('id' => $provider->inst_id, $provider->institution->name);
+        $global_provider->conso_id = $provider->id;
+        $global_provider->inst_id = $provider->inst_id;
+        $global_provider->connectors = $global_provider->connectionFields();
+        $global_provider->inst_name = ($provider->inst_id == 1) ? 'Entire Consortium' : $provider->institution->name;
+        $global_provider->active = ($provider->is_active) ? 'Active' : 'Inactive';
+        $global_provider->day_of_month = $provider->day_of_month;
+        $global_provider->report_state = $report_state;
+        $global_provider->reports_string = $reports_string;
+        $global_provider->can_edit = $provider->canManage();
+        $global_provider->can_delete = $provider->canManage();
+        // return the global provider data with the consorium provider data merged in
+        return response()->json(['result' => true, 'msg' => 'Provider created successfully', 'provider' => $global_provider]);
     }
 
     /**
@@ -332,8 +360,7 @@ class ProviderController extends Controller
             return response()->json(['result' => false, 'msg' => $ex->getMessage()]);
         }
 
-        return response()->json(['result' => true, 'msg' => 'Provider successfully deleted',
-                                 'global_provider' => $provider->globalProv]);
+        return response()->json(['result' => true, 'msg' => 'Provider successfully deleted']);
     }
 
     /**

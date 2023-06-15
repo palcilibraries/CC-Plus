@@ -1,15 +1,23 @@
 <template>
   <div>
-    <div class="d-flex pl-2">
+    <v-row class="d-flex pl-2" no-gutters>
+      <v-col class="d-flex px-2 flex-shrink-1">
         <h3 v-if="is_admin">Institution Settings ({{ mutable_inst.name }})</h3>
-        <h3 v-else>My Institution ({{ mutable_inst.name }})</h3>
-        <!-- <v-icon v-if="!showInstForm" title="Edit Institution Settings" @click="showInstForm=true">mdi-cog-outline</v-icon> -->
+        <h3 v-else>{{ mutable_inst.name }}</h3>
+        &nbsp;
         <v-icon v-if="!showInstForm" title="Edit Institution Settings" @click="instDialog=true">mdi-cog-outline</v-icon>
         &nbsp;
         <v-icon v-if="is_admin && mutable_inst.can_delete" title="Delete Institution" @click="destroy(mutable_inst.id)">
           mdi-trash-can-outline
         </v-icon>
-    </div>
+      </v-col>
+      <v-col class="d-flex px-2 align-center" cols="2">
+        <div class="idbox">
+          <v-icon title="CC+ Institution ID">mdi-home-outline</v-icon>&nbsp; {{ mutable_inst.id }}
+        </div>
+      </v-col>
+      <v-col class="d-flex flex-grow-1">&nbsp;</v-col>
+    </v-row>
     <v-expansion-panels multiple focusable v-model="panels">
       <!-- Users -->
       <v-expansion-panel>
@@ -21,6 +29,29 @@
           ></user-data-table>
         </v-expansion-panel-content>
       </v-expansion-panel>
+      <!-- Providers -->
+      <v-expansion-panel>
+        <v-expansion-panel-header>
+          <h3>Providers</h3>
+        </v-expansion-panel-header>
+        <v-expansion-panel-content>
+          <provider-data-table :key="provKey" :providers="mutable_providers" :institutions="mutable_institutions"
+                               :master_reports="master_reports" @connect-prov="connectProv" @disconnect-prov="disconnectProv"
+                               @change-prov="updateProv" :inst_context="this.institution.id"
+          ></provider-data-table>
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+      <!-- Sushi Settings -->
+      <v-expansion-panel>
+  	    <v-expansion-panel-header>
+          <h3>Sushi Connections</h3>
+  	    </v-expansion-panel-header>
+  	    <v-expansion-panel-content>
+          <sushisettings-data-table :key="sushiKey" :providers="mutable_providers" :institutions="mutable_institutions"
+                                    :filters="sushi_filters" :inst_groups="mutable_groups" :unset="mutable_unset"
+          ></sushisettings-data-table>
+  	    </v-expansion-panel-content>
+	    </v-expansion-panel>
       <!-- Harvest Log summary table -->
       <v-expansion-panel>
     	  <v-expansion-panel-header>
@@ -30,17 +61,6 @@
           <harvestlog-summary-table :harvests='harvests' :inst_id="institution.id"></harvestlog-summary-table>
     	  </v-expansion-panel-content>
   	  </v-expansion-panel>
-      <!-- Sushi Settings -->
-      <v-expansion-panel>
-  	    <v-expansion-panel-header>
-          <h3>Sushi Connections</h3>
-  	    </v-expansion-panel-header>
-  	    <v-expansion-panel-content>
-          <sushisettings-data-table :institutions="mutable_institutions" :inst_groups="mutable_groups"
-                                    :unset_conso="mutable_unset_con" :filters="sushi_filters"
-          ></sushisettings-data-table>
-  	    </v-expansion-panel-content>
-	    </v-expansion-panel>
     </v-expansion-panels>
     <v-dialog v-model="instDialog" persistent content-class="ccplus-dialog">
       <institution-dialog dtype="edit" :institution="mutable_inst" :groups="all_groups" @inst-complete="instDialogDone"
@@ -92,19 +112,19 @@
     export default {
         props: {institution: { type:Object, default: () => {} },
                 users: { type:Array, default: () => [] },
-                unset_conso: { type:Array, default: () => [] },
-                unset_global: { type:Array, default: () => [] },
-                all_connectors: { type:Object, default: () => {} },
+                all_providers: { type:Array, default: () => [] },
                 all_groups: { type:Array, default: () => [] },
                 all_roles: { type:Array, default: () => [] },
-                harvests: { type:Array, default: () => [] }
+                harvests: { type:Array, default: () => [] },
+                unset_global: { type:Array, default: () => [] },
+                master_reports: { type:Array, default: () => [] },
         },
         data() {
             return {
                 success: '',
                 failure: '',
-                user_failure: '',
-                form_key: 1,
+                provKey: 1,
+                sushiKey: 1,
                 status: '',
                 panels: [],
                 statusvals: ['Inactive','Active'],
@@ -114,11 +134,10 @@
                 instDialog: false,
                 mutable_inst: { ...this.institution },
                 mutable_institutions: [this.institution],
-                mutable_unset_con: [ ...this.unset_conso ],
-                mutable_unset_glo: [ ...this.unset_global ],
+                mutable_providers: [ ...this.all_providers],
+                mutable_unset: [...this.unset_global],
                 mutable_users: [ ...this.users ],
                 mutable_groups: [ ...this.institution.groups],
-                mutable_connectors: { ...this.all_connectors },
                 sushi_filters: {inst: [], group: 0, prov: [], harv_stat: []},
                 instForm: new window.Form({
                     name: this.institution.name,
@@ -128,23 +147,6 @@
                     institution_groups: this.institution.groups,
                     notes: this.institution.notes,
                 }),
-                new_provider: { 'connectors': [] },
-                current_user: {},
-                pw_show: false,
-                pwc_show: false,
-                dialogType: 'create',
-                months: ['January','February','March','April','May','June','July','August','September','October','November',
-                         'December'],
-                userHeaders: [
-                  { text: 'Name ', value: 'name' },
-                  { text: 'Permission Level', value: '' },
-                  { text: 'Last Login', value: 'last_login' },
-                  { text: '', value: ''}
-                ],
-                emailRules: [
-                    v => !!v || 'E-mail is required',
-                    v => ( /.+@.+/.test(v) || v=='Administrator') || 'E-mail must be valid'
-                ],
                 sushiForm: new window.Form({
                     inst_id: this.institution.id,
                     prov_id: null,
@@ -186,26 +188,6 @@
                     });
                 this.showInstForm = false;
                 this.dtKey += 1;
-            },
-            onUnsetChange (type) {
-                let _prov = {};
-                if (type == 'conso') {
-                  _prov = this.mutable_unset_con.find(p => p.id == this.sushiForm.prov_id);
-                } else if (type == 'global') {
-                  _prov = this.mutable_unset_glo.find(p => p.id == this.sushiForm.global_id);
-                } else {
-                  this.failure = 'Javascript error : unknown type in onUnsetChange';
-                  return;
-                }
-                this.new_provider = { ..._prov };
-                this.sushiForm.customer_id = '';
-                this.sushiForm.requestor_id = '';
-                this.sushiForm.API_key = '';
-                this.sushiForm.extra_args = '';
-                this.failure = '';
-                this.success = '';
-                this.testData = '';
-                this.testStatus = '';
             },
             enableImportDialog () {
                 this.csv_upload = null;
@@ -285,6 +267,30 @@
                 }
                 this.instDialog = false;
                 this.idKey += 1;
+            },
+            updateProv (prov) {
+              var idx = this.mutable_providers.findIndex(p => p.id == prov.id);
+              this.mutable_providers.splice(idx,1,prov);
+              // this.provKey += 1;
+              this.sushiKey += 1;
+            },
+            connectProv (prov) {
+              var idx = this.mutable_providers.findIndex(p => p.id == prov.id);
+              this.mutable_providers.splice(idx,1,prov);
+              this.mutable_unset.splice(this.mutable_unset.findIndex(p => p.id==prov.global_id),1);
+              this.sushiKey += 1;
+            },
+            disconnectProv (prov) {
+              var idx = this.mutable_providers.findIndex(p => p.id == prov.id);
+              this.mutable_providers.splice(idx,1,prov);
+              let global_data = prov.global_prov;
+              this.mutable_unset.push(global_prov);
+              this.mutable_unset.sort((a,b) => {
+                if ( a.name < b.name ) return -1;
+                if ( a.name > b.name ) return 1;
+                return 0;
+              });
+              this.sushiKey += 1;
             },
         },
         computed: {

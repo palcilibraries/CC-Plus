@@ -51,8 +51,8 @@
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <provider-data-table :key="provKey" :providers="mutable_providers" :institutions="mutable_institutions"
-                               :master_reports="master_reports" :unset_global="mutable_unset"
-                               @connect-prov="connectProv" @disconnect-prov="disconnectProv" @change-prov="updProv"
+                               :master_reports="master_reports" @connect-prov="connectProv" @disconnect-prov="disconnectProv"
+                               @change-prov="updateProv"
           ></provider-data-table>
         </v-expansion-panel-content>
 	    </v-expansion-panel>
@@ -89,8 +89,6 @@
         provKey: 1,
         sushiKey: 1,
         groupKey: 1,
-        refreshSushiInst: null,
-        refreshSushiProv: null,
         mutable_institutions: [...this.institutions],
         mutable_providers: [...this.providers],
         mutable_unset: [...this.unset_global],
@@ -161,32 +159,28 @@
       updInst (instId) {
         this.sushiKey += 1;
       },
-      updProv (provId) {
+      updateProv (prov) {
+        var idx = this.mutable_providers.findIndex(p => p.id == prov.id);
+        this.mutable_providers.splice(idx,1,prov);
         this.sushiKey += 1;
       },
       connectProv (prov) {
-        this.mutable_providers.push(prov);
-        this.mutable_providers.sort((a,b) => {
-          if ( a.name < b.name ) return -1;
-          if ( a.name > b.name ) return 1;
-          return 0;
-        });
+        var idx = this.mutable_providers.findIndex(p => p.id == prov.id);
+        this.mutable_providers.splice(idx,1,prov);
         this.mutable_unset.splice(this.mutable_unset.findIndex(p => p.id==prov.global_id),1);
-        this.provKey += 1;
         this.sushiKey += 1;
       },
-      disconnectProv ({ provid, global_prov }) {
-        this.mutable_providers.splice(this.mutable_providers.findIndex(p => p.id==provid),1);
+      disconnectProv (prov) {
+        var idx = this.mutable_providers.findIndex(p => p.id == prov.id);
+        this.mutable_providers.splice(idx,1,prov);
+        let global_data = prov.global_prov;
         this.mutable_unset.push(global_prov);
         this.mutable_unset.sort((a,b) => {
           if ( a.name < b.name ) return -1;
           if ( a.name > b.name ) return 1;
           return 0;
         });
-        this.provKey += 1;
         this.sushiKey += 1;
-        this.refreshSushiProv = provid;
-        this.refreshSushiInst = null;
       },
     },
     computed: {

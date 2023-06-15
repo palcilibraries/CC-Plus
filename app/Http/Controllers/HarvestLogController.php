@@ -480,7 +480,7 @@ class HarvestLogController extends Controller
      */
     public function availableProviders(Request $request)
     {
-        abort_unless(auth()->user()->hasRole('Admin'), 403);
+        abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
         $group_id = json_decode($request->group_id, true);
         $insts = json_decode($request->inst_ids, true);
 

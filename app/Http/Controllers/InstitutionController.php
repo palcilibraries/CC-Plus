@@ -6,6 +6,7 @@ use App\Institution;
 use App\InstitutionGroup;
 use App\Provider;
 use App\Role;
+use App\Report;
 use App\SushiSetting;
 use App\HarvestLog;
 use App\GlobalProvider;
@@ -199,22 +200,6 @@ class InstitutionController extends Controller
         $institution['can_delete'] = ($id > 1 && is_null($last_harvest)) ? true : false;
         $institution['default_fiscalYr'] = config('ccplus.fiscalYr');
 
-        // Get institution users and map in max-role as "permission"
-        $users = array();
-        foreach ($institution->users as $_u) {
-            $new_u = $_u->toArray();
-            $max_role = $_u->maxRoleName();
-            if ($max_role == "Admin") $max_role = "Consortium Admin";
-            if ($max_role == "Manager") $max_role = "Local Admin";
-            if ($max_role == "Viewer") $max_role = "Consortium Viewer";
-            $new_u['permission'] = $max_role;
-            $new_u['fiscalYr'] = ($_u->fiscalYr) ? $_u->fiscalYr : config('ccplus.fiscalYr');
-            $users[] = $new_u;
-        }
-        $_name = array_column($users, "name");
-        array_multisort($_name, SORT_ASC, $users);
-        $fiscalYr = config('ccplus.fiscalYr');
-
         // Related models we'll be passing
         $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
         $institution['groups'] = $institution->institutionGroups()->pluck('institution_group_id')->all();
@@ -222,7 +207,7 @@ class InstitutionController extends Controller
         // Add on Sushi Settings
         $institution['sushiSettings'] = $sushi_settings;
 
-        // Roles are limited to current user's max role
+        // Limit roles in UI to current user's max role
         $all_roles = Role::where('id', '<=', $thisUser->maxRole())->orderBy('id', 'DESC')
                          ->get(['name', 'id'])->toArray();
         foreach ($all_roles as $idx => $r) {
@@ -231,68 +216,74 @@ class InstitutionController extends Controller
             if ($r['name'] == 'Viewer') $all_roles[$idx]['name'] = "Viewer";
         }
 
-        // Get all connectors and initialize the connectors array
-        $fields = ConnectionField::get();
-        $all_connnectors = array();
-        foreach ($fields as $field) {
-            $key = trim($field->name);
-            $all_connectors[$key] = array('id'=>$field->id, 'name'=>$field->name, 'label'=>$field->label, 'active'=>false);
-        }
-        // Build arrays of providers not yet connected to this inst and set the flag in connectors
-        // to mark connectors in use by connected providers
-        $set_provider_ids = $sushi_settings->pluck('prov_id')->values()->toArray();
-        $all_providers = Provider::with('globalProv')->whereIn('inst_id', [1,$id])->orderBy('name', 'ASC')->get();
-        $unset_conso_providers = array();
+        // Get all (consortium) providers this inst might be connected to
+        $conso_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest','reports:id,name',
+                                          'globalProv')->whereIn('inst_id', [1,$id])->orderBy('name', 'ASC')->get();
 
-        // Retrict connecting consortium providers to Admins
-        if ($thisUser->hasRole("Admin")) {
-            foreach ($all_providers as $prov) {
-                // Pull the providers' connection fields
-                $connectors = $fields->whereIn('id', $prov->globalProv->connectors);
+        // Get master report definitions
+        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
 
-                // Flag active connectors for providers already connected
-                if (in_array($prov->id,$set_provider_ids)) {
-                    foreach($connectors as $cnx) {
-                        $key = trim($cnx->name);
-                        if (!$all_connectors[$key]['active']) $all_connectors[$key]['active'] = true;
-                    }
-                // Un-connected providers and their connectors go into the unset array
-                } else {
-                    if (!$thisUser->hasRole('Admin') && $prov->restricted) continue;
-                    $unset_conso_providers[] = array('id' => $prov->id, 'name' => $prov->name,
-                                                     'connectors' => $connectors->values()->toArray());
-                }
+        // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
+        $global_providers = GlobalProvider::orderBy('name', 'ASC')->get();
+        $all_providers = $global_providers->map( function($rec) use ($master_reports, $conso_providers, $thisUser) {
+            $rec->global_prov = $rec->toArray();
+            $rec->connectors = ($rec->globalProv) ? $rec->globalProv->connectionFields() : [];
+            $rec->connected = $conso_providers->where('global_id',$rec->id)->pluck('institution')->toArray();
+            $rec->connection_count = count($rec->connected);
+
+            // Setup default values for the columns in the U/I
+            $rec->conso_id = null;
+            $rec->inst_name = null;
+            $rec->day_of_month = null;
+            $rec->can_delete = false;
+            $reports_string = ($rec->master_reports) ?
+                               $this->makeReportString($rec->master_reports, $master_reports) : '';
+            $report_state = $this->reportState($rec->master_reports, $master_reports);
+            // Global provider is attached
+            if ($rec->connection_count > 0) {
+              // get the provider record
+              if ($rec->connection_count> 1) {
+                  $rec->inst_name = $rec->connection_count . " Institutions";
+              } else {
+                  $prov_data = $conso_providers->where('global_id',$rec->id)->first();
+                  if ($prov_data) {
+                      $rec->conso_id = $prov_data->id;
+                      $rec->inst_id = $prov_data->inst_id;
+                      $rec->inst_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
+                      $rec->is_active = $prov_data->is_active;
+                      $rec->active = ($prov_data->is_active) ? 'Active' : 'Inactive';
+                      $rec->day_of_month = $prov_data->day_of_month;
+                      $last_harvest = $prov_data->sushiSettings->max('last_harvest');
+                      $rec->can_edit = $prov_data->canManage();
+                      $rec->can_delete = (is_null($last_harvest) && $prov_data->canManage());
+                      if ($prov_data->reports) {
+                          $report_ids = $prov_data->reports->pluck('id')->toArray();
+                          $reports_string = $this->makeReportString($report_ids, $master_reports);
+                          $report_state = $this->reportState($report_ids, $master_reports);
+                      }
+                  }
+              }
             }
-        }
+            $rec->report_state = $report_state;
+            $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;
+            return $rec;
+        })->toArray();
 
-        // Build list of global providers not already added to the consortium
-        // These are eligible to be added as institution-specific providers
-        $conso_global_ids = $all_providers->pluck('global_id')->toArray();
-        $global_providers = GlobalProvider::whereNotIn('id', $conso_global_ids)->orderBy('name', 'ASC')->get();
-        $unset_global_providers = array();
-        foreach ($global_providers as $gp) {
-            $unset = $gp->toArray();
-            // replace array of IDs with full connection fields for U/I use
-            $unset['connectors'] = ConnectionField::whereIn('id',$gp->connectors)->get()->values()->toArray();
-            $unset_global_providers[] = $unset;
-        }
+        // Pull an array for unset global providers
+        $existingIds = $conso_providers->pluck('global_id')->toArray();
+        $unset_global = GlobalProvider::whereNotIn('id',$existingIds)->orderBy('name', 'ASC')->get();
 
         // Get 10 most recent harvests
-        $harvests = HarvestLog::with(
-            'report:id,name',
-            'sushiSetting',
-            'sushiSetting.institution:id,name',
-            'sushiSetting.provider:id,name'
-        )
+        $harvests = HarvestLog::with('report:id,name', 'sushiSetting', 'sushiSetting.institution:id,name',
+                                     'sushiSetting.provider:id,name')
                               ->join('sushisettings', 'harvestlogs.sushisettings_id', '=', 'sushisettings.id')
                               ->where('sushisettings.inst_id', $id)
                               ->orderBy('harvestlogs.updated_at', 'DESC')->limit(10)
-                              ->get('harvestlogs.*')->toArray();
-        return view(
-            'institutions.show',
-            compact('institution', 'users', 'unset_conso_providers', 'unset_global_providers', 'all_connectors',
-                    'all_groups', 'all_roles', 'harvests')
-        );
+                              ->get('harvestlogs.*')
+                              ->toArray();
+        return view('institutions.show',
+                    compact('institution','all_providers','all_groups','all_roles','harvests','unset_global','master_reports')
+                   );
     }
 
     /**
@@ -750,4 +741,38 @@ class InstitutionController extends Controller
 
         return response()->json(['result' => true, 'msg' => $msg, 'inst_data' => $inst_data]);
     }
+
+    /**
+     * Build string representation of master_reports array
+     *
+     * @param  Array  $reports
+     * @param  Collection  $master_reports
+     * @return String
+     */
+    private function makeReportString($reports, $master_reports) {
+        $report_string = '';
+        foreach ($master_reports as $mr) {
+            if (in_array($mr->id,$reports)) {
+                $report_string .= ($report_string == '') ? '' : ', ';
+                $report_string .= $mr->name;
+            }
+        }
+        return $report_string;
+    }
+
+    /**
+     * Return an array of booleans for report-state from provider reports columns
+     *
+     * @param  Array  $reports
+     * @param  Collection  $master_reports
+     * @return Array  $report-state
+     */
+    private function reportState($reports, $master_reports) {
+        $rpt_state = array();
+        foreach ($master_reports as $rpt) {
+            $rpt_state[$rpt->name] = (in_array($rpt->id, $reports)) ? true : false;
+        }
+        return $rpt_state;
+    }
+
 }

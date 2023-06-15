@@ -111,29 +111,28 @@
       </v-card>
     </v-dialog>
     <v-dialog v-model="provDialog" persistent content-class="ccplus-dialog">
-      <v-card>
         <v-container grid-list-sm>
           <v-form v-model="formValid">
-            <v-row class="d-flex ma-2" no-gutters>
-              <v-col class="d-flex pt-4 justify-center"><h4 align="center">{{ dialog_title }}</h4></v-col>
+            <v-row class="d-flex ma-0" no-gutters>
+              <v-col class="d-flex pt-2 justify-center"><h4 align="center">{{ dialog_title }}</h4></v-col>
             </v-row>
-            <v-row class="d-flex mx-2" no-gutters>
-              <v-col class="d-flex pr-2" cols="10">
+            <v-row class="d-flex ma-0" no-gutters>
+              <v-col class="d-flex px-4" cols="10">
                 <v-text-field v-model="form.name" label="Name" outlined dense></v-text-field>
               </v-col>
-              <v-col class="d-flex px-2" cols="2">
+              <v-col class="d-flex px-4" cols="2">
                 <div class="idbox">
                   <v-icon title="CC+ Provider ID">mdi-web</v-icon>&nbsp; {{ current_provider_id }}
                 </div>
               </v-col>
             </v-row>
-            <v-row class="d-flex mx-2" no-gutters>
-              <v-col class="d-flex pr-2">
+            <v-row class="d-flex ma-0" no-gutters>
+              <v-col class="d-flex px-4">
                 <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined dense></v-text-field>
               </v-col>
             </v-row>
-            <v-row class="d-flex mx-2" no-gutters>
-              <v-col class="d-flex pr-2" cols="6">
+            <v-row class="d-flex ma-0" no-gutters>
+              <v-col class="d-flex px-4" cols="6">
                 <v-list dense>
                   <v-list-item class="verydense"><strong>Connection Fields</strong></v-list-item>
                   <v-list-item v-for="cnx in all_connectors" :key="cnx.name" class="verydense">
@@ -143,7 +142,7 @@
                   </v-list-item>
                 </v-list>
               </v-col>
-              <v-col class="d-flex pl-2" cols="6">
+              <v-col class="d-flex px-4" cols="6">
                 <v-list dense>
                   <v-list-item class="verydense"><strong>Available Reports</strong></v-list-item>
                   <v-list-item v-for="rpt in master_reports" :key="rpt.name" class="verydense">
@@ -155,34 +154,36 @@
               </v-col>
             </v-row>
             <v-row v-if="form.connector_state['extra_args']" class="d-flex ma-0" no-gutters>
-              <v-col class="d-flex pr-2" cols="8">
+              <v-col class="d-flex px-4" cols="8">
                 <v-text-field v-model="form.extra_pattern" label="Extra Arguments Pattern" outlined dense></v-text-field>
               </v-col>
             </v-row>
-            <v-row class="d-flex mx-2" no-gutters>
-              <v-col class="d-flex pr-2" cols="8">
+            <v-row class="d-flex ma-0" no-gutters>
+              <v-col class="d-flex pl-4" cols="9">
                 <v-text-field v-model="form.registry_id" label="COUNTER Registry ID" outlined dense></v-text-field>
               </v-col>
-              <v-col class="d-flex px-2" cols="4">
-                <v-btn x-small color="primary" type="button" @click="registryRefresh(null)">Refresh from Registry</v-btn>
+              <v-col class="d-flex px-2" cols="3">
+                <v-btn x-small color="primary" type="button" @click="registryRefresh(null)">Registry Refresh</v-btn>
               </v-col>
             </v-row>
-            <v-row class="d-flex mx-2 mb-1 align-center" no-gutters>
-              <v-col class="d-flex pr-2" cols="4">
+            <v-row class="d-flex ma-0 align-center" no-gutters>
+              <v-col class="d-flex px-4" cols="4">
                 <v-switch v-model="form.is_active" label="Active?" dense></v-switch>
               </v-col>
-              <v-col class="d-flex px-2" cols="4">
+              <v-col class="d-flex px-4" cols="4">
                 <v-btn x-small color="primary" type="button" @click="formSubmit" :disabled="!formValid">
                   Save Provider
                 </v-btn>
               </v-col>
-              <v-col class="d-flex px-2" cols="4">
+              <v-col class="d-flex px-4" cols="4">
                 <v-btn x-small color="primary" type="button" @click="provDialog=false">Cancel</v-btn>
               </v-col>
             </v-row>
+            <v-row v-if="updated_at!=null" class="d-flex ma-0" no-gutters>
+              <v-col class="d-flex justify-center"><em>Last Updated: {{ updated_at }}</em></v-col>
+            </v-row>
           </v-form>
         </v-container>
-      </v-card>
     </v-dialog>
   </div>
 </template>
@@ -206,6 +207,7 @@
         provDialog: false,
         dialog_title: '',
         current_provider_id: null,
+        updated_at: null,
         import_type: '',
         import_types: ['Add or Update', 'Full Replacement'],
         mutable_filters: this.filters,
@@ -264,6 +266,7 @@
             this.form.report_state = _prov.report_state;
             this.form.extra_pattern = _prov.extra_pattern;
             this.form.notifications_url = _prov.notifications_url;
+            this.updated_at = _prov.updated_at;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
             this.provDialog = true;
@@ -281,6 +284,7 @@
             this.form.report_state = this.new_provider.report_state;
             this.form.extra_pattern = this.new_provider.extra_pattern;
             this.form.notifications_url = this.new_provider.notifications_url;
+            this.updated_at = null;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
             this.provDialog = true;

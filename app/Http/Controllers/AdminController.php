@@ -57,40 +57,59 @@ class AdminController extends Controller
         // Get master report definitions
         $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
 
-        // Get all providers
-        $provider_data = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest','reports:id,name',
+        // Get all (consortium) providers, extract array of global IDs
+        $conso_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest','reports:id,name',
                                         'globalProv')
                                  ->orderBy('name','ASC')->get();
 
-        // Setup columns for the datatable
-        $providers = $provider_data->map( function ($rec) use ($master_reports) {
+        // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
+        $global_providers = GlobalProvider::orderBy('name', 'ASC')->get();
+        $providers = $global_providers->map( function ($rec) use ($master_reports, $conso_providers) {
+            $rec->global_prov = $rec->toArray();
+            $rec->connectors = ($rec->globalProv) ? $rec->globalProv->connectionFields() : [];
+            $rec->connected = $conso_providers->where('global_id',$rec->id)->pluck('institution')->toArray();
+            $rec->connection_count = count($rec->connected);
+            // Setup default values for the columns in the U/I
+            $rec->conso_id = null;
+            $rec->inst_name = null;
             $rec->active = ($rec->is_active) ? 'Active' : 'Inactive';
-            $rec->inst_name = ($rec->institution->id == 1) ? 'Entire Consortium' : $rec->institution->name;
-            $rec->day_of_month = $rec->day_of_month;
-            $rec->connectors = $rec->globalProv->connectionFields();
-            $last_harvest = $rec->sushiSettings->max('last_harvest');
-            $rec->can_delete = (is_null($last_harvest)) ? true : false;
-            if ($rec->reports) {
-                $report_string = '';
-                $report_ids = $rec->reports->pluck('id')->toArray();
-                $report_names = $master_reports->whereIn('id',$report_ids)->pluck('name')->toArray();
-                foreach ($report_names as $name) {
-                    $report_string .= ($report_string=='') ? $name : ', ' . $name;
+            $rec->day_of_month = null;
+            $rec->can_delete = false;
+            $reports_string = ($rec->master_reports) ?
+                               $this->makeReportString($rec->master_reports, $master_reports) : '';
+            $report_state = $this->reportState($rec->master_reports, $master_reports);
+            // Global provider is attached
+            if ($rec->connection_count > 0) {
+                // get the provider record
+                if ($rec->connection_count > 1) {
+                    $rec->inst_name = $rec->connection_count . " Institutions";
+                } else {
+                    $prov_data = $conso_providers->where('global_id',$rec->id)->first();
+                    if ($prov_data) {
+                        $rec->conso_id = $prov_data->id;
+                        $rec->inst_id = $prov_data->institution->id;
+                        $rec->inst_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
+                        $rec->is_active = $prov_data->is_active;
+                        $rec->active = ($prov_data->is_active) ? 'Active' : 'Inactive';
+                        $rec->day_of_month = $prov_data->day_of_month;
+                        $last_harvest = $prov_data->sushiSettings->max('last_harvest');
+                        $rec->can_edit = true;;
+                        $rec->can_delete = (is_null($last_harvest)) ? true : false;
+                        if ($prov_data->reports) {
+                            $report_ids = $prov_data->reports->pluck('id')->toArray();
+                            $reports_string = $this->makeReportString($report_ids, $master_reports);
+                            $report_state = $this->reportState($report_ids, $master_reports);
+                        }
+                    }
                 }
-                $rec->reports_string = $report_string;
-            } else {
-                $rec->reports_string = "None";
             }
-            $rpt_state = [];
-            foreach ($master_reports as $rpt) {
-                $rpt_state[$rpt->name] = ($rec->reports->where('name',$rpt->name)->first()) ? true : false;
-            }
-            $rec->report_state = $rpt_state;
+            $rec->report_state = $report_state;
+            $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;
             return $rec;
         })->toArray();
 
         // Get global provider definitions for unconnected providers
-        $existingIds = $provider_data->pluck('global_id')->toArray();
+        $existingIds = $conso_providers->pluck('global_id')->toArray();
         $unset_global = GlobalProvider::whereNotIn('id',$existingIds)->orderBy('name', 'ASC')->get();
         $institutions = $institutionData->toArray();
 
@@ -98,4 +117,38 @@ class AdminController extends Controller
         return view('admin.home', compact('conso_name','roles','institutions','groups','providers','master_reports',
                                           'unset_global'));
     }
+
+    /**
+     * Build string representation of master_reports array
+     *
+     * @param  Array  $reports
+     * @param  Collection  $master_reports
+     * @return String
+     */
+    private function makeReportString($reports, $master_reports) {
+        $report_string = '';
+        foreach ($master_reports as $mr) {
+            if (in_array($mr->id,$reports)) {
+                $report_string .= ($report_string == '') ? '' : ', ';
+                $report_string .= $mr->name;
+            }
+        }
+        return $report_string;
+    }
+
+    /**
+     * Return an array of booleans for report-state from provider reports columns
+     *
+     * @param  Array  $reports
+     * @param  Collection  $master_reports
+     * @return Array  $report-state
+     */
+    private function reportState($reports, $master_reports) {
+        $rpt_state = array();
+        foreach ($master_reports as $rpt) {
+            $rpt_state[$rpt->name] = (in_array($rpt->id, $reports)) ? true : false;
+        }
+        return $rpt_state;
+    }
+
 }

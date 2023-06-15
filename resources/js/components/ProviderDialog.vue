@@ -64,8 +64,16 @@
         <v-col class="d-flex pl-8" cols="2">
           <v-text-field v-model="form.day_of_month" label="Day-of-Month" single-line dense type="number"
                         class="centered-input" :rules="dayRules"
-          ></v-text-field>
+          ></v-text-field><br />
         </v-col>
+      </v-row>
+      <v-row v-if="provider.last_harvest!=null" class="d-flex mx-2 my-0" no-gutters>
+        <v-col class="d-flex px-6" cols="6">&nbsp;</v-col>
+        <v-col class="d-flex px-6" cols="6"><strong>Last Successful Harvest</strong></v-col>
+      </v-row>
+      <v-row v-if="provider.last_harvest!=null" class="d-flex mx-2 my-0" no-gutters>
+        <v-col class="d-flex px-6" cols="6">&nbsp;</v-col>
+        <v-col class="d-flex px-6" cols="6">{{ provider.last_harvest }}</v-col>
       </v-row>
       <v-row class="d-flex ma-2" no-gutters>
         <v-spacer></v-spacer>

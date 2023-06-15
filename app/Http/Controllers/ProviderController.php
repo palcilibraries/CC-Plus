@@ -334,6 +334,7 @@ class ProviderController extends Controller
         $global_provider->inst_name = ($provider->inst_id == 1) ? 'Entire Consortium' : $provider->institution->name;
         $global_provider->active = ($provider->is_active) ? 'Active' : 'Inactive';
         $global_provider->day_of_month = $provider->day_of_month;
+        $global_provider->last_harvest = null;
         $global_provider->report_state = $report_state;
         $global_provider->reports_string = $reports_string;
         $global_provider->can_edit = $provider->canManage();

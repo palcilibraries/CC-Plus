@@ -92,9 +92,9 @@ class AdminController extends Controller
                         $rec->is_active = $prov_data->is_active;
                         $rec->active = ($prov_data->is_active) ? 'Active' : 'Inactive';
                         $rec->day_of_month = $prov_data->day_of_month;
-                        $last_harvest = $prov_data->sushiSettings->max('last_harvest');
+                        $rec->last_harvest = $prov_data->sushiSettings->max('last_harvest');
                         $rec->can_edit = true;;
-                        $rec->can_delete = (is_null($last_harvest)) ? true : false;
+                        $rec->can_delete = (is_null($rec->last_harvest)) ? true : false;
                         if ($prov_data->reports) {
                             $report_ids = $prov_data->reports->pluck('id')->toArray();
                             $reports_string = $this->makeReportString($report_ids, $master_reports);

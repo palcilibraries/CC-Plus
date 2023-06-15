@@ -51,7 +51,7 @@
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
         <v-autocomplete :items="mutable_providers" v-model="mutable_filters['prov']" @change="updateFilters('prov')" multiple
-                  label="Provider(s)" item-text="name" item-value="id"
+                  label="Provider(s)" item-text="name" item-value="conso_id"
         ></v-autocomplete>
       </v-col>
       <v-col class="d-flex px-4 align-center" cols="2">
@@ -446,7 +446,6 @@
           },
           goHarvest(setting) {
               window.open("/harvests/create?inst="+setting.inst_id+"&prov="+setting.prov_id, "_blank");
-              // window.location.assign("/harvests/create?inst="+setting.inst_id+"&prov="+setting.prov_id);
           },
           sushiDialogDone ({ result, msg, setting }) {
               this.success = '';
@@ -490,7 +489,7 @@
           }
         },
         computed: {
-          ...mapGetters(['all_filters','page_name','is_admin','is_manager']),
+          ...mapGetters(['all_filters','is_admin','is_manager']),
         },
         beforeCreate() {
           // Load existing store data

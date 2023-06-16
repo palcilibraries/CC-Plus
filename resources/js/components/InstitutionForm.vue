@@ -2,7 +2,7 @@
   <div>
     <v-row class="d-flex pl-2" no-gutters>
       <v-col class="d-flex px-2 flex-shrink-1">
-        <h3 v-if="is_admin">Institution Settings ({{ mutable_inst.name }})</h3>
+        <h3 v-if="is_admin">Institution Settings: {{ mutable_inst.name }}</h3>
         <h3 v-else>{{ mutable_inst.name }}</h3>
         &nbsp;
         <v-icon v-if="!showInstForm" title="Edit Institution Settings" @click="instDialog=true">mdi-cog-outline</v-icon>
@@ -13,7 +13,7 @@
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2">
         <div class="idbox">
-          <v-icon title="CC+ Institution ID">mdi-home-outline</v-icon>&nbsp; {{ mutable_inst.id }}
+          <v-icon title="CC+ Institution ID">mdi-crosshairs-gps</v-icon>&nbsp; {{ mutable_inst.id }}
         </div>
       </v-col>
       <v-col class="d-flex flex-grow-1">&nbsp;</v-col>

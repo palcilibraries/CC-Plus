@@ -11,7 +11,7 @@
         </v-col>
         <v-col class="d-flex px-2" cols="2">
           <div class="idbox">
-            <v-icon title="CC+ Provider ID">mdi-home-outline</v-icon>&nbsp; {{ provider.conso_id }}
+            <v-icon title="CC+ Provider ID">mdi-crosshairs-gps</v-icon>&nbsp; {{ provider.conso_id }}
           </div>
         </v-col>
         <v-col v-if="is_globaladmin" class="d-flex px-2" cols="2">
@@ -36,7 +36,7 @@
         </v-col>
         <v-col class="d-flex px-2" cols="2">
           <div class="idbox">
-            <v-icon title="CC+ Institution ID">mdi-home-outline</v-icon>&nbsp; {{ form.inst_id }}
+            <v-icon title="CC+ Institution ID">mdi-crosshairs-gps</v-icon>&nbsp; {{ form.inst_id }}
           </div>
         </v-col>
       </v-row>

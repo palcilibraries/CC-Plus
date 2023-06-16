@@ -204,8 +204,8 @@
                 // Actual headers array is built from these in mounted()
                 header_fields: [
                   { label: 'Status', name: 'status' },
-                  { label: 'Institution ', name: 'institution.name' },
-                  { label: 'Provider ', name: 'provider.name' },
+                  { label: 'Institution', name: 'institution.name' },
+                  { label: 'Provider', name: 'provider.name' },
                   { label: '', name: 'customer_id' },
                   { label: '', name: 'requestor_id' },
                   { label: '', name: 'API_key' },
@@ -529,6 +529,11 @@
 
           // Set datatable options with store-values
           Object.assign(this.mutable_options, this.datatable_options);
+
+          // If we're viewing settings for a single institution, remove the bnstitution column from the datatable
+          if (this.institutions.length == 1) {
+            this.header_fields.splice(this.header_fields.findIndex( h => h.label == 'Institution'),1);
+          }
 
           // Load settings and update column headers
           this.updateSettings();

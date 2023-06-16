@@ -5,18 +5,16 @@
         <h3 v-if="is_admin">Institution Settings: {{ mutable_inst.name }}</h3>
         <h3 v-else>{{ mutable_inst.name }}</h3>
         &nbsp;
+        <div class="idbox">
+          <v-icon title="CC+ Institution ID">mdi-crosshairs-gps</v-icon>&nbsp; {{ mutable_inst.id }}
+        </div>
+        &nbsp;
         <v-icon v-if="!showInstForm" title="Edit Institution Settings" @click="instDialog=true">mdi-cog-outline</v-icon>
         &nbsp;
         <v-icon v-if="is_admin && mutable_inst.can_delete" title="Delete Institution" @click="destroy(mutable_inst.id)">
           mdi-trash-can-outline
         </v-icon>
       </v-col>
-      <v-col class="d-flex px-2 align-center" cols="2">
-        <div class="idbox">
-          <v-icon title="CC+ Institution ID">mdi-crosshairs-gps</v-icon>&nbsp; {{ mutable_inst.id }}
-        </div>
-      </v-col>
-      <v-col class="d-flex flex-grow-1">&nbsp;</v-col>
     </v-row>
     <v-expansion-panels multiple focusable v-model="panels">
       <!-- Users -->

@@ -50,6 +50,12 @@
           <span v-else><v-icon large color="red" title="Inactive Consortium Provider">mdi-toggle-switch</v-icon></span>
         </div>
       </template>
+      <template v-slot:item.name="{ item }">
+        <span v-if="item.inst_id==1">
+          <v-icon title="Consortium Provider">mdi-account-group</v-icon>
+        </span>&nbsp;
+        {{ item.name }}
+      </template>
       <template v-slot:item.inst_name="{ item }">
         <span v-if="item.inst_id==1 || inst_context!=1">{{ item.inst_name }}</span>
         <span v-else-if="item.connected.length>1">
@@ -414,6 +420,11 @@
     beforeMount() {
       // Set page name in the store
       this.$store.dispatch('updatePageName','providers');
+
+      // If we're viewing providers for a single institution, remove the connected-by column from the datatable
+      if (this.inst_context != 1) {
+        this.headers.splice(this.headers.findIndex( h => h.text == 'Connected-By'),1);
+      }
 
       // Tack on last 2 columns in the table headers
       if (this.is_admin) {

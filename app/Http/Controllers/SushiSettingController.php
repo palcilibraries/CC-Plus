@@ -101,8 +101,6 @@ class SushiSettingController extends Controller
                 if ($rec->provider->globalProv) {
                     $rec->provider->connectors = $rec->provider->globalProv->connectionFields();
                 }
-                $rec->inst_name = $rec->institution->name;
-                $rec->prov_name = $rec->provider->name;
                 return $rec;
             });
             return response()->json(['settings' => $settings, 'connectors' => $all_connectors], 200);

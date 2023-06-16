@@ -70,17 +70,17 @@
     <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_settings" :loading="loading" show-select
                   item-key="id" :options="mutable_options" @update:options="updateOptions"
                   :footer-props="footer_props" :search="search" :key="'setdt_'+dtKey">
-      <template v-slot:item.inst_name="{ item }">
+      <template v-slot:institution.name="{ item }">
          <span v-if="item.institution.is_active">
-           <a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a>
+           <a :href="'/institutions/'+item.inst_id">{{ item.institution.name }}</a>
          </span>
-         <span v-else class="isInactive" @click="goEditInst(item.inst_id)">{{ item.inst_name }}</span>
+         <span v-else class="isInactive" @click="goEditInst(item.inst_id)">{{ item.institution.name }}</span>
       </template>
-      <template v-slot:item.prov_name="{ item }">
+      <template v-slot:provider.name="{ item }">
         <span v-if="item.provider.is_active">
-          <a :href="'/providers/'+item.prov_id">{{ item.prov_name }}</a>
+          <a :href="'/providers/'+item.prov_id">{{ item.provider.name }}</a>
         </span>
-        <span v-else class="isInactive" @click="goEditProv(item.prov_id)">{{ item.prov_name }}</span>
+        <span v-else class="isInactive" @click="goEditProv(item.prov_id)">{{ item.provider.name }}</span>
       </template>
       <template v-slot:item.status="{ item }">
         <span v-if="item.status=='Enabled'"><v-icon large color="green" title="Enabled">mdi-toggle-switch</v-icon></span>
@@ -204,8 +204,8 @@
                 // Actual headers array is built from these in mounted()
                 header_fields: [
                   { label: 'Status', name: 'status' },
-                  { label: 'Institution ', name: 'inst_name' },
-                  { label: 'Provider ', name: 'prov_name' },
+                  { label: 'Institution ', name: 'institution.name' },
+                  { label: 'Provider ', name: 'provider.name' },
                   { label: '', name: 'customer_id' },
                   { label: '', name: 'requestor_id' },
                   { label: '', name: 'API_key' },

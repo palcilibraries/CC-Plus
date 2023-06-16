@@ -70,17 +70,11 @@
     <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_settings" :loading="loading" show-select
                   item-key="id" :options="mutable_options" @update:options="updateOptions"
                   :footer-props="footer_props" :search="search" :key="'setdt_'+dtKey">
-      <template v-slot:institution.name="{ item }">
-         <span v-if="item.institution.is_active">
-           <a :href="'/institutions/'+item.inst_id">{{ item.institution.name }}</a>
-         </span>
-         <span v-else class="isInactive" @click="goEditInst(item.inst_id)">{{ item.institution.name }}</span>
-      </template>
-      <template v-slot:provider.name="{ item }">
-        <span v-if="item.provider.is_active">
-          <a :href="'/providers/'+item.prov_id">{{ item.provider.name }}</a>
-        </span>
-        <span v-else class="isInactive" @click="goEditProv(item.prov_id)">{{ item.provider.name }}</span>
+      <template v-slot:item.provider.name="{ item }">
+        <span v-if="item.provider.inst_id==1">
+          <v-icon title="Consortium Provider">mdi-account-group</v-icon>
+        </span>&nbsp;
+        {{ item.provider.name }}
       </template>
       <template v-slot:item.status="{ item }">
         <span v-if="item.status=='Enabled'"><v-icon large color="green" title="Enabled">mdi-toggle-switch</v-icon></span>
@@ -489,7 +483,7 @@
           }
         },
         computed: {
-          ...mapGetters(['all_filters','is_admin','is_manager']),
+          ...mapGetters(['all_filters','is_admin','is_manager','datatable_options']),
         },
         beforeCreate() {
           // Load existing store data

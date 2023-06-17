@@ -250,11 +250,14 @@ class Sushi extends Model
     public function jsonHasExceptions()
     {
         // Check JSON for Exceptions. Sometimes they're expressed differently
-         $has_exception = false;
+        $has_exception = false;
         if (property_exists($this->json, 'Exception')) {
             $has_exception = true;
+            $this->severity = "ERROR";
             $this->error_code = $this->json->Exception->Code;
-            $this->severity = strtoupper($this->json->Exception->Severity);
+            if (property_exists($this->json->Exception, 'Severity')) {
+                $this->severity = strtoupper($this->json->Exception->Severity);
+            }
             $this->message = $this->json->Exception->Message;
         } elseif (property_exists($this->json, 'Code') && property_exists($this->json, 'Message')) {
             $has_exception = true;
@@ -268,16 +271,22 @@ class Sushi extends Model
                     // Scan the JSON header for exception(s)
                     if (property_exists($header, 'Exception')) {
                         $has_exception = true;
+                        $this->severity = "ERROR";
                         $this->error_code = $header->Exception->Code;
-                        $this->severity = strtoupper($header->Exception->Severity);
+                        if (property_exists($header->Exception, 'Severity')) {
+                            $this->severity = strtoupper($header->Exception->Severity);
+                        }
                         $this->message = $header->Exception->Message;
                     }
                     if (property_exists($header, 'Exceptions')) {
                         if (is_array($header->Exceptions)) {
                             if (sizeof($header->Exceptions) > 0) {
                                 $has_exception = true;
+                                $this->severity = "ERROR";
                                 $this->error_code = $header->Exceptions[0]->Code;
-                                $this->severity = strtoupper($header->Exceptions[0]->Severity);
+                                if (property_exists($header->Exceptions[0], 'Severity')) {
+                                    $this->severity = strtoupper($header->Exceptions[0]->Severity);
+                                }
                                 $this->message = $header->Exceptions[0]->Message;
                             }
                         }

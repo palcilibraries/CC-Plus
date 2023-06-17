@@ -301,7 +301,7 @@ class SushiQWorker extends Command
                     $sushi->detail .= " (URL: " . $request_uri . ")";
                 }
                 $this->line($ts . " " . $ident . "SUSHI Exception (" . $sushi->error_code . ") : " .
-                            $sushi->message . $sushi->detail;
+                            $sushi->message . $sushi->detail);
             }
 
            // If we have a validated report, processs and save it

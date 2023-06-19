@@ -80,6 +80,14 @@
       <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_harvests" :loading="loading" show-select
                     item-key="id" :options="mutable_options" @update:options="updateOptions" :footer-props="footer_props"
                     :key="dtKey">
+        <template v-slot:item.error="{ item }">
+          <span v-if="item.error_code > 1000">
+            <a href="https://cop5.projectcounter.org/en/5.0.3/appendices/f-handling-errors-and-exceptions.html" target="_blank">
+              {{item.error}}
+            </a>
+          </span>
+          <span v-else>{{item.error}}</a></span>
+        </template>
         <template v-slot:item.action="{ item }">
           <span class="dt_action">
             <v-icon title="Edit Details" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
@@ -121,6 +129,7 @@
           { text: 'Usage Date', value: 'yearmon' },
           { text: 'Attempts', value: 'attempts' },
           { text: 'Status', value: 'status' },
+          { text: '', value: 'error' },
           { text: '', value: 'action', sortable: false },
         ],
         footer_props: { 'items-per-page-options': [10,50,100,-1] },
@@ -259,7 +268,7 @@
                 if (this.bulkAction == 'Delete') {
                     for (let idx=0; idx<this.selectedRows.length; idx++) {
                       var harvest=this.selectedRows[idx];
-                      if (this.status_changeable.includes(harvest.brief_status)) {
+                      if (this.status_changeable.includes(harvest.status)) {
                         axios.delete('/harvests/'+harvest.id)
                         .then( (response) => {
                           if (response.data.result) {
@@ -276,7 +285,7 @@
                     if (this.failure == '') this.success = "Selected harvests successfully deleted.";
                 } else {
                     this.selectedRows.forEach(harvest => {
-                      if (this.status_changeable.includes(harvest.brief_status)) {
+                      if (this.status_changeable.includes(harvest.status)) {
                         axios.post('/update-harvest-status', {
                                    id: harvest.id,
                                    status: this.bulkAction
@@ -285,7 +294,6 @@
                           if (response.data.result) {
                             var harvIdx = this.mutable_harvests.findIndex(h=>h.id===harvest.id);
                             this.mutable_harvests[harvIdx].status = response.data.status;
-                            this.mutable_harvests[harvIdx].brief_status = response.data.status;
                           } else {
                             this.failure = response.data.msg;
                             return false;

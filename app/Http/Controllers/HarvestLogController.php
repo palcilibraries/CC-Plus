@@ -119,7 +119,7 @@ class HarvestLogController extends Controller
             // Get reports for all that exist in the relationship table
             $table = config('database.connections.consodb.database') . '.' . 'provider_report';
             $report_ids = DB::table($table)->distinct('report_id')->pluck('report_id')->toArray();
-            $reports = Report::whereIn('id', $report_ids)->orderBy('id', 'asc')->get()->toArray();
+            $reports = Report::whereIn('id', $report_ids)->orderBy('name', 'asc')->get()->toArray();
 
             // Query for min and max yearmon values
             $bounds = array();
@@ -200,22 +200,24 @@ class HarvestLogController extends Controller
                 $rec['inst_name'] = $harvest->sushiSetting->institution->name;
                 $rec['prov_name'] = $harvest->sushiSetting->provider->name;
                 $rec['report_name'] = $harvest->report->name;
+                $rec['error'] = null;
+                $rec['error_code'] = 0;
                 $rec['status'] = $harvest->status;
-                $rec['brief_status'] = $harvest->status;
                 if ($harvest->status != 'Success' && $harvest->failedHarvests) {
                     $max_id = $harvest->failedHarvests->max('id');
                     $last = $harvest->failedHarvests->where('id',$max_id)->first();
                     if ($last) {
+                        $rec['error_code'] = $last->ccplusError->id;
                         // Try to keep the minimize the length of the status-string. May want to add a
                         // 'brief_message' column to the global ccplus_errors table at some point...
                         if ($last->ccplusError->id > 1000) {
-                            $rec['status'] .= " (SUSHI Error: " . $last->ccplusError->id . ")";
+                            $rec['error'] = "SUSHI Error : " . $last->ccplusError->id;
                         } else if ($last->ccplusError->id == 100) {
-                            $rec['status'] .= " (COUNTER validation failed)";
+                            $rec['error'] = "COUNTER validation failed";
                         } else if ($last->ccplusError->id == 10) {
-                            $rec['status'] .= " (HTTP/URL request failure)";
+                            $rec['error'] = "HTTP/URL request failure";
                         } else {
-                            $rec['status'] .= " (" . $last->ccplusError->message . ")";
+                            $rec['error'] = $last->ccplusError->message ;
                         }
                     }
                 }

@@ -19,6 +19,14 @@
                   label="Updated"
         ></v-select>
       </v-col>
+      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if="mutable_filters['prov'].length>0" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
+        </div>
+        <v-select :items="providers" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
+                  label="Provider(s)" item-text="name" item-value="id"
+        ></v-select>
+      </v-col>
       <v-col v-if="institutions.length>1 && (inst_filter==null || inst_filter=='I')"
              class="d-flex px-2 align-center" cols="2" sm="2">
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
@@ -35,14 +43,6 @@
         </div>
         <v-select :items="groups" v-model="mutable_filters['group']" @change="updateFilters()" multiple
                   label="Institution Group(s)"  item-text="name" item-value="id"
-        ></v-select>
-      </v-col>
-      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if="mutable_filters['prov'].length>0" class="x-box">
-            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
-        </div>
-        <v-select :items="providers" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
-                  label="Provider(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
@@ -79,19 +79,35 @@
       </v-row>
       <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_harvests" :loading="loading" show-select
                     item-key="id" :options="mutable_options" @update:options="updateOptions" :footer-props="footer_props"
-                    :key="dtKey">
-        <template v-slot:item.error="{ item }">
-          <span v-if="item.error_code > 1000">
-            <a href="https://cop5.projectcounter.org/en/5.0.3/appendices/f-handling-errors-and-exceptions.html" target="_blank">
-              {{item.error}}
-            </a>
-          </span>
-          <span v-else>{{item.error}}</a></span>
+                    :expanded="expanded" @click:row="expandRow" show-expand :key="dtKey">
+        <template v-slot:item.data-table-expand="{ item, isExpanded, expand }">
+          <v-icon title="Error Details" @click="expand(true)" v-if="item.error_code>0 && !isExpanded" color="#F29727">
+            mdi-alert-outline
+          </v-icon>
+          <v-icon title="Close" @click="expand(false)" v-if="item.error_code>0 && isExpanded">mdi-close</v-icon>
         </template>
-        <template v-slot:item.action="{ item }">
-          <span class="dt_action">
-            <v-icon title="Edit Details" @click="goEdit(item.id)">mdi-cog-outline</v-icon>
-          </span>
+        <template v-slot:expanded-item="{ headers, item }">
+          <td v-if="item.error_code>0" :colspan="headers.length">
+            <v-simple-table>
+              <thead>
+                <tr><th>Attempted</th><th>Error Code</th><th>Message</th></tr>
+              </thead>
+              <template v-for="attempt in item.failed">
+                <tbody>
+                  <tr>
+                    <td>{{ attempt.ts }}</td>
+                    <td>
+                      {{ attempt.code }}
+                      <span v-if="attempt.code>1000">
+                        <v-icon title="COUNTER Error Details" @click="goCounter()">mdi-open-in-new</v-icon>
+                      </span>
+                    </td>
+                    <td>{{ attempt.message }}</td>
+                  </tr>
+                </tbody>
+              </template>
+            </v-simple-table>
+          </td>
         </template>
       </v-data-table>
     </div>
@@ -123,14 +139,14 @@
       return {
         headers: [
           { text: 'Last Update', value: 'updated' },
-          { text: 'Institution', value: 'inst_name' },
           { text: 'Provider', value: 'prov_name' },
-          { text: 'Report', value: 'report_name' },
+          { text: 'Institution', value: 'inst_name' },
+          { text: 'Report', value: 'report_name', align: 'center' },
           { text: 'Usage Date', value: 'yearmon' },
-          { text: 'Attempts', value: 'attempts' },
+          { text: 'Attempts', value: 'attempts', align: 'center' },
           { text: 'Status', value: 'status' },
-          { text: '', value: 'error' },
-          { text: '', value: 'action', sortable: false },
+          { text: 'Error Code', value: 'error_code', align: 'center' },
+          { text: '', value: 'data-table-expand' },
         ],
         footer_props: { 'items-per-page-options': [10,50,100,-1] },
         mutable_harvests: this.harvests,
@@ -138,7 +154,8 @@
         inst_filter: null,
         mutable_options: {},
         mutable_updated: [],
-        statuses: ['Success', 'Fail', 'New', 'Queued', 'Active', 'Pending', 'Stopped', 'ReQueued'],
+        expanded: [],
+        statuses: ['Active', 'Fail', 'Queued', 'Stopped', 'Success'],
         status_changeable: ['Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
         bulk_actions: [ { action:'Stop',    status:'Stopped'},
                         { action:'Restart', status:'Queued'},
@@ -240,7 +257,7 @@
             this.success = "";
             this.failure = "";
             let msg = "Bulk processing will proceed through each requested harvest sequentially. Any selected";
-            msg +=  " harvest(s) with a current status of 'Success', 'Active', or 'Pending' will not be changed.";
+            msg +=  " harvest(s) with a current status of 'Success' or 'Pending' will not be changed.";
             msg += "<br><br>";
             if (this.bulkAction == 'Restart') {
                 msg += "Updating the status for the selected harvests will reset the attempts counters to zero and";
@@ -250,9 +267,9 @@
                 msg += " will prevent future attempts for these harvests. Any currently queued attempts will be";
                 msg += " cancelled.";
             } else if (this.bulkAction == 'Delete') {
-                msg += "Deleting the selected harvest records is not reversible! No harvested data will be removed or";
-                msg += " changed. <br><br><strong>NOTE:</strong> all failure/warning records connected to this harvest";
-                msg += " will also be deleted.";
+                msg += "Deleting the selected harvest records is not reversible! Active harvests cannot be deleted, and no";
+                msg += " harvested data will be removed or changed. <br><br><strong>NOTE:</strong> all failure/warning records";
+                msg += " connected to this harvest will also be deleted.";
             }
             Swal.fire({
               title: 'Are you sure?',
@@ -285,7 +302,8 @@
                     if (this.failure == '') this.success = "Selected harvests successfully deleted.";
                 } else {
                     this.selectedRows.forEach(harvest => {
-                      if (this.status_changeable.includes(harvest.status)) {
+                      // Allow change to Active
+                      if (this.status_changeable.includes(harvest.status) || harvest.status == 'Active') {
                         axios.post('/update-harvest-status', {
                                    id: harvest.id,
                                    status: this.bulkAction
@@ -312,6 +330,12 @@
         },
         goEdit (logId) {
             window.location.assign('/harvests/'+logId+'/edit');
+        },
+        goCounter() {
+            window.open("https://cop5.projectcounter.org/en/5.0.3/appendices/f-handling-errors-and-exceptions.html", "_blank");
+        },
+        expandRow (item) {
+          this.expanded = item === this.expanded[0] ? [] : [item]
         },
     },
     computed: {
@@ -368,6 +392,6 @@
     }
   }
 </script>
-<style>
+<style scoped>
 .x-box { width: 16px;  height: 16px; flex-shrink: 0; }
 </style>

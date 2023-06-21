@@ -85,36 +85,36 @@ class HarvestLogController extends Controller
 
         // Build arrays for the filter-options. Skip if returning JSON
         if (!$json) {
-            // Get IDs of all possible prov_ids from the sushisettings table
+            // Get IDs of all possible providers from the sushisettings table
             $possible_providers = SushiSetting::distinct('prov_id')->pluck('prov_id')->toArray();
+            $enabled_providers = SushiSetting::where('status','Enabled')->distinct('prov_id')->pluck('prov_id')->toArray();
 
             // Setup arrays for institutions and providers
             if ($show_all) {
                 $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
                                            ->where('id', '<>', 1)->where('is_active', true)
                                            ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+                array_unshift($institutions, ['id' => 0, 'name' => 'Entire Consortium']);
                 $provider_data = Provider::with('reports')
-                                     ->whereIn('id', $possible_providers)->where('is_active', true)
-                                     ->orderBy('name', 'ASC')->get(['id','name']);
-
-                // Copy available_providers into the groups (to simplify the vue component)
-                foreach ($groups as $group) {
-                    $insts = $group->institutions->pluck('id')->toArray();
-                    $available_providers = SushiSetting::whereIn('inst_id',$insts)->pluck('prov_id')->toArray();
-                    $group->providers = $provider_data->whereIn('id',$available_providers)->toArray();
-                }
-                $providers = $provider_data->toArray();
+                                         ->whereIn('id', $possible_providers)->where('is_active', true)
+                                         ->orderBy('name', 'ASC')->get(['id','name']);
             } else {
                 $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
                                            ->where('id', '=', $user_inst)
                                            ->get(['id','name'])->toArray();
-                $providers = Provider::with('reports')
-                                     ->whereIn('id', $possible_providers)->where('is_active', true)
-                                     ->where(function ($query) use ($user_inst) {
-                                         $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
-                                     })
-                                     ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+                $provider_data = Provider::with('reports')
+                                         ->whereIn('id', $possible_providers)->where('is_active', true)
+                                         ->where(function ($query) use ($user_inst) {
+                                            $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
+                                          })
+                                         ->orderBy('name', 'ASC')->get(['id','name']);
             }
+
+            // Add in a flag for whether or not the provider has enabled sushi settings
+            $providers = $provider_data->map(function ($rec) use ($enabled_providers) {
+                $rec->sushi_enabled = (in_array($rec->id, $enabled_providers));
+                return $rec;
+            })->toArray();
 
             // Get reports for all that exist in the relationship table
             $table = config('database.connections.consodb.database') . '.' . 'provider_report';
@@ -160,6 +160,17 @@ class HarvestLogController extends Controller
                 $limit_to_insts[] = $thisUser->inst_id;
             }
 
+            // Set array of statuses to pull (if filter is set)
+            $statuses = array();
+            if (sizeof($filters['harv_stat']) > 0) {
+                if ( in_array("Queued", $filters['harv_stat']) ) {
+                    $statuses = array('Queued', 'New', 'Pending', 'Requeued');
+                }
+                foreach ($filters['harv_stat'] as $stat) {
+                    if ($stat != "Queued") $statuses[] = $stat;
+                }
+            }
+
             // Get the harvest rows based on sushisettings
             $settings = SushiSetting::when(sizeof($limit_to_insts) > 0, function ($qry) use ($limit_to_insts) {
                                           return $qry->whereIn('inst_id', $limit_to_insts);
@@ -168,6 +179,7 @@ class HarvestLogController extends Controller
                                           return $qry->whereIn('prov_id', $filters['prov']);
                                       })
                                       ->pluck('id')->toArray();
+
             $harvest_data = HarvestLog::
                 with('report:id,name','sushiSetting','sushiSetting.institution:id,name','sushiSetting.provider:id,name',
                      'failedHarvests','failedHarvests.ccplusError')
@@ -176,8 +188,8 @@ class HarvestLogController extends Controller
                 ->when(sizeof($filters['rept']) > 0, function ($qry) use ($filters) {
                     return $qry->whereIn('report_id', $filters['rept']);
                 })
-                ->when(sizeof($filters['harv_stat']) > 0, function ($qry) use ($filters) {
-                    return $qry->whereIn('status', $filters['harv_stat']);
+                ->when(sizeof($statuses) > 0, function ($qry) use ($statuses) {
+                    return $qry->whereIn('status', $statuses);
                 })
                 ->when($filters['fromYM'], function ($qry) use ($filters) {
                     return $qry->where('yearmon', '>=', $filters['fromYM']);
@@ -203,22 +215,21 @@ class HarvestLogController extends Controller
                 $rec['error'] = null;
                 $rec['error_code'] = 0;
                 $rec['status'] = $harvest->status;
+                $rec['failed'] = [];
+                $max_id= -1;
                 if ($harvest->status != 'Success' && $harvest->failedHarvests) {
-                    $max_id = $harvest->failedHarvests->max('id');
+                    foreach ($harvest->failedHarvests as $fh) {
+                        if ($fh->id > $max_id) {
+                            $max_id = $fh->id;
+                        }
+                        $rec['failed'][] = array('ts' => date("Y-m-d H:i:s", strtotime($fh->created_at)),
+                                                 'code' => $fh->ccplusError->id, 'message' => $fh->ccplusError->message,
+                                                );
+                    }
                     $last = $harvest->failedHarvests->where('id',$max_id)->first();
                     if ($last) {
                         $rec['error_code'] = $last->ccplusError->id;
-                        // Try to keep the minimize the length of the status-string. May want to add a
-                        // 'brief_message' column to the global ccplus_errors table at some point...
-                        if ($last->ccplusError->id > 1000) {
-                            $rec['error'] = "SUSHI Error : " . $last->ccplusError->id;
-                        } else if ($last->ccplusError->id == 100) {
-                            $rec['error'] = "COUNTER validation failed";
-                        } else if ($last->ccplusError->id == 10) {
-                            $rec['error'] = "HTTP/URL request failure";
-                        } else {
-                            $rec['error'] = $last->ccplusError->message ;
-                        }
+                        $rec['error'] = $last->ccplusError->toArray();
                     }
                 }
                 $harvests[] = $rec;

@@ -6,84 +6,76 @@
   	<form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
   	      @keydown="form.errors.clear($event.target.name)">
       <div v-if="this.is_admin">
-        <v-row class="d-flex align-mid" no-gutters>
-          <v-col v-if="form.inst_group_id==0" class="d-flex ma-2" cols="3" sm="3">
-            <v-autocomplete
-              :items="institutions"
-              v-model="form.inst"
-              @change="onInstChange"
-              multiple
-              label="Institution(s)"
-              item-text="name"
-              item-value="id"
-              hint="Institution(s) to Harvest"
+        <v-row class="d-flex align-mid ma-2" no-gutters>
+          <v-col v-if="form.inst_group_id==0" class="d-flex px-2" cols="3" sm="3">
+            <v-autocomplete :items="institutions" v-model="form.inst" @change="onInstChange" multiple label="Institution(s)"
+                            item-text="name" item-value="id" hint="Institution(s) to Harvest"
             ></v-autocomplete>
           </v-col>
-          <v-col v-if="form.inst.length==0 && form.inst_group_id==0 " class="d-flex" cols="1" sm="1">
+          <v-col v-if="form.inst.length==0 && form.inst_group_id==0 " class="d-flex px-2" cols="1" sm="1">
             <strong>OR</strong>
           </v-col>
-          <v-col v-if="form.inst.length==0" class="d-flex ma-2" cols="3" sm="3">
-            <v-autocomplete
-                :items="inst_groups"
-                v-model="form.inst_group_id"
-                @change="onGroupChange"
-                label="Institution Group"
-                item-text="name"
-                item-value="id"
-                hint="Institution group to harvest"
+          <v-col v-if="form.inst.length==0" class="d-flex px-2" cols="3" sm="3">
+            <v-autocomplete :items="inst_groups" v-model="form.inst_group_id" @change="onGroupChange" label="Institution Group"
+                            item-text="name" item-value="id" hint="Institution group to harvest"
             ></v-autocomplete>
           </v-col>
         </v-row>
       </div>
       <div v-else>
-        <v-row class="d-flex align-mid" no-gutters>
-          <v-col class="ma-2" cols="6" sm="4">
+        <v-row class="d-flex align-mid ma-2" no-gutters>
+          <v-col class="d-flex px-2" cols="6" sm="4">
             <h5>Institution : {{ inst_name }}</h5>
           </v-col>
         </v-row>
       </div>
-      <v-row v-if="available_providers.length>0" no-gutters>
-        <v-col class="ma-2" cols="3" sm="3">
-          <v-autocomplete
-            :items="available_providers"
-            v-model="form.prov"
-            @change="onProvChange"
-            multiple
-            label="Provider(s)"
-            item-text="name"
-            item-value="id"
-            hint="Provider(s) to Harvest"
+      <v-row v-if="available_providers.length>0" class="d-flex ma-2" no-gutters>
+        <v-col class="d-flex px-2" cols="3" sm="3">
+          <v-autocomplete :items="available_providers" v-model="form.prov" @change="onProvChange" multiple label="Provider(s)"
+                          item-text="name" item-value="id" hint="Provider(s) to Harvest"
           ></v-autocomplete>
         </v-col>
       </v-row>
-      <v-row v-if="available_reports.length>0" no-gutters>
-        <v-col class="ma-2" cols="6" sm="4">
-          <v-select
-            :items="available_reports"
-            v-model="form.reports"
-            item-text="legend"
-            item-value="name"
-            label="Report(s) to Harvest"
-            multiple
-            chips
-            hint="Choose which master reports to harvest"
-            persistent-hint
+      <v-row v-if="available_reports.length>0" class="d-flex ma-2" no-gutters>
+        <v-col class="d-flex px-2" cols="6" sm="4">
+          <v-select :items="available_reports" v-model="form.reports" item-text="legend" item-value="name" multiple cjips
+                    label="Report(s) to Harvest" hint="Choose which master reports to harvest" persistent-hint
           ></v-select>
         </v-col>
       </v-row>
       <v-row v-if="form.reports.length>0" class="d-flex flex-row ma-2 align-center" no-gutters>
-        <v-col class="d-flex pa-2" cols="2" sm="2"><h5>Month(s) to Harvest</h5></v-col>
-        <v-col class="d-flex pa-2">
-          <date-range minym="2019-01" :maxym="maxYM" ymfrom="" ymto=""></date-range>
+        <v-col class="d-flex px-2" cols="2" sm="2"><h5>Month(s) to Harvest</h5></v-col>
+        <v-col class="d-flex px-2" cols="1">
+          <v-menu ref="menuF" v-model="fromMenu" :close-on-content-click="true" transition="scale-transition"
+                  offset-y max-width="290px" min-width="290px">
+            <template v-slot:activator="{ on }">
+              <v-text-field v-model="form.fromYM" label="From" readonly v-on="on"></v-text-field>
+            </template>
+            <v-date-picker v-model="form.fromYM" type="month" :min="'2019-01'" no-title scrollable></v-date-picker>
+          </v-menu>
+        </v-col>
+        <v-col class="d-flex px-2" cols="1">
+          <v-menu ref="menuT" v-model="toMenu" :close-on-content-click="true" transition="scale-transition"
+                  offset-y max-width="290px" min-width="290px">
+            <template v-slot:activator="{ on }">
+              <v-text-field v-model="form.toYM" label="To" readonly v-on="on"></v-text-field>
+            </template>
+            <v-date-picker v-model="form.toYM" type="month" :max="maxYM" no-title scrollable></v-date-picker>
+          </v-menu>
         </v-col>
       </v-row>
-      <v-row v-if="form.reports.length>0" no-gutters>
-        <v-col class="ma-2" cols="12">
+      <v-row v-if="form.reports.length>0" class="d-flex ma-2" no-gutters>
+        <v-col class="d-flex px-2" cols="12">
           <span>Queue the harvest(s) to begin</span>
           <v-radio-group v-model="form.when" row>
             <v-radio :label="'Overnight'" value='later'></v-radio>
             <v-radio :label="'Now'" value='now'></v-radio>
           </v-radio-group>
+        </v-col>
+      </v-row>
+      <v-row v-if="form.reports.length>0" class="d-flex ma-2" no-gutters>
+        <v-col class="d-flex px-2" cols="12">
+          <v-checkbox v-model="form.skip_harvested" label="Skip Previously Harvested Reports" dense></v-checkbox>
         </v-col>
       </v-row>
       <div class="status-message" v-if="success || failure">
@@ -123,7 +115,10 @@
                 fromYM: '',
                 toYM: '',
                 when: 'later',
+                skip_harvested: 1,
             }),
+            fromMenu: false,
+            toMenu: false,
             maxYM: '',
             inst_name: '',
             available_providers: [ ...this.providers],
@@ -203,6 +198,11 @@
                         });
                     }
                 });
+                this.available_reports.sort((a,b) => {
+                  if ( a.name < b.name ) return -1;
+                  if ( a.name > b.name ) return 1;
+                  return 0;
+                });
             }
             this.selections_made = true;
         },
@@ -212,14 +212,12 @@
                 return;
             }
             // Set from/to in the form with values from the data store and check them
-            this.form.toYM = this.filter_by_toYM;
-            this.form.fromYM = this.filter_by_fromYM;
-            if (this.form.toYM == '' && this.form.fromYM != '') this.form.toYM = this.form.fromYM;
-            if (this.form.fromYM == '' && this.form.toYM != '') this.form.fromYM = this.form.toYM;
             if (this.form.toYM == '' || this.form.fromYM == '') {
-                this.failure = 'Range of months to harvest is invalid';
+                this.failure = 'Range of months to harvest is required';
                 return;
             }
+            if (this.form.toYM == '' && this.form.fromYM != '') this.form.toYM = this.form.fromYM;
+            if (this.form.fromYM == '' && this.form.toYM != '') this.form.fromYM = this.form.toYM;
             this.form.post('/harvests')
                 .then((response) => {
                     if (response.result) {
@@ -233,7 +231,7 @@
         },
     },
     computed: {
-      ...mapGetters(['is_admin', 'filter_by_toYM', 'filter_by_fromYM']),
+      ...mapGetters(['is_admin']),
     },
     mounted() {
       if ( !this.is_admin ) {

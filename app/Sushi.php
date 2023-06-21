@@ -114,6 +114,11 @@ class Sushi extends Model
             if ($this->error_code == 1011) {
                 return "Pending";
             }
+           // Treat "No data" as success
+            if ($this->error_code == 3030) {
+                $this->message = "No Data For Requested Dates";
+                return "Success";
+            }
 
            // Not queued, signal error. If severity is non-Fatal, the message and code are
            // set already and we'll return Success to allow the caller to report it (or not).

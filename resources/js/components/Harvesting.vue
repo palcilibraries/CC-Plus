@@ -82,10 +82,11 @@
         this.$store.dispatch('updateDashboard','harvesting');
     },
     mounted() {
-        this.harvest_provs = [ ...this.providers];
-        this.harvest_provs.unshift({'id':0, 'name':'All Providers'});
+        this.harvest_provs = this.providers.filter(p => p.sushi_enabled);
+        if (this.harvest_provs.length > 1) {
+          this.harvest_provs.unshift({'id':0, 'name':'All Providers'});
+        }
         this.harvest_insts = [ ...this.institutions];
-        this.harvest_insts.unshift({'id':0, 'name':'Entire Consortium'});
 
         // Set datatable options with store-values
         Object.assign(this.panels, this.panel_data);

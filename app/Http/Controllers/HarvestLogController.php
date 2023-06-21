@@ -354,6 +354,12 @@ class HarvestLogController extends Controller
         $user_inst =$thisUser->inst_id;
         $is_admin =$thisUser->hasRole('Admin');
 
+        // Set flag for "skip previously harvested data"
+        $skip_harvested = false;
+        if (isset($input["skip_harvested"])) {
+            $skip_harvested = $input["skip_harvested"];
+        }
+
         // Admins can harvest multiple insts or a group
         $inst_ids = array();
         if ($is_admin) {
@@ -421,10 +427,10 @@ class HarvestLogController extends Controller
                // Loop through all sushisettings for this provider
                 foreach ($provider->sushiSettings as $setting) {
                    // If institution is inactive or this inst_id is not in the $inst_ids array, skip it
-                    if ((!$setting->institution->is_active) || (!in_array($setting->inst_id,$inst_ids))) {
+                    if ($setting->status != "Enabled" ||
+                        !$setting->institution->is_active || !in_array($setting->inst_id,$inst_ids)) {
                         continue;
                     }
-
                    // Loop through all reports defined as available for this provider
                     foreach ($provider->reports as $report) {
                        // if this report isn't in $inputs['reports'], skip it
@@ -432,28 +438,27 @@ class HarvestLogController extends Controller
                             continue;
                         }
 
-                       // Insert new HarvestLog record; catch and prevent duplicates
-                        try {
-                            $harvest = HarvestLog::create(['status' => $state, 'sushisettings_id' => $setting->id,
-                                                'report_id' => $report->id, 'yearmon' => $yearmon,
-                                                'attempts' => 0]);
-                            $num_created++;
-                        } catch (QueryException $e) {
-                            $errorCode = $e->errorInfo[1];
-                            // Harvest already exists, reset it quietly
-                            if ($errorCode == '1062') {
-                                $harvest = HarvestLog::where([['sushisettings_id', '=', $setting->id],
-                                                              ['report_id', '=', $report->id],
-                                                              ['yearmon', '=', $yearmon]
-                                                             ])->first();
-                                $harvest->attempts = 0;
-                                $harvest->status = $state;
-                                $harvest->save();
-                                $num_updated++;
-                            } else {
-                                return response()->json(['result' => false,
-                                    'msg' => 'Failure adding to HarvestLog! Error code:' . $errorCode]);
+                        // Get the harvest record, if it exists
+                        $harvest = HarvestLog::where([['sushisettings_id', '=', $setting->id],
+                                                      ['report_id', '=', $report->id],
+                                                      ['yearmon', '=', $yearmon]
+                                                     ])->first();
+                        // Harvest exists
+                        if ($harvest) {
+                            if ($skip_harvested) {
+                              continue;
                             }
+                            // We're not skipping... reset the harvest
+                            $harvest->attempts = 0;
+                            $harvest->status = $state;
+                            $harvest->save();
+                            $num_updated++;
+                        // Insert new HarvestLog record
+                        } else {
+                            $harvest = HarvestLog::create(['status' => $state, 'sushisettings_id' => $setting->id,
+                                                           'report_id' => $report->id, 'yearmon' => $yearmon,
+                                                           'attempts' => 0]);
+                            $num_created++;
                         }
 
                         // If user wants it added now create the queue entry - set replace_data to overwrite
@@ -510,9 +515,9 @@ class HarvestLogController extends Controller
         // Query the sushisettings for providers connected to the requested inst IDs
         if (in_array(0,$inst_ids)) {
             // If inst_ids array includes a value=0, it means user chose "Entire Consortium"
-            $availables = SushiSetting::pluck('prov_id')->toArray();
+            $availables = SushiSetting::where('status','Enabled')->pluck('prov_id')->toArray();
         } else {
-            $availables = SushiSetting::whereIn('inst_id',$inst_ids)->pluck('prov_id')->toArray();
+            $availables = SushiSetting::where('status','Enabled')->whereIn('inst_id',$inst_ids)->pluck('prov_id')->toArray();
         }
 
         // Use availables (IDs) to get the provider data and return it via JSON

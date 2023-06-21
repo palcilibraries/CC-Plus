@@ -19,6 +19,8 @@ class CreateCCplusErrorsTable extends Migration
             $table->unsignedInteger('severity_id')->default(0);     // default is Info
             $table->string('explanation')->default('');
             $table->string('suggestion')->default('');
+            // Status should be: 'Success', 'Fail', 'New', 'Queued', 'Active', 'Pending', 'Stopped', or 'ReQueued'
+            $table->string('new_status',8)->default('Stopped');
             $table->timestamps();
 
             $table->foreign('severity_id')->references('id')->on('severities');

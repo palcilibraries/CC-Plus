@@ -40,7 +40,7 @@ if ($consortia->count() == 1 ) {
   <form class="login-form" method="POST" action="{{ route('password.forgot.post') }}">
   @csrf
   <div class="img-top" no-gutters>
-    <img src="/images/CC_Plus_Logo.png" alt="CC plus" height="50px" width="103px" />
+    <a href="/login"><img src="/images/CC_Plus_Logo.png" alt="CC plus" height="50px" width="103px" /></a>
   </div>
   <div class="login-form-fields" no-gutters>
     <v-row class="d-flex mt-4" no-gutters>

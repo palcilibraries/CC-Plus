@@ -254,6 +254,7 @@ class SushiQWorker extends Command
             $request_status = $sushi->request($request_uri);
 
            // Examine the response
+            $error = null;
             $valid_report = false;
             if ($request_status == "Success") {
                // Print out any non-fatal message from sushi request
@@ -261,14 +262,20 @@ class SushiQWorker extends Command
                     $this->line($ts . " " . $ident . "Non-Fatal SUSHI Exception: (" . $sushi->error_code . ") : " .
                                 $sushi->message . $sushi->detail);
                 }
-
-                try {
-                    $valid_report = $sushi->validateJson();
-                } catch (\Exception $e) {
-                    FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'COUNTER',
-                                          'error_id' => 100, 'detail' => 'Validation error: ' . $e->getMessage(),
-                                          'created_at' => $ts]);
-                    $this->line($ts . " " . $ident . "Report failed COUNTER validation : " . $e->getMessage());
+                // If no data (3030) don't try to validate JSON, just add failedHarvest record
+                if ($sushi->error_code == 3030) {
+                  FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'SUSHI',
+                                        'error_id' => 3030, 'detail' => $sushi->message . $sushi->detail,
+                                        'created_at' => $ts]);
+                } else {
+                    try {
+                        $valid_report = $sushi->validateJson();
+                    } catch (\Exception $e) {
+                        FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'COUNTER',
+                                              'error_id' => 100, 'detail' => 'Validation error: ' . $e->getMessage(),
+                                              'created_at' => $ts]);
+                        $this->line($ts . " " . $ident . "Report failed COUNTER validation : " . $e->getMessage());
+                    }
                 }
 
            // If request is pending (in a provider queue, not a CC+ queue), just set harvest status
@@ -332,7 +339,11 @@ class SushiQWorker extends Command
                         Alert::insert(['yearmon' => $yearmon, 'prov_id' => $setting->prov_id,
                                        'harvest_id' => $job->harvest->id, 'status' => 'Active', 'created_at' => $ts]);
                     } else {
-                        $job->harvest->status = 'ReQueued';
+                        $job->harvest->status = 'ReQueued'; // ReQueue by default
+                    }
+                    // Force harvest status to the value from any Error
+                    if ($error) {
+                        $job->harvest->status = $error->new_status;
                     }
                 }
             }

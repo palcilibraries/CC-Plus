@@ -7,7 +7,8 @@
     <v-row class="d-flex mt-2" no-gutters>
       <v-col class="d-flex" cols="9">&nbsp;</v-col>
       <v-col class="d-flex px-2 " cols="3">
-        <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details></v-text-field>
+        <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details clearable
+        ></v-text-field>
       </v-col>
     </v-row>
     <v-row class="d-flex pa-1 align-center" no-gutters>

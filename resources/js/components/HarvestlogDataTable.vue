@@ -24,8 +24,14 @@
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
         <v-select :items="providers" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
-                  label="Provider(s)" item-text="name" item-value="id"
-        ></v-select>
+                  label="Provider(s)" item-text="name" item-value="id">
+          <template v-slot:prepend-item>
+            <v-list-item>
+              <v-checkbox v-model="allConso" label="All Consortium Providers" @change="filterConsoProv"></v-checkbox>
+            </v-list-item>
+            <v-divider class="mt-1"></v-divider>
+          </template>
+        </v-select>
       </v-col>
       <v-col v-if="institutions.length>1 && (inst_filter==null || inst_filter=='I')"
              class="d-flex px-2 align-center" cols="2" sm="2">
@@ -80,6 +86,12 @@
       <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_harvests" :loading="loading" show-select
                     item-key="id" :options="mutable_options" @update:options="updateOptions" :footer-props="footer_props"
                     :expanded="expanded" @click:row="expandRow" show-expand :key="dtKey">
+        <template v-slot:item.prov_name="{ item }">
+          <span v-if="item.prov_inst_id==1">
+            <v-icon title="Consortium Provider">mdi-account-group</v-icon>&nbsp;
+          </span>
+          {{ item.prov_name }}
+        </template>
         <template v-slot:item.data-table-expand="{ item, isExpanded, expand }">
           <v-icon title="Error Details" @click="expand(true)" v-if="item.error_code>0 && !isExpanded" color="#F29727">
             mdi-alert-outline
@@ -114,8 +126,11 @@
     <div v-else>
       <v-data-table :headers="headers" :items="mutable_harvests" :loading="loading" item-key="id"
                     :options="mutable_options" @update:options="updateOptions" :footer-props="footer_props">
-        <template v-slot:item.action="{ item }">
-          <v-btn class='btn' x-small type="button" :href="'/harvests/'+item.id+'/edit'">Details</v-btn>
+        <template v-slot:item.prov_name="{ item }">
+          <span v-if="item.prov_inst_id==1">
+            <v-icon title="Consortium Provider">mdi-account-group</v-icon>&nbsp;
+          </span>
+          {{ item.prov_name }}
         </template>
       </v-data-table>
     </div>
@@ -154,6 +169,7 @@
         inst_filter: null,
         mutable_options: {},
         mutable_updated: [],
+        allConso: false,
         expanded: [],
         statuses: ['Active', 'Fail', 'Queued', 'Stopped', 'Success'],
         status_changeable: ['Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
@@ -341,12 +357,32 @@
         expandRow (item) {
           this.expanded = item === this.expanded[0] ? [] : [item]
         },
+        // @change function for filtering/clearing all consortium providers
+        filterConsoProv() {
+          // Just checked the box for all consortium providers
+          if (this.allConso) {
+            this.consortiumProviders.forEach( (cp) => {
+              if (!this.mutable_filters['prov'].includes(cp.id)) {
+                this.mutable_filters['prov'].push(cp.id);
+              }
+            });
+          // Just cleared the box for all consortium providers
+          } else {
+            this.consortiumProviders.forEach( (cp) => {
+              var idx = this.mutable_filters['prov'].findIndex( p => p == cp.id)
+              if (idx >= 0) this.mutable_filters['prov'].splice(idx,1);
+            });
+          }
+        },
     },
     computed: {
       ...mapGetters(['is_manager', 'is_admin', 'is_viewer', 'filter_by_fromYM', 'filter_by_toYM', 'all_filters',
                      'datatable_options']),
       datesFromTo() {
         return this.filter_by_fromYM+'|'+this.filter_by_toYM;
+      },
+      consortiumProviders() {
+        return this.providers.filter(p => p.inst_id==1);
       },
     },
     beforeCreate() {

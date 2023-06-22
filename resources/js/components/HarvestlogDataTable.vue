@@ -234,12 +234,19 @@
             this.loading = true;
             if (this.filter_by_toYM != null) this.mutable_filters['toYM'] = this.filter_by_toYM;
             if (this.filter_by_fromYM != null) this.mutable_filters['fromYM'] = this.filter_by_fromYM;
+            // For FIRST time getting records, set a special flag to get only latest month
+            if (this.dtKey == 1) {
+                this.mutable_filters['updated'] = "LatestMonth";
+            }
             let _filters = JSON.stringify(this.mutable_filters);
             axios.get("/harvests?json=1&filters="+_filters)
                  .then((response) => {
                      this.mutable_harvests = response.data.harvests;
                      this.mutable_updated = response.data.updated;
                      this.numRows = this.mutable_harvests.length;
+                     if (this.mutable_filters['updated'] == "LatestMonth") {
+                        this.mutable_filters['updated'] = this.mutable_updated[0];
+                     }
                  })
                  .catch(err => console.log(err));
              this.loading = false;

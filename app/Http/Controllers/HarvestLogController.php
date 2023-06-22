@@ -60,6 +60,12 @@ class HarvestLogController extends Controller
             }
         }
 
+        // Set the "updated" filter to latest month's data if special initial request is given
+        if ($filters['updated'] == "LatestMonth") {
+            $result = HarvestLog::selectRaw("max(updated_at) as CA_max")->value('CA_max');
+            $filters['updated'] = ($result) ? substr($result,0,7) : null;
+        }
+
         // Managers and users only see their own insts
         $show_all = $thisUser->hasAnyRole(["Admin","Viewer"]);
         if (!$show_all) {
@@ -218,7 +224,7 @@ class HarvestLogController extends Controller
                 $rec['failed'] = [];
                 $max_id= -1;
                 if ($harvest->status != 'Success' && $harvest->failedHarvests) {
-                    foreach ($harvest->failedHarvests as $fh) {
+                    foreach ($harvest->failedHarvests->sortByDesc('created_at') as $fh) {
                         if ($fh->id > $max_id) {
                             $max_id = $fh->id;
                         }

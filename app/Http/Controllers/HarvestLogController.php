@@ -97,7 +97,7 @@ class HarvestLogController extends Controller
                 array_unshift($institutions, ['id' => 0, 'name' => 'Entire Consortium']);
                 $provider_data = Provider::with('reports')
                                          ->whereIn('id', $possible_providers)->where('is_active', true)
-                                         ->orderBy('name', 'ASC')->get(['id','name']);
+                                         ->orderBy('name', 'ASC')->get(['id','name','inst_id']);
             } else {
                 $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
                                            ->where('id', '=', $user_inst)
@@ -107,7 +107,7 @@ class HarvestLogController extends Controller
                                          ->where(function ($query) use ($user_inst) {
                                             $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
                                           })
-                                         ->orderBy('name', 'ASC')->get(['id','name']);
+                                         ->orderBy('name', 'ASC')->get(['id','name','inst_id']);
             }
 
             // Add in a flag for whether or not the provider has enabled sushi settings
@@ -181,7 +181,7 @@ class HarvestLogController extends Controller
                                       ->pluck('id')->toArray();
 
             $harvest_data = HarvestLog::
-                with('report:id,name','sushiSetting','sushiSetting.institution:id,name','sushiSetting.provider:id,name',
+                with('report:id,name','sushiSetting','sushiSetting.institution:id,name','sushiSetting.provider:id,name,inst_id',
                      'failedHarvests','failedHarvests.ccplusError')
                 ->whereIn('sushisettings_id', $settings)
                 ->orderBy('updated_at', 'DESC')
@@ -215,6 +215,7 @@ class HarvestLogController extends Controller
                 }
                 $rec['inst_name'] = $harvest->sushiSetting->institution->name;
                 $rec['prov_name'] = $harvest->sushiSetting->provider->name;
+                $rec['prov_inst_id'] = $harvest->sushiSetting->provider->inst_id;
                 $rec['report_name'] = $harvest->report->name;
                 $rec['error'] = null;
                 $rec['error_code'] = 0;

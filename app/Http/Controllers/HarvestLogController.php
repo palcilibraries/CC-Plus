@@ -60,12 +60,6 @@ class HarvestLogController extends Controller
             }
         }
 
-        // Set the "updated" filter to latest month's data if special initial request is given
-        if ($filters['updated'] == "LatestMonth") {
-            $result = HarvestLog::selectRaw("max(updated_at) as CA_max")->value('CA_max');
-            $filters['updated'] = ($result) ? substr($result,0,7) : null;
-        }
-
         // Managers and users only see their own insts
         $show_all = $thisUser->hasAnyRole(["Admin","Viewer"]);
         if (!$show_all) {
@@ -204,7 +198,11 @@ class HarvestLogController extends Controller
                     return $qry->where('yearmon', '<=', $filters['toYM']);
                 })
                 ->when($filters['updated'], function ($qry) use ($filters) {
-                    return $qry->where('updated_at', 'like', '%' . $filters['updated'] . '%');
+                    if ($filters['updated'] == "Last 24 hours") {
+                        return $qry->whereRaw("updated_at >= (now() - INTERVAL 24 HOUR)");
+                    } else {
+                        return $qry->where('updated_at', 'like', '%' . $filters['updated'] . '%');
+                    }
                 })
                 ->get();
             $harvests = array();
@@ -251,6 +249,7 @@ class HarvestLogController extends Controller
                     return 0;
                 }
             });
+            array_unshift($updated_ym , 'Last 24 hours');
 
             return response()->json(['harvests' => $harvests, 'updated' => $updated_ym], 200);
 

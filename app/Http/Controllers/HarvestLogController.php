@@ -43,7 +43,7 @@ class HarvestLogController extends Controller
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
-                if ($val != 0) {
+                if (($key == 'updated' && $val != '') || $val != 0) {
                     $filters[$key] = $val;
                 }
             }

@@ -223,6 +223,12 @@
                     if (response.result) {
                         this.failure = '';
                         this.success = response.msg;
+                        if (response.new_harvests.length>0) {
+                          this.$emit('new-harvests', { harvests:response.new_harvests, bounds:response.bounds });
+                        }
+                        if (response.upd_harvests.length>0) {
+                          this.$emit('updated-harvests', response.upd_harvests);
+                        }
                     } else {
                         this.success = '';
                         this.failure = response.msg;

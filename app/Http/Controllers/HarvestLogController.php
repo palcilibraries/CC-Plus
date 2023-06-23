@@ -35,7 +35,6 @@ class HarvestLogController extends Controller
     {
         $thisUser = auth()->user();
         $json = ($request->input('json')) ? true : false;
-        $conso_db = config('database.connections.consodb.database');
 
         // Assign optional inputs to $filters array
         $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'harv_stat' => [], 'updated' => null, 'group' => [],
@@ -122,16 +121,7 @@ class HarvestLogController extends Controller
             $reports = Report::whereIn('id', $report_ids)->orderBy('name', 'asc')->get()->toArray();
 
             // Query for min and max yearmon values
-            $bounds = array();
-            $raw_query = "min(yearmon) as YM_min, max(yearmon) as YM_max";
-            $result = HarvestLog::selectRaw($raw_query)->get()->toArray();
-            $bounds[0] = $result[0];
-            $raw_query = "report_id, " . $raw_query;
-            $rpt_result = DB::table($conso_db . ".harvestlogs")->select(DB::raw($raw_query))
-                                                               ->groupBy('report_id')->get();
-            foreach ($rpt_result as $rpt) {
-                $bounds[$rpt->report_id] = array('YM_min' => $rpt->YM_min, 'YM_max' => $rpt->YM_max);
-            }
+            $bounds = $this->harvestBounds();
         }
 
         // Skip querying for records unless we're returning json
@@ -208,36 +198,10 @@ class HarvestLogController extends Controller
             $harvests = array();
             $updated_ym = array();
             foreach ($harvest_data as $harvest) {
-                $rec = array('id' => $harvest->id, 'yearmon' => $harvest->yearmon, 'attempts' => $harvest->attempts);
-                $rec['updated'] = substr($harvest->updated_at,0,10);
+                $harvests[] = $this->formatRecord($harvest);
                 if (!in_array(substr($harvest->updated_at,0,7), $updated_ym)) {
                     $updated_ym[] = substr($harvest->updated_at,0,7);
                 }
-                $rec['inst_name'] = $harvest->sushiSetting->institution->name;
-                $rec['prov_name'] = $harvest->sushiSetting->provider->name;
-                $rec['prov_inst_id'] = $harvest->sushiSetting->provider->inst_id;
-                $rec['report_name'] = $harvest->report->name;
-                $rec['error'] = null;
-                $rec['error_code'] = 0;
-                $rec['status'] = $harvest->status;
-                $rec['failed'] = [];
-                $max_id= -1;
-                if ($harvest->status != 'Success' && $harvest->failedHarvests) {
-                    foreach ($harvest->failedHarvests->sortByDesc('created_at') as $fh) {
-                        if ($fh->id > $max_id) {
-                            $max_id = $fh->id;
-                        }
-                        $rec['failed'][] = array('ts' => date("Y-m-d H:i:s", strtotime($fh->created_at)),
-                                                 'code' => $fh->ccplusError->id, 'message' => $fh->ccplusError->message,
-                                                );
-                    }
-                    $last = $harvest->failedHarvests->where('id',$max_id)->first();
-                    if ($last) {
-                        $rec['error_code'] = $last->ccplusError->id;
-                        $rec['error'] = $last->ccplusError->toArray();
-                    }
-                }
-                $harvests[] = $rec;
             }
 
             // sort updated_ym options descending
@@ -425,8 +389,8 @@ class HarvestLogController extends Controller
 
         // Loop for all months requested
         $num_queued = 0;
-        $num_created = 0;
-        $num_updated = 0;
+        $created_ids = [];
+        $updated_ids = [];
         foreach ($year_mons as $yearmon) {
             // Loop for all providers
             foreach ($providers as $provider) {
@@ -458,13 +422,13 @@ class HarvestLogController extends Controller
                             $harvest->attempts = 0;
                             $harvest->status = $state;
                             $harvest->save();
-                            $num_updated++;
+                            $updated_ids[] = $harvest->id;
                         // Insert new HarvestLog record
                         } else {
                             $harvest = HarvestLog::create(['status' => $state, 'sushisettings_id' => $setting->id,
                                                            'report_id' => $report->id, 'yearmon' => $yearmon,
                                                            'attempts' => 0]);
-                            $num_created++;
+                            $created_ids[] = $harvest->id;
                         }
 
                         // If user wants it added now create the queue entry - set replace_data to overwrite
@@ -490,10 +454,35 @@ class HarvestLogController extends Controller
             }
         }
 
+        // Setup full details for new harvest entries
+        $new = array();
+        if (count($created_ids) > 0) {
+            $new_data = HarvestLog::whereIn('id', $created_ids)->with('report:id,name','sushiSetting',
+                                'sushiSetting.institution:id,name','sushiSetting.provider:id,name,inst_id',
+                                'failedHarvests','failedHarvests.ccplusError')->get();
+            foreach ($new_data as $rec) {
+                $new[] = $this->formatRecord($rec);
+            }
+        }
+        // New harvests means "bounds" changed
+        $bounds = (count($created_ids) > 0) ? $this->harvestBounds() : array();
+
+        // Setup full details for updated harvest entries
+        $updated = array();
+        if (count($updated_ids) > 0) {
+            $upd_data = HarvestLog::whereIn('id', $updated_ids)->with('report:id,name','sushiSetting',
+                                'sushiSetting.institution:id,name','sushiSetting.provider:id,name,inst_id',
+                                'failedHarvests','failedHarvests.ccplusError')->get();
+            foreach ($upd_data as $rec) {
+                $updated[] = $this->formatRecord($rec);
+            }
+        }
+
         // Send back confirmation with counts of what happened
-        $msg  = "Success : " . $num_created . " new harvests added, " . $num_updated . " harvests updated";
+        $msg  = "Success : " . count($created_ids) . " new harvests added, " . count($updated_ids) . " harvests updated";
         $msg .= ($num_queued > 0) ? ", and " . $num_queued . " queue jobs created." : ".";
-        return response()->json(['result' => true, 'msg' => $msg]);
+        return response()->json(['result'=>true, 'msg'=>$msg, 'new_harvests'=>$new, 'upd_harvests'=>$updated,
+                                 'bounds'=>$bounds]);
     }
 
     /**
@@ -793,5 +782,58 @@ class HarvestLogController extends Controller
         } else {
             return 0;
         }
+    }
+
+    // Return an array of bounding yearmon strings based on exsiting Harvestlogs
+    //   bounds[0] will hold absolute min and max yearmon for all harvests across all reports
+    //   bounds[N] holds min and max yearmon for harvests, where N is the report_id (1=TR, 2=DR, 3=PR, 4=IR)
+    private function harvestBounds() {
+
+      $conso_db = config('database.connections.consodb.database');
+
+      // Query for min and max yearmon values
+      $bounds = array();
+      $raw_query = "min(yearmon) as YM_min, max(yearmon) as YM_max";
+      $result = HarvestLog::selectRaw($raw_query)->get()->toArray();
+      $bounds[0] = $result[0];
+      $raw_query = "report_id, " . $raw_query;
+      $rpt_result = DB::table($conso_db . ".harvestlogs")->select(DB::raw($raw_query))
+                                                         ->groupBy('report_id')->get();
+      foreach ($rpt_result as $rpt) {
+          $bounds[$rpt->report_id] = array('YM_min' => $rpt->YM_min, 'YM_max' => $rpt->YM_max);
+      }
+        return $bounds;
+    }
+
+    // Build a consistent output record using an input harvest record
+    // input should include Report, SushiSetting with institution+provider and failedHarvests with ccplusError
+    private function formatRecord($harvest) {
+        $rec = array('id' => $harvest->id, 'yearmon' => $harvest->yearmon, 'attempts' => $harvest->attempts);
+        $rec['updated'] = substr($harvest->updated_at,0,10);
+        $rec['inst_name'] = $harvest->sushiSetting->institution->name;
+        $rec['prov_name'] = $harvest->sushiSetting->provider->name;
+        $rec['prov_inst_id'] = $harvest->sushiSetting->provider->inst_id;
+        $rec['report_name'] = $harvest->report->name;
+        $rec['error'] = null;
+        $rec['error_code'] = 0;
+        $rec['status'] = $harvest->status;
+        $rec['failed'] = [];
+        $max_id= -1;
+        if ($harvest->status != 'Success' && $harvest->failedHarvests) {
+            foreach ($harvest->failedHarvests->sortByDesc('created_at') as $fh) {
+                if ($fh->id > $max_id) {
+                    $max_id = $fh->id;
+                }
+                $rec['failed'][] = array('ts' => date("Y-m-d H:i:s", strtotime($fh->created_at)),
+                                         'code' => $fh->ccplusError->id, 'message' => $fh->ccplusError->message,
+                                        );
+            }
+            $last = $harvest->failedHarvests->where('id',$max_id)->first();
+            if ($last) {
+                $rec['error_code'] = $last->ccplusError->id;
+                $rec['error'] = $last->ccplusError->toArray();
+            }
+        }
+        return $rec;
     }
 }

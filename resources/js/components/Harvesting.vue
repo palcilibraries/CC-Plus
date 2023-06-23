@@ -22,7 +22,7 @@
              </ul>
           </p>
           <manual-harvest :institutions="harvest_insts" :inst_groups="groups" :providers="harvest_provs" :all_reports="reports"
-                          :presets="{}"
+                          :presets="{}" @new-harvests="addHarvests" @updated-harvests="updateHarvests"
           ></manual-harvest>
         </v-expansion-panel-content>
       </v-expansion-panel>
@@ -32,8 +32,8 @@
           <h3>Harvest Log</h3>
         </v-expansion-panel-header>
         <v-expansion-panel-content>
-          <harvestlog-data-table :harvests="harvests" :institutions="institutions" :groups="groups" :providers="providers"
-                                 :reports="reports" :bounds="bounds" :filters="filters"
+          <harvestlog-data-table :harvests="mutable_harvests" :institutions="institutions" :groups="groups" :providers="providers"
+                                 :reports="reports" :bounds="mutable_bounds" :filters="filters" :key="harvKey"
           ></harvestlog-data-table>
         </v-expansion-panel-content>
       </v-expansion-panel>
@@ -60,6 +60,9 @@
             panels: [1],     // default to Logs open and manual closed
             harvest_provs: [],
             harvest_insts: [],
+            mutable_harvests: [...this.harvests],
+            mutable_bounds: [...this.bounds],
+            harvKey: 1,
         }
     },
     watch: {
@@ -68,6 +71,30 @@
              this.$store.dispatch('updatePanels',this.panels);
          },
        }
+    },
+    methods: {
+      updateHarvests (harvests) {
+        var updated=0;
+        harvests.forEach( (harv) => {
+          var idx = this.mutable_harvests.findIndex( h => h.id == harv.id);
+          if (idx >= 0) {
+            this.mutable_harvests[idx] = harv;
+            updated += 1;
+          }
+        });
+        if (updated > 0) this.harvKey += 1;
+      },
+      addHarvests ({ harvests, bounds }) {
+        var added=0;
+        harvests.forEach( (harv) => {
+          this.mutable_harvests.push(harv);
+          added += 1;
+        });
+        if (added > 0) {
+          this.mutable_bounds = [...bounds];
+          this.harvKey += 1;
+        }
+      },
     },
     computed: {
         ...mapGetters(['is_manager', 'is_admin', 'panel_data']),

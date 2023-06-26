@@ -227,7 +227,7 @@ class InstitutionController extends Controller
         $global_providers = GlobalProvider::orderBy('name', 'ASC')->get();
         $all_providers = $global_providers->map( function($rec) use ($master_reports, $conso_providers, $thisUser) {
             $rec->global_prov = $rec->toArray();
-            $rec->connectors = ($rec->globalProv) ? $rec->globalProv->connectionFields() : [];
+            $rec->connectors = $rec->connectionFields();
             $rec->connected = $conso_providers->where('global_id',$rec->id)->pluck('institution')->toArray();
             $rec->connection_count = count($rec->connected);
 

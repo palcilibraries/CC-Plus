@@ -105,14 +105,14 @@
     watch: {
       sushi_inst: function (inst) {
         this.form.inst_id = this.sushi_inst.id;
-        if (this.form.prov_id != null && this.form.inst_id != null) {
+        if (this.all_settings.length>0 && this.form.prov_id != null && this.form.inst_id != null) {
           this.testExisting();
           this.form_key += 1;
         }
       },
       sushi_prov: function (prov) {
         this.form.prov_id = this.sushi_prov.id;
-        if (this.form.prov_id != null && this.form.inst_id != null) {
+        if (this.all_settings.length>0 && this.form.prov_id != null && this.form.inst_id != null) {
           this.testExisting();
           this.form_key += 1;
         }
@@ -135,7 +135,7 @@
           this.success = '';
           this.failure = '';
           this.form.inst_id = this.sushi_inst.id;
-          this.form.prov_id = this.sushi_prov.id;
+          this.form.prov_id = this.sushi_prov.conso_id;
           this.form.status = this.statusval;
           // All connectors are required - whether they work or not is a matter of testing+confirming
           this.sushi_prov.connectors.forEach( (cnx) => {
@@ -144,9 +144,6 @@
               }
           });
           if (this.failure != '') return;
-          this.sushi_inst = { ...this.default_inst};
-          this.sushi_prov = { ...this.default_prov};
-
           if (this.mutable_dtype == 'create') {
             // Call create() method on sushisettings controller to add to the table
             this.form.post('/sushisettings')
@@ -167,6 +164,8 @@
                   }
                 });
           }
+          this.sushi_inst = { ...this.default_inst};
+          this.sushi_prov = { ...this.default_prov};
       },
       cancelDialog () {
         this.success = '';
@@ -238,6 +237,7 @@
           this.sushi_prov = { ...this.setting.provider};
           this.sushi_inst = { ...this.setting.institution};
       } else {
+          this.statusval = 'Enabled';
           this.sushi_inst = { ...this.default_inst};
           this.sushi_prov = { ...this.default_prov};
       }

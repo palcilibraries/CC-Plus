@@ -119,9 +119,10 @@
           <v-radio-group v-model="dateRange" @change="onDateRangeChange">
             <v-radio :label="'Latest Month ['+maxYM+']'" value='latestMonth'></v-radio>
             <v-radio :label="'Latest Year ['+latestYear+']'" value='latestYear'></v-radio>
+            <v-radio :label="'Fiscal Year-to-Date ['+fiscalTD+']'" value='fiscalTD'></v-radio>
             <v-radio :label="'Custom Date Range'" value='Custom'></v-radio>
           </v-radio-group>
-          <div v-if="dateRange=='Custom'" class="d-flex pa-2">
+          <div v-if="dateRange=='Custom' || dateRange=='FYTD'" class="d-flex pa-2">
               <date-range :minym="minYM" :maxym="maxYM" :ymfrom="minYM" :ymto="maxYM"></date-range>
           </div>
         </v-col>
@@ -145,6 +146,7 @@
             providers: { type:Array, default: () => [] },
             fields: { type:Array, default: () => [] },
             reports: { type:Array, default: () => [] },
+            fy_month: { type: Number, default: 1 },
     },
     data() {
         return {
@@ -160,6 +162,7 @@
             minYM: '',
             maxYM: '',
             latestYear: '',
+            fiscalTD: '',
             tr_reports: this.reports[0].children,
             dr_reports: this.reports[1].children,
             pr_reports: this.reports[2].children,
@@ -175,14 +178,20 @@
             let key = this.reports[this.masterId-1].name;
             this.maxYM = this.report_data[key].YM_max;
             this.minYM = this.report_data[key].YM_min;
+            // Setup latestYear string
             var max_parts = this.maxYM.split("-");
-            var fromDate = new Date(max_parts[0], max_parts[1] - 1, 1);
-            fromDate.setMonth(fromDate.getMonth()-11);
-            var ym_from = fromDate.toISOString().substring(0,7);
+            var firstMonth = new Date(max_parts[0], max_parts[1] - 1, 1);
+            firstMonth.setMonth(firstMonth.getMonth()-11);
+            var ym_from = firstMonth.toISOString().substring(0,7);
             if (ym_from<this.minYM) {
                 ym_from = this.minYM;
             }
             this.latestYear = ym_from+' to '+this.maxYM;
+            // Setup Fiscal YTD string
+            var fyStartYr = ( this.fy_month > max_parts[1] ) ? max_parts[0]-1 : max_parts[0];
+            var fyFirstMonth = new Date(fyStartYr, this.fy_month-1, 1);
+            var ym_from = fyFirstMonth.toISOString().substring(0,7);
+            this.fiscalTD = ym_from+' to '+this.maxYM;
         },
       }
     },

@@ -6,5 +6,6 @@
                :providers="{{ json_encode($providers) }}"
                :reports="{{ json_encode($reports) }}"
                :fields="{{ json_encode($fields) }}"
+               :fy_month="{{ json_encode($fy_month) }}"
 ></create-report>
 @endsection

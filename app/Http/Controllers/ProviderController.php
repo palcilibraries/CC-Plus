@@ -180,11 +180,14 @@ class ProviderController extends Controller
         // Validate form inputs
         $this->validate($request, ['is_active' => 'required']);
         $input = $request->all();
-        $prov_input = array_except($input,array('master_reports'));
+        $prov_input = array_except($input,array('master_reports','allow_sushi'));
 
-        // Disallow a manager restricting themselves from an institution-specific provider
-        if ($provider->inst_id != 1 && !$thisUser->hasRole('Admin')) {   // local-admin/Manager adding an institution-specific vendor?
-            $prov_input['restricted'] = 0;
+        // Disallow a manager restricting themselves from their own institution-specific provider
+        if (isset($input['allow_sushi'])) {
+            $prov_input['restricted'] = ($input['allow_sushi'] == 1) ? 0 : 1; // default
+            if ($provider->inst_id != 1 && !$thisUser->hasRole('Admin')) {
+                $prov_input['restricted'] = 0;
+            }
         }
 
         // Update the record and assign reports in master_reports
@@ -306,28 +309,24 @@ class ProviderController extends Controller
           }
         }
 
-        // Create a sushi-setting to give a "starting point" for connecting it later
-        $sushi_setting = new SushiSetting;
-        $sushi_setting->inst_id = $request->input('inst_id');
-        $sushi_setting->prov_id = $provider->id;
-        // Add required conenction fields to sushi args
-        foreach ($global_provider->connectionFields() as $cnx) {
-            $sushi_setting->{$cnx['name']} = "-missing-";
+        // If requrested, create a sushi-setting to give a "starting point" for connecting it later
+        $stub = ($request->input('sushi_stub')) ? $request->input('sushi_stub') : 0;
+        if ($stub) {
+            $sushi_setting = new SushiSetting;
+            $sushi_setting->inst_id = $request->input('inst_id');
+            $sushi_setting->prov_id = $provider->id;
+            // Add required conenction fields to sushi args
+            foreach ($global_provider->connectionFields() as $cnx) {
+                $sushi_setting->{$cnx['name']} = "-missing-";
+            }
+            $sushi_setting->status = "Incomplete";
+            $sushi_setting->save();
         }
-        $sushi_setting->status = "Incomplete";
-        $sushi_setting->save();
 
         // Setup return object; start by getting names of connected institutions
-        if ($thisUser->hasRole("Admin")) {
-            $conso_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest','reports:id,name',
-                                              'globalProv')->get();
-        } else {
-            $conso_providers = Provider::where('global_id', $global_provider->id)->whereIn('inst_id', [1,$thisUser->inst_id])
-                                       ->with('institution:id,name','sushiSettings:id,prov_id,last_harvest',
-                                              'reports:id,name','globalProv')->get();
-        }
-        // connected array returned from theis function is always either the consortium or a single institution
-        $global_provider->connected = array('id' => $provider->inst_id, $provider->institution->name);
+        $conso_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest',
+                                          'reports:id,name','globalProv')->where('global_id', $global_provider->id)->get();
+        $global_provider->connected = $conso_providers->where('global_id',$global_provider->id)->pluck('institution')->toArray();
         $global_provider->conso_id = $provider->id;
         $global_provider->inst_id = $provider->inst_id;
         $global_provider->connectors = $global_provider->connectionFields();
@@ -337,6 +336,8 @@ class ProviderController extends Controller
         $global_provider->last_harvest = null;
         $global_provider->report_state = $report_state;
         $global_provider->reports_string = $reports_string;
+        $global_provider->restricted = $provider->restricted;
+        $global_provider->allow_inst_specific = false;
         $global_provider->can_edit = $provider->canManage();
         $global_provider->can_delete = $provider->canManage();
         // return the global provider data with the consorium provider data merged in

@@ -50,8 +50,11 @@
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
-        <v-autocomplete :items="mutable_providers" v-model="mutable_filters['prov']" @change="updateFilters('prov')" multiple
-                  label="Provider(s)" item-text="name" item-value="conso_id"
+        <v-autocomplete v-if="inst_context>1" :items="mutable_providers" v-model="mutable_filters['prov']"
+                        label="Provider(s)" item-text="name" item-value="conso_id" @change="updateFilters('prov')" multiple
+        ></v-autocomplete>
+        <v-autocomplete v-else :items="mutable_providers" v-model="mutable_filters['prov']"
+                        label="Provider(s)" item-text="name" item-value="id" @change="updateFilters('prov')" multiple
         ></v-autocomplete>
       </v-col>
       <v-col class="d-flex px-4 align-center" cols="2">
@@ -170,6 +173,7 @@
                 inst_groups: { type:Array, default: () => [] },
                 filters: { type:Object, default: () => {} },
                 unset: { type:Array, default: () => [] },
+                inst_context: { type: Number, default: 1 }
                },
         data() {
             return {
@@ -250,8 +254,9 @@
               this.success = "";
               this.failure = "";
               this.loading = true;
-              let _filters = JSON.stringify(this.mutable_filters);
-              axios.get("/sushisettings?json=1&filters="+_filters)
+              let url = "/sushisettings?json=1&filters="+JSON.stringify(this.mutable_filters);
+              if (this.inst_context > 1) url+="&context="+this.inst_context;
+              axios.get(url)
                    .then((response) => {
                        this.connectors = [ ...response.data.connectors ];
                        this.mutable_settings = [ ...response.data.settings ];

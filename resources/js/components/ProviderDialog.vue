@@ -21,11 +21,16 @@
         </v-col>
       </v-row>
       <v-row class="d-flex mx-2 my-0" no-gutters>
-        <v-col class="d-flex px-2 justify-start" cols="3">
-          <v-switch v-model="form.is_active" label="Active?" dense></v-switch>
+        <v-col class="d-flex px-2" cols="3">
+          <v-switch v-model="form.is_active" dense label="Active?"></v-switch>
         </v-col>
-        <v-col v-if="is_admin" class="d-flex px-2 justify-end" cols="9">
-          <v-switch v-model="form.restricted" label="Prevent Changes by Local Admins" class="v-input--reverse"
+        <v-col v-if="is_admin" class="d-flex px-2" cols="9">
+          <v-switch v-model="form.allow_sushi" dense label="Allow Local Admins to Modify Sushi Settings"></v-switch>
+        </v-col>
+      </v-row>
+      <v-row class="d-flex mx-2 my-0" no-gutters>
+        <v-col v-if="is_admin" class="d-flex px-2">
+          <v-switch v-model="form.allow_inst_specific" dense label="Allow Local Admins To Add An Institution-Specific Copy"
           ></v-switch>
         </v-col>
       </v-row>
@@ -111,7 +116,8 @@
             inst_id: 1,
             day_of_month: 15,
             is_active: 1,
-            restricted: 0,
+            allow_sushi: 0,
+            allow_inst_specific: 0,
             report_state: {'DR': false, 'IR': false, 'PR': false, 'TR': false},
         }),
       }
@@ -150,14 +156,16 @@
         this.form.inst_id = this.provider.inst_id;
         this.form.day_of_month = this.provider.day_of_month;
         this.form.is_active = this.provider.is_active;
-        this.form.restricted = this.provider.restricted;
+        this.form.allow_sushi = (this.provider.restricted==1) ? 0 : 1;
+        this.form.allow_inst_specific = this.provider.allow_inst_specific;
         this.form.report_state = this.provider.report_state;
       } else if (this.dtype == 'create') {
         this.form.name = '';
         this.form.inst_id = 1;
         this.form.day_of_month = 15;
         this.form.is_active = 1;
-        this.form.restricted = 0;
+        this.form.allow_sushi = 0;
+        this.form.allow_inst_specific = 0;
         this.form.report_state = {'DR': false, 'IR': false, 'PR': false, 'TR': false};
       }
       console.log('ProviderDialog Component mounted.');

@@ -59,7 +59,7 @@
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
           <v-btn icon @click="goEdit(item.id)">
-            <v-icon title="Edit Institution" >mdi-exit-to-app</v-icon>
+            <v-icon title="Edit Institution" >mdi-open-in-new</v-icon>
           </v-btn>
           <v-btn v-if="item.can_delete" icon class="pl-4" @click="destroy(item.id)">
             <v-icon title="Delete Institution">mdi-trash-can-outline</v-icon>
@@ -484,7 +484,7 @@
             .catch({});
         },
         goEdit (instId) {
-            window.location.assign('/institutions/'+instId+'/edit');
+            window.open('/institutions/'+instId+'/edit', "_blank");
         },
         doInstExport () {
             window.location.assign('/institutions/export/xlsx');

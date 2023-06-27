@@ -225,7 +225,7 @@ class InstitutionController extends Controller
 
         // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
         $global_providers = GlobalProvider::orderBy('name', 'ASC')->get();
-        $all_providers = $global_providers->map( function($rec) use ($master_reports, $conso_providers, $thisUser) {
+        $all_providers = $global_providers->map( function($rec) use ($master_reports, $conso_providers, $thisUser, $id) {
             $rec->global_prov = $rec->toArray();
             $rec->connectors = $rec->connectionFields();
             $rec->connected = $conso_providers->where('global_id',$rec->id)->pluck('institution')->toArray();
@@ -241,28 +241,30 @@ class InstitutionController extends Controller
             $report_state = $this->reportState($rec->master_reports, $master_reports);
             // Global provider is attached
             if ($rec->connection_count > 0) {
-              // get the provider record
-              if ($rec->connection_count> 1) {
-                  $rec->inst_name = $rec->connection_count . " Institutions";
-              } else {
-                  $prov_data = $conso_providers->where('global_id',$rec->id)->first();
-                  if ($prov_data) {
-                      $rec->conso_id = $prov_data->id;
-                      $rec->inst_id = $prov_data->inst_id;
-                      $rec->inst_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
-                      $rec->is_active = $prov_data->is_active;
-                      $rec->active = ($prov_data->is_active) ? 'Active' : 'Inactive';
-                      $rec->day_of_month = $prov_data->day_of_month;
-                      $rec->last_harvest = $prov_data->sushiSettings->max('last_harvest');
-                      $rec->can_edit = $prov_data->canManage();
-                      $rec->can_delete = (is_null($rec->last_harvest) && $prov_data->canManage());
-                      if ($prov_data->reports) {
-                          $report_ids = $prov_data->reports->pluck('id')->toArray();
-                          $reports_string = $this->makeReportString($report_ids, $master_reports);
-                          $report_state = $this->reportState($report_ids, $master_reports);
-                      }
-                  }
-              }
+                // get the provider record
+                if ($rec->connection_count == 1) {
+                    $prov_data = $conso_providers->where('global_id',$rec->id)->first();
+                } else {
+                    $prov_data = $conso_providers->where('global_id',$rec->id)->where('inst_id',$id)->first();
+                }
+                if ($prov_data) {
+                    $rec->conso_id = $prov_data->id;
+                    $rec->inst_id = $prov_data->inst_id;
+                    $rec->inst_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
+                    $rec->is_active = $prov_data->is_active;
+                    $rec->active = ($prov_data->is_active) ? 'Active' : 'Inactive';
+                    $rec->day_of_month = $prov_data->day_of_month;
+                    $rec->last_harvest = $prov_data->sushiSettings->max('last_harvest');
+                    $rec->restricted = $prov_data->restricted;
+                    $rec->allow_inst_specific = $prov_data->allow_inst_specific;
+                    $rec->can_edit = $prov_data->canManage();
+                    $rec->can_delete = (is_null($rec->last_harvest) && $prov_data->canManage());
+                    if ($prov_data->reports) {
+                        $report_ids = $prov_data->reports->pluck('id')->toArray();
+                        $reports_string = $this->makeReportString($report_ids, $master_reports);
+                        $report_state = $this->reportState($report_ids, $master_reports);
+                    }
+                }
             }
             $rec->report_state = $report_state;
             $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;

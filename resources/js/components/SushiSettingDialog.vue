@@ -12,18 +12,18 @@
               <v-select :items="institutions" v-model="sushi_inst" return-object item-text="name" item-value="id"
                         label="Choose an Institution"></v-select>
             </v-col>
-            <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_inst.nanme}}</strong></v-col>
-            <v-col cols="2" class="d-flex justify-center"><< -- >></v-col>
+            <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_inst.name }}</strong></v-col>
+            <v-col cols="2" class="d-flex justify-center"> &lt;&lt; -- &gt;&gt; </v-col>
             <v-col v-if="providers.length>1" class="d-flex px-2" cols="5">
               <v-select :items="providers" v-model="sushi_prov" return-object item-text="name" item-value="id"
                         label="Choose a Provider"></v-select>
             </v-col>
-            <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_prov.nanme}}</strong></v-col>
+            <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_prov.name}}</strong></v-col>
           </v-row>
         </div>
         <div v-else>
           <v-row class="d-flex ma-2 justify-center" no-gutters>
-            <strong>{{ sushi_inst.name }} << -- >> {{ sushi_prov.name }}</strong>
+            <strong>{{ sushi_inst.name }} &lt;&lt; -- &gt;&gt; {{ sushi_prov.name }}</strong>
           </v-row>
           <template v-for="cnx in sushi_prov.connectors">
             <v-row class="d-flex mx-2" no-gutters>

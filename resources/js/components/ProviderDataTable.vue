@@ -53,8 +53,8 @@
       </template>
       <template v-slot:item.name="{ item }">
         <span v-if="item.inst_id==1">
-          <v-icon title="Consortium Provider">mdi-account-group</v-icon>
-        </span>&nbsp;
+          <v-icon title="Consortium Provider">mdi-account-group</v-icon>&nbsp;
+        </span>
         {{ item.name }}
       </template>
       <template v-slot:item.inst_name="{ item }">
@@ -67,7 +67,8 @@
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
-          <v-btn v-if="item.connected.length==0" icon @click="connectOne(item.id)">
+          <v-btn v-if="item.connected.length==0 || (item.allow_inst_specific && inst_context!=1)"
+                 icon @click="connectOne(item.id)">
             <v-icon title="Connect Provider">mdi-connection</v-icon>
           </v-btn>
           <v-btn v-if="item.can_edit" icon @click="editProvider(item.id)">
@@ -100,6 +101,11 @@
       <provider-dialog dtype="edit" :provider="cur_provider" :institutions="institutions" :master_reports="master_reports"
                        @prov-complete="provDialogDone" :key="dialogKey"
       ></provider-dialog>
+    </v-dialog>
+    <v-dialog v-model="sushiDialog" persistent content-class="ccplus-dialog">
+      <sushi-dialog dtype="create" :institutions="sushi_insts" :providers="sushi_provs" :setting="{}"
+                    :all_settings="[]" @sushi-done="sushiDialogDone"
+      ></sushi-dialog>
     </v-dialog>
   </div>
 </template>
@@ -139,9 +145,12 @@
         new_provider: null,
         cur_provider: {},
         provDialog: false,
+        sushiDialog: false,
         connectedDialog: false,
         connect_filter: 'Connected',
         current_provider: {},
+        sushi_insts: [],
+        sushi_provs: [],
       }
     },
     methods:{
@@ -179,6 +188,8 @@
                 this.mutable_providers[_idx].is_active = prov.is_active;
                 this.mutable_providers[_idx].day_of_month = prov.day_of_month;
                 this.mutable_providers[_idx].reports_string = prov.reports_string;
+                this.mutable_providers[_idx].restricted = prov.restricted;
+                this.mutable_providers[_idx].allow_inst_specific = prov.allow_inst_specific;
                 this.success = msg;
                 this.dtKey += 1;
                 this.$emit('change-prov', prov);
@@ -188,6 +199,20 @@
                 this.failure = 'Unexpected Result returned from dialog - programming error!';
             }
             this.provDialog = false;
+        },
+        sushiDialogDone ({ result, msg, setting }) {
+            this.success = '';
+            this.failure = '';
+            if (result == 'Created') {
+                this.success = msg;
+            } else if (result == 'Fail') {
+                this.failure = msg;
+            } else if (result != 'Cancel') {
+                this.failure = 'Unexpected Result returned from sushiDialog - programming error!';
+            }
+            this.$emit('connect-prov', this.sushi_provs[0]);
+            this.sushiDialog = false;
+            this.dtKey += 1;
         },
         processBulk() {
             this.success = "";
@@ -263,6 +288,7 @@
                       axios.post('/providers/connect', {
                           inst_id: Context,
                           global_id: provider.id,
+                          sushi_stub: 1,
                       })
                       .then( (response) => {
                           if (response.data.result) {
@@ -326,37 +352,33 @@
           var Context = this.inst_context;
           var provIdx = this.mutable_providers.findIndex(p => p.id == id);
           var provider = this.mutable_providers[provIdx];
-          Swal.fire({
-            title: 'Are you sure?',
-            html: "Connecting this provider will add a sushi-setting with empty credentials, and the setting will be <br/>"+
-                  "flagged as 'Incomplete'. Until the required credentials are defined, no report retrieval will be<br />"+
-                  "performed by the CC-Plus automated harvesting system.",
-            icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, proceed'
-            }).then((result) => {
-              if (result.value) {
-                axios.post('/providers/connect', {
-                    inst_id: Context,
-                    global_id: id,
-                })
-                .then( (response) => {
-                    if (response.data.result) {
-                        var _idx = this.mutable_providers.findIndex( p => p.id == provider.id);
-                        this.mutable_providers[_idx].can_edit = response.data.provider.can_edit;
-                        this.mutable_providers[_idx].can_delete = response.data.provider.can_delete;
-                        this.mutable_providers[_idx].inst_id = response.data.provider.inst_id;
-                        this.mutable_providers[_idx].inst_name = response.data.provider.inst_name;
-                        this.mutable_providers[_idx].conso_id = response.data.provider.conso_id;
-                        this.mutable_providers[_idx].connected = response.data.provider.connected;
-                        this.mutable_providers[_idx].day_of_month = response.data.provider.day_of_month;
-                        this.$emit('connect-prov', this.mutable_providers[_idx]);
-                        this.success  = provider.name + " successfully connected";
-                        this.dtKey += 1;           // update the datatable
-                    }
-                })
-                .catch(error => {});
+          // Step #1 - connect the provider to the consortium
+          axios.post('/providers/connect', {
+              inst_id: Context,
+              global_id: id,
+          })
+          .then( (response) => {
+              if (response.data.result) {
+                  // Update mutable providers
+                  this.mutable_providers[provIdx].can_edit = response.data.provider.can_edit;
+                  this.mutable_providers[provIdx].can_delete = response.data.provider.can_delete;
+                  this.mutable_providers[provIdx].inst_id = response.data.provider.inst_id;
+                  this.mutable_providers[provIdx].inst_name = response.data.provider.inst_name;
+                  this.mutable_providers[provIdx].conso_id = response.data.provider.conso_id;
+                  this.mutable_providers[provIdx].connected = response.data.provider.connected;
+                  this.mutable_providers[provIdx].connectors = response.data.provider.connectors;
+                  this.mutable_providers[provIdx].day_of_month = response.data.provider.day_of_month;
+                  this.mutable_providers[provIdx].restricted = response.data.provider.restricted;
+                  this.mutable_providers[provIdx].allow_inst_specific = response.data.provider.allow_inst_specific;
+                  // Step-2 - If we just connected an inst-specific provider, enable the sushi dialog to ask for credentials
+                  if (this.inst_context > 1) {
+                    this.sushi_provs = [this.mutable_providers[provIdx]];
+                    this.sushiDialog = true;
+                  }
+                  this.success = provider.name + " successfully connected";
               }
-            }).catch({});
+          })
+          .catch(error => {});
         },
         destroy (provid) {
             this.success = '';
@@ -441,6 +463,10 @@
       // Subscribe to store updates
       this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
 
+      if (this.inst_context != 1) {
+        let context_inst = this.institutions.find(ii => ii.id == this.inst_context);
+        this.sushi_insts.push(context_inst);
+      }
       console.log('ProviderData Component mounted.');
     }
   }

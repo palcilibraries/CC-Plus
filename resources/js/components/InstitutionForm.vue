@@ -47,6 +47,7 @@
   	    <v-expansion-panel-content>
           <sushisettings-data-table :key="sushiKey" :providers="mutable_providers" :institutions="mutable_institutions"
                                     :filters="sushi_filters" :inst_groups="mutable_groups" :unset="mutable_unset"
+                                    :inst_context="this.institution.id"
           ></sushisettings-data-table>
   	    </v-expansion-panel-content>
 	    </v-expansion-panel>
@@ -269,7 +270,6 @@
             updateProv (prov) {
               var idx = this.mutable_providers.findIndex(p => p.id == prov.id);
               this.mutable_providers.splice(idx,1,prov);
-              // this.provKey += 1;
               this.sushiKey += 1;
             },
             connectProv (prov) {

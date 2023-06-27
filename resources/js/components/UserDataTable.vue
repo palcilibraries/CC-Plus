@@ -18,7 +18,7 @@
       </v-col>
     </v-row>
     <v-row class="d-flex ma-0" no-gutters>
-      <v-col v-if="is_admin" class="d-flex px-2 align-center" cols="2" sm="2">
+      <v-col v-if="is_admin && mutable_institutions.length>1" class="d-flex px-2 align-center" cols="2" sm="2">
         <div v-if="filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
@@ -351,9 +351,16 @@
     mounted() {
       // Apply any existing store filters
       Object.assign(this.filters, this.all_filters);
+
+      // if institutions array has only one member, set the id in the filter before getting records
+      if (this.mutable_institutions.length == 1) {
+          this.filters['inst'] = [this.mutable_institutions[0].id];
+      }
+
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);
-      // Load settings
+
+      // Load Users
       this.updateRecords();
       this.dtKey += 1;           // update the datatable
 

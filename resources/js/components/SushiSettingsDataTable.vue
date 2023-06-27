@@ -9,12 +9,11 @@
       <v-col class="d-flex px-2" cols="3">
         <a @click="doExport"><v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel</a>
       </v-col>
-      <v-col v-if="mutable_institutions.length>1" class="d-flex px-2" cols="3">
+      <v-col class="d-flex px-2" cols="3">
         <v-btn small color="primary" type="button" @click="newSetting" class="section-action">
           Add a Connection
         </v-btn>
       </v-col>
-      <v-col v-else class="d-flex px-2" cols="3">&nbsp;</v-col>
       <v-col class="d-flex px-2" cols="3">
         <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details clearable
         ></v-text-field>

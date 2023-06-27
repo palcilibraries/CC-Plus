@@ -62,7 +62,18 @@ class SushiSettingController extends Controller
         // Skip querying for records unless we're returning json
         // The vue-component will run a request for initial data once it is mounted
         if ($json) {
-
+            // Pulling Sushi Connections for institution->show() means we need to de-dupe any settings for
+            // inst-specific providers that also have a consortium definition
+            $limit_prov_ids = [];
+            $context = ($request->input('context')) ? $request->input('context') : 1;
+            if ($context > 1) {
+                $context = $request->input('context');
+                $inst_provs = Provider::where('inst_id',$context)->get();
+                $inst_ids = $inst_provs->pluck('id')->toArray();
+                $inst_globals = $inst_provs->pluck('global_id')->toArray();
+                $conso_ids = Provider::where('inst_id',1)->whereNotIn('global_id',$inst_globals)->pluck('id')->toArray();
+                $limit_prov_ids = array_merge($conso_ids,$inst_ids);
+            }
             // Get sushi settings
             $data = SushiSetting::with('institution:id,name,is_active','provider','provider.globalProv')
                                   ->when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
@@ -71,11 +82,17 @@ class SushiSettingController extends Controller
                                   ->when($filters['group'] > 0, function ($qry) use ($group_insts) {
                                       return $qry->whereIn('inst_id', $group_insts);
                                   })
-                                  ->when(sizeof($filters['prov']) > 0, function ($qry) use ($filters) {
+                                  ->when(($context==0 && sizeof($filters['prov']) > 0), function ($qry) use ($filters) {
+                                      return $qry->whereIn('global_id', $filters['prov']);
+                                  })
+                                  ->when(($context>1 && sizeof($filters['prov']) > 0), function ($qry) use ($filters) {
                                       return $qry->whereIn('prov_id', $filters['prov']);
                                   })
                                   ->when(sizeof($filters['harv_stat']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('status', $filters['harv_stat']);
+                                  })
+                                  ->when(count($limit_prov_ids) > 0, function ($qry) use ($limit_prov_ids) {
+                                      return $qry->whereIn('prov_id', $limit_prov_ids);
                                   })
                                   ->get();
 
@@ -217,7 +234,7 @@ class SushiSettingController extends Controller
                 $gp = GlobalProvider::where('id',$form_data['global_id'])->first();
                 if ($gp) {
                     $provider_data = array('name' => $gp->name, 'global_id' => $gp->id, 'is_active' => $gp->is_active,
-                                           'inst_id' => $fields['inst_id'], 'restricted' => 0);
+                                           'inst_id' => $fields['inst_id'], 'restricted' => 0, 'allow_inst_specific' => 0);
                     $new_provider = Provider::create($provider_data);
                     $fields['prov_id'] = $new_provider->id;
                 } else {
@@ -225,8 +242,8 @@ class SushiSettingController extends Controller
                 }
             }
         }
-        // create the new sushi setting record
-        $setting = SushiSetting::create($fields);
+        // create the new sushi setting record (get existing if already defined)
+        $setting = SushiSetting::firstOrCreate($fields);
         $setting->load('institution', 'provider', 'provider.globalProv');
         $setting->provider->connectors = $setting->provider->globalProv->connectionFields();
         // Set string for next_harvest

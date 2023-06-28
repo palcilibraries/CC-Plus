@@ -36,7 +36,7 @@
         </v-alert>
       </v-data-table>
     </div>
-    <v-dialog v-model="importDialog" persistent content-class="ccplus-dialog">
+    <v-dialog v-model="importDialog" content-class="ccplus-dialog">
       <v-container grid-list-md>
         <v-row class="d-flex ma-2" no-gutters>
           <v-col class="d-flex pa-4 justify-center">
@@ -65,7 +65,7 @@
         </v-row>
       </v-container>
     </v-dialog>
-    <v-dialog v-model="groupDialog" persistent content-class="ccplus-dialog">
+    <v-dialog v-model="groupDialog" content-class="ccplus-dialog">
       <v-container grid-list-md>
         <v-form v-model="formValid">
           <v-row class="d-flex ma-2" no-gutters>

@@ -117,7 +117,7 @@
         Your search for "{{ search }}" found no results.
       </v-alert>
     </v-data-table>
-    <v-dialog v-model="importDialog" persistent max-width="1200px">
+    <v-dialog v-model="importDialog" max-width="1200px">
       <v-card>
         <v-card-title>Import Sushi Settings</v-card-title>
         <v-card-text>
@@ -150,7 +150,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="sushiDialog" persistent content-class="ccplus-dialog">
+    <v-dialog v-model="sushiDialog" content-class="ccplus-dialog">
       <sushi-dialog :dtype="sushiDialogType" :institutions="sushi_insts" :providers="sushi_provs" :setting="current_setting"
                     :all_settings="mutable_settings" @sushi-done="sushiDialogDone" :key="sdKey"
       ></sushi-dialog>

@@ -67,7 +67,7 @@
         </v-col>
       </v-card-actions>
     </v-card>
-    <v-dialog v-model="instDialog" persistent content-class="ccplus-dialog">
+    <v-dialog v-model="instDialog" content-class="ccplus-dialog">
       <institution-dialog dtype="create" :groups="groups" @inst-complete="instDialogDone" :key="idKey"></institution-dialog>
     </v-dialog>
   </div>

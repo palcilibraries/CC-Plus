@@ -32,7 +32,7 @@
         </template>
       </v-data-table>
     </div>
-    <v-dialog v-model="importDialog" persistent max-width="1200px">
+    <v-dialog v-model="importDialog" max-width="1200px">
       <v-card>
         <v-card-title>Import Institution Types</v-card-title>
         <v-card-text>
@@ -56,7 +56,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="createDialog" persistent max-width="800px">
+    <v-dialog v-model="createDialog" max-width="800px">
       <v-card>
         <v-card-title>Create an Institution Type</v-card-title>
         <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"
@@ -80,7 +80,7 @@
         </form>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="editDialog" persistent max-width="800px">
+    <v-dialog v-model="editDialog" max-width="800px">
       <v-card>
         <v-card-title>Edit an Institution Type</v-card-title>
         <form method="POST" action="" @submit.prevent="formSubmit" class="in-page-form"

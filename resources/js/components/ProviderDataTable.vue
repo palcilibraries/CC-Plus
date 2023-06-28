@@ -97,12 +97,12 @@
         </v-row>
       </div>
     </v-dialog>
-    <v-dialog v-model="provDialog" persistent content-class="ccplus-dialog">
+    <v-dialog v-model="provDialog" content-class="ccplus-dialog">
       <provider-dialog dtype="edit" :provider="cur_provider" :institutions="institutions" :master_reports="master_reports"
                        @prov-complete="provDialogDone" :key="dialogKey"
       ></provider-dialog>
     </v-dialog>
-    <v-dialog v-model="sushiDialog" persistent content-class="ccplus-dialog">
+    <v-dialog v-model="sushiDialog" content-class="ccplus-dialog">
       <sushi-dialog dtype="create" :institutions="sushi_insts" :providers="sushi_provs" :setting="{}"
                     :all_settings="[]" @sushi-done="sushiDialogDone"
       ></sushi-dialog>

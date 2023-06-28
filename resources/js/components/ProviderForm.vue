@@ -189,7 +189,7 @@
         <tr v-if="is_manager || is_admin"><td colspan="6">&nbsp;</td></tr>
         <tr v-else><td colspan="4">&nbsp;</td></tr>
       </v-data-table>
-      <v-dialog v-model="importDialog" persistent max-width="1200px">
+      <v-dialog v-model="importDialog" max-width="1200px">
         <v-card>
           <v-card-title>Import Sushi Settings</v-card-title>
           <v-card-text>

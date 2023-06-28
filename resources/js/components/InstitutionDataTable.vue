@@ -73,7 +73,7 @@
         Your search for "{{ search }}" found no results.
       </v-alert>
     </v-data-table>
-    <v-dialog v-model="institutionImportDialog" persistent max-width="1200px">
+    <v-dialog v-model="institutionImportDialog" max-width="1200px">
       <v-card>
         <v-card-title>Import Institutions</v-card-title>
         <v-spacer></v-spacer>
@@ -122,10 +122,10 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="instDialog" persistent content-class="ccplus-dialog">
+    <v-dialog v-model="instDialog" content-class="ccplus-dialog">
       <institution-dialog dtype="create" :groups="all_groups" @inst-complete="instDialogDone" :key="idKey"></institution-dialog>
     </v-dialog>
-    <v-dialog v-model="groupingDialog" persistent max-width="500px">
+    <v-dialog v-model="groupingDialog" max-width="500px">
       <v-card>
         <v-card-title>
           <span v-if="groupingType=='Create'">Create a New Institution Group</span>

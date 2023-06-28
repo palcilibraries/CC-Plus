@@ -68,7 +68,7 @@
           Your search for "{{ search }}" found no results.
         </v-alert>
     </v-data-table>
-    <v-dialog v-model="importDialog" persistent max-width="1200px">
+    <v-dialog v-model="importDialog" max-width="1200px">
       <v-card>
         <v-card-title>Import Users</v-card-title>
         <v-spacer></v-spacer>
@@ -122,7 +122,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="userDialog" persistent content-class="ccplus-dialog">
+    <v-dialog v-model="userDialog" content-class="ccplus-dialog">
       <user-dialog :dtype="dialogType" :user="current_user" :allowed_roles="allowed_roles" :institutions="mutable_institutions"
                    :groups="all_groups" @user-complete="userDialogDone" :key='udKey'
       ></user-dialog>

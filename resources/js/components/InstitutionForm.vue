@@ -61,12 +61,12 @@
     	  </v-expansion-panel-content>
   	  </v-expansion-panel>
     </v-expansion-panels>
-    <v-dialog v-model="instDialog" persistent content-class="ccplus-dialog">
+    <v-dialog v-model="instDialog" content-class="ccplus-dialog">
       <institution-dialog dtype="edit" :institution="mutable_inst" :groups="all_groups" @inst-complete="instDialogDone"
                           :key="idKey"
       ></institution-dialog>
     </v-dialog>
-    <v-dialog v-model="importDialog" persistent max-width="1200px">
+    <v-dialog v-model="importDialog" max-width="1200px">
       <v-card>
         <v-card-title>Import Sushi Settings</v-card-title>
         <v-card-text>

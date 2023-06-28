@@ -40,7 +40,7 @@
         <span v-if="success" class="good" role="alert" v-text="success"></span>
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
       </div>
-      <v-dialog v-model="importDialog" persistent max-width="1200px">
+      <v-dialog v-model="importDialog" max-width="1200px">
         <v-card>
           <v-card-title>Import Sushi Settings</v-card-title>
           <v-card-text>

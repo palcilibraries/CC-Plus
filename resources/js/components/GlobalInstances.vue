@@ -22,7 +22,7 @@
         </tr>
       </template>
     </v-data-table>
-    <v-dialog v-model="consoDialog" content-class="ccplus-dialog" persistent>
+    <v-dialog v-model="consoDialog" content-class="ccplus-dialog">
         <v-container grid-list-sm>
           <v-form v-model="formValid">
             <v-row class="d-flex ma-0">

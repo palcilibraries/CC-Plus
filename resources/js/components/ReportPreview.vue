@@ -155,7 +155,7 @@
         </template>
       </v-data-table>
     </v-container>
-    <v-dialog v-model="configForm" persistent max-width="900px">
+    <v-dialog v-model="configForm" max-width="900px">
       <v-card>
         <v-card-title>
           <span>Save Report Configuration</span>

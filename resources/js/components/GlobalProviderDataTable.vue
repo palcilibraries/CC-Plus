@@ -69,7 +69,7 @@
         Your search for "{{ search }}" found no results.
       </v-alert>
     </v-data-table>
-    <v-dialog v-model="providerImportDialog" persistent max-width="1200px">
+    <v-dialog v-model="providerImportDialog" max-width="1200px">
       <v-card>
         <v-card-title>Import Providers</v-card-title>
         </v-card-subtitle>
@@ -110,7 +110,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="provDialog" persistent content-class="ccplus-dialog">
+    <v-dialog v-model="provDialog" content-class="ccplus-dialog">
         <v-container grid-list-sm>
           <v-form v-model="formValid">
             <v-row class="d-flex ma-0" no-gutters>

@@ -57,7 +57,7 @@ form .v-subheader,
 }
 .v-application--wrap {
 	min-height: fit-content !important;
-	max-height: 90vh;
+	max-height: fit-content;
 }
 main #app {
 	padding: 1em;
@@ -174,10 +174,11 @@ main #app {
 /* new class - LSR: 11/28/22 */
 .main_content {
 	width: 96%;
-	height: 100vh;
+	max-height: fit-content;
 	margin: 0px auto;
 	overflow: auto;
 	padding: 0px;
+	padding-bottom: 80px;
 }
 .footer_content {
 	width: 96%;
@@ -297,7 +298,8 @@ i.size-16 {
 }
 .app-container {
   width: 82%;
-	height: 100vh;
+	min-height: 100vh;
+	max-height: fit-content !important;
 	margin: 0px auto;
 }
 .footer-container {
@@ -315,8 +317,10 @@ i.size-16 {
   border-color: #000;
 	border-radius: 5px;
 	border: 2px solid #000000;
-	height: 580px;
+	min-height: fit-content !important;
+	max-height: 90vh;
 	max-width: 550px;
+	padding-bottom: 20px;
 	overflow: auto;
 }
 .warning-message {

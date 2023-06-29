@@ -229,14 +229,16 @@ class Sushi extends Model
             $report = new JsonR5Report($this->json);
             $checkResult = $report->getCheckResult();
         } catch (\Exception $e) {
-            $checkResult = new CheckResult();
-            try {
-                $checkResult->fatalError($e->getMessage());
-            } catch (ParseException $e) {
-                // ignore
-            }
-            $message = $checkResult->asText();
-            throw new \Exception($message());
+            throw new \Exception("SUSHI error: c5tools CheckResult threw a validation error.");
+            //NOTE:: this needs work... c5tools expects something different. For now, just throw simple exception
+            // $checkResult = new CheckResult();
+            // try {
+            //     $checkResult->fatalError($e->getMessage());
+            // } catch (ParseException $e) {
+            //     // ignore
+            // }
+            // $message = $checkResult->asText();
+            // throw new \Exception($message());
         }
        // If we modify Counter5Processor functions to handle the validated JSON
        // (to make it more O-O), we'll need to return $report instead of a boolean.

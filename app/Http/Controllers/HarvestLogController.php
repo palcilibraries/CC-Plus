@@ -819,7 +819,7 @@ class HarvestLogController extends Controller
         $rec['status'] = $harvest->status;
         $rec['failed'] = [];
         $max_id= -1;
-        if ($harvest->status != 'Success' && $harvest->failedHarvests) {
+        if ($harvest->failedHarvests) {
             foreach ($harvest->failedHarvests->sortByDesc('created_at') as $fh) {
                 if ($fh->id > $max_id) {
                     $max_id = $fh->id;

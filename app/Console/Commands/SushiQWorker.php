@@ -264,6 +264,8 @@ class SushiQWorker extends Command
                 }
                 // If no data (3030) don't try to validate JSON, just add failedHarvest record
                 if ($sushi->error_code == 3030) {
+                  // Get 3030 error data from sushi_errors table
+                  $error = CcplusError::where('id',3030)->first();
                   FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'SUSHI',
                                         'error_id' => 3030, 'detail' => $sushi->message . $sushi->detail,
                                         'created_at' => $ts]);

@@ -1,72 +1,71 @@
 <template>
   <div>
-    <v-card>
-      <v-container grid-list-md>
-        <v-form v-model="formValid" :key="'UFrm'+form_key">
-          <v-row class="d-flex ma-2" no-gutters>
-            <v-col v-if="dtype=='edit'" class="d-flex pt-4 justify-center"><h4 align="center">Edit User Settings</h4></v-col>
-            <v-col v-else class="d-flex pt-4 justify-center"><h4 align="center">Create a User</h4></v-col>
-          </v-row>
-          <v-row class="d-flex mx-2" no-gutters>
-            <v-text-field name="name" label="Name" v-model="form.name" outlined dense></v-text-field>
-          </v-row>
-          <v-row class="d-flex mx-2" no-gutters>
-            <v-text-field name="email" label="Email" v-model="form.email" type="email" outlined dense
-                          :rules="emailRules"
-            ></v-text-field>
-          </v-row>
-          <v-row class="d-flex mx-2 align-center" no-gutters>
-            <v-col class="d-flex justify-center" cols="6">
-              <v-switch name="is_active" label="Active?" v-model="form.is_active" dense></v-switch>
-            </v-col>
-            <v-col v-if="mutable_institutions.length>1" class="d-flex justify-center" cols="6">
-              <v-btn small color="primary" @click="instDialog=true">Create an Institution</v-btn>
-            </v-col>
-          </v-row>
-          <v-row v-if="is_admin" class="d-flex mx-2" no-gutters>
-            <v-select :items="mutable_institutions" v-model="form.inst_id" label="Institution" item-value="id" item-text="name"
-                      @change="changeInst" :rules="[(v) => !!v || 'Institution assignment is required']" outlined dense
+    <v-container grid-list-md>
+      <v-form v-model="formValid" :key="'UFrm'+form_key">
+        <v-row class="d-flex ma-2" no-gutters>
+          <v-col v-if="dtype=='edit'" class="d-flex pt-4 justify-center"><h4 align="center">Edit User Settings</h4></v-col>
+          <v-col v-else class="d-flex pt-4 justify-center"><h4 align="center">Create a User</h4></v-col>
+        </v-row>
+        <v-row class="d-flex mx-2" no-gutters>
+          <v-text-field name="name" label="Name" v-model="form.name" outlined dense></v-text-field>
+        </v-row>
+        <v-row class="d-flex mx-2" no-gutters>
+          <v-text-field name="email" label="Email" v-model="form.email" type="email" outlined dense
+                        :rules="emailRules"
+          ></v-text-field>
+        </v-row>
+        <v-row class="d-flex mx-2 align-center" no-gutters>
+          <v-col class="d-flex justify-center" cols="6">
+            <v-switch name="is_active" label="Active?" v-model="form.is_active" dense></v-switch>
+          </v-col>
+          <v-col v-if="mutable_institutions.length>1" class="d-flex justify-center" cols="6">
+            <v-btn small color="primary" @click="instDialog=true">Create an Institution</v-btn>
+          </v-col>
+        </v-row>
+        <v-row v-if="is_admin" class="d-flex mx-2" no-gutters>
+          <v-select :items="mutable_institutions" v-model="form.inst_id" label="Institution" item-value="id" item-text="name"
+                    @change="changeInst" :rules="[(v) => !!v || 'Institution assignment is required']" outlined dense
+          ></v-select>
+        </v-row>
+        <v-row v-else class="d-flex mx-2" no-gutters>
+          <v-text-field label="Institution" :value="inst_name" outlined dense readonly></v-text-field>
+        </v-row>
+        <v-row class="d-flex mx-2" no-gutters>
+          <v-text-field name="password" label="Reset Password" v-model="form.password" :type="pw_show ? 'text' : 'password'"
+                        :rules="passwordRules" :required="dtype=='create'" @click:append="pw_show = !pw_show"
+                        :append-icon="pw_show ? 'mdi-eye-off' : 'mdi-eye'" outlined dense>
+          </v-text-field>
+        </v-row>
+        <v-row class="d-flex mx-2" no-gutters>
+          <v-text-field name="confirm_pass" label="Reset Password Confirmation" v-model="form.confirm_pass"
+                        :type="pwc_show ? 'text' : 'password'" :rules="passwordRules" :required="dtype=='create'"
+                        @click:append="pwc_show = !pwc_show" :append-icon="pwc_show ? 'mdi-eye-off' : 'mdi-eye'" outlined dense
+          ></v-text-field>
+        </v-row>
+        <v-row v-if="is_manager || is_admin" class="d-flex mx-2" no-gutters>
+          <div class="field-wrapper">
+            <v-subheader v-text="'User Roles'"></v-subheader>
+            <v-select :items="allowed_roles" v-model="form.roles" label="User Role(s)" :value="mutable_user.roles"
+                      item-text="name" item-value="id" multiple chips hint="Define roles for user" persistent-hint dense
+                      :required="dtype=='create'"
             ></v-select>
-          </v-row>
-          <v-row v-else class="d-flex mx-2" no-gutters>
-            <v-text-field label="Institution" :value="inst_name" outlined dense readonly></v-text-field>
-          </v-row>
-          <v-row class="d-flex mx-2" no-gutters>
-            <v-text-field name="password" label="Reset Password" v-model="form.password" :type="pw_show ? 'text' : 'password'"
-                          :rules="passwordRules" :required="dtype=='create'" @click:append="pw_show = !pw_show"
-                          :append-icon="pw_show ? 'mdi-eye-off' : 'mdi-eye'" outlined dense>
-            </v-text-field>
-          </v-row>
-          <v-row class="d-flex mx-2" no-gutters>
-            <v-text-field name="confirm_pass" label="Reset Password Confirmation" v-model="form.confirm_pass"
-                          :type="pwc_show ? 'text' : 'password'" :rules="passwordRules" :required="dtype=='create'"
-                          @click:append="pwc_show = !pwc_show" :append-icon="pwc_show ? 'mdi-eye-off' : 'mdi-eye'" outlined dense
-            ></v-text-field>
-          </v-row>
-          <v-row v-if="is_manager || is_admin" class="d-flex mx-2" no-gutters>
-            <div class="field-wrapper">
-              <v-subheader v-text="'User Roles'"></v-subheader>
-              <v-select :items="allowed_roles" v-model="form.roles" label="User Role(s)" :value="mutable_user.roles"
-                        item-text="name" item-value="id" multiple chips hint="Define roles for user" persistent-hint dense
-                        :required="dtype=='create'"
-              ></v-select>
-            </div>
-          </v-row>
-        </v-form>
-      </v-container>
-      <div v-if="success || failure" class="status-message">
-        <span v-if="success" class="good" role="alert" v-text="success"></span>
-        <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-      </div>
-      <v-card-actions>
-        <v-col class="d-flex">
-          <v-btn class='btn' x-small color="primary" @click="saveUser" :disabled="!formValid">Save User</v-btn>
-        </v-col>
-        <v-col class="d-flex">
-          <v-btn class='btn' x-small type="button" color="primary" @click="cancelDialog">Cancel</v-btn>
-        </v-col>
-      </v-card-actions>
-    </v-card>
+          </div>
+        </v-row>
+      </v-form>
+    </v-container>
+    <div v-if="success || failure" class="status-message">
+      <span v-if="success" class="good" role="alert" v-text="success"></span>
+      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+    </div>
+    <v-row class="d-flex ma-2" no-gutters>
+      <v-spacer></v-spacer>
+      <v-col class="d-flex px-2 justify-center" cols="6">
+        <v-btn class='btn' x-small color="primary" @click="saveUser" :disabled="!formValid">Save User</v-btn>
+      </v-col>
+      <v-col class="d-flex px-2 justify-center" cols="6">
+        <v-btn class='btn' x-small type="button" color="primary" @click="cancelDialog">Cancel</v-btn>
+      </v-col>
+    </v-row>
     <v-dialog v-model="instDialog" content-class="ccplus-dialog">
       <institution-dialog dtype="create" :groups="groups" @inst-complete="instDialogDone" :key="idKey"></institution-dialog>
     </v-dialog>
@@ -208,7 +207,7 @@
       this.form.name = this.user.name;
       this.form.inst_id = (this.is_admin) ? 1 : this.institutions[0].id;
       this.inst_name = (this.is_admin) ? null : this.institutions[0].name;
-      this.form.is_active = this.user.is_active;
+      this.form.is_active = (this.dtype == 'create') ? 1 : this.user.is_active;
       this.form.email = this.user.email;
       this.form.roles = this.user.roles;
       console.log('UserDialog Component mounted.');

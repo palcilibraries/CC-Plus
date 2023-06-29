@@ -111,7 +111,7 @@
         }
       },
       sushi_prov: function (prov) {
-        this.form.prov_id = this.sushi_prov.id;
+        this.form.prov_id = this.sushi_prov.conso_id;
         if (this.all_settings.length>0 && this.form.prov_id != null && this.form.inst_id != null) {
           this.testExisting();
           this.form_key += 1;
@@ -135,6 +135,7 @@
           this.success = '';
           this.failure = '';
           this.form.inst_id = this.sushi_inst.id;
+          this.form.global_id = this.sushi_prov.id;
           this.form.prov_id = this.sushi_prov.conso_id;
           this.form.status = this.statusval;
           // All connectors are required - whether they work or not is a matter of testing+confirming

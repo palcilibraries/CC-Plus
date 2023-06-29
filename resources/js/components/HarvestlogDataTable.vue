@@ -9,6 +9,9 @@
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
         <v-btn class='btn' x-small type="button" @click="clearAllFilters()">Clear Filters</v-btn>
       </v-col>
+      <v-col v-if="truncatedResult" class="d-flex px-2 align-center" cols="4">
+        <span class="fail" role="alert">Display Truncated To 500 Records</span>
+      </v-col>
     </div>
     <v-row no-gutters>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
@@ -79,8 +82,25 @@
                     item-text="action" item-value="status" label="Bulk Actions"
                     :disabled='selectedRows.length==0'></v-select>
         </v-col>
-        <v-col v-if="selectedRows.length>0" class="d-flex px-4 align-center" cols="8" sm="4">
-          <span class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
+        <v-col class="d-flex px-4 align-center" cols="4">
+          <span v-if="selectedRows.length>0" class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
+          <span v-else>&nbsp;</span>
+        </v-col>
+        <v-col class="d-flex px-2 align-center" cols="2">
+          <div v-if="mutable_filters['connected_by']!=null && mutable_filters['connected_by']!=''" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('connected_by')"/>&nbsp;
+          </div>
+          <v-select :items="connectedBy" v-model="mutable_filters['connected_by']" @change="updateFilters()"
+                    label="Connected By"
+          ></v-select>
+        </v-col>
+        <v-col v-if="errorCodes.length>1" class="d-flex px-2 align-center" cols="2">
+          <div v-if="mutable_filters['error_code']!=null && mutable_filters['error_code']!=''" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('error_code')"/>&nbsp;
+          </div>
+          <v-select :items="errorCodes" v-model="mutable_filters['error_code']" @change="updateFilters()"
+                    label="Error Code"
+          ></v-select>
         </v-col>
       </v-row>
       <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_harvests" :loading="loading" show-select
@@ -115,6 +135,10 @@
                       </span>
                     </td>
                     <td>{{ attempt.message }}</td>
+                  </tr>
+                  <tr v-if="attempt.detail.length>0">
+                    <td>&nbsp;</td>
+                    <td colspan="2">{{ attempt.detail }}</td>
                   </tr>
                 </tbody>
               </template>
@@ -171,6 +195,9 @@
         mutable_updated: [],
         allConso: false,
         expanded: [],
+        connectedBy: ['Consortium', 'Institution'],
+        errorCodes: [],
+        truncatedResult: false,
         statuses: ['Active', 'Fail', 'Queued', 'Stopped', 'Success'],
         status_changeable: ['Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
         bulk_actions: [ { action:'Stop',    status:'Stopped'},
@@ -218,7 +245,7 @@
         },
         clearAllFilters() {
             Object.keys(this.mutable_filters).forEach( (key) =>  {
-              if (key == 'fromYM' || key == 'toYM' || key == 'updated') {
+              if (key == 'fromYM' || key == 'toYM' || key == 'updated' || key == 'connected_by' || key == 'error_code') {
                   this.mutable_filters[key] = '';
               } else {
                   this.mutable_filters[key] = [];
@@ -234,8 +261,8 @@
                 this.mutable_filters['toYM'] = '';
                 this.mutable_filters['fromYM'] = '';
                 this.rangeKey += 1;           // force re-render of the date-range component
-            } else if (filter == 'updated') {
-                this.mutable_filters['updated'] = '';
+            } else if (filter == 'updated' || filter == 'connected_by' || filter == 'error_code') {
+                this.mutable_filters[filter] = '';
             } else {
                 this.mutable_filters[filter] = [];
                 if (filter=='inst' || filter=='group') this.inst_filter = null;
@@ -259,7 +286,10 @@
                  .then((response) => {
                      this.mutable_harvests = response.data.harvests;
                      this.mutable_updated = response.data.updated;
-                     this.numRows = this.mutable_harvests.length;
+                     if (typeof(response.data.error_codes) != 'undefined') {
+                       this.errorCodes = [...response.data.error_codes];
+                     }
+                     this.truncatedResult = response.data.truncated;
                  })
                  .catch(err => console.log(err));
              this.loading = false;
@@ -396,7 +426,7 @@
     mounted() {
       // Update any null/empty filters w/ store-values
       Object.keys(this.all_filters).forEach( (key) =>  {
-        if (key == 'fromYM' || key == 'toYM' || key == 'updated') {
+        if (key == 'fromYM' || key == 'toYM' || key == 'updated' || key == 'connected_by' || key == 'error_code') {
             if (this.mutable_filters[key] == null || this.mutable_filters[key] == "")
                 this.mutable_filters[key] = this.all_filters[key];
         } else {
@@ -422,6 +452,7 @@
       }
 
       // Update store and apply filters now that they're set
+      this.loading = true;
       this.updateLogRecords();
       this.dtKey += 1;           // force re-render of the datatable
 

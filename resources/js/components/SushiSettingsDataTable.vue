@@ -45,7 +45,7 @@
                   label="Institution Group"  item-text="name" item-value="id" hint="Limit the display to an institution group"
         ></v-autocomplete>
       </v-col>
-      <v-col v-if="mutable_providers.length>0" class="d-flex px-2 align-center" cols="2">
+      <v-col v-if="is_admin && mutable_providers.length>0" class="d-flex px-2 align-center" cols="2">
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>

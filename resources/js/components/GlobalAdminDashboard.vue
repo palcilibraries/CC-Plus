@@ -1,11 +1,11 @@
 <template>
   <div>
-    <h3>Global Admin</h3>
+    <h1>Global Admin</h1>
     <v-expansion-panels multiple focusable v-model="panels">
       <!-- Instances -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h3>Consortial Instances</h3>
+          <h2>Consortial Instances</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <global-instances :consortia="consortia"></global-instances>
@@ -14,7 +14,7 @@
       <!-- Providers -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h3>Global Providers</h3>
+          <h2>Global Providers</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <global-provider-data-table :providers="providers" :master_reports="master_reports"
@@ -25,7 +25,7 @@
       <!-- Settings -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h3>Global Settings</h3>
+          <h2>Global Settings</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <global-settings :settings="settings"></global-settings>

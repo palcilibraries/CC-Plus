@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-row class="d-flex align-center" no-gutters>
-      <v-col><h3 class="d-flex section-title">Harvest Details</h3></v-col>
+      <v-col><h1 class="d-flex section-title">Harvest Details</h1></v-col>
       <v-col class="d-flex justify-center harvest-status">Status: {{ mutable_harvest.status }}</v-col>
       <v-col class="d-flex">
         <v-btn class='btn btn-danger' small type="button" @click="destroy(mutable_harvest.id)">Delete</v-btn>

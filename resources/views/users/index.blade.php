@@ -2,9 +2,9 @@
 @section('content')
 <div class="d-flex pl-2">
   @if (auth()->user()->hasRole("Admin"))
-    <h3>{{ $conso_name }} : Users</h3>
+    <h1>{{ $conso_name }} : Users</h1>
   @else
-    <h3>Users</h3>
+    <h1>Users</h1>
   @endif
 </div>
 <user-data-table :users="{{ json_encode($data) }}"

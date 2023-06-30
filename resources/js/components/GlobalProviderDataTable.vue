@@ -114,7 +114,7 @@
         <v-container grid-list-sm>
           <v-form v-model="formValid">
             <v-row class="d-flex ma-0" no-gutters>
-              <v-col class="d-flex pt-2 justify-center"><h4 align="center">{{ dialog_title }}</h4></v-col>
+              <v-col class="d-flex pt-2 justify-center"><h1 align="center">{{ dialog_title }}</h1></v-col>
             </v-row>
             <v-row class="d-flex ma-0" no-gutters>
               <v-col class="d-flex px-4" cols="10">

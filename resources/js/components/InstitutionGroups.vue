@@ -40,7 +40,7 @@
       <v-container grid-list-md>
         <v-row class="d-flex ma-2" no-gutters>
           <v-col class="d-flex pa-4 justify-center">
-            <h4 align="center">Import Institution Groups</h4>
+            <h1 align="center">Import Institution Groups</h1>
           </v-col>
         </v-row>
         <v-row class="d-flex ma-2" no-gutters>
@@ -69,8 +69,8 @@
       <v-container grid-list-md>
         <v-form v-model="formValid">
           <v-row class="d-flex ma-2" no-gutters>
-            <v-col v-if="dtype=='edit'" class="d-flex pt-4 justify-center"><h4 align="center">Edit Group settings</h4></v-col>
-            <v-col v-else class="d-flex pt-4 justify-center"><h4 align="center">Create New Group</h4></v-col>
+            <v-col v-if="dtype=='edit'" class="d-flex pt-4 justify-center"><h1 align="center">Edit Group settings</h1></v-col>
+            <v-col v-else class="d-flex pt-4 justify-center"><h1 align="center">Create New Group</h1></v-col>
           </v-row>
           <v-row class="d-flex ma-2" no-gutters>
             <v-text-field v-model="form.name" label="Name" outlined dense></v-text-field>

@@ -2,7 +2,7 @@
   <div>
     <v-row class="d-flex mb-1 align-end" no-gutters>
       <v-col class="d-flex px-1" cols="3">
-        <h3>My Reports</h3>
+        <h1>My Reports</h1>
       </v-col>
       <v-col class="d-flex px-1" cols="3">
         <a class="btn v-btn v-btn--contained v-size--small section-action" href="/reports/create">Configure a Report</a>
@@ -14,7 +14,7 @@
       <v-layout row wrap>
         <v-flex v-for="report in mutable_reports" :key="report.id">
           <v-card>
-            <h3 class="v-card-title headline font-weight-bold">{{ report.title }}</h3>
+            <h2 class="v-card-title headline font-weight-bold">{{ report.title }}</h2>
 			      <div class="v-card-actions">
 	            <v-btn class='btn' small type="button" :href="'/my-reports/'+report.id+'/edit'">Edit</v-btn>
               <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>

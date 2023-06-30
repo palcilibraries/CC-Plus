@@ -2,8 +2,8 @@
   <div>
     <v-form v-model="formValid">
       <v-row class="d-flex ma-2" no-gutters>
-        <v-col v-if="dtype=='edit'" class="d-flex pt-4 justify-center"><h4 align="center">Edit Provider settings</h4></v-col>
-        <v-col v-else class="d-flex pt-4 justify-center"><h4 align="center">Create a Provider</h4></v-col>
+        <v-col v-if="dtype=='edit'" class="d-flex pt-4 justify-center"><h1 align="center">Edit Provider settings</h1></v-col>
+        <v-col v-else class="d-flex pt-4 justify-center"><h1 align="center">Create a Provider</h1></v-col>
       </v-row>
       <v-row class="d-flex mx-2 my-0" no-gutters>
         <v-col class="d-flex px-2" cols="8">

@@ -1,13 +1,13 @@
 <template>
   <div>
     <v-row class="page-header">
-      <v-col><h2>Group {{ group.name }}</h2></v-col>
+      <v-col><h1>Group {{ group.name }}</h1></v-col>
       <v-col v-if="is_admin">
         <v-btn class='btn btn-danger' small type="button" @click="destroy(group.id)">Delete</v-btn>
       </v-col>
     </v-row>
     <div class="details">
-  	  <h3 class="section-title">Details</h3>
+  	  <h2 class="section-title">Details</h2>
       <template v-if="is_manager && !showForm">
     	<v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
 		<div class="status-message" v-if="success || failure">

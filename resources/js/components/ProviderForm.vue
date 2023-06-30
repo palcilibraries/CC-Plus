@@ -3,7 +3,7 @@
     <div class="details" :key="'details_'+dtKey">
       <v-row v-if="can_edit && !showForm" no-gutters>
         <v-col class="d-flex pa-0">
-          <h3 class="section-title">Details &nbsp; &nbsp;</h3>
+          <h1 class="section-title">Details &nbsp; &nbsp;</h1>
           <v-icon v-if="!showForm" title="Edit Provider Settings" @click="showForm=true">mdi-cog-outline</v-icon>
           &nbsp;
           <v-icon v-if="is_admin && mutable_prov.can_delete" title="Delete Provider" @click="destroy(mutable_prov.id)">
@@ -100,7 +100,7 @@
     <div class="related-list">
       <v-expansion-panels><v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h3>Recent Harvest Activity</h3>
+          <h2>Recent Harvest Activity</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <div v-if="harvests.length > 0">
@@ -113,8 +113,8 @@
 	    </v-expansion-panel></v-expansion-panels>
     </div>
     <div class="related-list">
-      <h3 v-if="is_admin" class="section-title">Sushi Settings by Institution </h3>
-      <h3 v-else class="section-title">Sushi Settings</h3>
+      <h2 v-if="is_admin" class="section-title">Sushi Settings by Institution </h2>
+      <h2 v-else class="section-title">Sushi Settings</h2>
       <div v-if="is_admin">
         <v-row class="d-flex mb-4" no-gutters>
           <v-col class="d-flex pa-0" cols="3">

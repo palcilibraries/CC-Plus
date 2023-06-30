@@ -2,9 +2,9 @@
 @section('content')
 
 @if (auth()->user()->hasRole("Admin"))
-  <h3>{{ session('ccp_con_key','') }} : {{ $provider['name'] }}</h3>
+  <h1>{{ session('ccp_con_key','') }} : {{ $provider['name'] }}</h1>
 @else
-  <h3>{{ $provider['name'] }}</h3>
+  <h1>{{ $provider['name'] }}</h1>
 @endif
 <provider-form :provider="{{ json_encode($provider) }}"
                :institutions="{{ json_encode($institutions) }}"

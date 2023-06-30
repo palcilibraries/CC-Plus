@@ -27,8 +27,8 @@
           <v-form v-model="formValid">
             <v-row class="d-flex ma-0">
               <v-col class="d-flex pt-2 justify-center">
-                <h3 v-if="dialogType=='edit'" align="center">Edit Consortium settings</h3>
-                <h3 v-else align="center">Create new consortium instance</h3>
+                <h1 v-if="dialogType=='edit'" align="center">Edit Consortium settings</h1>
+                <h1 v-else align="center">Create new consortium instance</h1>
               </v-col>
             </v-row>
             <v-row class="d-flex mx-2">

@@ -2,13 +2,13 @@
 @section('content')
 <div>
 	<div class="page-header">
-    <h2><a href="/institutions/{{ $setting->institution->id }}">{{ $setting->institution->name }}</a> /
-        <a href="/providers/{{ $setting->provider->id }}">{{ $setting->provider->name }}</a></h2>
+    <h1><a href="/institutions/{{ $setting->institution->id }}">{{ $setting->institution->name }}</a> /
+        <a href="/providers/{{ $setting->provider->id }}">{{ $setting->provider->name }}</a></h1>
 	</div>
 </div>
 <sushi-setting-form :setting="{{ json_encode($setting) }}"></sushi-setting-form>
 <div class="related-list">
-  <h3>Recent Harvest Activity</h3>
+  <h2>Recent Harvest Activity</h2>
   @if (sizeof($harvests) > 0)
     <harvestlog-summary-table :harvests="{{ json_encode($harvests) }}"
                               :inst_id="{{ $setting->inst_id }}"

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('content')
 <div class="d-flex pl-2">
-  <h3>{{ $conso_name }} Administration Dashboard</h3>
+  <h1>{{ $conso_name }} Administration Dashboard</h1>
 </div>
 <consoadmin-dashboard :roles="{{ json_encode($roles) }}"
                       :institutions="{{ json_encode($institutions) }}"

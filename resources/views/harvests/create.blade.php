@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('content')
-<h3>Manual Harvesting</h3>
+<h1>Manual Harvesting</h1>
 <p>You can add harvests to the <a href="/harvestlogs">harvesting queue</a> manually once settings are defined
     to connect <a href="/providers">provider</a> services with one more <a href="/institutions">institutions</a>.
 </p>

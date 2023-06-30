@@ -8,7 +8,7 @@
 <div class="row">
     <div class="col-lg-12 margin-tb">
         <div class="pull-left">
-            <h2>CC+ Alert Settings</h2>
+            <h1>CC+ Alert Settings</h1>
         </div>
     </div>
 </div>

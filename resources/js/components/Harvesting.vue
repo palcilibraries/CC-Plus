@@ -1,10 +1,11 @@
 <template>
   <div>
+    <h1>Usage Report Harvesting</h1>
     <v-expansion-panels multiple focusable v-model="panels">
       <!-- Manual Harvest -->
       <v-expansion-panel>
         <v-expansion-panel-header>
-          <h3>Manual Harvesting</h3>
+          <h2>Manual Harvesting</h2>
         </v-expansion-panel-header>
         <v-expansion-panel-content>
           <p>&nbsp;</p>
@@ -29,7 +30,7 @@
       <!-- Harvest Log -->
       <v-expansion-panel>
         <v-expansion-panel-header>
-          <h3>Harvest Log</h3>
+          <h2>Harvest Log</h2>
         </v-expansion-panel-header>
         <v-expansion-panel-content>
           <harvestlog-data-table :harvests="mutable_harvests" :institutions="institutions" :groups="groups" :providers="providers"

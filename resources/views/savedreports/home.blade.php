@@ -8,7 +8,7 @@
     @endforeach
 @endif
 <v-main>
-  <h2>{{ auth()->user()->name }}'s dashboard</h2>
+  <h1>{{ auth()->user()->name }}'s dashboard</h1>
   <h3 class="component-subhead">{{ $inst_count }} institution(s) and {{ $prov_count }} provider(s) connected</h3>
   <div class="dashboard-section">
     @if (sizeof($report_data) >= 1)

@@ -4,7 +4,7 @@
       <!-- Institutions -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h3>Institutions</h3>
+          <h2>Institutions</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <institution-data-table :key="instKey" :institutions="mutable_institutions" :filters="inst_filters"
@@ -15,7 +15,7 @@
 	    </v-expansion-panel>
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h3>Institution Groups</h3>
+          <h2>Institution Groups</h2>
         </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <institution-groups :key="groupKey" :groups="mutable_groups" @update-groups="updateGroups"></institution-groups>
@@ -24,7 +24,7 @@
       <!-- Users -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h3>Users</h3>
+          <h2>Users</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <user-data-table :institutions="mutable_institutions" :allowed_roles="roles" :all_groups="mutable_groups"
@@ -37,7 +37,7 @@
       <!--
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h3>Institution Types</h3>
+          <h2>Institution Types</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <institution-types :types></institution-data-table>
@@ -47,7 +47,7 @@
       <!-- Providers -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h3>Providers</h3>
+          <h2>Providers</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <provider-data-table :key="provKey" :providers="mutable_providers" :institutions="mutable_institutions"
@@ -59,7 +59,7 @@
       <!-- Settings -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h3>Sushi Connections</h3>
+          <h2>Sushi Connections</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <sushisettings-data-table :key="sushiKey" :providers="mutable_providers" :institutions="mutable_institutions"

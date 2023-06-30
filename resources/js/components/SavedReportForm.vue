@@ -1,13 +1,13 @@
 <template>
   <v-container fluid>
     <v-row no-gutters>
-      <v-col><h3>{{ report.title }}</h3></v-col>
+      <v-col><h1>{{ report.title }}</h1></v-col>
       <v-col>
          <v-btn class='btn btn-danger' small type="button" @click="destroy(report.id)">Delete</v-btn>
       </v-col>
     </v-row>
     <v-row class="d-flex mb-0 pa-0">
-  	  <v-col class="d-flex" cols="2" sm="2"><h4>Report Settings</h4></v-col>
+  	  <v-col class="d-flex" cols="2" sm="2"><h2>Report Settings</h2></v-col>
       <v-col class="d-flex px-2" cols="1">
           <v-btn small color="primary" type="button" @click="swapForm" class="section-action">edit</v-btn>
       </v-col>

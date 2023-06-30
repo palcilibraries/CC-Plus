@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="filterable">
-      <h3 v-if="header!=''">{{ header }}</h3>
+      <h1 v-if="header!=''">{{ header }}</h1>
       <div class="d-flex pa-2">
         <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM"></date-range>
       </div>

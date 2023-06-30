@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('content')
-<h3>Usage Report : Preview</h3>
+<h1>Usage Report : Preview</h1>
 @if ($title != "")
-  <h5>{{ $title }}</h5>
+  <h3>{{ $title }}</h3>
 @endif
 <report-preview :preset_filters="{{ json_encode($preset_filters) }}"
                 :columns="{{ json_encode($columns) }}"

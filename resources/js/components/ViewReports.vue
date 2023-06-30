@@ -3,7 +3,7 @@
     <v-expansion-panels focusable v-model="panels">
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h4>COUNTER Report Types</h4>
+          <h2>COUNTER Report Types</h2>
         </v-expansion-panel-header>
         <v-expansion-panel-content>
           <div class="d-flex pt-1"></div>

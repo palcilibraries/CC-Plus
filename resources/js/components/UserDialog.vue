@@ -3,8 +3,8 @@
     <v-container grid-list-md>
       <v-form v-model="formValid" :key="'UFrm'+form_key">
         <v-row class="d-flex ma-2" no-gutters>
-          <v-col v-if="dtype=='edit'" class="d-flex pt-4 justify-center"><h4 align="center">Edit User Settings</h4></v-col>
-          <v-col v-else class="d-flex pt-4 justify-center"><h4 align="center">Create a User</h4></v-col>
+          <v-col v-if="dtype=='edit'" class="d-flex pt-4 justify-center"><h1 align="center">Edit User Settings</h1></v-col>
+          <v-col v-else class="d-flex pt-4 justify-center"><h1 align="center">Create a User</h1></v-col>
         </v-row>
         <v-row class="d-flex mx-2" no-gutters>
           <v-text-field name="name" label="Name" v-model="form.name" outlined dense></v-text-field>

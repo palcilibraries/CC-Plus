@@ -3,7 +3,7 @@
     <v-expansion-panels multiple focusable :value="panel">
       <v-expansion-panel>
         <v-expansion-panel-header>
-          <h3>Attempts</h3>
+          <h2>Attempts</h2>
         </v-expansion-panel-header>
         <v-expansion-panel-content>
           <v-simple-table>

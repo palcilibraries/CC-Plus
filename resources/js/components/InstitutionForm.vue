@@ -2,8 +2,8 @@
   <div>
     <v-row class="d-flex pl-2" no-gutters>
       <v-col class="d-flex px-2 flex-shrink-1">
-        <h3 v-if="is_admin">Institution Settings: {{ mutable_inst.name }}</h3>
-        <h3 v-else>{{ mutable_inst.name }}</h3>
+        <h1 v-if="is_admin">Institution Settings: {{ mutable_inst.name }}</h1>
+        <h1 v-else>{{ mutable_inst.name }}</h1>
         &nbsp;
         <div class="idbox">
           <v-icon title="CC+ Institution ID">mdi-crosshairs-gps</v-icon>&nbsp; {{ mutable_inst.id }}
@@ -20,7 +20,7 @@
       <!-- Users -->
       <v-expansion-panel>
         <v-expansion-panel-header>
-          <h3>Users</h3>
+          <h2>Users</h2>
         </v-expansion-panel-header>
         <v-expansion-panel-content>
           <user-data-table :institutions="mutable_institutions" :allowed_roles="all_roles" :all_groups="mutable_groups"
@@ -30,7 +30,7 @@
       <!-- Providers -->
       <v-expansion-panel>
         <v-expansion-panel-header>
-          <h3>Providers</h3>
+          <h2>Providers</h2>
         </v-expansion-panel-header>
         <v-expansion-panel-content>
           <provider-data-table :key="provKey" :providers="mutable_providers" :institutions="mutable_institutions"
@@ -42,7 +42,7 @@
       <!-- Sushi Settings -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h3>Sushi Connections</h3>
+          <h2>Sushi Connections</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <sushisettings-data-table :key="sushiKey" :providers="mutable_providers" :institutions="mutable_institutions"
@@ -54,7 +54,7 @@
       <!-- Harvest Log summary table -->
       <v-expansion-panel>
     	  <v-expansion-panel-header>
-          <h3>Recent Harvest Activity</h3>
+          <h2>Recent Harvest Activity</h2>
     	  </v-expansion-panel-header>
     	  <v-expansion-panel-content>
           <harvestlog-summary-table :harvests='harvests' :inst_id="institution.id"></harvestlog-summary-table>

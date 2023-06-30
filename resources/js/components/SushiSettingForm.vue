@@ -1,7 +1,7 @@
 <template>
   <div class="details">
   	<v-row no-gutters>
-	    <h3 class="section-title">Sushi Settings</h3>
+	    <h1 class="section-title">Sushi Settings</h1>
       <v-col class="d-flex px-4 dt_action" cols="2">
         <v-icon title="Edit Setting" @click="swapForm">mdi-cog-outline</v-icon>
         &nbsp; &nbsp;
@@ -46,7 +46,7 @@
         </v-col>
       </v-row>
       <v-row class="d-flex ma-0 pt-1">
-        <h3>Actions</h3>
+        <h2>Actions</h2>
       </v-row>
       <div class="d-flex ma-0 py-1">
         <v-btn small color="secondary" type="button" @click="testSettings"

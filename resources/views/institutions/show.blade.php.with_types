@@ -16,7 +16,7 @@
 	<div class="related-list">
       <v-expansion-panels><v-expansion-panel>
   	    <v-expansion-panel-header>
-	      <h3>Recent Harvest Activity</h3>
+	      <h1>Recent Harvest Activity</h1>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
   	      @if (sizeof($harvests) > 0)

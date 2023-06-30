@@ -86,7 +86,7 @@
       </v-alert>
     </v-data-table>
     <v-dialog v-model="connectedDialog" content-class="ccplus-dialog">
-      <h3 align="center">Institutions connected to<br />{{ current_provider.name }}</h3>
+      <h1 align="center">Institutions connected to<br />{{ current_provider.name }}</h1>
       <hr>
       <div v-for="inst in current_provider.connected">
         <v-row class="d-flex mx-2" no-gutters>

@@ -6,7 +6,7 @@
     </div>
     <!-- Container for system alerts -->
     <v-row v-if="is_admin">
-      <v-col v-if="mutable_sysalerts.length>0"><h3>CC+ System-wide Alerts</h3></v-col>
+      <v-col v-if="mutable_sysalerts.length>0"><h2>CC+ System-wide Alerts</h2></v-col>
       <v-col v-if="showForm==''">
         <v-btn small color="primary" @click="createSys">Add A System Alert</v-btn>
       </v-col>
@@ -72,7 +72,7 @@
     </div>
 
     <!-- Data table for data/harvest alerts -->
-    <h3>Harvest / Data Alerts</h3>
+    <h2>Harvest / Data Alerts</h2>
     <div class="d-flex pa-0 align-center">
       <div v-if="datesFromTo!='|'" class="x-box">
         <img src="/images/red-x-16.png" width="100%" alt="clear date range" @click="clearFilter('date_range')"/>&nbsp;

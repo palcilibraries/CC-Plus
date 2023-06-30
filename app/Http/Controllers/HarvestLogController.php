@@ -175,7 +175,6 @@ class HarvestLogController extends Controller
                                           return $qry->whereIn('prov_id', $filters['prov']);
                                       })
                                       ->pluck('id')->toArray();
-
             $harvest_data = HarvestLog::
                 with('report:id,name','sushiSetting','sushiSetting.institution:id,name','sushiSetting.provider:id,name,inst_id',
                      'failedHarvests','failedHarvests.ccplusError')
@@ -216,7 +215,7 @@ class HarvestLogController extends Controller
                     continue;
                 }
                 $formatted_harvest = $this->formatRecord($harvest);
-                if (!in_array($formatted_harvest['error_code'], $error_codes)) {
+                if (!is_null($formatted_harvest['error_code']) && !in_array($formatted_harvest['error_code'], $error_codes)) {
                     $error_codes[] = $formatted_harvest['error_code'];
                 }
                 if (!is_null($filters['error_code']) && $filters['error_code']!='' &&
@@ -848,7 +847,7 @@ class HarvestLogController extends Controller
         $rec['prov_inst_id'] = $harvest->sushiSetting->provider->inst_id;
         $rec['report_name'] = $harvest->report->name;
         $rec['error'] = null;
-        $rec['error_code'] = 0;
+        $rec['error_code'] = null;
         $rec['status'] = $harvest->status;
         $rec['failed'] = [];
         $max_id= -1;
@@ -863,7 +862,7 @@ class HarvestLogController extends Controller
                 $rec['failed'][] = $info;
             }
             $last = $harvest->failedHarvests->where('id',$max_id)->first();
-            if ($last) {
+            if ($last && ($harvest->status != 'Success' || $last->ccplusError->id == 3030)) {
                 $rec['error_code'] = $last->ccplusError->id;
                 $rec['error'] = $last->ccplusError->toArray();
             }

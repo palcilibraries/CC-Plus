@@ -74,7 +74,7 @@
                   :footer-props="footer_props" :search="search" :key="'setdt_'+dtKey">
       <template v-slot:item.provider.name="{ item }">
         <span v-if="item.provider.inst_id==1">
-          <v-icon title="Consortium Provider">mdi-account-group</v-icon>
+          <v-icon title="Consortium Provider">mdi-account-multiple</v-icon>
         </span>&nbsp;
         {{ item.provider.name }}
       </template>

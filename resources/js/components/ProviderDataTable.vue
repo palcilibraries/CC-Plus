@@ -53,7 +53,7 @@
       </template>
       <template v-slot:item.name="{ item }">
         <span v-if="item.inst_id==1">
-          <v-icon title="Consortium Provider">mdi-account-group</v-icon>&nbsp;
+          <v-icon title="Consortium Provider">mdi-account-multiple</v-icon>&nbsp;
         </span>
         {{ item.name }}
       </template>

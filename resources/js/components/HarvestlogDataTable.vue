@@ -108,7 +108,7 @@
                     :expanded="expanded" @click:row="expandRow" show-expand :key="dtKey">
         <template v-slot:item.prov_name="{ item }">
           <span v-if="item.prov_inst_id==1">
-            <v-icon title="Consortium Provider">mdi-account-group</v-icon>&nbsp;
+            <v-icon title="Consortium Provider">mdi-account-multiple</v-icon>&nbsp;
           </span>
           {{ item.prov_name }}
         </template>
@@ -152,7 +152,7 @@
                     :options="mutable_options" @update:options="updateOptions" :footer-props="footer_props">
         <template v-slot:item.prov_name="{ item }">
           <span v-if="item.prov_inst_id==1">
-            <v-icon title="Consortium Provider">mdi-account-group</v-icon>&nbsp;
+            <v-icon title="Consortium Provider">mdi-account-multiple</v-icon>&nbsp;
           </span>
           {{ item.prov_name }}
         </template>

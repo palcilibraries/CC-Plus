@@ -179,7 +179,7 @@ main #app {
 	max-height: fit-content;
 	margin: 0px auto;
 	overflow: auto;
-	padding: 0px;
+	padding: 0px 0px 80px 0px;
 }
 .footer_content {
 	width: 96%;
@@ -366,15 +366,16 @@ i.v-icon.mdi.admin {
   font-size: 60px;
 }
 .v-expansion-panel {
-  box-shadow: none;
+  box-shadow: none !important;
   padding: .5rem 0;
   border-radius:  6px;
 }
 .v-expansion-panel::before {
-  box-shadow: none;
+  box-shadow: none !important;
 }
 .v-expansion-panel.v-expansion-panel--active.v-item--active, .v-expansion-panel--active:not(:first-child), .v-expansion-panel--active + .v-expansion-panel  {
    margin: 0 auto;
+	 box-shadow: none !important;
 }
 button.v-expansion-panel-header {
   background-color: #b0ddf3;
@@ -390,7 +391,7 @@ button.v-expansion-panel-header:not(.v-expansion-panel-header--active) {
   border-radius:6px;
 }
 .v-expansion-panel:not(:first-child)::after {
-  border: none;
+  border: none !important;
 }
 .v-expansion-panel-content {
   border: .5px solid #004771;

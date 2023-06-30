@@ -357,6 +357,11 @@
           this.filters['inst'] = [this.mutable_institutions[0].id];
       }
 
+      // If not admin, remove the institution column
+      if (!this.is_admin) {
+          this.headers.splice(this.headers.findIndex(h=> h.text == 'Institution'),1);
+      }
+
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);
 

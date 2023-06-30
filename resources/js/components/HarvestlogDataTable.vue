@@ -122,6 +122,7 @@
           <td v-if="item.error_code>0" :colspan="headers.length">
             <v-simple-table>
               <thead>
+                <tr><th colspan="3"><center>Failed Harvest Attempts (Harvest ID: {{ item.id }})</center></th></tr>
                 <tr><th>Attempted</th><th>Error Code</th><th>Message</th></tr>
               </thead>
               <template v-for="attempt in item.failed">

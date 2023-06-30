@@ -58,6 +58,8 @@ form .v-subheader,
 .v-application--wrap {
 	min-height: fit-content !important;
 	max-height: fit-content;
+	border-left: 2px solid #d4dee3;
+	border-right: 2px solid #d4dee3;
 }
 main #app {
 	padding: 1em;
@@ -178,7 +180,6 @@ main #app {
 	margin: 0px auto;
 	overflow: auto;
 	padding: 0px;
-	padding-bottom: 80px;
 }
 .footer_content {
 	width: 96%;
@@ -280,6 +281,7 @@ i.size-16 {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+	background-color: #ebf7fc;
 }
 .navbar {
 	margin-bottom: 1em;
@@ -293,6 +295,9 @@ i.size-16 {
   padding-left: 0;
 	align-items: center !important;
 }
+.navbar.navbar-expand.navbar-light {
+  width: 100%;
+}
 .navbar-nav {
 	align-items: center;
 }
@@ -304,12 +309,12 @@ i.size-16 {
 }
 .footer-container {
 	display: flex;
+	position: absolute;
 	justify-content: center;
 	margin: 0px;
-	position: fixed;
-	width: 82%;
-	padding: 0px;
 	bottom: 0px;
+	width: 100%;
+	padding: 10px 0px 0px 0px;
 	background-color: #fff;
 }
 .ccplus-dialog {
@@ -342,4 +347,57 @@ i.size-16 {
 	border: 1px solid #dadada;
   background-color: #fff;
 	border-radius: 5px;
+}
+h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  padding-bottom: 1rem;
+  color: #003d61;
+}
+h2 {
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin: 0;
+}
+i.v-icon.notranslate.mdi.mdi-chevron-down.theme--light {
+  color: inherit;
+}
+i.v-icon.mdi.admin {
+  font-size: 60px;
+}
+.v-expansion-panel {
+  box-shadow: none;
+  padding: .5rem 0;
+  border-radius:  6px;
+}
+.v-expansion-panel::before {
+  box-shadow: none;
+}
+.v-expansion-panel.v-expansion-panel--active.v-item--active, .v-expansion-panel--active:not(:first-child), .v-expansion-panel--active + .v-expansion-panel  {
+   margin: 0 auto;
+}
+button.v-expansion-panel-header {
+  background-color: #b0ddf3;
+  background-color: #fff;
+  color: #004771;
+  border: .5px solid #004771;
+}
+button.v-expansion-panel-header.v-expansion-panel-header--active {
+  background-color: #1a75aa;
+  color: #fff;
+}
+button.v-expansion-panel-header:not(.v-expansion-panel-header--active) {
+  border-radius:6px;
+}
+.v-expansion-panel:not(:first-child)::after {
+  border: none;
+}
+.v-expansion-panel-content {
+  border: .5px solid #004771;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  padding-top:20px;
+}
+.v-data-table__wrapper {
+  padding-top: 20px;
 }

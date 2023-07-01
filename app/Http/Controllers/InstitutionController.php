@@ -230,7 +230,9 @@ class InstitutionController extends Controller
             $rec->connectors = $rec->connectionFields();
             $rec->connected = $conso_providers->where('global_id',$rec->id)->pluck('institution')->toArray();
             $rec->connection_count = count($rec->connected);
-
+            $inst_connection = $conso_providers->where('global_id',$rec->id)->where('inst_id',$id)->first();
+            // Initialize connectability to NO if the global is connected to anything and YES if not connected
+            $rec->can_connect = ($rec->connection_count == 0) ? true : false;
             // Setup default values for the columns in the U/I
             $rec->conso_id = null;
             $rec->inst_name = null;
@@ -244,6 +246,13 @@ class InstitutionController extends Controller
                 // get the provider record
                 if ($rec->connection_count == 1) {
                     $prov_data = $conso_providers->where('global_id',$rec->id)->first();
+                    // If there is ONE connection, and it is to the consortium, set can_connect to the inst_specifc flag.
+                    // If it is not a conso-connected provider, leave it off
+                    if ($prov_data) {
+                        if ($prov_data->inst_id == 1) {
+                            $rec->can_connect = $prov_data->allow_inst_specific;
+                        }
+                    }
                 } else {
                     $prov_data = $conso_providers->where('global_id',$rec->id)->where('inst_id',$id)->first();
                 }

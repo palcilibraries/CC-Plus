@@ -59,16 +59,15 @@
       </template>
       <template v-slot:item.inst_name="{ item }">
         <span v-if="item.inst_id==1 || inst_context!=1">{{ item.inst_name }}</span>
-        <span v-else-if="item.connected.length>1">
-          {{ item.inst_name }} &nbsp;
+        <span v-else-if="item.connected.length>1">{{ item.inst_name }} &nbsp;</span>
+        <span v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></span>
+        <span v-if="item.connected.length>1">
           <v-icon title="Show Institutions" @click="showConnected(item.id)">mdi-open-in-app</v-icon>
         </span>
-        <span v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></span>
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
-          <v-btn v-if="item.connected.length==0 || (item.allow_inst_specific && inst_context!=1)"
-                 icon @click="connectOne(item.id)">
+          <v-btn v-if="item.can_connect" icon @click="connectOne(item.id)">
             <v-icon title="Connect Provider">mdi-connection</v-icon>
           </v-btn>
           <v-btn v-if="item.can_edit" icon @click="editProvider(item.id)">
@@ -362,6 +361,7 @@
                   // Update mutable providers
                   this.mutable_providers[provIdx].can_edit = response.data.provider.can_edit;
                   this.mutable_providers[provIdx].can_delete = response.data.provider.can_delete;
+                  this.mutable_providers[provIdx].can_connect = response.data.provider.can_connect;
                   this.mutable_providers[provIdx].inst_id = response.data.provider.inst_id;
                   this.mutable_providers[provIdx].inst_name = response.data.provider.inst_name;
                   this.mutable_providers[provIdx].conso_id = response.data.provider.conso_id;

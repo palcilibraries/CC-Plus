@@ -69,6 +69,9 @@ class AdminController extends Controller
             $rec->connectors = $rec->connectionFields();
             $rec->connected = $conso_providers->where('global_id',$rec->id)->pluck('institution')->toArray();
             $rec->connection_count = count($rec->connected);
+            $conso_connection = $conso_providers->where('global_id',$rec->id)->where('inst_id',1)->first();
+            $rec->can_edit = ($conso_connection) ? true : false;
+            $rec->can_connect = ($conso_connection) ? false : true;
             // Setup default values for the columns in the U/I
             $rec->conso_id = null;
             $rec->inst_name = null;
@@ -81,10 +84,10 @@ class AdminController extends Controller
             // Global provider is attached
             if ($rec->connection_count > 0) {
                 // get the provider record
-                if ($rec->connection_count > 1) {
+                if ($rec->connection_count > 1 && !$conso_connection) {
                     $rec->inst_name = $rec->connection_count . " Institutions";
                 } else {
-                    $prov_data = $conso_providers->where('global_id',$rec->id)->first();
+                    $prov_data = ($conso_connection) ? $conso_connection : $conso_providers->where('global_id',$rec->id)->first();
                     if ($prov_data) {
                         $rec->conso_id = $prov_data->id;
                         $rec->inst_id = $prov_data->institution->id;
@@ -95,7 +98,7 @@ class AdminController extends Controller
                         $rec->last_harvest = $prov_data->sushiSettings->max('last_harvest');
                         $rec->restricted = $prov_data->restricted;
                         $rec->allow_inst_specific = $prov_data->allow_inst_specific;
-                        $rec->can_edit = true;
+                        // $rec->can_edit = true;
                         $rec->can_delete = (is_null($rec->last_harvest)) ? true : false;
                         if ($prov_data->reports) {
                             $report_ids = $prov_data->reports->pluck('id')->toArray();

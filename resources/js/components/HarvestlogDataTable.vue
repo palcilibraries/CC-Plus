@@ -26,24 +26,24 @@
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
-        <v-select :items="providers" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
-                  label="Provider(s)" item-text="name" item-value="id">
+        <v-autocomplete :items="providers" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
+                        label="Provider(s)" item-text="name" item-value="id">
           <template v-slot:prepend-item>
             <v-list-item>
               <v-checkbox v-model="allConso" label="All Consortium Providers" @change="filterConsoProv"></v-checkbox>
             </v-list-item>
             <v-divider class="mt-1"></v-divider>
           </template>
-        </v-select>
+        </v-autocomplete>
       </v-col>
       <v-col v-if="institutions.length>1 && (inst_filter==null || inst_filter=='I')"
              class="d-flex px-2 align-center" cols="2" sm="2">
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-select :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters()" multiple
-                  label="Institution(s)"  item-text="name" item-value="id"
-        ></v-select>
+        <v-autocomplete :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters()" multiple
+                        label="Institution(s)"  item-text="name" item-value="id"
+        ></v-autocomplete>
       </v-col>
       <v-col v-if="groups.length>1 && (inst_filter==null || inst_filter=='G') && (is_admin || is_viewer)"
              class="d-flex px-2 align-center" cols="2" sm="2">

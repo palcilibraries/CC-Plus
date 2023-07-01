@@ -22,9 +22,9 @@
         <div v-if="filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-select :items="mutable_institutions" v-model="filters['inst']" @change="updateFilters('inst')"
-                  label="Limit by Institution"  item-text="name" item-value="id" multiple
-        ></v-select>
+        <v-autocomplete :items="mutable_institutions" v-model="filters['inst']" @change="updateFilters('inst')"
+                        label="Limit by Institution"  item-text="name" item-value="id" multiple
+        ></v-autocomplete>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
         <v-select :items="status_options" v-model="filters['stat']" @change="updateFilters('stat')"

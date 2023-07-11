@@ -65,7 +65,10 @@ class SushiSettingController extends Controller
             // Pulling Sushi Connections for institution->show() means we need to de-dupe any settings for
             // inst-specific providers that also have a consortium definition
             $limit_prov_ids = [];
-            $context = ($request->input('context')) ? $request->input('context') : 1;
+            $context = 1;
+            if ($request->input('context')) {
+                $context = ($request->input('context') > 0) ? $request->input('context') : 1;
+            }
             if ($context > 1) {
                 $context = $request->input('context');
                 $inst_provs = Provider::where('inst_id',$context)->get();
@@ -82,12 +85,6 @@ class SushiSettingController extends Controller
                                   ->when($filters['group'] > 0, function ($qry) use ($group_insts) {
                                       return $qry->whereIn('inst_id', $group_insts);
                                   })
-                                  ->when(($context==0 && sizeof($filters['prov']) > 0), function ($qry) use ($filters) {
-                                      return $qry->whereIn('global_id', $filters['prov']);
-                                  })
-                                  ->when(($context>1 && sizeof($filters['prov']) > 0), function ($qry) use ($filters) {
-                                      return $qry->whereIn('prov_id', $filters['prov']);
-                                  })
                                   ->when(sizeof($filters['harv_stat']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('status', $filters['harv_stat']);
                                   })
@@ -95,6 +92,16 @@ class SushiSettingController extends Controller
                                       return $qry->whereIn('prov_id', $limit_prov_ids);
                                   })
                                   ->get();
+
+            // Apply provider filter to returned data - it is dependent on context
+            if (sizeof($filters['prov']) > 0) {
+                foreach ($data as $key => $rec) {
+                    if ( $context > 1 && !in_array($rec->prov_id,$filters['prov']) ||
+                        $context == 1 && !in_array($rec->provider->global_id,$filters['prov'])) {
+                        $data->forget($key);
+                    }
+                }
+            }
 
             // Build an array of connection_fields used across all providers (whether connected or not)
             $all_connectors = array();
@@ -114,6 +121,8 @@ class SushiSettingController extends Controller
                     }
                 }
             }
+
+            // Add global connectors to the provider records
             $settings = $data->map( function ($rec) {
                 if ($rec->provider->globalProv) {
                     $rec->provider->connectors = $rec->provider->globalProv->connectionFields();

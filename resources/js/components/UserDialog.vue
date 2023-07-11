@@ -3,8 +3,7 @@
     <v-container grid-list-md>
       <v-form v-model="formValid" :key="'UFrm'+form_key">
         <v-row class="d-flex ma-2" no-gutters>
-          <v-col v-if="dtype=='edit'" class="d-flex pt-4 justify-center"><h1 align="center">Edit User Settings</h1></v-col>
-          <v-col v-else class="d-flex pt-4 justify-center"><h1 align="center">Create a User</h1></v-col>
+          <v-col class="d-flex pt-4 justify-center"><h1 align="center">{{ dialog_title }}</h1></v-col>
         </v-row>
         <v-row class="d-flex mx-2" no-gutters>
           <v-text-field name="name" label="Name" v-model="form.name" outlined dense></v-text-field>
@@ -15,14 +14,17 @@
           ></v-text-field>
         </v-row>
         <v-row class="d-flex mx-2 align-center" no-gutters>
-          <v-col class="d-flex justify-center" cols="6">
+          <v-col class="d-flex justify-center" cols="4">
             <v-switch name="is_active" label="Active?" v-model="form.is_active" dense></v-switch>
           </v-col>
-          <v-col v-if="mutable_institutions.length>1" class="d-flex justify-center" cols="6">
+          <v-col v-if="mutable_institutions.length>1" class="d-flex justify-center" cols="8">
             <v-btn small color="primary" @click="instDialog=true">Create an Institution</v-btn>
           </v-col>
+          <v-col v-else-if="dtype=='profile'" class="d-flex justify-center" cols="8">
+            <strong>Role: {{ max_role_name }}</strong>
+          </v-col>
         </v-row>
-        <v-row v-if="is_admin" class="d-flex mx-2" no-gutters>
+        <v-row v-if="is_admin && dtype!='profile'" class="d-flex mx-2" no-gutters>
           <v-select :items="mutable_institutions" v-model="form.inst_id" label="Institution" item-value="id" item-text="name"
                     @change="changeInst" :rules="[(v) => !!v || 'Institution assignment is required']" outlined dense
           ></v-select>
@@ -42,13 +44,19 @@
                         @click:append="pwc_show = !pwc_show" :append-icon="pwc_show ? 'mdi-eye-off' : 'mdi-eye'" outlined dense
           ></v-text-field>
         </v-row>
-        <v-row v-if="is_manager || is_admin" class="d-flex mx-2" no-gutters>
+        <v-row v-if="dtype!='profile' && (is_manager || is_admin)" class="d-flex mx-2" no-gutters>
           <div class="field-wrapper">
             <v-subheader v-text="'User Roles'"></v-subheader>
             <v-select :items="allowed_roles" v-model="form.roles" label="User Role(s)" :value="mutable_user.roles"
                       item-text="name" item-value="id" multiple chips hint="Define roles for user" persistent-hint dense
                       :required="dtype=='create'"
             ></v-select>
+          </div>
+        </v-row>
+        <v-row v-if="dtype=='profile'" class="d-flex mx-2" no-gutters>
+          <div class="field-wrapper">
+            <v-subheader v-text="'Fiscal Year Begins'"></v-subheader>
+            <v-select :items="months" v-model="form.fiscalYr" label="Month"></v-select>
           </div>
         </v-row>
       </v-form>
@@ -60,7 +68,7 @@
     <v-row class="d-flex ma-2" no-gutters>
       <v-spacer></v-spacer>
       <v-col class="d-flex px-2 justify-center" cols="6">
-        <v-btn class='btn' x-small color="primary" @click="saveUser" :disabled="!formValid">Save User</v-btn>
+        <v-btn class='btn' x-small color="primary" @click="saveUser" :disabled="!formValid">{{ save_text }}</v-btn>
       </v-col>
       <v-col class="d-flex px-2 justify-center" cols="6">
         <v-btn class='btn' x-small type="button" color="primary" @click="cancelDialog">Cancel</v-btn>
@@ -91,6 +99,8 @@
         failure: '',
         form_key: 1,
         idKey: 0,
+        dialog_title: 'User Settings',
+        save_text: 'Save User',
         formValid: true,
         pw_show: false,
         pwc_show: false,
@@ -99,6 +109,9 @@
         mutable_user: { ...this.user },
         mutable_institutions: [ ...this.institutions ],
         added_insts: [],
+        max_role_name: '',
+        months: ['January','February','March','April','May','June','July','August','September','October','November',
+                 'December'],
         form: new window.Form({
             name: '',
             inst_id: null,
@@ -106,7 +119,8 @@
             email: '',
             password: '',
             confirm_pass: '',
-            roles: []
+            roles: [],
+            fiscalYr: '',
         }),
         emailRules: [
           v => !!v || 'E-mail is required',
@@ -122,7 +136,7 @@
               this.failure = 'Passwords do not match! Please re-enter';
               return;
           }
-          if (this.dtype == 'edit') {
+          if (this.dtype == 'edit' || this.dtype == 'profile') {
               if  (this.form.password.length>0 && this.form.password.length<8) {
                   this.failure = 'Password must be at least 8 characters';
                   return;
@@ -205,11 +219,41 @@
     },
     mounted() {
       this.form.name = this.user.name;
-      this.form.inst_id = (this.is_admin) ? 1 : this.institutions[0].id;
-      this.inst_name = (this.is_admin) ? null : this.institutions[0].name;
+      if (this.dtype == 'profile') {
+        this.form.inst_id = this.user.inst_id;
+        this.inst_name = this.user.institution.name;
+      } else {
+        this.form.inst_id = (this.is_admin) ? 1 : this.institutions[0].id;
+        this.inst_name = (this.is_admin) ? null : this.institutions[0].name;
+      }
       this.form.is_active = (this.dtype == 'create') ? 1 : this.user.is_active;
       this.form.email = this.user.email;
       this.form.roles = this.user.roles;
+      this.form.fiscalYr = this.user.fiscalYr;
+      if (this.dtype == 'edit') {
+        this.dialog_title = 'Edit User Settings';
+        this.save_text = "Save User";
+      } else if (this.dtype == 'create') {
+        this.dialog_title = 'Create a User';
+        this.save_text = "Create User";
+      } else if (this.dtype == 'profile') {
+        this.dialog_title = 'User Profile';
+        this.save_text = "Save Profile";
+        // set user's max-role as a string
+        let roles_minus = [...this.user.roles];
+        let v_idx = roles_minus.findIndex(r=>r.name == "Viewer");
+        if (v_idx >= 0) roles_minus.splice(v_idx,1);
+        const max_role = roles_minus.reduce((a, b) => a.id > b.id ? a : b);
+        if (max_role.name == 'Manager') {
+          this.max_role_name = "Local Admin";
+        } else if (max_role.name == 'Admin') {
+          this.max_role_name = "Consortium Admin";
+        } else {
+          this.max_role_name = max_role.name;
+        }
+        var vr = this.user.roles.find(r => r.name == "Viewer");
+        if (vr) this.max_role_name += ", Consortium Viewer";
+      }
       console.log('UserDialog Component mounted.');
     }
   }

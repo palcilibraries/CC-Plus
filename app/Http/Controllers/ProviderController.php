@@ -329,6 +329,7 @@ class ProviderController extends Controller
         $global_provider->connected = $conso_providers->where('global_id',$global_provider->id)->pluck('institution')->toArray();
         $global_provider->conso_id = $provider->id;
         $global_provider->inst_id = $provider->inst_id;
+        $global_provider->can_connect = false;
         $global_provider->connectors = $global_provider->connectionFields();
         $global_provider->inst_name = ($provider->inst_id == 1) ? 'Entire Consortium' : $provider->institution->name;
         $global_provider->active = ($provider->is_active) ? 'Active' : 'Inactive';

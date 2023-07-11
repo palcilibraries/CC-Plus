@@ -41,11 +41,12 @@
               <li v-else class="nav-item dropdown py-1">
                 <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                      {{ user["name"] }}<span class="caret"></span>
+                      {{ mutable_user["name"] }}<span class="caret"></span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
                   <li v-if="!is_globaladmin" class="nav-item" >
-                    <a class="dropdown-item" :href="profile_url">Profile</a>
+                    <!-- <a class="dropdown-item" :href="profile_url">Profile</a> -->
+                    <a class="dropdown-item" @click="userDialog=true">Profile</a>
                   </li>
                   <li class="nav-item" >
                     <a class="dropdown-item" href="/logout" onclick="event.preventDefault();
@@ -58,6 +59,9 @@
               </li>
             </ul>
         </div>
+        <v-dialog v-model="userDialog" content-class="ccplus-dialog">
+          <user-dialog dtype="profile" :user="mutable_user" @user-complete="userDialogDone"></user-dialog>
+        </v-dialog>
     </nav>
 </template>
 
@@ -97,7 +101,9 @@ export default {
                   },
                 ]
               },
-            ]
+            ],
+            userDialog: false,
+            mutable_user: {...this.user},
         }
     },
     methods: {
@@ -127,6 +133,12 @@ export default {
                   }
               })
              .catch(error => {});
+      },
+      userDialogDone ({ result, msg, user, new_inst }) {
+        if (result == 'Success') {
+          this.mutable_user.name = user.name;   // the only field that navbar needs to update...
+        }
+        this.userDialog = false;
       },
     },
     computed: {

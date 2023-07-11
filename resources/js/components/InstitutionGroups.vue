@@ -270,6 +270,7 @@
                                self.failure = '';
                                self.success = response.data.msg;
                                this.mutable_groups.splice(this.mutable_groups.findIndex(g=> g.id == groupid),1);
+                               this.$emit('update-groups', {groups: this.mutable_groups, membership: response.data.belongsTo});
                            } else {
                                self.success = '';
                                self.failure = response.data.msg;

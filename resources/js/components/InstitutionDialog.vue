@@ -9,7 +9,12 @@
         <v-text-field v-model="form.name" label="Name" outlined dense :readonly="!is_admin"></v-text-field>
       </v-row>
       <v-row class="d-flex mx-2" no-gutters>
-        <v-switch v-model="form.is_active" label="Active?" dense :readonly="!is_admin"></v-switch>
+        <v-col class="d-flex justify-center" cols="8">
+          <v-text-field v-model="form.local_id" label="Internal Identifier" outlined dense :readonly="!is_admin"></v-text-field>
+        </v-col>
+        <v-col class="d-flex justify-center" cols="4">
+          <v-switch v-model="form.is_active" label="Active?" dense :readonly="!is_admin"></v-switch>
+        </v-col>
       </v-row>
       <v-row class="d-flex mx-2" no-gutters>
         <v-col class="d-flex px-2" cols="1">FTE</v-col>

@@ -77,6 +77,7 @@ class User extends Authenticatable
 
       // Managers can manage users at their own inst, but not Adminss or Viewers
         if (auth()->user()->hasRole("Manager")) {
+            if ($this->id == auth()->id()) return true;   // Manager can manage self regardless of their other roles
             return ($this->hasAnyRole(['GlobalAdmin','Admin','Viewer'])) ? false : auth()->user()->inst_id == $this->inst_id;
         }
       // Users can manage themselves

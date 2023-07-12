@@ -72,11 +72,16 @@
     <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_settings" :loading="loading" show-select
                   item-key="id" :options="mutable_options" @update:options="updateOptions"
                   :footer-props="footer_props" :search="search" :key="'setdt_'+dtKey">
+      <template v-slot:item.institution.name="{ item }">
+        <span v-if="item.institution.is_active==0" class="isInactive">{{ item.institution.name }}</span>
+        <span v-else>{{ item.institution.name }}</span>
+      </template>
       <template v-slot:item.provider.name="{ item }">
         <span v-if="item.provider.inst_id==1">
           <v-icon title="Consortium Provider">mdi-account-multiple</v-icon>
         </span>&nbsp;
-        {{ item.provider.name }}
+        <span v-if="item.provider.is_active==0" class="isInactive">{{ item.provider.name }}</span>
+        <span v-else>{{ item.provider.name }}</span>
       </template>
       <template v-slot:item.status="{ item }">
         <span v-if="item.status=='Enabled'"><v-icon large color="green" title="Enabled">mdi-toggle-switch</v-icon></span>

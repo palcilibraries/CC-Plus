@@ -128,7 +128,6 @@
       },
       bulkInst (institutions) {
         this.mutable_institutions = [ ...institutions ];
-        this.instKey += 1;
         this.provKey += 1; // inform the provider component of the change
         this.sushiKey += 1;
         this.groupKey += 1;

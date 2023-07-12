@@ -183,7 +183,7 @@
         settingsImportDialog: false,
         groupingDialog: false,
         search: '',
-        bulk_actions: [ 'Set Active', 'Set Inactive', 'Create New Group', 'Add to Existing Group' ],
+        bulk_actions: [ 'Set Active', 'Set Inactive', 'Create New Group', 'Add to Existing Group', 'Delete' ],
         bulkAction: null,
         selectedRows: [],
         groupingType: '',
@@ -305,7 +305,12 @@
             this.success = "";
             this.failure = "";
             let msg = "";
-            if (this.bulkAction == 'Set Active') {
+            if (this.bulkAction == 'Delete') {
+                msg += "Bulk processing will delete each marked institution sequentially.<br>";
+                msg += "Deleting institutions cannot be reversed, they can only be manually recreated.<br><br>";
+                msg += "Any institution that has harvested usage data will be skipped and left unchanged.<br>";
+                msg += "NOTE: All users and SUSHI settings connected to these institutions will also be removed.";
+            } else if (this.bulkAction == 'Set Active') {
                 msg += "Bulk processing will process each requested institution sequentially.<br><br>";
                 msg += "Activating these institutions will affect their Sushi Settings:<br>";
                 msg += "<ul><li>Suspended settings will be enabled</li>";
@@ -336,33 +341,49 @@
             .then((result) => {
               if (result.value) {
                 this.success = "Working...";
-                var state = (this.bulkAction == 'Set Active') ? 1 : 0;
-                var new_status = (state == 1) ? 'Active' : 'Inactive';
-                this.selectedRows.forEach( (inst) => {
-                    axios.patch('/institutions/'+inst.id, {
-                      name: inst.name,
-                      is_active: state
-                    })
-                    .then( (response) => {
-                        if (response.data.result) {
-                            var _idx = this.mutable_institutions.findIndex(i=>i.id == inst.id);
-                            this.mutable_institutions[_idx].is_active = state;
-                            this.mutable_institutions[_idx].status = new_status;
-                        } else {
-                            this.success = '';
-                            this.failure = response.data.msg;
-                            return false;
-                        }
-                    }).catch(error => {});
-                });
-                this.success = "Selected institutions successfully updated.";
+                if (this.bulkAction == 'Delete') {
+                  var skipped = 0;
+                  this.selectedRows.forEach( (inst) => {
+                    if (!inst.can_delete) {
+                        skipped++;
+                        return;
+                    }
+                    axios.delete('/institutions/'+inst.id)
+                         .then( (response) => {
+                           if (response.data.result) {
+                             this.mutable_institutions.splice(this.mutable_institutions.findIndex(ii=> inst.id == ii.id),1);
+                           }
+                         })
+                         .catch({});
+                  });
+                  this.success = "Selected Insitutions Deleted";
+                  this.success += (skipped>0) ? " ("+skipped+" skipped)" : "";
+                } else {
+                  var state = (this.bulkAction == 'Set Active') ? 1 : 0;
+                  var new_status = (state == 1) ? 'Active' : 'Inactive';
+                  this.selectedRows.forEach( (inst) => {
+                    axios.patch('/institutions/'+inst.id, { name: inst.name, is_active: state })
+                         .then( (response) => {
+                           if (response.data.result) {
+                               var _idx = this.mutable_institutions.findIndex(i=>i.id == inst.id);
+                               this.mutable_institutions[_idx].is_active = state;
+                               this.mutable_institutions[_idx].status = new_status;
+                           } else {
+                               this.success = '';
+                               this.failure = response.data.msg;
+                           }
+                         })
+                         .catch(error => {});
+                    });
+                  this.success = "Selected institutions successfully updated.";
+                }
+                this.$emit('bulk-update', this.mutable_institutions);
+                this.bulkAction = '';
+                this.dtKey += 1;           // update the datatable
+                return true;
               }
-              this.bulkAction = '';
-              this.dtKey += 1;           // update the datatable
-              return true;
-          })
-          .catch({});
-          this.$emit('bulk-update', mutable_institutions);
+            })
+            .catch({});
         },
         groupUpdate() {
           this.success = '';
@@ -445,7 +466,7 @@
                          this.success = response.data.msg;
                          // Replace mutable array with response institutions
                          this.mutable_institutions = response.data.inst_data;
-                         this.$emit('bulk-update', mutable_institutions);
+                         this.$emit('bulk-update', this.mutable_institutions);
                      } else {
                          this.success = '';
                          this.failure = response.data.msg;

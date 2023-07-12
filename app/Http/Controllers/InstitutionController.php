@@ -108,6 +108,7 @@ class InstitutionController extends Controller
                 }
                 $harvest_count = $inst->sushiSettings->whereNotNull('last_harvest')->count();
                 $inst->can_delete = ($harvest_count > 0 || $inst->id == 1) ? false : true;
+                $inst->status = ($inst->is_active) ? "Active" : "Inactive";
                 return $inst;
             });
             return response()->json(['institutions' => $institutions], 200);

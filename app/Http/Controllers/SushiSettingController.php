@@ -128,7 +128,7 @@ class SushiSettingController extends Controller
                     $rec->provider->connectors = $rec->provider->globalProv->connectionFields();
                 }
                 return $rec;
-            });
+            })->values();
             return response()->json(['settings' => $settings, 'connectors' => $all_connectors], 200);
 
         // Not returning JSON, the index/vue-component still needs these to setup the page

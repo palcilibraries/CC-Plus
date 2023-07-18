@@ -87,6 +87,19 @@ class InstitutionGroupController extends Controller
         $institutionData->load('institutionGroups');
         $belongsTo = $this->groupsByInst($institutionData);
 
+        // Update the group membership string for affected institutions
+        foreach ($group->institutions as $key => $inst) {
+            $instData = $institutionData->where('id',$inst->id)->first();
+            if ($instData) {
+                $_string = "";
+                foreach ($instData->institutionGroups as $grp) {
+                    $_string .= ($_string == "") ? "" : ", ";
+                    $_string .= $grp->name;
+                }
+                $group->institutions[$key]->group_string = $_string;
+            }
+        }
+
         return response()->json(['result' => true, 'msg' => 'Group created successfully', 'group' => $group,
                                  'belongsTo' => $belongsTo]);
     }
@@ -176,15 +189,30 @@ class InstitutionGroupController extends Controller
             $group->institutions()->attach($inst['id']);
             $count++;
         }
-        $group->count = sizeof($member_institutions) + $count;
+        $group->load('institutions:id,name');
+        $group->count = count($member_institutions) + $count;
+        $member_institutions = $group->institutions->pluck('id')->toArray();
 
-        // Get alll institutions' data and pull out not-members
+        // Get all institutions' data and pull out not-members
         $institutionData = Institution::orderBy('name', 'ASC')->get(['id','name']);
-        $group->not_members = $institutionData->except($member_institutions);
+        $group->not_members = $institutionData->whereNotIn('id',$member_institutions);
 
         // Rebuild the groups-membership strings for all institutions
         $institutionData->load('institutionGroups');
         $belongsTo = $this->groupsByInst($institutionData);
+
+        // Update the group membership string for affected institutions
+        foreach ($group->institutions as $key => $inst) {
+            $instData = $institutionData->where('id',$inst->id)->first();
+            if ($instData) {
+                $_string = "";
+                foreach ($instData->institutionGroups as $grp) {
+                    $_string .= ($_string == "") ? "" : ", ";
+                    $_string .= $grp->name;
+                }
+                $group->institutions[$key]->group_string = $_string;
+            }
+        }
 
         // Build returned group data the way index() does
         return response()->json(['result' => true, 'msg' => 'Group updated successfully', 'count' => $count, 'group' => $group,

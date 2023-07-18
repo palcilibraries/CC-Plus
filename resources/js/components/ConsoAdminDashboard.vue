@@ -136,7 +136,6 @@
       refreshGroups ( {groups, insts} ) {
         this.mutable_groups = [...groups];
         this.mutable_institutions = [...insts];
-        this.instKey += 1;
         this.sushiKey += 1;
         this.userKey += 1;
         this.groupKey += 1;
@@ -152,7 +151,6 @@
               this.mutable_institutions[idx].groups = btInst.groups;
             }
         }
-        this.groupKey += 1;
         this.instKey += 1;
       },
       updInst (instId) {

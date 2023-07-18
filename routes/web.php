@@ -31,8 +31,6 @@ Route::get('/users/export/{type}', 'UserController@export')->name('users.export'
 Route::resource('institutions', 'InstitutionController')->middleware(['auth','cache.headers:no_store']);
 Route::prefix('institution')->name('institution.')->group(function () {
     Route::resource('groups', 'InstitutionGroupController')->middleware(['auth','cache.headers:no_store']);
-    Route::post('extend-institution-group', 'InstitutionGroupController@extend')->name('groups.extend')
-         ->middleware(['auth','role:Admin,Manager']);
     Route::post('/groups/import', 'InstitutionGroupController@import')->name('groups.import')->middleware(['auth']);
     Route::get('/groups/export/{type}', 'InstitutionGroupController@export')->name('groups.export')->middleware(['auth']);
     Route::resource('types', 'InstitutionTypeController')->middleware(['auth','cache.headers:no_store']);
@@ -41,6 +39,8 @@ Route::prefix('institution')->name('institution.')->group(function () {
 });
 Route::post('/institutions/import', 'InstitutionController@import')->name('institutions.import');
 Route::get('/institutions/export/{type}', 'InstitutionController@export')->name('institutions.export');
+Route::post('extend-institution-group', 'InstitutionGroupController@extend')->name('groups.extend')
+     ->middleware(['auth','role:Admin,Manager']);
 // Providers
 Route::resource('/providers', 'ProviderController')->middleware(['auth','cache.headers:no_store']);
 Route::post('/providers/connect', 'ProviderController@connect')->name('providers.connect')

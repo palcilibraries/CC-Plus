@@ -389,7 +389,6 @@
           this.success = '';
           this.failure = '';
           this.dialog_failure = '';
-          let the_group_name = '';
           let institution_count = this.selectedRows.length;
           if (this.groupingType == "Create") {
             if (this.newGroupName==null || this.newGroupName=='' ) {
@@ -400,7 +399,6 @@
                 this.dialog_failure = 'Group name already exists!';
                 return;
             }
-            the_group_name = this.newGroupName;
             axios.post('/institution/groups', {
               name: this.newGroupName,
               institutions: this.selectedRows
@@ -414,7 +412,13 @@
                       if ( a.name > b.name ) return 1;
                       return;
                     });
-                    this.success = 'New Group: '+the_group_name+' created with '+institution_count+' institutions.';
+                    response.data.group.institutions.forEach( (inst) => {
+                      var _idx = this.mutable_institutions.findIndex(i=>i.id == inst.id);
+                      this.mutable_institutions[_idx].group_string = inst.group_string;
+                      this.mutable_institutions[_idx].groups.push(response.data.group.id);
+                    });
+                    this.$emit('refresh-groups', {groups: this.mutable_groups, insts: this.mutable_institutions});
+                    this.success = 'New Group: '+this.newGroupName+' created with '+institution_count+' institutions.';
                 } else {
                     this.dialog_failure = response.data.msg;
                     return;
@@ -427,24 +431,23 @@
             })
             .then( (response) => {
                 if (response.data.result) {
-                    the_group_name = response.data.group.name;
-                    this.success = 'Added '+response.data.count+' institutions to '+the_group_name;
+                    var g_idx = this.mutable_groups.findIndex(g=>g.id == this.addToGroupID);
+                    this.mutable_groups[g_idx] = {...response.data.group};
+                    response.data.group.institutions.forEach( (inst) => {
+                      var _idx = this.mutable_institutions.findIndex(i=>i.id == inst.id);
+                      this.mutable_institutions[_idx].group_string = inst.group_string;
+                      this.mutable_institutions[_idx].groups.push(response.data.group.id);
+                    });
+                    this.$emit('refresh-groups', {groups: this.mutable_groups, insts: this.mutable_institutions});
+                    this.success = 'Added '+response.data.count+' institutions to '+response.data.group.name;
                 } else {
                     this.dialog_failure = response.data.msg;
                     return;
                 }
             }).catch(error => {});
           }
-          // Update "Group(s)" string for affected institutons
-          this.selectedRows.forEach( (inst) => {
-            var _idx = this.mutable_institutions.findIndex(i=>i.id == inst.id);
-            let group_str = this.mutable_institutions[_idx].group_string;
-            group_str += (group_str.length > 0) ? ', ' : '';
-            group_str += the_group_name;
-            this.mutable_institutions[_idx].group_string = group_str;
-          });
           this.groupingDialog = false;
-          this.$emit('refresh-groups', {groups: this.mutable_groups, insts: this.mutable_institutions});
+          this.dtKey += 1;
         },
         institutionImportSubmit (event) {
             this.success = '';

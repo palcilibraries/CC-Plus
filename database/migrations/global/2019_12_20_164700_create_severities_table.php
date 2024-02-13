@@ -15,7 +15,6 @@ class CreateSeveritiesTable extends Migration
     {
         Schema::create('severities', function (Blueprint $table) {
             $table->unsignedInteger('id')->unique();
-            $table->primary('id');
             $table->string('name');
         });
     }

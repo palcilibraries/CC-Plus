@@ -14,7 +14,7 @@
         }
     ],
     "require": {
-        "php": "^7.3.0",
+        "php": "^7.3.0||^8.0",
         "doctrine/dbal": "v3.0",
         "fideloper/proxy": "^4.0",
         "guzzlehttp/guzzle": "^7.0.1",
@@ -24,7 +24,7 @@
         "laravel/ui": "^3.0",
         "laravelcollective/html": "^6.0",
         "league/csv": "^9.0",
-        "ubfr/c5tools": "dev-master"
+        "ubfr/c5tools": "*"
     },
     "require-dev": {
         "beyondcode/laravel-dump-server": "^1.0",

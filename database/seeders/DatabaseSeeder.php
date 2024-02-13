@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
           ReportFieldsTableSeeder::class,
           InstitutionTypesTableSeeder::class,
           InstitutionsTableSeeder::class,
+          PlatformsTableSeeder::class,
+          PublishersTableSeeder::class,
           RolesTableSeeder::class,
           AccessMethodsTableSeeder::class,
           AccessTypesTableSeeder::class,
@@ -27,6 +29,8 @@ class DatabaseSeeder extends Seeder
           SeveritiesTableSeeder::class,
           CcplusErrorsTableSeeder::class,
           ConnectionFieldSeeder::class,
+          GlobalProviderSeeder::class,
+          GlobalSettingSeeder::class,
         ]);
     }
 }

@@ -25,7 +25,7 @@ Once the application is installed, the application administrator will need to co
     + [Step 7: Migrate Initial Database Tables](#step-7-migrate-initial-database-tables)
     + [Step 8: Seed Tables](#step-8-seed-tables)
     + [Step 9: Add a Consortium](#step-9-add-a-consortium)
-    + [Step 10: Reset Global Administrator](#step-10-reset-server-administrator)
+    + [Step 10: Reset Server Administrator](#step-10-reset-server-administrator)
     + [Step 11: Define Harvesting Schedule (Optional)](#step-11-define-harvesting-schedule-optional)
     + [Step 12: Add Scheduler to System Cron (Optional)](#step-12-add-scheduler-to-system-cron-optional)
 * [CC-Plus Artisan Commands](#cc-plus-artisan-commands)
@@ -278,7 +278,7 @@ A brief description for each command is below. See the help screen for each comm
 * ccplus:resetadminpw
   Resets the password for ServerAdmin in one or all consortium instances
 * ccplus:global-provider-update
-  Update CC-Plus Global Provider definitions to match settings from the Project COUNTER API
+  Updates the CC-Plus Global Provider definitions to match settings from the Project COUNTER API
 * ccplus:data-archive  
 	Exports stored CC-Plus report data, institution/provider configuration, and, optionally, global table data to an importable .SQL file.  
 * ccplus:data-purge  

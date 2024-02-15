@@ -161,9 +161,9 @@ Copy the publicly accessible files to the public webserver folder:
 ### Step 6: Setup Initial Databases
 Create the two initial CC-Plus databases (using the same user defined in step-3 above):
 ```bash
-$ mysql
+   mysql
 ```
-```bash
+```
     create database ccplus_global;
     create database ccplus_con_template;
     quit
@@ -175,7 +175,7 @@ The tables in the ccplus_global database will be shared by all consortia within 
   cd /usr/local/CC-Plus;
   php artisan migrate:fresh --database=globaldb --path=database/migrations/global
 ```
-```bash
+```
   Dropped all tables successfully
   Migration table created successfully
   Migrating: 2019_07_12_200315_create_datatypes_table
@@ -187,7 +187,7 @@ The tables in the ccplus_con_template database are used when creating consortia 
 ```bash
   php artisan migrate:fresh --database=con_template --path=database/migrations/con_template
 ```
-```bash
+```
   Dropped all tables successfully
   Migration table created successfully
   Migrating: 2019_07_16_111258_create_institutiontypes_table
@@ -200,7 +200,7 @@ Certain tables in both the global and the template need to be seeded with some i
 ```bash
   php artisan db:seed
 ```
-```bash
+```
   Seeding: Database\Seeders\ReportsTableSeeder
      . . .
   Seeded: Database\Seeders\ConnectionFieldSeeder (5.75ms)
@@ -211,7 +211,7 @@ The `ccplus:add_consortium` command script prompts for inputs and creates the ne
 ```bash
   php artisan ccplus:addconsortium
 ```
-```bash
+```
    New consortium name?:
      MyConsortium
 
@@ -253,22 +253,21 @@ You should now be able to connect and login to the application using the Adminis
 ### Step 10: Reset Server administrator
 The `ccplus:resetadminpw` command script prompts for and resets the credential for the ServerAdmin user. The CC-Plus distribution is seeded with an initial password for this user (ChangeMeNow!), but it really should be changed. The ServerAdmin user is able to create new consortial instances in the system, modify all existing consortia and global CC-Plus settings. The *resetadminpw* script can be run any time from the system command line to reset this credential.
 ```bash
-
 $ php artisan ccplus:resetadminpw
 ```
-> Enter a new password for the 'ServerAdmin' user (required)  []:
->   some-new-password-string
-> Reset all consortia system-wide, including the template [Y]?:
->   Y
-> ccplus_CON1 Successfully Updated.
-> ccplus_con_template Successfully Updated.
->
+```
+   Enter a new password for the 'ServerAdmin' user (required)  []:
+     some-new-password-string
+   Reset all consortia system-wide, including the template [Y]?:
+     Y
+   ccplus_CON1 Successfully Updated.
+   ccplus_con_template Successfully Updated.
+```
 
 ### Step 11: Update Global Providers
 The `ccplus:global-provider-update` command script downloads the current set of report provider settings and definitions from the COUNTER API. The definitions are downloaded, parsed and loaded into the CC-Plus global database. This script can be run anytime post-installation to update/overwrite the global providers. Global providers can also be updated individually from the Global Administrator dashboard (accessible using the ServerAdmin credential).
 ```bash
-
-$ php artisan ccplus:resetadminpw
+$ php artisan ccplus:global-provider-update
 ```
 ### Step 12: Define Harvesting Schedule (Optional)
 Automated harvesting for CC-Plus is defined using the schedule defined in `app/Console/Kernel.php` (which we created in [Step 4, above](#step-4-install-the-application)). The initial file is configured to automate harvesting for a single consortium using two queue handler processes (workers) which are scheduled to run every ten minutes. This means that at least one of the workers will wake and check for recently queued jobs every 10-minutes. An example file for a two-consortium configuration is also included, named: `Kernel.php.example-multiple`.

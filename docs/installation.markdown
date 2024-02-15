@@ -77,9 +77,11 @@ Enable mod_rewrite for Apache:
  > In  /etc/php.ini  ,   /etc/php/V.v/apache2/php.ini, or equivalent
  >
  > Maximum amount of memory a script may consume (128MB)
- >  ; http://php.net/memory-limit
- >  ; memory_limit = 128M
- >    memory_limit = 1024M
+ > http://php.net/memory-limit
+ >
+ >> ; memory_limit = 128M
+ >>
+ >> memory_limit = 1024M
  >
 
  Firewalls, SSL/HTTPS, or other organizational requirements are not addressed in this document.
@@ -144,9 +146,9 @@ The webserver will need write access to some folders within the application fold
   cd /usr/local/CC-Plus/public/;
   mv index.php.example ./index.php
 ```
-> Open index.php with your favorite editor and locate this line:
+> Open index.php with your favorite editor and modify this line as necessary; include a trailing slash
 >
-> define('_CCPHOME_','/usr/local/CC-Plus/');  // Modify as necessary, and include a trailing slash
+> define('_CCPHOME_','/usr/local/CC-Plus/');
 
 (**NOT Optional**)
 Copy the publicly accessible files to the public webserver folder:
@@ -157,12 +159,14 @@ Copy the publicly accessible files to the public webserver folder:
 
 ### Step 6: Setup Initial Databases
 Begin this step by creating the two initial CC-Plus databases (using the same user defined in step-3 above):
->
-> $ mysql
-> mysql> create database ccplus_global;
-> mysql> create database ccplus_con_template;
-> mysql> quit
->
+```bash
+$ mysql
+```
+```bash
+    create database ccplus_global;
+    create database ccplus_con_template;
+    quit
+```
 
 ### Step 7: Migrate Initial Database Tables
 The tables in the ccplus_global database will be shared by all consortia within the host system
@@ -170,73 +174,77 @@ The tables in the ccplus_global database will be shared by all consortia within 
   cd /usr/local/CC-Plus;
   php artisan migrate:fresh --database=globaldb --path=database/migrations/global
 ```
-> Dropped all tables successfully
-> Migration table created successfully
-> Migrating: 2019_07_12_200315_create_datatypes_table
->  . . .
-> Migrated: 2022_09_19_133619_create_global_providers_table (31.52ms)
->
+```bash
+  Dropped all tables successfully
+  Migration table created successfully
+  Migrating: 2019_07_12_200315_create_datatypes_table
+     . . .
+  Migrated: 2022_09_19_133619_create_global_providers_table (31.52ms)
+```
 
 The tables in the ccplus_con_template database are used when creating consortia for CC-Plus
 ```bash
   php artisan migrate:fresh --database=con_template --path=database/migrations/con_template
 ```
-> Dropped all tables successfully
-> Migration table created successfully
-> Migrating: 2019_07_16_111258_create_institutiontypes_table
->  . . .
-> Migrated: 2022_08_03_171565_create_provider_connectors_table (69.44ms)
->
+```bash
+  Dropped all tables successfully
+  Migration table created successfully
+  Migrating: 2019_07_16_111258_create_institutiontypes_table
+     . . .
+  Migrated: 2022_08_03_171565_create_provider_connectors_table (69.44ms)
+```
 
 ### Step 8: Seed Tables
 Certain tables in both the global and the template need to be seeded with some initial data.
 ```bash
   php artisan db:seed
 ```
-> Seeding: Database\Seeders\ReportsTableSeeder
->  . . .
-> Seeded: Database\Seeders\ConnectionFieldSeeder (5.75ms)
->
+```bash
+  Seeding: Database\Seeders\ReportsTableSeeder
+     . . .
+  Seeded: Database\Seeders\ConnectionFieldSeeder (5.75ms)
+```
 
 ### Step 9: Add a Consortium
 The `ccplus:add_consortium` command script prompts for inputs and creates the new consortium. **Note:** The "database key" is used to create a consortium-specific database named "ccplus_< database-key-value >".
 ```bash
   php artisan ccplus:addconsortium
 ```
->  New consortium name?:
->    MyConsortium
->
->  Primary email for the consortium?:
->    my.email@some.domain.com
->
->  Provide a unique database key for the consortium
->    (default creates a random string) []:
->    MyCon1
->
->  Make it active (Y/N) [Y]?:
->    Y
->
-> Dropped all tables successfully.
-> Migration table created successfully.
-> Migrating .....
->  .  .  .  .
-> Migrated .....
-> New database migration completed with status: 0
-> Seeding .....
->  .  .  .  .
-> Seeded: .....
-> Database seeding completed successfully
-> Initial database seeding completed with status: 0
-> Consortium added to global database.
-> The initial Administrator account for a new consortium is always created with
-> an email address set to "Administrator".
->
-> Enter a password for this Administrator account?:
->   MyAdminPass
->
-> New consortium: MyConsortium Successfully Created.
-> NOTE: app/Console/Kernel.php needs updating in order to automate harvesting!
->
+```bash
+   New consortium name?:
+     MyConsortium
+
+   Primary email for the consortium?:
+     my.email@some.domain.com
+
+   Provide a unique database key for the consortium
+     (default creates a random string) []:
+     MyCon1
+
+   Make it active (Y/N) [Y]?:
+     Y
+
+  Dropped all tables successfully.
+  Migration table created successfully.
+  Migrating .....
+     .  .  .  .
+  Migrated .....
+  New database migration completed with status: 0
+  Seeding .....
+     .  .  .  .
+  Seeded: .....
+  Database seeding completed successfully
+  Initial database seeding completed with status: 0
+  Consortium added to global database.
+  The initial Administrator account for a new consortium is always created with
+  an email address set to "Administrator".
+
+  Enter a password for this Administrator account?:
+    MyAdminPass
+
+  New consortium: MyConsortium Successfully Created.
+  NOTE: app/Console/Kernel.php needs updating in order to automate harvesting!
+```
 
 ** Congratulations **
 You should now be able to connect and login to the application using the Administrator credential for your initial consortium! You can now create users, institutions, and providers through the [web interface](overview.markdown).

@@ -26,8 +26,9 @@ Once the application is installed, the application administrator will need to co
     + [Step 8: Seed Tables](#step-8-seed-tables)
     + [Step 9: Add a Consortium](#step-9-add-a-consortium)
     + [Step 10: Reset Server Administrator](#step-10-reset-server-administrator)
-    + [Step 11: Define Harvesting Schedule (Optional)](#step-11-define-harvesting-schedule-optional)
-    + [Step 12: Add Scheduler to System Cron (Optional)](#step-12-add-scheduler-to-system-cron-optional)
+    + [Step 11: Update Global Providers](#step-11-update-global-providers)
+    + [Step 12: Define Harvesting Schedule (Optional)](#step-12-define-harvesting-schedule-optional)
+    + [Step 13: Add Scheduler to System Cron](#step-13-add-scheduler-to-system-cron)
 * [CC-Plus Artisan Commands](#cc-plus-artisan-commands)
 * [License](#license)
 
@@ -158,7 +159,7 @@ Copy the publicly accessible files to the public webserver folder:
 ```
 
 ### Step 6: Setup Initial Databases
-Begin this step by creating the two initial CC-Plus databases (using the same user defined in step-3 above):
+Create the two initial CC-Plus databases (using the same user defined in step-3 above):
 ```bash
 $ mysql
 ```
@@ -250,7 +251,7 @@ The `ccplus:add_consortium` command script prompts for inputs and creates the ne
 You should now be able to connect and login to the application using the Administrator credential for your initial consortium! You can now create users, institutions, and providers through the [web interface](overview.markdown).
 
 ### Step 10: Reset Server administrator
-The `ccplus:resetadminpw` command script prompts for and resets the credential for the ServerAdmin user. The CC-Plus distribution is seeded with an initial password for this user (ChangeMeNow!), but it really should be changed. The ServerAdmin user is able to create new consortial instances in the system, modify all existing consortia and global CC-Plus settings. Th *resetadminpw* script can be run any time from the system command line to reset this credential.
+The `ccplus:resetadminpw` command script prompts for and resets the credential for the ServerAdmin user. The CC-Plus distribution is seeded with an initial password for this user (ChangeMeNow!), but it really should be changed. The ServerAdmin user is able to create new consortial instances in the system, modify all existing consortia and global CC-Plus settings. The *resetadminpw* script can be run any time from the system command line to reset this credential.
 ```bash
 
 $ php artisan ccplus:resetadminpw
@@ -263,11 +264,18 @@ $ php artisan ccplus:resetadminpw
 > ccplus_con_template Successfully Updated.
 >
 
-### Step 11: Define Harvesting Schedule (Optional)
+### Step 11: Update Global Providers
+The `ccplus:global-provider-update` command script downloads the current set of report provider settings and definitions from the COUNTER API. The definitions are downloaded, parsed and loaded into the CC-Plus global database. This script can be run anytime post-installation to update/overwrite the global providers. Global providers can also be updated individually from the Global Administrator dashboard (accessible using the ServerAdmin credential).
+```bash
+
+$ php artisan ccplus:resetadminpw
+```
+### Step 12: Define Harvesting Schedule (Optional)
 Automated harvesting for CC-Plus is defined using the schedule defined in `app/Console/Kernel.php` (which we created in [Step 4, above](#step-4-install-the-application)). The initial file is configured to automate harvesting for a single consortium using two queue handler processes (workers) which are scheduled to run every ten minutes. This means that at least one of the workers will wake and check for recently queued jobs every 10-minutes. An example file for a two-consortium configuration is also included, named: `Kernel.php.example-multiple`.
 
 More details on scheduling tasks in Laravel applications can be found [here: https://laravel.com/docs/8.x/scheduling](https://laravel.com/docs/8.x/scheduling)
-### Step 12: Add Scheduler to System Cron (Optional)
+
+### Step 13: Add Scheduler to System Cron
 The default Kernel.php Scheduler configuration expects to be launched on a regular interval (for example, every 10 minutes). If nothing needs to be processed, the scheduler will exit until the next cycle. These lines (or a close approximation) need to be added to the system cron processing to enable unattended harvesting:
 ```
 # Run CC+ Laravel scheduler every 10 minutes

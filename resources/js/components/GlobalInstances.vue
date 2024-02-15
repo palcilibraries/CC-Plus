@@ -210,6 +210,7 @@
           this.dialogError = '';
           this.dialogType = "edit";
           this.current_consortium = this.mutable_consortia[this.mutable_consortia.findIndex(c=> c.id == consoId)];
+          this.form.ccp_key = this.current_consortium.ccp_key;
           this.form.name = this.current_consortium.name;
           this.form.is_active = this.current_consortium.is_active;
           this.form.email = this.current_consortium.email;

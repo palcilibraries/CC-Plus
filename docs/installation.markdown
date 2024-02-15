@@ -53,21 +53,24 @@ Once the application is installed, the application administrator will need to co
 Make sure you have a working [apache server configured](https://httpd.apache.org/docs/2.4/), including `mod_rewrite`, for serving the publicly-accessible elements of the CC-Plus application. For the purposes of these instructions, we will refer to this place as: `/var/www/ccplus/`.
 
 Define the public-facing web directory settings something along the lines of:
-```bash
-        DocumentRoot "/var/www/ccplus"
-		. . . .
-        <Directory "/var/www/ccplus">
-            Options Indexes FollowSymLinks MultiViews
-            AllowOverride All
-            Order allow,deny
-            allow from all
-        </Directory>
-```
+>
+>       DocumentRoot "/var/www/ccplus"
+>
+>      <Directory "/var/www/ccplus">
+>          Options Indexes FollowSymLinks MultiViews
+>          AllowOverride All
+>          Order allow,deny
+>          allow from all
+>      </Directory>
+
 Enable mod_rewrite for Apache:
 ```bash
-# mkdir /var/www/ccplus
-# a2enmod rewrite (Ubuntu, enabling for another O/S will differ)
-# service apache2 restart
+   mkdir /var/www/ccplus
+ ```
+(Enabling in Linux - other O/S's may differ)
+```bash
+   a2enmod rewrite; 
+   service apache2 restart
 ```
  PHP memory settings need to be generous to support large the harvesting and decoding of large JSON reports. The initial
  recommendation is to set the memory limit to 1024Mb and increase from there, if necessary:

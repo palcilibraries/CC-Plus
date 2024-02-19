@@ -166,7 +166,9 @@
                 an export file containing all Active institution-provider pairs. Connection settings will be
                 labelled where required or missing.</strong>
             </p>
-            <v-checkbox v-model="export_missing" label="Include Institution-Provider pairs without connections?" dense></v-checkbox>
+            <v-checkbox v-model="export_missing" label="Include Connected Institution-Provider pairs with missing credentials?"
+                        dense
+            ></v-checkbox>
           </v-container>
         </v-card-text>
         <v-card-actions>

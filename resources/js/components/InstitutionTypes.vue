@@ -38,7 +38,7 @@
         <v-card-text>
           <v-container grid-list-md>
             <v-row class="d-flex mb-2"><v-col class="d-flex pa-0">
-              <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+              <v-file-input show-size label="CC+ Import File (CSV)" v-model="csv_upload" accept="text/csv" outlined
               ></v-file-input>
             </v-col></v-row>
             <v-row class="d-flex ma-0"><v-col class="d-flex pa-0">

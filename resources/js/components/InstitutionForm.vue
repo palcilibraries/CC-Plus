@@ -71,7 +71,7 @@
         <v-card-title>Import Sushi Settings</v-card-title>
         <v-card-text>
           <v-container grid-list-md>
-            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+            <v-file-input show-size label="CC+ Import File (CSV)" v-model="csv_upload" accept="text/csv" outlined
             ></v-file-input>
             <p>
               <strong>Note:&nbsp; Sushi Settings imports function exclusively as Updates. No existing settings

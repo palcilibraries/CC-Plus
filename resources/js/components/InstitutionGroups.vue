@@ -45,7 +45,7 @@
         </v-row>
         <v-row class="d-flex ma-2" no-gutters>
           <v-col class="d-flex pa-4">
-            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+            <v-file-input show-size label="CC+ Import File (CSV)" v-model="csv_upload" accept="text/csv" outlined
             ></v-file-input>
           </v-col>
         </v-row>

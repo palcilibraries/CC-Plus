@@ -79,7 +79,7 @@
         <v-spacer></v-spacer>
         <v-card-text>
           <v-container grid-list-md>
-            <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+            <v-file-input show-size label="CC+ Import File (CSV)" v-model="csv_upload" accept="text/csv" outlined
             ></v-file-input>
             <p>
               <strong>Note:&nbsp; Institution imports function exclusively as Updates. No existing institution

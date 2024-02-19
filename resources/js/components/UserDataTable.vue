@@ -76,7 +76,7 @@
         <v-card-text>
           <v-container grid-list-md>
             <v-layout wrap>
-              <v-file-input show-size label="CC+ Import File" v-model="csv_upload" accept="text/csv" outlined
+              <v-file-input show-size label="CC+ Import File (CSV)" v-model="csv_upload" accept="text/csv" outlined
               ></v-file-input>
               <p>
                 Use caution when using this import function. Password fields will be encrypted when they are saved.

@@ -7,7 +7,7 @@
         </v-btn>
       </v-col>
       <v-col class="d-flex px-2" cols="3">
-        <a @click="doExport"><v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel</a>
+        <a @click="exportDialog=true;"><v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel</a>
       </v-col>
       <v-col class="d-flex px-2" cols="3">
         <v-btn small color="primary" type="button" @click="newSetting" class="section-action">
@@ -155,6 +155,30 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="exportDialog" max-width="600px">
+      <v-card>
+        <v-card-title>Export Sushi Settings</v-card-title>
+        <v-card-text>
+          <v-container grid-list-md>
+            <p>
+              <strong>Note:&nbsp; By default, Sushi Settings exports will only include institutions and providers
+                with defined connections. Enabling instution-provider pairs with missing credentials will create
+                an export file containing all Active institution-provider pairs. Connection settings will be
+                labelled where required or missing.</strong>
+            </p>
+            <v-checkbox v-model="export_missing" label="Include Institution-Provider pairs without connections?" dense></v-checkbox>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-col class="d-flex">
+            <v-btn small color="primary" type="submit" @click="exportSubmit">Run Export</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn small type="button" color="primary" @click="exportDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-dialog v-model="sushiDialog" content-class="ccplus-dialog">
       <sushi-dialog :dtype="sushiDialogType" :institutions="sushi_insts" :providers="sushi_provs" :setting="current_setting"
                     :all_settings="mutable_settings" @sushi-done="sushiDialogDone" :key="sdKey"
@@ -188,8 +212,10 @@
                 search: '',
                 showTest: false,
                 importDialog: false,
+                exportDialog: false,
                 sushiDialog: false,
                 csv_upload: null,
+                export_missing: false,
                 mutable_settings: [],
                 mutable_options: {},
                 mutable_filters: {inst: [], group: 0, prov: [], harv_stat: []},
@@ -236,14 +262,6 @@
           importForm () {
               this.csv_upload = null;
               this.importDialog = true;
-          },
-          doExport () {
-              let url = "/sushi-export";
-              if (this.mutable_filters['inst'].length > 0 || this.mutable_filters['prov'].length > 0 ||
-                  this.mutable_filters['group'] != 0) {
-                  url += "?filters="+JSON.stringify(this.mutable_filters);
-              }
-              window.location.assign(url);
           },
           updateFilters(filter) {
               this.$store.dispatch('updateAllFilters',this.mutable_filters);
@@ -303,7 +321,6 @@
               this.failure = '';
               let formData = new FormData();
               formData.append('csvfile', this.csv_upload);
-              formData.append('inst_id', this.prov_id);
               axios.post('/sushisettings/import', formData, {
                       headers: {
                           'Content-Type': 'multipart/form-data'
@@ -319,6 +336,17 @@
                        }
                    });
               this.importDialog = false;
+          },
+          exportSubmit (event) {
+              this.success = '';
+              this.failure = '';
+              let url = "/sushi-export?export_missing="+this.export_missing;
+              if (this.mutable_filters['inst'].length > 0 || this.mutable_filters['prov'].length > 0 ||
+                  this.mutable_filters['group'] != 0) {
+                  url += "&filters="+JSON.stringify(this.mutable_filters);
+              }
+              window.location.assign(url);
+              this.exportDialog = false;
           },
           processBulk() {
               this.success = "";

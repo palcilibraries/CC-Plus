@@ -432,13 +432,15 @@ class SushiSettingController extends Controller
         $thisUser = auth()->user();
         abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
 
-        // Handle input filters
+        // Handle and validate inputs
         $filters = null;
         if ($request->filters) {
             $filters = json_decode($request->filters, true);
         } else {
             $filters = array('inst' => [], 'prov' => [], 'group' => 0);
         }
+        $export_missing = ($request->export_missing) ? json_decode($request->export_missing, true) : false;
+
         // Admins have export using group filter, manager can only export their own inst
         $group = null;
         if ($thisUser->hasRole("Admin")) {
@@ -456,9 +458,9 @@ class SushiSettingController extends Controller
         // Get institution record(s)
         $inst_filters = null;
         if (sizeof($filters['inst']) == 0) {
-            $institutions = Institution::get(['id', 'name']);
+            $institutions = Institution::get(['id', 'name', 'local_id', 'is_active']);
         } else {
-            $institutions = Institution::whereIn('id', $filters['inst'])->get(['id', 'name']);
+            $institutions = Institution::whereIn('id', $filters['inst'])->get(['id', 'name', 'local_id', 'is_active']);
             $inst_filters = $filters['inst'];
         }
         if (!$institutions) {
@@ -471,15 +473,17 @@ class SushiSettingController extends Controller
         // Get provider record(s)
         $prov_filters = null;
         if (sizeof($filters['prov']) == 0) {
-            $providers = Provider::get(['id', 'name']);
+            $providers = Provider::with('globalProv')->get();
         } else {
-            $providers = Provider::whereIn('id', $filters['prov'])->get(['id', 'name']);
+            $providers = Provider::with('globalProv')->whereIn('id', $filters['prov'])->get();
             $prov_filters = $filters['prov'];
         }
         if (!$providers) {
             $msg = "Export failed : could not find requested provider(s).";
             return response()->json(['result' => false, 'msg' => $msg]);
         }
+        // Get all connection fields
+        $all_connectors = ConnectionField::get();
         // Set name if only one provider being exported
         $prov_name = ($providers->count() == 1) ? $providers[0]->name : "";
 
@@ -630,6 +634,37 @@ class SushiSettingController extends Controller
             $row++;
         }
 
+        // Include the active INST and PROV pairings without defined settions?
+        if ($export_missing) {
+          foreach ($institutions as $inst) {
+              // If inst is inactive, skip it
+              if (!$inst->is_active) continue;
+              foreach ($providers as $prov) {
+                  // If prov is inactive or not connected to a globalProv, skip it
+                  if (!$prov->is_active || is_null($prov->globalProv)) continue;
+                  // If setting exists, we already added it to the sheet, so skip it
+                  if ($settings->where('inst_id', $inst->id)->where('prov_id',$prov->id)->first()) continue;
+                  // Okay, add to the sheet
+                  $inst_sheet->getRowDimension($row)->setRowHeight(15);
+                  $inst_sheet->setCellValue('A' . $row, $inst->id);
+                  $inst_sheet->setCellValue('B' . $row, $inst->local_id);
+                  $inst_sheet->setCellValue('C' . $row, $prov->id);
+                  $inst_sheet->setCellValue('D' . $row, "-missing-");
+                  $required_connectors = $all_connectors->whereIn('id',$prov->globalProv->connectors)
+                                                        ->pluck('name')->toArray();
+                  $custID = (in_array('customer_id',$required_connectors)) ? '-required-' : '';
+                  $reqID  = (in_array('requestor_id',$required_connectors)) ? '-required-' : '';
+                  $apiKey = (in_array('API_key',$required_connectors)) ? '-required-' : '';
+                  $inst_sheet->setCellValue('E' . $row, $custID);
+                  $inst_sheet->setCellValue('F' . $row, $reqID);
+                  $inst_sheet->setCellValue('G' . $row, $apiKey);
+                  $inst_sheet->setCellValue('I' . $row, $inst->name);
+                  $inst_sheet->setCellValue('J' . $row, $prov->name);
+                  $row++;
+              }
+          }
+        }
+
         // Auto-size the columns
         $columns = array('A','B','C','D','E','F','G','H','I','J');
         foreach ($columns as $col) {
@@ -696,7 +731,7 @@ class SushiSettingController extends Controller
         }
 
         // Setup arrays of "allowable" institution and provider IDs
-        $institutions= Institution::get();
+        $institutions = Institution::get();
         if ($is_admin) {
             $inst_ids = $institutions->pluck('id')->toArray();
             $providers = Provider::with('globalProv')->get();

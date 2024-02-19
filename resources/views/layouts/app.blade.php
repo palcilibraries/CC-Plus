@@ -25,7 +25,7 @@
                 :ccp_key="{{ json_encode( Session::get('ccp_con_key') ) }}"
         ></topnav>
       @else
-        <topnav :user="{{ json_encode(Auth::user()->with('roles','institution')->first()->toArray()) }}"
+        <topnav :user="{{ json_encode(App\User::with('roles','institution')->where('id',auth()->id())->first()->toArray()) }}"
         ></topnav>
       @endif
     @endif

@@ -371,8 +371,8 @@ class SushiSettingController extends Controller
           $input['extra_args'] = ltrim($input['extra_args'], "&?");
         }
 
-       // Construct and execute the test request
-        $_uri .= '/status?';
+       // Construct and execute the test request for a PR report of last month
+        $_uri .= '/reports/pr?';
         $uri_auth = "";
         $fields = array('customer_id', 'requestor_id', 'api_key', 'extra_args');
         foreach ($fields as $fld) {
@@ -385,7 +385,9 @@ class SushiSettingController extends Controller
               }
           }
         }
-        $request_uri = $_uri . $uri_auth;
+        $dates = '&begin_date=' . date('Y-m-d', strtotime('first day of previous month')) .
+                 '&end_date=' . date('Y-m-d', strtotime('last day of previous month'));
+        $request_uri = $_uri . $uri_auth . $dates;
 
        // Make the request and convert result into JSON
         $rows = array();
@@ -394,7 +396,7 @@ class SushiSettingController extends Controller
             $response = $client->request('GET', $request_uri, $options);
             $rows[] = "JSON Response:";
             $rows[] = json_decode($response->getBody(), JSON_PRETTY_PRINT);
-            $result = 'Service status successfully received';
+            $result = 'Request response successfully received';
         } catch (\Exception $e) {
             $result = 'Request for service status failed!';
             $rows[] = $e->getMessage();

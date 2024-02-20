@@ -183,16 +183,16 @@
           this.testStatus = "... Working ...";
           this.showTest = true;
           var testArgs = {'prov_id' : this.form.prov_id};
-          if (this.sushi_prov.global_prov.connectors.some(c => c.name === 'requestor_id')) {
+          if (this.sushi_prov.connectors.some(c => c.name === 'requestor_id')) {
             testArgs['requestor_id'] = this.form.requestor_id;
           }
-          if (this.sushi_prov.global_prov.connectors.some(c => c.name === 'customer_id')) {
+          if (this.sushi_prov.connectors.some(c => c.name === 'customer_id')) {
             testArgs['customer_id'] = this.form.customer_id;
           }
-          if (this.sushi_prov.global_prov.connectors.some(c => c.name === 'API_key')) {
+          if (this.sushi_prov.connectors.some(c => c.name === 'API_key')) {
             testArgs['API_key'] = this.form.API_key;
           }
-          if (this.sushi_prov.global_prov.connectors.some(c => c.name === 'extra_args')) {
+          if (this.sushi_prov.connectors.some(c => c.name === 'extra_args')) {
             testArgs['extra_args'] = this.form.extra_args;
           }
           axios.post('/sushisettings-test', testArgs)

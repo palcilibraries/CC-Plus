@@ -46,16 +46,16 @@
         </v-row>
         <v-row v-if="is_manager || is_admin">
           <v-col class="d-flex" cols="12" sm="6">
-            <v-text-field v-model="form.API_key"
+            <v-text-field v-model="form.api_key"
                           label="API Key"
-                          id="API_key"
+                          id="api_key"
                           outlined
             ></v-text-field>
           </v-col>
         </v-row>
         <v-row v-else>
           <v-col class="d-flex" cols="2">API Key</v-col>
-          <v-col><div v-text="form.API_key"></div></v-col>
+          <v-col><div v-text="form.api_key"></div></v-col>
         </v-row>
         <v-row v-if="is_manager || is_admin">
           <v-flex md3>
@@ -107,7 +107,7 @@
                     prov_id: '0',
                     customer_id: '',
                     requestor_id: '',
-                    API_key: ''
+                    api_key: ''
                 })
             }
         },
@@ -134,11 +134,11 @@
                              }
                              self.form.customer_id = '';
                              self.form.requestor_id = '';
-                             self.form.API_key = '';
+                             self.form.api_key = '';
                          } else {
                              self.form.customer_id = response.data.settings.customer_id;
                              self.form.requestor_id = response.data.settings.requestor_id;
-                             self.form.API_key = response.data.settings.API_key;
+                             self.form.api_key = response.data.settings.api_key;
                              self.warning = '';
                              self.confirm = '';
                              if (self.is_admin || self.is_manager) {

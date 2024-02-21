@@ -79,7 +79,7 @@
             <td><a :href="'/providers/'+item.provider.id">{{ item.provider.name }}</a></td>
             <td v-if="all_connectors.some(c => (c.name == 'customer_id'))">{{ item.customer_id }}</td>
             <td v-if="all_connectors.some(c => (c.name == 'requestor_id'))">{{ item.requestor_id }}</td>
-            <td v-if="all_connectors.some(c => (c.name == 'API_key'))">{{ item.API_key }}</td>
+            <td v-if="all_connectors.some(c => (c.name == 'api_key'))">{{ item.api_key }}</td>
             <td v-if="all_connectors.some(c => (c.name == 'extra_args'))">{{ item.extra_args }}</td>
             <td :class="item.status">{{ item.status }}</td>
             <td v-if="is_manager || is_admin">
@@ -131,7 +131,7 @@
                   { label: 'Name ', name: 'name' },
                   { label: '', name: 'customer_id' },
                   { label: '', name: 'requestor_id' },
-                  { label: '', name: 'API_key' },
+                  { label: '', name: 'api_key' },
                   { label: '', name: 'extra_args' },
                   { label: 'Status', name: 'status' },
                   { label: '', name: ''},
@@ -142,7 +142,7 @@
                     prov_id: null,
                     customer_id: '',
                     requestor_id: '',
-                    API_key: '',
+                    api_key: '',
                     extra_args: '',
                     status: 'Enabled'
 				        })
@@ -177,7 +177,7 @@
                             this.form.prov_id = '0';
                             this.form.customer_id = '';
                             this.form.requestor_id = '';
-                            this.form.API_key = '';
+                            this.form.api_key = '';
                             this.form.extra_args = '';
                             this.showForm = false;
                         } else {
@@ -258,7 +258,7 @@
                 var testArgs = {'prov_id' : this.form.prov_id};
                 if (this.connectors.some(c => c.name === 'requestor_id')) testArgs['requestor_id'] = this.form.requestor_id;
                 if (this.connectors.some(c => c.name === 'customer_id')) testArgs['customer_id'] = this.form.customer_id;
-                if (this.connectors.some(c => c.name === 'API_key')) testArgs['API_key'] = this.form.API_key;
+                if (this.connectors.some(c => c.name === 'api_key')) testArgs['api_key'] = this.form.api_key;
                 if (this.connectors.some(c => c.name === 'extra_args')) testArgs['extra_args'] = this.form.extra_args;
                 axios.post('/sushisettings-test', testArgs)
                      .then((response) => {
@@ -274,7 +274,7 @@
             onUnsetChange (prov) {
                 this.form.customer_id = '';
                 this.form.requestor_id = '';
-                this.form.API_key = '';
+                this.form.api_key = '';
                 this.form.extra_args = '';
                 this.failure = '';
                 this.success = '';

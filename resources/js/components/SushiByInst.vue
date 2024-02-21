@@ -45,9 +45,9 @@
           </v-row>
           <v-row>
             <v-col class="d-flex" cols="12" sm="6">
-              <v-text-field v-model="form.API_key"
+              <v-text-field v-model="form.api_key"
                             label="API Key"
-                            id="API_key"
+                            id="api_key"
                             outlined
               ></v-text-field>
             </v-col>
@@ -92,7 +92,7 @@
         </tr>
         <tr>
           <td>API Key </td>
-          <td>{{ form.API_key }}</td>
+          <td>{{ form.api_key }}</td>
         </tr>
       </v-simple-table>
     </div>
@@ -126,7 +126,7 @@
                     prov_id: '0',
                     customer_id: '',
                     requestor_id: '',
-                    API_key: ''
+                    api_key: ''
                 })
             }
         },
@@ -152,12 +152,12 @@
                              self.confirm = '';
                              self.form.customer_id = '';
                              self.form.requestor_id = '';
-                             self.form.API_key = '';
+                             self.form.api_key = '';
                              self.allowTest = false;
                          } else {
                              self.form.customer_id = response.data.settings.customer_id;
                              self.form.requestor_id = response.data.settings.requestor_id;
-                             self.form.API_key = response.data.settings.API_key;
+                             self.form.api_key = response.data.settings.api_key;
                              self.warning = '';
                              self.confirm = '';
                              self.allowTest = true;
@@ -198,11 +198,11 @@
                              self.warning = 'No settings currenly assigned for this provider';
                              self.form.customer_id = '';
                              self.form.requestor_id = '';
-                             self.form.API_key = '';
+                             self.form.api_key = '';
                          } else {
                              self.form.customer_id = response.data.settings.customer_id;
                              self.form.requestor_id = response.data.settings.requestor_id;
-                             self.form.API_key = response.data.settings.API_key;
+                             self.form.api_key = response.data.settings.api_key;
                          }
                      })
                      .catch(error => {});

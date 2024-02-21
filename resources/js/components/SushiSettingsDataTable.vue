@@ -101,9 +101,9 @@
         <span v-if="item.requestor_id=='-missing-'" class="Incomplete">required</span>
         <span v-else>{{ item.requestor_id }}</span>
       </template>
-      <template v-slot:item.API_key="{ item }">
-        <span v-if="item.API_key=='-missing-'" class="Incomplete">required</span>
-        <span v-else>{{ item.API_key }}</span>
+      <template v-slot:item.api_key="{ item }">
+        <span v-if="item.api_key=='-missing-'" class="Incomplete">required</span>
+        <span v-else>{{ item.api_key }}</span>
       </template>
       <template v-slot:item.extra_args="{ item }">
         <span v-if="item.extra_args=='-missing-'" class="Incomplete">required</span>
@@ -238,7 +238,7 @@
                   { label: 'Provider', name: 'provider.name' },
                   { label: '', name: 'customer_id' },
                   { label: '', name: 'requestor_id' },
-                  { label: '', name: 'API_key' },
+                  { label: '', name: 'api_key' },
                   { label: '', name: 'extra_args' },
                   { label: ' ', name: 'action', sortable: false },
                 ],
@@ -254,7 +254,7 @@
                     prov_id: null,
                     customer_id: '',
                     requestor_id: '',
-                    API_key: '',
+                    api_key: '',
                     extra_args: '',
                     status: 'Enabled'
 				        }),

@@ -22,10 +22,10 @@
           <span v-if="form.requestor_id == '-missing-'" class="Incomplete"><em>required</em></span>
           <span v-else>{{ form.requestor_id }}</span>
         </v-col>
-      	<v-col v-if="setting.provider.connectors.some(c => c.name === 'API_key')" cols="3">
+      	<v-col v-if="setting.provider.connectors.some(c => c.name === 'api_key')" cols="3">
           <strong>API Key: </strong>
-          <span v-if="form.API_key == '-missing-'" class="Incomplete"><em>required</em></span>
-          <span v-else>{{ form.API_key }}</span>
+          <span v-if="form.api_key == '-missing-'" class="Incomplete"><em>required</em></span>
+          <span v-else>{{ form.api_key }}</span>
         </v-col>
         <v-col v-if="setting.provider.connectors.some(c => c.name === 'extra_args')" cols="3">
           <strong>Extra Args: </strong>
@@ -80,8 +80,8 @@
           <v-col v-if="setting.provider.connectors.some(c => c.name === 'requestor_id')">
             <v-text-field v-model="form.requestor_id" label="Requestor ID" outlined></v-text-field>
           </v-col>
-          <v-col v-if="setting.provider.connectors.some(c => c.name === 'API_key')">
-            <v-text-field v-model="form.API_key" label="API_key" outlined></v-text-field>
+          <v-col v-if="setting.provider.connectors.some(c => c.name === 'api_key')">
+            <v-text-field v-model="form.api_key" label="api_key" outlined></v-text-field>
           </v-col>
           <v-col v-if="setting.provider.connectors.some(c => c.name === 'extra_args')">
             <v-text-field v-model="form.extra_args" label="Extra Arguments" outlined></v-text-field>
@@ -119,7 +119,7 @@
                 form: new window.Form({
                     customer_id: this.setting.customer_id,
                     requestor_id: this.setting.requestor_id,
-                    API_key: this.setting.API_key,
+                    api_key: this.setting.api_key,
                     extra_args: this.setting.extra_args,
                     support_email: this.setting.support_email,
                     inst_id: this.setting.inst_id,
@@ -138,7 +138,7 @@
                       this.form.status = response.setting.status;
                       this.form.customer_id = response.setting.customer_id;
                       this.form.requestor_id = response.setting.requestor_id;
-                      this.form.API_key = response.setting.API_key;
+                      this.form.api_key = response.setting.api_key;
                       this.form.extra_args = response.setting.extra_args;
 	                });
                 this.showForm = false;
@@ -171,7 +171,7 @@
                                    self.success = response.data.msg;
                                    self.form.customer_id = '';
                                    self.form.requestor_id = '';
-                                   self.form.API_key = '';
+                                   self.form.api_key = '';
                                    self.form.extra_args = '';
                                    self.form.support_email = '';
                                } else {
@@ -209,8 +209,8 @@
                     testArgs['requestor_id'] = this.form.requestor_id;
                 if (this.setting.provider.connectors.some(c => c.name === 'customer_id'))
                     testArgs['customer_id'] = this.form.customer_id;
-                if (this.setting.provider.connectors.some(c => c.name === 'API_key'))
-                    testArgs['API_key'] = this.form.API_key;
+                if (this.setting.provider.connectors.some(c => c.name === 'api_key'))
+                    testArgs['api_key'] = this.form.api_key;
                 if (this.setting.provider.connectors.some(c => c.name === 'extra_args'))
                     testArgs['extra_args'] = this.form.extra_args;
                 axios.post('/sushisettings-test', testArgs)

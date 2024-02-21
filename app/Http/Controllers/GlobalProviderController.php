@@ -443,7 +443,7 @@ class GlobalProviderController extends Controller
       // Pull connection fields and map a static array to what the API sends back
       $api_connectors = array('customer_id_info'      => array('field' => 'customer_id', 'id' => null, 'label' => ''),
                               'requestor_id_required' => array('field' => 'requestor_id', 'id' => null, 'label' => ''),
-                              'api_key_required'      => array('field' => 'API_key', 'id' => null, 'label' => '')
+                              'api_key_required'      => array('field' => 'api_key', 'id' => null, 'label' => '')
                              );
       foreach ($api_connectors as $key => $cnx) {
           $fld = $allConnectors->where('name', $cnx['field'])->first();
@@ -708,7 +708,7 @@ class GlobalProviderController extends Controller
         }
         // setup arrays with the report and connectors mapped to their column ids
         $rpt_col = array('DR' => 'E', 'IR' => 'F', 'PR' => 'G', 'TR' => 'H');
-        $cnx_col = array('customer_id' => 'I', 'requestor_id' => 'J', 'API_key' => 'K', 'extra_args' => 'L');
+        $cnx_col = array('customer_id' => 'I', 'requestor_id' => 'J', 'api_key' => 'K', 'extra_args' => 'L');
 
         // Load the provider data into a new sheet
         $providers_sheet = $spreadsheet->createSheet();

@@ -170,9 +170,9 @@
               <span v-if="item.requestor_id=='-missing-'" class="Incomplete"><em>required</em></span>
               <span v-else>{{ item.requestor_id }}</span>
             </td>
-            <td v-if="connectors.some(c => c.name === 'API_key')">
-              <span v-if="item.API_key=='-missing-'" class="Incomplete"><em>required</em></span>
-              <span v-else>{{ item.API_key }}</span>
+            <td v-if="connectors.some(c => c.name === 'api_key')">
+              <span v-if="item.api_key=='-missing-'" class="Incomplete"><em>required</em></span>
+              <span v-else>{{ item.api_key }}</span>
             </td>
             <td v-if="connectors.some(c => c.name === 'extra_args')">
               <span v-if="item.extra_args=='-missing-'" class="Incomplete"><em>required</em></span>
@@ -268,7 +268,7 @@
                   { label: 'Name ', name: 'name' },
                   { label: '', name: 'customer_id' },
                   { label: '', name: 'requestor_id' },
-                  { label: '', name: 'API_key' },
+                  { label: '', name: 'api_key' },
                   { label: '', name: 'extra_args' },
                   { label: 'Status', name: 'status' },
 				          { label: '', name: ''}
@@ -286,7 +286,7 @@
                     prov_id: this.provider.id,
                     customer_id: '',
                     requestor_id: '',
-                    API_key: '',
+                    api_key: '',
                     extra_args: '',
                     status: 'Enabled'
                 }),
@@ -421,7 +421,7 @@
                           this.sushiForm.prov_id = this.prov_id;
                           this.sushiForm.customer_id = '';
                           this.sushiForm.requestor_id = '';
-                          this.sushiForm.API_key = '';
+                          this.sushiForm.api_key = '';
                           this.sushiForm.extra_args = '';
                           this.showSushiForm = false;
                           this.dtKey += 1;
@@ -467,8 +467,8 @@
                       testArgs['requestor_id'] = this.sushiForm.requestor_id;
                   if (this.connectors.some(c => c.name === 'customer_id'))
                       testArgs['customer_id'] = this.sushiForm.customer_id;
-                  if (this.connectors.some(c => c.name === 'API_key'))
-                      testArgs['API_key'] = this.sushiForm.API_key;
+                  if (this.connectors.some(c => c.name === 'api_key'))
+                      testArgs['api_key'] = this.sushiForm.api_key;
                   if (this.connectors.some(c => c.name === 'extra_args'))
                       testArgs['extra_args'] = this.sushiForm.extra_args;
                   axios.post('/sushisettings-test', testArgs)
@@ -485,7 +485,7 @@
               onUnsetChange () {
                   this.sushiForm.customer_id = '';
                   this.sushiForm.requestor_id = '';
-                  this.sushiForm.API_key = '';
+                  this.sushiForm.api_key = '';
                   this.sushiForm.extra_args = '';
                   this.failure = '';
                   this.success = '';

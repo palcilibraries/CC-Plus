@@ -19,7 +19,7 @@ class CreateSushiSettingsTable extends Migration
             $table->unsignedInteger('prov_id');
             $table->text('customer_id')->nullable();
             $table->text('requestor_id')->nullable();
-            $table->text('API_key')->nullable();
+            $table->text('api_key')->nullable();
             $table->text('extra_args')->nullable();
             $table->text('support_email')->nullable();
             $table->string('last_harvest', 7)->nullable();   // YYYY-MM , last successful

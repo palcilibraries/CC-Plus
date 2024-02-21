@@ -33,7 +33,7 @@ class SushiSetting extends Model
    * @var array
    */
     protected $fillable = [
-      'inst_id', 'prov_id', 'requestor_id', 'customer_id', 'API_key', 'extra_args', 'support_email', 'status'
+      'inst_id', 'prov_id', 'requestor_id', 'customer_id', 'api_key', 'extra_args', 'support_email', 'status'
     ];
     protected $casts =['id'=>'integer', 'inst_id'=>'integer', 'prov_id'=>'integer'];
 
@@ -42,7 +42,7 @@ class SushiSetting extends Model
    *
    * @var array
    */
-    protected $encrypted = [ 'requestor_id', 'customer_id', 'API_key' ];
+    protected $encrypted = [ 'requestor_id', 'customer_id', 'api_key' ];
 
     public function institution()
     {

@@ -73,7 +73,7 @@ class GlobalProviderUpdate extends Command
         $fields = ConnectionField::get();
         $api_connectors = array('customer_id_info'      => array('field' => 'customer_id', 'id' => null),
                                 'requestor_id_required' => array('field' => 'requestor_id', 'id' => null),
-                                'api_key_required'      => array('field' => 'API_key', 'id' => null)
+                                'api_key_required'      => array('field' => 'api_key', 'id' => null)
                                );
         foreach ($api_connectors as $key => $cnx) {
             $fld = $fields->where('name', $cnx['field'])->first();

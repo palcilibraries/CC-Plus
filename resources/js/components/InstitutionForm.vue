@@ -152,7 +152,7 @@
                     global_id: null,
                     customer_id: '',
                     requestor_id: '',
-                    API_key: '',
+                    api_key: '',
                     extra_args: '',
                     status: 'Enabled'
                 }),

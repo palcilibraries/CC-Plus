@@ -96,7 +96,7 @@
             global_id: null,
             customer_id: '',
             requestor_id: '',
-            API_key: '',
+            api_key: '',
             extra_args: '',
             status: ''
         }),
@@ -124,7 +124,7 @@
         if (typeof(setting) != 'undefined') {
           this.form.customer_id = setting.customer_id;
           this.form.requestor_id = setting.requestor_id;
-          this.form.API_key = setting.API_key;
+          this.form.api_key = setting.api_key;
           this.form.extra_args = setting.extra_args;
           this.form.status = setting.status;
           this.mutable_dtype = 'edit';
@@ -189,8 +189,8 @@
           if (this.sushi_prov.connectors.some(c => c.name === 'customer_id')) {
             testArgs['customer_id'] = this.form.customer_id;
           }
-          if (this.sushi_prov.connectors.some(c => c.name === 'API_key')) {
-            testArgs['API_key'] = this.form.API_key;
+          if (this.sushi_prov.connectors.some(c => c.name === 'api_key')) {
+            testArgs['api_key'] = this.form.api_key;
           }
           if (this.sushi_prov.connectors.some(c => c.name === 'extra_args')) {
             testArgs['extra_args'] = this.form.extra_args;
@@ -232,7 +232,7 @@
           this.form.prov_id = this.setting.prov_id;
           this.form.customer_id = this.setting.customer_id;
           this.form.requestor_id = this.setting.requestor_id;
-          this.form.API_key = this.setting.API_key;
+          this.form.api_key = this.setting.api_key;
           this.form.extra_args = this.setting.extra_args;
           this.statusval = this.setting.status;
           this.sushi_prov = { ...this.setting.provider};

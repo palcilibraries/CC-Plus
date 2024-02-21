@@ -420,7 +420,7 @@ class InstitutionController extends Controller
                     $inst_sheet->setCellValue('H' . $row, $setting->prov_id);
                     $inst_sheet->setCellValue('I' . $row, $setting->customer_id);
                     $inst_sheet->setCellValue('J' . $row, $setting->requestor_id);
-                    $inst_sheet->setCellValue('K' . $row, $setting->API_key);
+                    $inst_sheet->setCellValue('K' . $row, $setting->api_key);
                     $inst_sheet->setCellValue('L' . $row, $setting->support_email);
                     $inst_sheet->setCellValue('N' . $row, $setting->provider->name);
                     $row++;
@@ -609,7 +609,7 @@ class InstitutionController extends Controller
                     }
 
                     // Update or create the settings
-                    $_args = array('customer_id' => $row[8], 'requestor_id' => $row[9],'API_key' => $row[10],
+                    $_args = array('customer_id' => $row[8], 'requestor_id' => $row[9],'api_key' => $row[10],
                                    'support_email' => $row[11]);
                     $new_setting = SushiSetting::
                         updateOrCreate(['inst_id' => $cur_inst_id, 'prov_id' => $prov_id], $_args);

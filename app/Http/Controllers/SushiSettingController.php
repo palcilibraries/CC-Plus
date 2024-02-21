@@ -638,7 +638,7 @@ class SushiSettingController extends Controller
             $inst_sheet->setCellValue('D' . $row, $setting->status);
             $inst_sheet->setCellValue('E' . $row, $setting->customer_id);
             $inst_sheet->setCellValue('F' . $row, $setting->requestor_id);
-            $inst_sheet->setCellValue('G' . $row, $setting->API_key);
+            $inst_sheet->setCellValue('G' . $row, $setting->api_key);
             $inst_sheet->setCellValue('H' . $row, $setting->extra_args);
             $inst_sheet->setCellValue('J' . $row, $setting->institution->name);
             $inst_sheet->setCellValue('K' . $row, $setting->provider->name);
@@ -665,7 +665,7 @@ class SushiSettingController extends Controller
                                                         ->pluck('name')->toArray();
                   $custID = (in_array('customer_id',$required_connectors)) ? '-required-' : '';
                   $reqID  = (in_array('requestor_id',$required_connectors)) ? '-required-' : '';
-                  $apiKey = (in_array('API_key',$required_connectors)) ? '-required-' : '';
+                  $apiKey = (in_array('api_key',$required_connectors)) ? '-required-' : '';
                   $extra_args = (in_array('extra_args',$required_connectors)) ? '-required-' : '';
                   $inst_sheet->setCellValue('E' . $row, $custID);
                   $inst_sheet->setCellValue('F' . $row, $reqID);
@@ -804,7 +804,7 @@ class SushiSettingController extends Controller
             }
 
             // Put settings (except status) into an array for the update call
-            $_args = array('customer_id' => $row[4], 'requestor_id' => $row[5], 'API_key' => $row[6], 'extra_args' => $row[7]);
+            $_args = array('customer_id' => $row[4], 'requestor_id' => $row[5], 'api_key' => $row[6], 'extra_args' => $row[7]);
             // Mark any missing connectors
             $missing_count = 0;
             $required_connectors = $all_connectors->whereIn('id',$current_prov->globalProv->connectors)

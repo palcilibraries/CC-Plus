@@ -244,7 +244,7 @@
                 ],
                 headers: [],
                 footer_props: { 'items-per-page-options': [10,50,100,-1] },
-                bulk_actions: [ 'Enable', 'Disable', 'Suspend', 'Delete' ],
+                bulk_actions: [ 'Enable', 'Disable', 'Delete' ],
                 bulkAction: null,
                 selectedRows: [],
                 dtKey: 1,
@@ -357,9 +357,8 @@
               if (this.bulkAction == 'Enable') {
                   msg += "Enabling the selected setting(s) will cause them to be added to the harvesting queue";
                   msg += " according to the harvest day defined for the provider(s).";
-              } else if (this.bulkAction == 'Disable' || this.bulkAction == 'Suspend') {
-                  msg += (this.bulkAction == 'Disable') ? "Disabling" : "Suspending";
-                  msg += " the selected setting(s) will leave the attempts counter intact, and will";
+              } else if (this.bulkAction == 'Disable') {
+                  msg += " Disabling the selected setting(s) will leave the attempts counter intact, and will";
                   msg += " prevent future harvesting attempts. Any queued harvests related to the settings";
                   msg += " will be cancelled; harvests that are 'Active', or 'Pending' will not be changed.";
               } else if (this.bulkAction == 'Delete') {
@@ -394,7 +393,7 @@
                       }
                       this.success = "Selected settings successfully deleted.";
                   } else {
-                      var new_status = (this.bulkAction=='Suspend') ? 'Suspended' : this.bulkAction+'d';
+                      var new_status = this.bulkAction+'d';
                       this.selectedRows.forEach( (setting) => {
                           axios.post('/sushisettings-update', {
                             inst_id: setting.inst_id,

@@ -436,7 +436,7 @@ class GlobalProviderController extends Controller
           return response()->json(['result' => false, 'msg' => "COUNTER Registry ID undefined!"]);
       }
 
-      // Get masterreports and connection_fields
+      // Get master reports and connection_fields
       $this->getMasterReports();
       $this->getConnectionFields();
 
@@ -472,27 +472,19 @@ class GlobalProviderController extends Controller
       if (!is_object($json)) {
           return response()->json(['result' => false, 'msg' => "Error getting registry details - invalid datatype received!"]);
       }
-      // Setup provider data to be returned
+      // Setup provider data to be updated and returned
       $return_data = array();
       $return_data['registry_id'] = $json->id;
       $return_data['name'] = $json->name;
       $return_data['abbrev'] = $json->abbrev;
+
       // Get reports available
       $available = $masterReports->whereIn('name',array_column($json->reports,'report_id'));
       $reportIds = $available->pluck('id')->toArray();
-      $return_data['report_state'] = $this->reportState($reportIds);
       $return_data['master_reports'] = $reportIds;
-      $reportNames = $available->pluck('name')->toArray();
-      $return_data['reports_string'] = "";
-      foreach ($reportNames as $rpt) {
-          $return_data['reports_string'] .= ($return_data['reports_string'] == '') ? '' : ', ';
-          $return_data['reports_string'] .= $rpt;
-      }
 
-      $services = $json->sushi_services[0];
-      $return_data['server_url_r5'] = $services->url;
-      $return_data['notifications_url'] = $services->notifications_url;
       // Get connection fields (for now, assumes customer_id is always required)
+      $services = $json->sushi_services[0];
       $field_labels = array();
       foreach ($api_connectors as $key => $cnx) {
           if ($key == 'customer_id_info' || $services->{$key}) {
@@ -502,6 +494,20 @@ class GlobalProviderController extends Controller
       }
       $return_data['connectors'] = $connectors;
       $return_data['connection_fields'] = $field_labels;
+      $return_data['server_url_r5'] = $services->url;
+      $return_data['notifications_url'] = $services->notifications_url;
+
+      // Update the global provider record
+      $provider->update($return_data);
+
+      // Add more return data for the U/I
+      $return_data['report_state'] = $this->reportState($reportIds);
+      $reportNames = $available->pluck('name')->toArray();
+      $return_data['reports_string'] = "";
+      foreach ($reportNames as $rpt) {
+          $return_data['reports_string'] .= ($return_data['reports_string'] == '') ? '' : ', ';
+          $return_data['reports_string'] .= $rpt;
+      }
       $return_data['connection_count'] = count($connectors);
       $return_data['connector_state'] = $this->connectorState($connectors);
 

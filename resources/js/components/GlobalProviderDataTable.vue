@@ -419,6 +419,21 @@
                      this.form.connector_state = response.data.prov.connector_state;
                      this.form.report_state = response.data.prov.report_state;
                      this.form.notifications_url = response.data.prov.notifications_url;
+                     var _idx = this.mutable_providers.findIndex(ii=>ii.id == gpId);
+                     if (_idx > -1) {
+                       this.mutable_providers[_idx].name = response.data.prov.name;
+                       this.mutable_providers[_idx].abbrev = response.data.prov.abbrev;
+                       this.mutable_providers[_idx].server_url_r5 = response.data.prov.server_url_r5;
+                       this.mutable_providers[_idx].connectors = response.data.prov.connectors;
+                       this.mutable_providers[_idx].connector_state = response.data.prov.connector_state;
+                       this.mutable_providers[_idx].connection_fields = response.data.prov.connection_fields;
+                       this.mutable_providers[_idx].report_state = response.data.prov.report_state;
+                       this.mutable_providers[_idx].reports_string = response.data.prov.reports_string;
+                       this.mutable_providers[_idx].master_reports = response.data.prov.master_reports;
+                       this.mutable_providers[_idx].notifications_url = response.data.prov.notifications_url;
+                       this.$emit('change-prov', gpId);
+                       this.dtKey += 1;           // update the datatable
+                     }
                    } else {
                      this.success = '';
                      this.failure = response.data.msg;

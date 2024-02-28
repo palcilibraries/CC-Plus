@@ -479,7 +479,7 @@ class SushiSettingController extends Controller
         if (sizeof($filters['prov']) == 0) {
             $providers = Provider::with('globalProv')->whereIn('inst_id', $provider_insts)->get();
         } else {
-            $providers = Provider::with('globalProv')->whereIn('id', $filters['prov'])->whereIn('inst_id', $provider_insts)-get();
+            $providers = Provider::with('globalProv')->whereIn('id', $filters['prov'])->whereIn('inst_id', $provider_insts)->get();
             $prov_filters = $filters['prov'];
         }
         if (!$providers) {

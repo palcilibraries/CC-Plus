@@ -463,7 +463,7 @@ class SushiSettingController extends Controller
         if ($request->filters) {
             $filters = json_decode($request->filters, true);
         } else {
-            $filters = array('inst' => [], 'global_prov' => [], 'inst__prov' => [], 'group' => 0);
+            $filters = array('inst' => [], 'global_prov' => [], 'inst_prov' => [], 'group' => 0);
         }
         $context = 1;
         if ($request->input('context')) {

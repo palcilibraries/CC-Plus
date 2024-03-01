@@ -137,7 +137,7 @@
                 mutable_unset: [...this.unset_global],
                 mutable_users: [ ...this.users ],
                 mutable_groups: [ ...this.institution.groups],
-                sushi_filters: {inst: [], group: 0, prov: [], harv_stat: []},
+                sushi_filters: {inst: [], group: 0, global_prov: [], inst_prov: [], harv_stat: []},
                 instForm: new window.Form({
                     name: this.institution.name,
                     local_id: this.institution.local_id,
@@ -158,7 +158,6 @@
                 }),
                 dtKey: 1,
                 csv_upload: null,
-                export_filters: { 'inst': [this.institution.id], 'prov': [], 'group': 0 },
                 import_type: '',
                 import_types: ['Add or Update', 'Full Replacement']
             }
@@ -219,10 +218,6 @@
                          }
                      });
                 this.importDialog = false;
-            },
-            doExport () {
-                let url = "/sushi-export?filters="+JSON.stringify(this.export_filters);
-                window.location.assign(url);
             },
             destroy (instid) {
                 var self = this;

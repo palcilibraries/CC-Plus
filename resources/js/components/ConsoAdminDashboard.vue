@@ -94,7 +94,7 @@
         mutable_unset: [...this.unset_global],
         mutable_groups: [...this.groups],
         inst_filters: {stat: "", groups: [] },
-        sushi_filters: {inst: [], group: 0, prov: [], harv_stat: []},
+        sushi_filters: {inst: [], group: 0, global_prov: [], inst_prov: [], harv_stat: []},
       }
     },
     watch: {

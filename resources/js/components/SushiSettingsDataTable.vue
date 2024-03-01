@@ -29,11 +29,11 @@
         <span class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
       </v-col>
       <v-col v-else class="d-flex" cols="2">&nbsp;</v-col>
-      <v-col v-if="mutable_filters['group']==0 && mutable_institutions.length>1" class="d-flex px-2 align-center" cols="2">
+      <v-col v-if="showInstFilter" class="d-flex px-2 align-center" cols="2">
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-autocomplete :items="mutable_institutions" v-model="mutable_filters['inst']" @change="updateFilters('inst')" multiple
+        <v-autocomplete :items="mutable_institutions" v-model="mutable_filters['inst']" @change="updateFilters()" multiple
                   label="Institution(s)"  item-text="name" item-value="id"
         ></v-autocomplete>
       </v-col>
@@ -41,26 +41,31 @@
         <div v-if="mutable_filters['group'] != 0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('group')"/>&nbsp;
         </div>
-        <v-autocomplete :items="inst_groups" v-model="mutable_filters['group']"  @change="updateFilters('group')"
+        <v-autocomplete :items="mutable_groups" v-model="mutable_filters['group']"  @change="updateFilters()"
                   label="Institution Group"  item-text="name" item-value="id" hint="Limit the display to an institution group"
         ></v-autocomplete>
       </v-col>
-      <v-col v-if="is_admin && mutable_providers.length>0" class="d-flex px-2 align-center" cols="2">
-        <div v-if="mutable_filters['prov'].length>0" class="x-box">
-            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
+      <v-col v-if="is_admin && inst_context>1 && mutable_providers.length>0" class="d-flex px-2 align-center" cols="2">
+        <div v-if="mutable_filters['inst_prov'].length>0" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst_prov')"/>&nbsp;
         </div>
-        <v-autocomplete v-if="inst_context>1" :items="mutable_providers" v-model="mutable_filters['prov']"
-                        label="Provider(s)" item-text="name" item-value="conso_id" @change="updateFilters('prov')" multiple
+        <v-autocomplete :items="mutable_providers" v-model="mutable_filters['inst_prov']" label="Provider(s)" item-text="name"
+                        item-value="conso_id" @change="updateFilters()" multiple
         ></v-autocomplete>
-        <v-autocomplete v-else :items="mutable_providers" v-model="mutable_filters['prov']"
-                        label="Provider(s)" item-text="name" item-value="id" @change="updateFilters('prov')" multiple
+      </v-col>
+      <v-col v-if="is_admin && inst_context<=1 && mutable_providers.length>0" class="d-flex px-2 align-center" cols="2">
+        <div v-if="mutable_filters['global_prov'].length>0" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('global_prov')"/>&nbsp;
+        </div>
+        <v-autocomplete :items="mutable_providers" v-model="mutable_filters['global_prov']"
+                        label="Provider(s)" item-text="name" item-value="id" @change="updateFilters()" multiple
         ></v-autocomplete>
       </v-col>
       <v-col class="d-flex px-4 align-center" cols="2">
         <div v-if="mutable_filters['harv_stat'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('harv_stat')"/>&nbsp;
         </div>
-        <v-select :items="statuses" v-model="mutable_filters['harv_stat']" @change="updateFilters('harv_stat')" multiple
+        <v-select :items="statuses" v-model="mutable_filters['harv_stat']" @change="updateFilters()" multiple
                   label="Harvest Status"
         ></v-select> &nbsp;
       </v-col>
@@ -220,11 +225,12 @@
                 export_missing: false,
                 mutable_settings: [],
                 mutable_options: {},
-                mutable_filters: {inst: [], group: 0, prov: [], harv_stat: []},
+                mutable_filters: {inst: [], group: 0, global_prov: [], inst_prov: [], harv_stat: []},
                 statuses: ['Enabled','Disabled','Suspended','Incomplete'],
                 mutable_institutions: [ ...this.institutions ],
                 mutable_providers: [ ...this.providers ],
-                mutable_unset: [...this.unset],
+                mutable_groups: [...this.inst_groups ],
+                mutable_unset: [...this.unset ],
                 loading: true,
                 connectors: [],
                 sushi_insts: [],
@@ -265,14 +271,23 @@
               this.csv_upload = null;
               this.importDialog = true;
           },
-          updateFilters(filter) {
+          updateFilters() {
               this.$store.dispatch('updateAllFilters',this.mutable_filters);
               this.updateSettings();
           },
           clearFilter(filter) {
               this.mutable_filters[filter] = (filter == 'group') ? 0 : [];
               this.$store.dispatch('updateAllFilters',this.mutable_filters);
+              // Clearing provider filter resets options for insts and groups
+              if (filter == 'prov') {
+                  this.mutable_groups = [...this.inst_groups ];
+                  this.mutable_institutions = [ ...this.institutions ];
+              // Clearing inst or group filter resets options for providers
+              } else if (filter == 'inst' || filter == 'group') {
+                  this.mutable_providers = [ ...this.providers ];
+              }
               this.updateSettings();
+              this.dtKey += 1;           // re-render of the datatable
           },
           updateSettings() {
               this.success = "";
@@ -284,6 +299,17 @@
                    .then((response) => {
                        this.connectors = [ ...response.data.connectors ];
                        this.mutable_settings = [ ...response.data.settings ];
+                       if (this.mutable_filters['inst'].length>0 || this.mutable_filters['group'] != 0) {
+                         this.mutable_providers = [ ...response.data.prov_options ];
+                       }
+                       if (this.context==1 && this.mutable_filters['global_prov'].length>0 ) {
+                         this.mutable_institutions = [ ...response.data.inst_options ];
+                         this.mutable_groups = [ ...response.data.group_options ];
+                       }
+                       if (this.context>1 && this.mutable_filters['inst_prov'].length>0) {
+                         this.mutable_institutions = [ ...response.data.inst_options ];
+                         this.mutable_groups = [ ...response.data.group_options ];
+                       }
                        this.updateHeaders();
                    })
                    .catch(err => console.log(err));
@@ -343,9 +369,9 @@
               this.success = '';
               this.failure = '';
               let url = "/sushi-export?export_missing="+this.export_missing;
-              if (this.mutable_filters['inst'].length > 0 || this.mutable_filters['prov'].length > 0 ||
-                  this.mutable_filters['group'] != 0) {
-                  url += "&filters="+JSON.stringify(this.mutable_filters);
+              if (this.mutable_filters['inst'].length > 0 || this.mutable_filters['group'] != 0 ||
+                  this.mutable_filters['global_prov'].length > 0 || this.mutable_filters['inst_prov'].length > 0) {
+                  url += "&context="+this.inst_context+"&filters="+JSON.stringify(this.mutable_filters);
               }
               window.location.assign(url);
               this.exportDialog = false;
@@ -431,8 +457,13 @@
           newSetting() {
               this.sdKey += 1;
               this.current_setting = {};
-              this.sushi_provs = [ ...this.providers ];
-              this.sushi_insts = [ ...this.institutions ];
+              // this.sushi_provs = [ ...this.providers ];
+              this.sushi_provs = (this.inst_context==1)
+                                 ? this.providers.filter(p => p.conso_id!=null && p.inst_id==1)
+                                 : this.providers.filter(
+                                     p => p.conso_id!=null && (p.inst_id==this.context || p.inst_id==1)
+                                   );
+              this.sushi_insts = [ ...this.mutable_institutions ];
               this.sushiDialogType = 'create';
               this.sushiDialog = true;
           },
@@ -522,6 +553,10 @@
         },
         computed: {
           ...mapGetters(['all_filters','is_admin','is_manager','datatable_options']),
+          showInstFilter() {
+            return this.mutable_filters['group']==0 &&
+                   (this.inst_context==1 || this.mutable_institutions.length>1);
+          }
         },
         beforeCreate() {
           // Load existing store data

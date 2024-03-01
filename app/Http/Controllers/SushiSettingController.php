@@ -36,7 +36,7 @@ class SushiSettingController extends Controller
         $json = ($request->input('json')) ? true : false;
 
         // Assign optional inputs to $filters array
-        $filters = array('inst' => [], 'group' => 0, 'prov' => [], 'harv_stat' => []);
+        $filters = array('inst' => [], 'group' => 0, 'global_prov' => [], 'inst_prov' => [], 'harv_stat' => []);
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
@@ -59,6 +59,7 @@ class SushiSettingController extends Controller
                 $group_insts = $group->institutions->pluck('id')->toArray();
             }
         }
+
         // Skip querying for records unless we're returning json
         // The vue-component will run a request for initial data once it is mounted
         if ($json) {
@@ -72,11 +73,12 @@ class SushiSettingController extends Controller
             if ($context > 1) {
                 $context = $request->input('context');
                 $inst_provs = Provider::where('inst_id',$context)->get();
-                $inst_ids = $inst_provs->pluck('id')->toArray();
-                $inst_globals = $inst_provs->pluck('global_id')->toArray();
-                $conso_ids = Provider::where('inst_id',1)->whereNotIn('global_id',$inst_globals)->pluck('id')->toArray();
-                $limit_prov_ids = array_merge($conso_ids,$inst_ids);
+                $inst_prov_ids = $inst_provs->pluck('id')->toArray();
+                $inst_global_ids = $inst_provs->pluck('global_id')->toArray();
+                $conso_prov_ids = Provider::where('inst_id',1)->whereNotIn('global_id',$inst_global_ids)->pluck('id')->toArray();
+                $limit_prov_ids = array_merge($conso_prov_ids,$inst_prov_ids);
             }
+
             // Get sushi settings
             $data = SushiSetting::with('institution:id,name,is_active','provider','provider.globalProv')
                                   ->when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
@@ -94,12 +96,13 @@ class SushiSettingController extends Controller
                                   ->get();
 
             // Apply provider filter to returned data - it is dependent on context
-            if (sizeof($filters['prov']) > 0) {
+            if ($context==1 && sizeof($filters['global_prov']) > 0) {
                 foreach ($data as $key => $rec) {
-                    if ( $context > 1 && !in_array($rec->prov_id,$filters['prov']) ||
-                        $context == 1 && !in_array($rec->provider->global_id,$filters['prov'])) {
-                        $data->forget($key);
-                    }
+                    if ( !in_array($rec->provider->global_id,$filters['global_prov']) ) $data->forget($key);
+                }
+            } else if ($context>1 && sizeof($filters['inst_prov']) > 0) {
+                foreach ($data as $key => $rec) {
+                    if ( !in_array($rec->prov_id,$filters['inst_prov']) ) $data->forget($key);
                 }
             }
 
@@ -110,6 +113,7 @@ class SushiSettingController extends Controller
             $providerIds = $data->unique('prov_id')->pluck('prov_id')->toArray();
             $providers = Provider::with('globalProv')->whereIn('id',$providerIds)->get();
             foreach ($providers as $prov) {
+                $prov->conso_id = $prov->id;
                 // There are only 4... if they're all set, skip checking
                 if (sizeof($seen_connectors) < 4) {
                     $connectors = $global_connectors->whereIn('id',$prov->globalProv->connectors);
@@ -122,6 +126,25 @@ class SushiSettingController extends Controller
                 }
             }
 
+            // Update filter-options if a filter was given as input
+            $prov_options = [];
+            $inst_options = [];
+            $group_options = [];
+            if (sizeof($filters['inst']) > 0 || $filters['group'] > 0) {
+                $prov_options = $providers->map( function ($rec) {
+                    $rec->connectors = $rec->globalProv->connectionFields();
+                    return $rec;
+                });
+            } else if ( ($context==1 && sizeof($filters['global_prov']) > 0) ||
+                        ($context>1 && sizeof($filters['inst_prov']) > 0) ) {
+                $instIds = $data->unique('inst_id')->pluck('inst_id')->toArray();
+                $inst_options = Institution::whereIn('id', $instIds)->orderBy('name', 'ASC')
+                                           ->get(['id', 'name', 'is_active']);
+                $group_options = InstitutionGroup::whereHas('institutions', function ($qry) use ($instIds) {
+                                            return $qry->whereIn('institutions.id',$instIds);
+                                          })->get(['name', 'id'])->toArray();
+            }
+
             // Add global connectors to the provider records
             $settings = $data->map( function ($rec) {
                 if ($rec->provider->globalProv) {
@@ -129,7 +152,8 @@ class SushiSettingController extends Controller
                 }
                 return $rec;
             })->values();
-            return response()->json(['settings' => $settings, 'connectors' => $all_connectors], 200);
+            return response()->json(['settings' => $settings, 'connectors' => $all_connectors, 'inst_options' => $inst_options,
+                                     'group_options' => $group_options, 'prov_options' => $prov_options], 200);
 
         // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {
@@ -439,7 +463,11 @@ class SushiSettingController extends Controller
         if ($request->filters) {
             $filters = json_decode($request->filters, true);
         } else {
-            $filters = array('inst' => [], 'prov' => [], 'group' => 0);
+            $filters = array('inst' => [], 'global_prov' => [], 'inst__prov' => [], 'group' => 0);
+        }
+        $context = 1;
+        if ($request->input('context')) {
+            $context = ($request->input('context') > 0) ? $request->input('context') : 1;
         }
         $export_missing = ($request->export_missing) ? json_decode($request->export_missing, true) : false;
 
@@ -476,11 +504,17 @@ class SushiSettingController extends Controller
 
         // Get provider record(s)
         $prov_filters = null;
-        if (sizeof($filters['prov']) == 0) {
+        if (sizeof($filters['global_prov']) == 0 && sizeof($filters['inst_prov']) == 0) {
             $providers = Provider::with('globalProv')->whereIn('inst_id', $provider_insts)->get();
-        } else {
-            $providers = Provider::with('globalProv')->whereIn('id', $filters['prov'])->whereIn('inst_id', $provider_insts)->get();
-            $prov_filters = $filters['prov'];
+        } else if ($context==1 && sizeof($filters['global_prov']) > 0) {
+            $providers = Provider::with('globalProv')->whereIn('global_id', $filters['global_prov'])
+                                 ->whereIn('inst_id', $provider_insts)->get();
+            // $prov_filters = $filters['global_prov'];
+            $prov_filters = $providers->pluck('id')->toArray();
+        } else if ($context>1 && sizeof($filters['inst_prov']) > 0) {
+            $providers = Provider::with('globalProv')->whereIn('id', $filters['inst_prov'])
+                                 ->whereIn('inst_id', $provider_insts)->get();
+            $prov_filters = $filters['inst_prov'];
         }
         if (!$providers) {
             $msg = "Export failed : could not find requested provider(s).";

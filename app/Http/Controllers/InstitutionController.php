@@ -245,20 +245,15 @@ class InstitutionController extends Controller
             // Global provider is attached
             if ($rec->connection_count > 0) {
                 // get the provider record
-                if ($rec->connection_count == 1) {
-                    $prov_data = $conso_providers->where('global_id',$rec->id)->first();
+                $prov_data = ($inst_connection) ? $inst_connection : $conso_providers->where('global_id',$rec->id)->first();
+                if ($prov_data) {
                     // If there is ONE connection, and it is to the consortium, set can_connect to the inst_specifc flag.
                     // If it is not a conso-connected provider, leave it off
-                    if ($prov_data) {
-                        if ($prov_data->inst_id == 1) {
-                            $rec->can_connect = $prov_data->allow_inst_specific;
-                        }
+                    if ($rec->connection_count == 1 && $prov_data->inst_id == 1) {
+                        $rec->can_connect = $prov_data->allow_inst_specific;
                     }
-                } else {
-                    $prov_data = $conso_providers->where('global_id',$rec->id)->where('inst_id',$id)->first();
-                }
-                if ($prov_data) {
                     $rec->conso_id = $prov_data->id;
+                    $rec->name = $prov_data->name;
                     $rec->inst_id = $prov_data->inst_id;
                     $rec->inst_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
                     $rec->is_active = $prov_data->is_active;

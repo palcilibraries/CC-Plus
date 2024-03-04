@@ -402,11 +402,13 @@
                      .then( (response) => {
                        if (response.data.result) {
                          provider.inst_id = null;
+                         provider.conso_id = null;
                          provider.inst_name = null;
                          provider.connected = [];
                          provider.day_of_month = '';
                          provider.can_edit = false;
                          provider.can_delete = false;
+                         provider.can_connect = true;
                          this.mutable_providers.splice(provIdx,1,provider);
                          this.$emit('disconnect-prov', provider);
                          this.success = 'Provider successfully disconnected';

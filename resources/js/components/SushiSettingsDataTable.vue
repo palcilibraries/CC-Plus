@@ -266,6 +266,20 @@
 				        }),
             }
         },
+        watch: {
+          all_providers: {
+             handler () {
+               if (this.inst_context>0) {
+                 this.mutable_providers = this.providers.filter(
+                   p=>(p.conso_id!=null && (p.inst_id==1 || p.inst_id==this.inst_context))
+                 );
+               } else if (this.inst_context==1) {
+                 this.mutable_providers = this.providers.filter(p=>(p.conso_id!=null && p.inst_id==1));
+               }
+             },
+             deep: true
+           }
+        },
         methods: {
           importForm () {
               this.csv_upload = null;
@@ -556,7 +570,8 @@
           showInstFilter() {
             return this.mutable_filters['group']==0 &&
                    (this.inst_context==1 || this.mutable_institutions.length>1);
-          }
+          },
+          all_providers() { return this.providers; }
         },
         beforeCreate() {
           // Load existing store data
@@ -592,6 +607,13 @@
 
             // Update store and apply filters if some have been set
             if (count>0) this.$store.dispatch('updateAllFilters',this.mutable_filters);
+          }
+
+          // if no provider filter set, limit display to consortium and inst-specific providers
+          if (this.inst_context>0) {
+            this.mutable_providers = this.providers.filter(p=>(p.conso_id!=null && (p.inst_id==1 || p.inst_id==this.inst_context)));
+          } else if (this.inst_context==1) {
+            this.mutable_providers = this.providers.filter(p=>(p.conso_id!=null && p.inst_id==1));
           }
 
           // Set datatable options with store-values

@@ -101,11 +101,6 @@
                        @prov-complete="provDialogDone" :key="dialogKey"
       ></provider-dialog>
     </v-dialog>
-    <v-dialog v-model="sushiDialog" content-class="ccplus-dialog">
-      <sushi-dialog dtype="create" :institutions="sushi_insts" :providers="sushi_provs" :setting="{}"
-                    :all_settings="[]" @sushi-done="sushiDialogDone"
-      ></sushi-dialog>
-    </v-dialog>
   </div>
 </template>
 
@@ -144,7 +139,6 @@
         new_provider: null,
         cur_provider: {},
         provDialog: false,
-        sushiDialog: false,
         connectedDialog: false,
         connect_filter: 'Connected',
         current_provider: {},
@@ -198,20 +192,6 @@
                 this.failure = 'Unexpected Result returned from dialog - programming error!';
             }
             this.provDialog = false;
-        },
-        sushiDialogDone ({ result, msg, setting }) {
-            this.success = '';
-            this.failure = '';
-            if (result == 'Created') {
-                this.success = msg;
-            } else if (result == 'Fail') {
-                this.failure = msg;
-            } else if (result != 'Cancel') {
-                this.failure = 'Unexpected Result returned from sushiDialog - programming error!';
-            }
-            this.$emit('connect-prov', this.sushi_provs[0]);
-            this.sushiDialog = false;
-            this.dtKey += 1;
         },
         processBulk() {
             this.success = "";
@@ -370,12 +350,17 @@
                   this.mutable_providers[provIdx].day_of_month = response.data.provider.day_of_month;
                   this.mutable_providers[provIdx].restricted = response.data.provider.restricted;
                   this.mutable_providers[provIdx].allow_inst_specific = response.data.provider.allow_inst_specific;
-                  // Step-2 - If we just connected an inst-specific provider, enable the sushi dialog to ask for credentials
+                  // Step-2 - If we just connected an inst-specific provider, create a new, stubbed-out connection automatically
                   if (this.inst_context > 1) {
-                    this.sushi_provs = [this.mutable_providers[provIdx]];
-                    this.sushiDialog = true;
+                    var stub = {'inst_id' : this.inst_context, 'prov_id' : response.data.provider.conso_id, };
+                    response.data.provider.connectors.forEach( (cnx) => { stub[cnx.name] = '-missing-'; });
+                    axios.post('/sushisettings', stub)
+                         .catch(error => {});
                   }
+                  // notify about the new provider and update the U/I
+                  this.$emit('connect-prov', this.mutable_providers[provIdx]);
                   this.success = provider.name + " successfully connected";
+                  this.dtKey += 1;
               }
           })
           .catch(error => {});

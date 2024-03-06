@@ -58,20 +58,23 @@ class AdminController extends Controller
         $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
 
         // Get all (consortium) providers, extract array of global IDs
-        $conso_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest','reports:id,name',
-                                        'globalProv')
-                                 ->orderBy('name','ASC')->get();
+        $conso_providers = Provider::with('sushiSettings:id,prov_id,last_harvest','reports:id,name','globalProv')
+                                   ->orderBy('name','ASC')->get();
 
         // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
         $global_providers = GlobalProvider::orderBy('name', 'ASC')->get();
         $providers = $global_providers->map( function ($rec) use ($master_reports, $conso_providers) {
             $rec->global_prov = $rec->toArray();
             $rec->connectors = $rec->connectionFields();
-            $rec->connected = $conso_providers->where('global_id',$rec->id)->pluck('institution')->toArray();
+            $provider_insts = $conso_providers->where('global_id',$rec->id)->pluck('institution');
+            $rec->connected = $provider_insts->map( function ($inst) {
+              if ($inst->name == 'Consortium Staff') $inst->name = 'Entire Consortium';
+              return $inst;
+            })->toArray();
             $rec->connection_count = count($rec->connected);
-            $conso_connection = $conso_providers->where('global_id',$rec->id)->where('inst_id',1)->first();
-            $rec->can_edit = ($conso_connection) ? true : false;
-            $rec->can_connect = ($conso_connection) ? false : true;
+            $prov_data = $conso_providers->where('global_id',$rec->id)->where('inst_id',1)->first();
+            $rec->can_edit = ($prov_data) ? true : false;
+            $rec->can_connect = ($prov_data) ? false : true;
             // Setup default values for the columns in the U/I
             $rec->conso_id = null;
             $rec->inst_name = null;
@@ -82,30 +85,22 @@ class AdminController extends Controller
                                $this->makeReportString($rec->master_reports, $master_reports) : '';
             $report_state = $this->reportState($rec->master_reports, $master_reports);
             // Global provider is attached
-            if ($rec->connection_count > 0) {
+            if ($prov_data) {
                 // get the provider record
-                if ($rec->connection_count > 1 && !$conso_connection) {
-                    $rec->inst_name = $rec->connection_count . " Institutions";
-                } else {
-                    $prov_data = ($conso_connection) ? $conso_connection : $conso_providers->where('global_id',$rec->id)->first();
-                    if ($prov_data) {
-                        $rec->conso_id = $prov_data->id;
-                        $rec->inst_id = $prov_data->institution->id;
-                        $rec->inst_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
-                        $rec->is_active = $prov_data->is_active;
-                        $rec->active = ($prov_data->is_active) ? 'Active' : 'Inactive';
-                        $rec->day_of_month = $prov_data->day_of_month;
-                        $rec->last_harvest = $prov_data->sushiSettings->max('last_harvest');
-                        $rec->restricted = $prov_data->restricted;
-                        $rec->allow_inst_specific = $prov_data->allow_inst_specific;
-                        // $rec->can_edit = true;
-                        $rec->can_delete = (is_null($rec->last_harvest)) ? true : false;
-                        if ($prov_data->reports) {
-                            $report_ids = $prov_data->reports->pluck('id')->toArray();
-                            $reports_string = $this->makeReportString($report_ids, $master_reports);
-                            $report_state = $this->reportState($report_ids, $master_reports);
-                        }
-                    }
+                $rec->conso_id = $prov_data->id;
+                $rec->inst_id = 1;
+                $rec->inst_name = 'Entire Consortium';
+                $rec->is_active = $prov_data->is_active;
+                $rec->active = ($prov_data->is_active) ? 'Active' : 'Inactive';
+                $rec->day_of_month = $prov_data->day_of_month;
+                $rec->last_harvest = $prov_data->sushiSettings->max('last_harvest');
+                $rec->restricted = $prov_data->restricted;
+                $rec->allow_inst_specific = $prov_data->allow_inst_specific;
+                $rec->can_delete = (is_null($rec->last_harvest)) ? true : false;
+                if ($prov_data->reports) {
+                    $report_ids = $prov_data->reports->pluck('id')->toArray();
+                    $reports_string = $this->makeReportString($report_ids, $master_reports);
+                    $report_state = $this->reportState($report_ids, $master_reports);
                 }
             }
             $rec->report_state = $report_state;

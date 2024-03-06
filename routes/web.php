@@ -38,15 +38,13 @@ Route::prefix('institution')->name('institution.')->group(function () {
     Route::post('/types/import', 'InstitutionTypeController@import')->name('types.import');
 });
 Route::post('/institutions/import', 'InstitutionController@import')->name('institutions.import');
-Route::get('/institutions/export/{type}', 'InstitutionController@export')->name('institutions.export');
+Route::get('/institutions-export', 'InstitutionController@export')->name('institutions.export');
 Route::post('extend-institution-group', 'InstitutionGroupController@extend')->name('groups.extend')
      ->middleware(['auth','role:Admin,Manager']);
 // Providers
 Route::resource('/providers', 'ProviderController')->middleware(['auth','cache.headers:no_store']);
 Route::post('/providers/connect', 'ProviderController@connect')->name('providers.connect')
      ->middleware(['auth','role:Admin,Manager']);
-// Route::post('/providers/import', 'ProviderController@import')->name('providers.import');
-// Route::get('/providers/export/{type}', 'ProviderController@export')->name('providers.export');
 Route::get('/available-providers', 'HarvestLogController@availableProviders')->middleware(['auth']);
 // Sushi and Harvests
 Route::resource('/harvests', 'HarvestLogController')->middleware(['auth','cache.headers:no_store']);

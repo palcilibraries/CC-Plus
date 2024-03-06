@@ -28,13 +28,16 @@
         <span v-else> &nbsp;</span>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+        <div v-if="mutable_filters['stat'] != ''" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('stat')"/>&nbsp;
+        </div>
         <v-select :items="status_options" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
                   label="Limit by Status"
         ></v-select> &nbsp;
       </v-col>
       <v-col class="d-flex px-4 align-center" cols="3">
-        <div v-if="filters['groups'].length>0" class="x-box">
-          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="filters['groups'] = []"/>&nbsp;
+        <div v-if="mutable_filters['groups'].length>0" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('groups')"/>&nbsp;
         </div>
         <v-select :items="mutable_groups" v-model="mutable_filters['groups']" @change="updateFilters('groups')" multiple
                   label="Limit by Group(s)"  item-text="name" item-value="id"
@@ -200,7 +203,7 @@
         footer_props: { 'items-per-page-options': [10,50,100,-1] },
         mutable_institutions: [ ...this.institutions],
         mutable_groups: [ ...this.all_groups],
-        mutable_filters: {},
+        mutable_filters: {'stat': "", 'groups': []},
         form: new window.Form({
             name: '',
             is_active: 1,
@@ -242,7 +245,7 @@
             this.updateRecords();
         },
         clearFilter(filter) {
-            this.mutable_filters[filter] = [];
+            this.mutable_filters[filter] = (filter == 'stat') ? '' : [];
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             this.updateRecords();
         },
@@ -511,7 +514,11 @@
             window.open('/institutions/'+instId+'/edit', "_blank");
         },
         doInstExport () {
-            window.location.assign('/institutions/export/xlsx');
+            let url = "/institutions-export";
+            if (this.mutable_filters['stat']!='' || this.mutable_filters['groups'].length > 0) {
+                url += "?filters="+JSON.stringify(this.mutable_filters);
+            }
+            window.location.assign(url);
         },
         updateOptions(options) {
             if (Object.keys(this.mutable_options).length === 0) return;
@@ -540,7 +547,7 @@
     },
     mounted() {
       if ( this.isEmpty(this.filters) ) {
-          this.mutable_filters = { stat: "", groups: [] };
+          this.mutable_filters = { stat: '', groups: [] };
       } else {
           this.mutable_filters = { ...this.filters };
       }

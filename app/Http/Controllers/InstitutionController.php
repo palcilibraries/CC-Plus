@@ -422,16 +422,48 @@ class InstitutionController extends Controller
 
     /**
      * Export institution records from the database.
-     *
-     * @param  string  $type    // 'xls' or 'xlsx'
      */
-    public function export($type)
+    public function export(Request $request)
     {
         // Only Admins can export institution data
         abort_unless(auth()->user()->hasRole('Admin'), 403);
 
+        // Handle and validate inputs
+        $filters = null;
+        if ($request->filters) {
+            $filters = json_decode($request->filters, true);
+        } else {
+            $filters = array('stat' => [], 'groups' => []);
+        }
+
+        // Handle group-filter by building a list of InstIds to be included
+        $limit_to_insts = array();
+        if ($filters['groups'] > 0) {
+            $groups = InstitutionGroup::with('institutions:id')->whereIn('id',$filters['groups'])->get();
+            foreach ($groups as $group) {
+                $_insts = $group->institutions->pluck('id')->toArray();
+                $limit_to_insts =  array_merge(
+                      array_intersect($limit_to_insts, $_insts),
+                      array_diff($limit_to_insts, $_insts),
+                      array_diff($_insts, $limit_to_insts)
+                );
+            }
+        }
+
+        // Handle Status filter
+        $status_filter = null;
+        if ($filters['stat'] == 'Active') $status_filter = 1;
+        if ($filters['stat'] == 'Inactive') $status_filter = 0;
+
         // Get all institutions
-        $institutions = Institution::with('institutionGroups')->orderBy('name', 'ASC')->get();
+        $institutions = Institution::with('institutionGroups')
+                                   ->when($limit_to_insts, function ($query, $limit_to_insts) {
+                                       return $query->whereIn('id', $limit_to_insts);
+                                   })
+                                   ->when($status_filter!=null, function ($query, $status_filter) {
+                                       return $query->where('is_active', $status_filter);
+                                   })
+                                   ->orderBy('name', 'ASC')->get();
 
         // Setup some styles arrays
         $head_style = [
@@ -567,16 +599,11 @@ class InstitutionController extends Controller
         }
 
         // Give the file a meaningful filename
-        $fileName = "CCplus_" . session('ccp_con_key', '') . "_Institutions." . $type;
+        $fileName = "CCplus_" . session('ccp_con_key', '') . "_Institutions.xlsx";
 
         // redirect output to client browser
-        if ($type == 'xlsx') {
-            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        // } elseif ($type == 'xls') {
-        //     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
-        //     header('Content-Type: application/vnd.ms-excel');
-        }
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename=' . $fileName);
         header('Cache-Control: max-age=0');
         $writer->save('php://output');

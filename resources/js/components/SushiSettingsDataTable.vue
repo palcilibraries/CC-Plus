@@ -269,13 +269,18 @@
         watch: {
           all_providers: {
              handler () {
-               if (this.inst_context>0) {
+               if (this.inst_context==1) {
+                 this.mutable_providers = this.providers.filter(p=>(p.conso_id!=null && p.inst_id==1));
+               } else if (this.inst_context>0) {
                  this.mutable_providers = this.providers.filter(
                    p=>(p.conso_id!=null && (p.inst_id==1 || p.inst_id==this.inst_context))
                  );
-               } else if (this.inst_context==1) {
-                 this.mutable_providers = this.providers.filter(p=>(p.conso_id!=null && p.inst_id==1));
                }
+               this.mutable_providers.sort((a,b) => {
+                 if ( a.name < b.name ) return -1;
+                 if ( a.name > b.name ) return 1;
+                 return 0;
+               });
              },
              deep: true
            }

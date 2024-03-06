@@ -77,7 +77,11 @@
           <v-btn v-if="item.can_delete" icon @click="destroy(item.conso_id)">
             <v-icon title="Disconnect Provider">mdi-trash-can-outline</v-icon>
           </v-btn>
-          <v-btn v-else icon><v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon></v-btn>
+          <v-btn v-else icon>
+            <v-icon v-if="item.last_harvest!=null" title="Provider Has Harvests" color="#c9c9c9">mdi-trash-can-outline</v-icon>
+            <v-icon v-else-if="item.conso_id==null" title="Global Provider" color="#c9c9c9">mdi-trash-can-outline</v-icon>
+            <v-icon v-else color="#c9c9c9">mdi-trash-can-outline</v-icon>
+          </v-btn>
         </span>
       </template>
       <v-alert slot="no-results" :value="true" color="error" icon="warning">

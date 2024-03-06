@@ -61,7 +61,7 @@
         <span v-if="item.inst_id==1 || inst_context!=1">{{ item.inst_name }}</span>
         <span v-else-if="item.connected.length>1">{{ item.inst_name }} &nbsp;</span>
         <span v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></span>
-        <span v-if="item.connected.length>1">
+        <span v-if="item.connected.length>1 || (item.connected.length>0 && item.conso_id==null)">
           <v-icon title="Show Institutions" @click="showConnected(item.id)">mdi-open-in-app</v-icon>
         </span>
       </template>

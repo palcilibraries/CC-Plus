@@ -68,7 +68,7 @@ class AdminController extends Controller
             $rec->connectors = $rec->connectionFields();
             $provider_insts = $conso_providers->where('global_id',$rec->id)->pluck('institution');
             $rec->connected = $provider_insts->map( function ($inst) {
-              if ($inst->name == 'Consortium Staff') $inst->name = 'Entire Consortium';
+              if ($inst->id == 1) $inst->name = 'Entire Consortium';
               return $inst;
             })->toArray();
             $rec->connection_count = count($rec->connected);

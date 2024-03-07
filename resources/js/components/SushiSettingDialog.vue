@@ -9,14 +9,14 @@
         <div v-if="sushi_inst.id==null || sushi_prov.id==null">
           <v-row class="d-flex ma-2 justify-center" no-gutters>
             <v-col v-if="institutions.length>1" class="d-flex px-2" cols="5">
-              <v-select :items="institutions" v-model="sushi_inst" return-object item-text="name" item-value="id"
-                        label="Choose an Institution"></v-select>
+              <v-autocomplete :items="institutions" v-model="sushi_inst" return-object item-text="name" item-value="id"
+                              label="Choose an Institution"></v-autocomplete>
             </v-col>
             <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_inst.name }}</strong></v-col>
             <v-col cols="2" class="d-flex justify-center"> &lt;&lt; -- &gt;&gt; </v-col>
             <v-col v-if="providers.length>1" class="d-flex px-2" cols="5">
-              <v-select :items="providers" v-model="sushi_prov" return-object item-text="name" item-value="id"
-                        label="Choose a Provider"></v-select>
+              <v-autocomplete :items="providers" v-model="sushi_prov" return-object item-text="name" item-value="id"
+                              label="Choose a Provider"></v-autocomplete>
             </v-col>
             <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_prov.name}}</strong></v-col>
           </v-row>

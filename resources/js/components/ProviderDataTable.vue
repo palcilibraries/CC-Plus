@@ -29,7 +29,8 @@
       </v-col>
     </v-row>
     <v-data-table v-model="selectedRows" :headers="headers" :items="filtered_providers" show-select item-key="id"
-                  :options="mutable_options" :search="search" @update:options="updateOptions" :key="'mp'+dtKey">
+                  :options="mutable_options" :search="search" @update:options="updateOptions" :footer-props="footer_props"
+                  :key="'mp'+dtKey">
       <template v-slot:item.status="{ item }">
         <div v-if="item.conso_id==null">
           <span v-if="item.is_active"><v-icon large color="green" title="Active Global Provider">mdi-toggle-switch</v-icon></span>
@@ -131,7 +132,7 @@
           { text: 'Harvest Day', value: 'day_of_month', align: 'center' },
         ],
         mutable_providers: [ ...this.providers ],
-        // filtered_providers: [],
+        footer_props: { 'items-per-page-options': [10,50,100,-1] },
         bulk_actions: [ 'Set Active', 'Set Inactive', 'Connect', 'Disconnect' ],
         connect_options: ['Connected', 'Not Connected'],
         bulkAction: null,

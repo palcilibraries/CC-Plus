@@ -9,13 +9,13 @@
         <div v-if="sushi_inst.id==null || sushi_prov.id==null">
           <v-row class="d-flex ma-2 justify-center" no-gutters>
             <v-col v-if="institutions.length>1" class="d-flex px-2" cols="5">
-              <v-autocomplete :items="institutions" v-model="sushi_inst" return-object item-text="name" item-value="id"
+              <v-autocomplete :items="institutions" v-model="sushi_inst" return-object item-text="name"
                               label="Choose an Institution"></v-autocomplete>
             </v-col>
             <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_inst.name }}</strong></v-col>
             <v-col cols="2" class="d-flex justify-center"> &lt;&lt; -- &gt;&gt; </v-col>
             <v-col v-if="providers.length>1" class="d-flex px-2" cols="5">
-              <v-autocomplete :items="providers" v-model="sushi_prov" return-object item-text="name" item-value="id"
+              <v-autocomplete :items="providers" v-model="sushi_prov" return-object item-text="name"
                               label="Choose a Provider"></v-autocomplete>
             </v-col>
             <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_prov.name}}</strong></v-col>
@@ -111,7 +111,7 @@
         }
       },
       sushi_prov: function (prov) {
-        this.form.prov_id = this.sushi_prov.id;
+        this.form.prov_id = this.sushi_prov.conso_id;
         if (this.all_settings.length>0 && this.form.prov_id != null && this.form.inst_id != null) {
           this.testExisting();
           this.form_key += 1;

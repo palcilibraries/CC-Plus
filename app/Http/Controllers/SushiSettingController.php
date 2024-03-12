@@ -111,7 +111,7 @@ class SushiSettingController extends Controller
             $seen_connectors = array();
             $global_connectors = ConnectionField::get();
             $providerIds = $data->unique('prov_id')->pluck('prov_id')->toArray();
-            $providers = Provider::with('globalProv')->whereIn('id',$providerIds)->get();
+            $providers = Provider::with('globalProv')->whereIn('id',$providerIds)->orderBy('name', 'ASC')->get();
             foreach ($providers as $prov) {
                 $prov->conso_id = $prov->id;
                 // There are only 4... if they're all set, skip checking
@@ -142,7 +142,7 @@ class SushiSettingController extends Controller
                                            ->get(['id', 'name', 'is_active']);
                 $group_options = InstitutionGroup::whereHas('institutions', function ($qry) use ($instIds) {
                                             return $qry->whereIn('institutions.id',$instIds);
-                                          })->get(['name', 'id'])->toArray();
+                                          })->orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
             }
 
             // Add global connectors to the provider records

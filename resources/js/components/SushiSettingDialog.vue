@@ -136,7 +136,7 @@
           this.failure = '';
           this.form.inst_id = this.sushi_inst.id;
           this.form.global_id = this.sushi_prov.id;
-          this.form.prov_id = this.sushi_prov.id;
+          this.form.prov_id = this.sushi_prov.conso_id;
           this.form.status = this.statusval;
           // All connectors are required - whether they work or not is a matter of testing+confirming
           this.sushi_prov.connectors.forEach( (cnx) => {

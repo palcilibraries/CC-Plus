@@ -83,8 +83,8 @@
       </template>
       <template v-slot:item.provider.name="{ item }">
         <span v-if="item.provider.inst_id==1">
-          <v-icon title="Consortium Provider">mdi-account-multiple</v-icon>
-        </span>&nbsp;
+          <v-icon title="Consortium Provider">mdi-account-multiple</v-icon>&nbsp;
+        </span>
         <span v-if="item.provider.is_active==0" class="isInactive">{{ item.provider.name }}</span>
         <span v-else>{{ item.provider.name }}</span>
       </template>

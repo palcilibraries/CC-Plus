@@ -92,7 +92,7 @@
         <span v-if="item.status=='Enabled'"><v-icon large color="green" title="Enabled">mdi-toggle-switch</v-icon></span>
         <span v-if="item.status=='Disabled'"><v-icon large color="red" title="Disabled">mdi-toggle-switch-off</v-icon></span>
         <span v-if="item.status=='Incomplete'">
-          <v-icon large color="red" title="Incomplete">mdi-toggle-switch-off</v-icon>
+          <v-icon large color="orange" title="Incomplete">mdi-toggle-switch-off</v-icon>
         </span>
         <span v-if="item.status=='Suspended'">
           <v-icon large color="gray" title="Suspended">mdi-toggle-switch-outline</v-icon>
@@ -135,8 +135,8 @@
             <v-file-input show-size label="CC+ Import File (CSV)" v-model="csv_upload" accept="text/csv" outlined
             ></v-file-input>
             <p>
-              <strong>Note:&nbsp; Sushi Settings imports function exclusively as Updates. No existing settings
-              will be deleted.</strong>
+              <strong>Note:&nbsp; Sushi Settings imports function exclusively as Updates. Existing settings for
+              provider-institution pairs not included will be preserved.</strong>
             </p>
             <p>
               Imports will overwrite existing settings whenever a match for an Institution-ID and Provider-ID are

@@ -15,7 +15,7 @@
             <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_inst.name }}</strong></v-col>
             <v-col cols="2" class="d-flex justify-center"> &lt;&lt; -- &gt;&gt; </v-col>
             <v-col v-if="providers.length>1" class="d-flex px-2" cols="5">
-              <v-autocomplete :items="providers" v-model="sushi_prov" return-object item-text="name"
+              <v-autocomplete :items="connectable_providers" v-model="sushi_prov" return-object item-text="name"
                               label="Choose a Provider"></v-autocomplete>
             </v-col>
             <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_prov.name}}</strong></v-col>
@@ -223,7 +223,11 @@
       default_prov: function () {
         return (this.providers.length == 1) ? { ...this.providers[0] }
                                             : { id: null, global_id: null, global_prov: { id:null, connectors: []} };
-      }
+      },
+      connectable_providers() {
+        if (this.mutable_dtype == 'edit') return this.providers;
+        return this.providers.filter(p => (p.can_connect==1));
+      },
     },
     mounted() {
       if (this.dtype == 'edit' && this.isEmpty(this.setting)) this.mutable_dtype = 'create';

@@ -54,7 +54,7 @@ class SushiSettingController extends Controller
         // If filtering by group, get the institution IDs for the group
         $group_insts = array();
         if ($filters['group'] != 0) {
-            $group = InstitutionGroup::with('institutions:id')->find($filters['group']);
+            $group = InstitutionGroup::with('institutions:id,nanme')->find($filters['group']);
             if ($group) {
                 $group_insts = $group->institutions->pluck('id')->toArray();
             }
@@ -71,7 +71,7 @@ class SushiSettingController extends Controller
                 $context = ($request->input('context') > 0) ? $request->input('context') : 1;
             }
             if ($context > 1) {
-                $context = $request->input('context');
+                $filters['inst'] = array($context);
                 $inst_provs = Provider::where('inst_id',$context)->get();
                 $inst_prov_ids = $inst_provs->pluck('id')->toArray();
                 $inst_global_ids = $inst_provs->pluck('global_id')->toArray();
@@ -81,13 +81,13 @@ class SushiSettingController extends Controller
 
             // Get sushi settings
             $data = SushiSetting::with('institution:id,name,is_active','provider','provider.globalProv')
-                                  ->when(sizeof($filters['inst']) > 0, function ($qry) use ($filters) {
+                                  ->when(count($filters['inst']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('inst_id', $filters['inst']);
                                   })
                                   ->when($filters['group'] > 0, function ($qry) use ($group_insts) {
                                       return $qry->whereIn('inst_id', $group_insts);
                                   })
-                                  ->when(sizeof($filters['harv_stat']) > 0, function ($qry) use ($filters) {
+                                  ->when(count($filters['harv_stat']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('status', $filters['harv_stat']);
                                   })
                                   ->when(count($limit_prov_ids) > 0, function ($qry) use ($limit_prov_ids) {
@@ -96,11 +96,11 @@ class SushiSettingController extends Controller
                                   ->get();
 
             // Apply provider filter to returned data - it is dependent on context
-            if ($context==1 && sizeof($filters['global_prov']) > 0) {
+            if ($context==1 && count($filters['global_prov']) > 0) {
                 foreach ($data as $key => $rec) {
                     if ( !in_array($rec->provider->global_id,$filters['global_prov']) ) $data->forget($key);
                 }
-            } else if ($context>1 && sizeof($filters['inst_prov']) > 0) {
+            } else if ($context>1 && count($filters['inst_prov']) > 0) {
                 foreach ($data as $key => $rec) {
                     if ( !in_array($rec->prov_id,$filters['inst_prov']) ) $data->forget($key);
                 }
@@ -111,7 +111,15 @@ class SushiSettingController extends Controller
             $seen_connectors = array();
             $global_connectors = ConnectionField::get();
             $providerIds = $data->unique('prov_id')->pluck('prov_id')->toArray();
-            $providers = Provider::with('globalProv')->whereIn('id',$providerIds)->orderBy('name', 'ASC')->get();
+
+            if ( ($context==1 && count($filters['global_prov']) > 0) ||
+                 ($context>1 && count($filters['inst_prov']) > 0) ) {
+                $includeIds = ($context==1) ? $filters['global_prov'] : $filters['inst_prov'];
+                $providerIds = array_unique(array_merge($providerIds,$includeIds));
+            }
+
+            $providers = Provider::with('globalProv')->whereIn('id',$providerIds)->where('inst_id', $context)
+                                 ->orderBy('name', 'ASC')->get();
             foreach ($providers as $prov) {
                 $prov->conso_id = $prov->id;
                 // There are only 4... if they're all set, skip checking
@@ -126,25 +134,6 @@ class SushiSettingController extends Controller
                 }
             }
 
-            // Update filter-options if a filter was given as input
-            $prov_options = [];
-            $inst_options = [];
-            $group_options = [];
-            if (sizeof($filters['inst']) > 0 || $filters['group'] > 0) {
-                $prov_options = $providers->map( function ($rec) {
-                    $rec->connectors = $rec->globalProv->connectionFields();
-                    return $rec;
-                });
-            } else if ( ($context==1 && sizeof($filters['global_prov']) > 0) ||
-                        ($context>1 && sizeof($filters['inst_prov']) > 0) ) {
-                $instIds = $data->unique('inst_id')->pluck('inst_id')->toArray();
-                $inst_options = Institution::whereIn('id', $instIds)->orderBy('name', 'ASC')
-                                           ->get(['id', 'name', 'is_active']);
-                $group_options = InstitutionGroup::whereHas('institutions', function ($qry) use ($instIds) {
-                                            return $qry->whereIn('institutions.id',$instIds);
-                                          })->orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
-            }
-
             // Add global connectors to the provider records
             $settings = $data->map( function ($rec) {
                 if ($rec->provider->globalProv) {
@@ -152,8 +141,7 @@ class SushiSettingController extends Controller
                 }
                 return $rec;
             })->values();
-            return response()->json(['settings' => $settings, 'connectors' => $all_connectors, 'inst_options' => $inst_options,
-                                     'group_options' => $group_options, 'prov_options' => $prov_options], 200);
+            return response()->json(['settings' => $settings, 'connectors' => $all_connectors], 200);
 
         // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {

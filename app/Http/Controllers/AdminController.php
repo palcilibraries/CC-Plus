@@ -58,19 +58,19 @@ class AdminController extends Controller
         $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
 
         // Get all (consortium) providers, extract array of global IDs
-        $conso_providers = Provider::with('sushiSettings:id,prov_id,last_harvest','reports:id,name','globalProv')
-                                   ->orderBy('name','ASC')->get();
+        $conso_providers = Provider::with('sushiSettings:id,prov_id,last_harvest','reports:id,name','globalProv',
+                                          'institution:id,name')->orderBy('name','ASC')->get();
 
         // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
         $global_providers = GlobalProvider::orderBy('name', 'ASC')->get();
         $providers = $global_providers->map( function ($rec) use ($master_reports, $conso_providers) {
             $rec->global_prov = $rec->toArray();
             $rec->connectors = $rec->connectionFields();
-            $provider_insts = $conso_providers->where('global_id',$rec->id)->pluck('institution');
+            $provider_insts = $conso_providers->where('global_id',$rec->id)->pluck('institution')->sortBy('name');
             $rec->connected = $provider_insts->map( function ($inst) {
               if ($inst->id == 1) $inst->name = 'Entire Consortium';
               return $inst;
-            })->toArray();
+            })->values()->toArray();
             $rec->connection_count = count($rec->connected);
             $prov_data = $conso_providers->where('global_id',$rec->id)->where('inst_id',1)->first();
             $rec->can_edit = ($prov_data) ? true : false;

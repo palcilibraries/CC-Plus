@@ -642,7 +642,7 @@
                   return this.all_settings.filter(s => this.limit_inst_ids.includes(s.inst_id) &&
                                           ((this.inst_context==1 && this.context_prov_filter.includes(s.provider.global_id)) ||
                                            (this.inst_context>1 && this.context_prov_filter.includes(s.prov_id)) ) &&
-                                          s.status==this.filters['harv_stat']);
+                                           this.filters['harv_stat'].includes(s.status));
                 } else {
                   return this.all_settings.filter(s => this.limit_inst_ids.includes(s.inst_id) &&
                                           ((this.inst_context==1 && this.context_prov_filter.includes(s.provider.global_id)) ||
@@ -652,7 +652,7 @@
               } else {
                 if (this.filters['harv_stat'].length>0) {
                   return this.all_settings.filter(s => this.limit_inst_ids.includes(s.inst_id) &&
-                                                       s.status==this.filters['harv_stat']);
+                                                       this.filters['harv_stat'].includes(s.status));
                 } else {
                   return this.all_settings.filter(s => this.limit_inst_ids.includes(s.inst_id));
                 }
@@ -665,7 +665,7 @@
                   return this.all_settings.filter(s => ((this.inst_context==1 &&
                                                          this.context_prov_filter.includes(s.provider.global_id)) ||
                                                         (this.inst_context>1 && this.context_prov_filter.includes(s.prov_id))) &&
-                                                       s.status==this.filters['harv_stat']);
+                                                        this.filters['harv_stat'].includes(s.status));
                 } else {
                   return this.all_settings.filter(s => (this.inst_context==1 &&
                                                         this.context_prov_filter.includes(s.provider.global_id)) ||
@@ -674,7 +674,7 @@
               // No inst filter, No provider filter
               } else {
                 if (this.filters['harv_stat'].length>0) {
-                  return this.all_settings.filter(s => s.status==this.filters['harv_stat']);
+                  return this.all_settings.filter(s => this.filters['harv_stat'].includes(s.status));
                 } else {
                   return [ ...this.all_settings ];
                 }

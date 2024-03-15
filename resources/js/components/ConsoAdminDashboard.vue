@@ -63,7 +63,7 @@
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <sushisettings-data-table :key="sushiKey" :providers="mutable_providers" :institutions="mutable_institutions"
-                                    :filters="sushi_filters" :inst_groups="mutable_groups" :unset="mutable_unset"
+                                    :inst_groups="mutable_groups" :unset="mutable_unset"
           ></sushisettings-data-table>
   	    </v-expansion-panel-content>
 	    </v-expansion-panel>
@@ -94,7 +94,6 @@
         mutable_unset: [...this.unset_global],
         mutable_groups: [...this.groups],
         inst_filters: {stat: "", groups: [] },
-        sushi_filters: {inst: [], group: 0, global_prov: [], inst_prov: [], harv_stat: []},
       }
     },
     watch: {

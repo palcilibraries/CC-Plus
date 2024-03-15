@@ -327,6 +327,7 @@ class ProviderController extends Controller
         $conso_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest',
                                           'reports:id,name','globalProv')->where('global_id', $global_provider->id)->get();
         $global_provider->connected = $conso_providers->where('global_id',$global_provider->id)->pluck('institution')->toArray();
+        $global_provider->connection_count = count($global_provider->connected);
         $global_provider->conso_id = $provider->id;
         $global_provider->inst_id = $provider->inst_id;
         $global_provider->can_connect = false;

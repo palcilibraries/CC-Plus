@@ -2,8 +2,7 @@
   <div>
     <v-row class="d-flex pl-2" no-gutters>
       <v-col class="d-flex px-2 flex-shrink-1">
-        <h1 v-if="is_admin">Institution Settings: {{ mutable_inst.name }}</h1>
-        <h1 v-else>{{ mutable_inst.name }}</h1>
+        <h1>{{ mutable_inst.name }}</h1>
         &nbsp;
         <div class="idbox">
           <v-icon title="CC+ Institution ID">mdi-crosshairs-gps</v-icon>&nbsp; {{ mutable_inst.id }}
@@ -46,7 +45,7 @@
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <sushisettings-data-table :key="sushiKey" :providers="mutable_providers" :institutions="mutable_institutions"
-                                    :filters="sushi_filters" :inst_groups="mutable_groups" :unset="mutable_unset"
+                                    :inst_groups="mutable_groups" :unset="mutable_unset"
                                     :inst_context="this.institution.id"
           ></sushisettings-data-table>
   	    </v-expansion-panel-content>
@@ -137,7 +136,6 @@
                 mutable_unset: [...this.unset_global],
                 mutable_users: [ ...this.users ],
                 mutable_groups: [ ...this.institution.groups],
-                sushi_filters: {inst: [], group: 0, global_prov: [], inst_prov: [], harv_stat: []},
                 instForm: new window.Form({
                     name: this.institution.name,
                     local_id: this.institution.local_id,
@@ -300,7 +298,6 @@
       	},
         mounted() {
             this.status=this.statusvals[this.institution.is_active];
-            this.sushi_filters.inst = [this.institution.id];
 
             // Set datatable options with store-values
             Object.assign(this.panels, this.panel_data);

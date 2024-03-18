@@ -38,7 +38,8 @@
       <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
     <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_providers" :loading="loading" show-select
-                  item-key="id" :options="mutable_options" @update:options="updateOptions" :search="search" :key="dtKey">
+                  item-key="id" :options="mutable_options" @update:options="updateOptions" :search="search" :key="dtKey"
+                  :footer-props="footer_props">
       <template v-slot:item.status="{ item }">
         <span v-if="item.status=='Active'">
           <v-icon large color="green" title="Active" @click="changeStatus(item.id,0)">mdi-toggle-switch</v-icon>
@@ -217,6 +218,7 @@
         selectedRows: [],
         loading: true,
         search: '',
+        footer_props: { 'items-per-page-options': [5,50,100,-1] },
         headers: [
           { text: 'Status', value: 'status' },
           { text: 'Provider ', value: 'name', align: 'start' },

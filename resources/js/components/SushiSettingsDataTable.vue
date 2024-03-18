@@ -11,7 +11,7 @@
       </v-col>
       <v-col class="d-flex px-2" cols="3">
         <v-btn small color="primary" type="button" @click="newSetting" class="section-action">
-          Add a Connection
+          Add Credentials
         </v-btn>
       </v-col>
       <v-col class="d-flex px-2" cols="3">

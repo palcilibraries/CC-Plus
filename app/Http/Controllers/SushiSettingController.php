@@ -111,14 +111,13 @@ class SushiSettingController extends Controller
             $seen_connectors = array();
             $global_connectors = ConnectionField::get();
             $providerIds = $data->unique('prov_id')->pluck('prov_id')->toArray();
-
             if ( ($context==1 && count($filters['global_prov']) > 0) ||
                  ($context>1 && count($filters['inst_prov']) > 0) ) {
                 $includeIds = ($context==1) ? $filters['global_prov'] : $filters['inst_prov'];
                 $providerIds = array_unique(array_merge($providerIds,$includeIds));
             }
 
-            $providers = Provider::with('globalProv')->whereIn('id',$providerIds)->where('inst_id', $context)
+            $providers = Provider::with('globalProv')->whereIn('id',$providerIds)->orWhere('inst_id', $context)
                                  ->orderBy('name', 'ASC')->get();
             foreach ($providers as $prov) {
                 $prov->conso_id = $prov->id;
@@ -134,8 +133,9 @@ class SushiSettingController extends Controller
                 }
             }
 
-            // Add global connectors to the provider records
+            // Add global connectors and can_edit flag to the provider records
             $settings = $data->map( function ($rec) {
+                $rec->can_edit = $rec->canManage();
                 if ($rec->provider->globalProv) {
                     $rec->provider->connectors = $rec->provider->globalProv->connectionFields();
                 }
@@ -155,7 +155,6 @@ class SushiSettingController extends Controller
                 $rec->connectors = $rec->globalProv->connectionFields();
                 return $rec;
             });
-
             // Get InstitutionGroups
             $inst_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
 

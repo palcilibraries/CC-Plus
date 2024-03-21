@@ -9,26 +9,30 @@
       <v-col class="d-flex px-2" cols="3">
         <a @click="exportDialog=true;"><v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export to Excel</a>
       </v-col>
-      <v-col class="d-flex px-2" cols="3">
+      <v-col v-if="connectable_providers.length>0" class="d-flex px-2" cols="3">
         <v-btn small color="primary" type="button" @click="newSetting" class="section-action">
           Add Credentials
         </v-btn>
       </v-col>
+      <v-col v-else class="d-flex px-2" cols="3">&nbsp;</v-col>
       <v-col class="d-flex px-2" cols="3">
         <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details clearable
         ></v-text-field>
       </v-col>
     </v-row>
     <v-row class="d-flex pa-1 align-center" no-gutters>
-      <v-col class="d-flex px-2" cols="2">
+      <v-col v-if="!is_admin" class="d-flex px-2" cols="2">
         <v-select :items='bulk_actions' v-model='bulkAction' label="Bulk Actions" @change="processBulk()"
                   :disabled='selectedRows.length==0'
         ></v-select>
       </v-col>
-      <v-col v-if="selectedRows.length>0" class="d-flex px-4 align-center" cols="2">
-        <span class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
+      <v-col v-if="!is_admin" class="d-flex px-4 align-center" cols="2">
+        <span v-if="selectedRows.length>0" class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
+        <span v-else>&nbsp;</span>
       </v-col>
-      <v-col v-else class="d-flex" cols="2">&nbsp;</v-col>
+      <v-col v-if="is_admin" class="d-flex px-2 align-center" cols="2">
+        <v-switch v-model="conso_switch" dense label="Limit to Consortium" @change="updateConsoLimit()"></v-switch>
+      </v-col>
       <v-col v-if="showInstFilter" class="d-flex px-2 align-center" cols="2">
         <div v-if="filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
@@ -68,6 +72,17 @@
         <v-select :items="filter_options['harv_stat']" v-model="filters['harv_stat']" @change="updateFilters('harv_stat')"
                   multiple label="Harvest Status"
         ></v-select> &nbsp;
+      </v-col>
+    </v-row>
+    <v-row v-if="is_admin" class="d-flex pa-1 align-center" no-gutters>
+      <v-col class="d-flex px-2" cols="2">
+        <v-select :items='bulk_actions' v-model='bulkAction' label="Bulk Actions" @change="processBulk()"
+                  :disabled='selectedRows.length==0'
+        ></v-select>
+      </v-col>
+      <v-col class="d-flex px-4 align-center" cols="2">
+        <span v-if="selectedRows.length>0" class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
+        <span v-else>&nbsp;</span>
       </v-col>
     </v-row>
     <div class="status-message" v-if="success || failure">
@@ -232,6 +247,7 @@
                 statuses: ['Enabled','Disabled','Suspended','Incomplete'],
                 filter_options: {'inst': [], 'prov': [], 'group': [], 'harv_stat': []},
                 limit_inst_ids: [],
+                limit_prov_ids: [],
                 mutable_unset: [...this.unset ],
                 loading: true,
                 connectors: [],
@@ -239,6 +255,7 @@
                 sushi_provs: [],
                 current_setting: {},
                 sushiDialogType: '',
+                conso_switch: 1,
                 // Actual headers array is built from these in mounted()
                 header_fields: [
                   { label: 'Status', name: 'status' },
@@ -285,6 +302,31 @@
               this.csv_upload = null;
               this.importDialog = true;
           },
+          // Applies limit-to consortium switch by updating/managing the array of providers to limit to
+          // (limit_prov_ids holds  conso provider ids... NOT global ids, and controls displayed settings)
+          updateConsoLimit() {
+            // conso_only is the inst-to-limit to (1=consortium inst), or 0 means ALL, including inst-specific
+            let conso_only = (this.conso_switch) ? this.inst_context : 0;
+            // If no filters active, just apply the conso_only
+            if ( (this.inst_context==1 && this.filters['global_prov'].length==0) ||
+                 (this.inst_context>1 && this.filters['inst_prov'].length==0) ) {
+              this.limit_prov_ids = (conso_only==0) ? this.providers.filter(p => p.conso_id!=null).map(p => p.conso_id)
+                                                    : this.providers.filter(p => p.conso_id!=null && p.inst_id==conso_only)
+                                                                    .map(p=>p.conso_id);
+            } else {
+              let _filters = (this.inst_context == 1) ? this.filters['global_prov'] : this.filters['inst_prov'];
+              this.limit_prov_ids = (conso_only==0)
+                                    ? this.providers.filter(p => p.conso_id!=null && _filters.includes(p.id))
+                                                    .map(p=>p.conso_id)
+                                    : this.providers.filter(p => p.conso_id!=null && p.inst_id==conso_only && _filters.includes(p.id))
+                                                    .map(p=>p.conso_id);
+
+              // If changing the conso switch means no matches found, keep at least the current filter set
+              if (this.limit_prov_ids.length == 0 && _filters.length > 0) this.limit_prov_ids = _filters;
+            }
+            // let _filt = (this.inst_context == 1) ? "global_prov" : "inst_prov";
+            this.updateFilterOptions('ALL');
+          },
           // Called onChange inst or group filter
           updateInstFilter() {
               if (this.inst_context != 1) return;
@@ -306,20 +348,33 @@
           },
           // Called onChange inst_prov, global_prov or harv_stat filter
           updateFilters(filter) {
+              if (filter == 'harv_stat') {
+                this.$store.dispatch('updateAllFilters',this.filters);
+                this.updateFilterOptions(filter);
+                return;
+              }
+              if (filter == 'global_prov' || filter=='inst_prov') {
+                this.updateConsoLimit();
+              }
               this.$store.dispatch('updateAllFilters',this.filters);
               this.updateFilterOptions(filter);
           },
           clearFilter(filter) {
               this.filters[filter] = (filter == 'group') ? 0 : [];
               if (filter == 'inst' || filter == 'group') this.limit_inst_ids = [];
+              if (filter == 'global_prov' || filter=='inst_prov') {
+                this.updateConsoLimit();
+              }
               this.$store.dispatch('updateAllFilters',this.filters);
               this.updateFilterOptions(filter);
               this.dtKey += 1;           // re-render of the datatable
           },
           // Update inst, provider, and group filter options
           updateFilterOptions(changed_filter) {
+              let filteringProv = ( (this.inst_context>1 && this.filters['inst_prov'].length>0) ||
+                                    (this.inst_context==1 && this.filters['global_prov'].length>0) );
               // If no active filters, reset everything
-              if (this.filters['harv_stat'].length==0 && this.limit_inst_ids.length==0 && this.context_prov_filter.length==0) {
+              if (this.filters['harv_stat'].length==0 && this.limit_inst_ids.length==0 && !filteringProv) {
                   this.filter_options['inst'] = [...this.institutions];
                   this.filter_options['prov'] = [...this.contextual_providers];
                   this.filter_options['group'] = [...this.inst_groups];
@@ -329,8 +384,7 @@
               // Set flag if changed_filter was just reset (so we can reset the options)
               let just_cleared = ( ( (changed_filter == 'inst' || changed_filter == 'group') && this.limit_inst_ids.length==0 ) ||
                                    ( changed_filter == 'harv_stat' && this.filter_options['harv_stat'].length==0 ) ||
-                                   ( (changed_filter == 'inst_prov' || changed_filter == 'global_prov') &&
-                                     this.context_prov_filter.length==0) );
+                                   ( (changed_filter == 'inst_prov' || changed_filter == 'global_prov') && !filteringProv) );
               // Update filter options (skip changed filter if it is not cleared)
               // Filter to what is found + what is set in the filter already, starting with the inst/group filters
               if ( this.inst_context == 1 ) {
@@ -351,9 +405,10 @@
 
               // rebuild providers
               if (just_cleared || !changed_filter.includes('prov')) {
+                let _filt = (this.inst_context==1) ? this.filters['global_prov'] : this.filters['inst_prov'];
                 let prov_ids = this.filtered_settings.map(s => s.prov_id);
-                this.filter_options['prov'] = this.providers.filter(p => (prov_ids.includes(p.conso_id) ||
-                                                                          this.context_prov_filter.includes(p.id)));
+                this.filter_options['prov'] = this.all_providers.filter(p => (prov_ids.includes(p.conso_id) ||
+                                                                              _filt.includes(p.conso_id)));
               }
               // rebuild status
               if (just_cleared || changed_filter != 'harv_stat') {
@@ -518,11 +573,7 @@
           newSetting() {
               this.sdKey += 1;
               this.current_setting = {};
-              this.sushi_provs = (this.inst_context==1)
-                                 ? this.providers.filter(p => p.conso_id!=null && p.inst_id==1)
-                                 : this.providers.filter(
-                                     p => p.conso_id!=null && (p.inst_id==this.context || p.inst_id==1)
-                                   );
+              this.sushi_provs = [ ...this.connectable_providers ];
               this.sushi_insts = [ ...this.filter_options['inst'] ];
               this.sushiDialogType = 'create';
               this.sushiDialog = true;
@@ -596,14 +647,15 @@
                   if (new_cnx) this.updateHeaders();
                   this.dtKey += 1;
               } else if (result == 'Updated') {
-                  this.all_settings[this.all_settings.findIndex(s => s.id == setting.id)] = setting;
+                  // this.all_settings[this.all_settings.findIndex(s => s.id == setting.id)] = setting;
+                  Object.assign(this.all_settings[this.all_settings.findIndex(s => s.id == setting.id)],setting);
                   this.dtKey += 1;
               } else if (result == 'Fail') {
                   this.failure = msg;
               } else if (result != 'Cancel') {
                   this.failure = 'Unexpected Result returned from sushiDialog - programming error!';
               }
-              this.sushi_provs = [{ 'global_prov': {'connectors': []} }];
+              // this.sushi_provs = [{ 'global_prov': {'connectors': []} }];
               this.sushiDialog = false;
           },
           isEmpty(obj) {
@@ -622,31 +674,41 @@
           },
           all_providers() { return this.providers; },
           contextual_providers() {
-            if (this.inst_context==1) {
-              return this.providers.filter(p => (p.conso_id!=null && p.inst_id==1));
-            } else if (this.inst_context>0) {
-              return this.providers.filter(p => (p.conso_id!=null && (p.inst_id==1 || p.inst_id==this.inst_context)));
+            if (this.conso_switch == 0) {
+                return this.providers.filter(p => this.all_settings.map(s => s.prov_id).includes(p.conso_id));
             } else {
-              return [ ...this.providers];
+              if (this.inst_context==1) {
+                return this.providers.filter(p => (p.conso_id!=null && p.inst_id==1));
+              } else if (this.inst_context>0) {
+                return this.providers.filter(p => (p.conso_id!=null && (p.inst_id==1 || p.inst_id==this.inst_context)));
+              }
             }
           },
-          context_prov_filter: function() {
-            return (this.inst_context==1) ? this.filters['global_prov'] : this.filters['inst_prov'];
+          connectable_providers() {
+            if (this.conso_switch == 0) {
+              return this.providers.filter(p => p.inst_id == null ||
+                                                (p.inst_id == 1 && p.allow_inst_specific ||
+                                                 this.all_settings.filter(s => s.prov_id == p.conso_id)
+                                                                  .map(s2 => s2.inst_id).length<this.institutions.length)
+                                          );
+            } else {
+              return this.contextual_providers.filter(p => this.all_settings.filter(s => s.prov_id == p.conso_id)
+                                                                            .map(s2 => s2.inst_id).length<this.institutions.length
+                                                     );
+            }
           },
           filtered_settings: function() {
             // Inst or group filter is on
             if (this.limit_inst_ids.length > 0 ) {
-              if (this.context_prov_filter.length>0) {
+              if (this.limit_prov_ids.length>0) {
                 // Inst filter on, provider filter on
                 if (this.filters['harv_stat'].length>0) {
                   return this.all_settings.filter(s => this.limit_inst_ids.includes(s.inst_id) &&
-                                          ((this.inst_context==1 && this.context_prov_filter.includes(s.provider.global_id)) ||
-                                           (this.inst_context>1 && this.context_prov_filter.includes(s.prov_id)) ) &&
-                                           this.filters['harv_stat'].includes(s.status));
+                                                       this.limit_prov_ids.includes(s.prov_id) &&
+                                                       this.filters['harv_stat'].includes(s.status));
                 } else {
                   return this.all_settings.filter(s => this.limit_inst_ids.includes(s.inst_id) &&
-                                          ((this.inst_context==1 && this.context_prov_filter.includes(s.provider.global_id)) ||
-                                           (this.inst_context>1 && this.context_prov_filter.includes(s.prov_id)) ) );
+                                                       this.limit_prov_ids.includes(s.prov_id));
                 }
               // Inst filter on, No provider filter
               } else {
@@ -659,17 +721,13 @@
               }
             // No Inst-filter
             } else {
-              if (this.context_prov_filter.length>0) {
+              if (this.limit_prov_ids.length>0) {
                 // Inst filter off, provider filter on
                 if (this.filters['harv_stat'].length>0) {
-                  return this.all_settings.filter(s => ((this.inst_context==1 &&
-                                                         this.context_prov_filter.includes(s.provider.global_id)) ||
-                                                        (this.inst_context>1 && this.context_prov_filter.includes(s.prov_id))) &&
-                                                        this.filters['harv_stat'].includes(s.status));
+                  return this.all_settings.filter(s => this.limit_prov_ids.includes(s.prov_id) &&
+                                                       this.filters['harv_stat'].includes(s.status));
                 } else {
-                  return this.all_settings.filter(s => (this.inst_context==1 &&
-                                                        this.context_prov_filter.includes(s.provider.global_id)) ||
-                                                       (this.inst_context>1 && this.context_prov_filter.includes(s.prov_id)));
+                  return this.all_settings.filter(s => this.limit_prov_ids.includes(s.prov_id));
                 }
               // No inst filter, No provider filter
               } else {
@@ -704,6 +762,9 @@
             this.limit_inst_ids = [this.institutions[0].id];
           }
           this.filter_options['prov'] = [...this.contextual_providers];
+
+          // Set initial context
+          this.updateConsoLimit();
 
           // Apply any existing filter values from the datastore and update the options arrays as-needed
           if (typeof(this.all_filters) != 'undefined') {

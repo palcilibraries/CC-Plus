@@ -128,7 +128,7 @@
     methods: {
         resetForm () {
             // Reset form values
-            this.form.inst = [];
+            this.form.inst = ( this.is_admin ) ? [] : [this.institutions[0].id];
             this.form.prov = [];
             this.form.inst_group_id = 0;
             this.form.reports = [];

@@ -28,7 +28,7 @@
         <v-select :items="connect_options" v-model="connect_filter" label="Filter by Connection Status"></v-select>
       </v-col>
     </v-row>
-    <v-data-table v-model="selectedRows" :headers="headers" :items="filtered_providers" show-select item-key="id"
+    <v-data-table v-model="selectedRows" :headers="headers" :items="filtered_providers" show-select item-key="conso_id"
                   :options="mutable_options" :search="search" @update:options="updateOptions" :footer-props="footer_props"
                   :key="'mp'+dtKey">
       <template v-slot:item.status="{ item }">
@@ -132,6 +132,7 @@
           { text: 'Harvest Day', value: 'day_of_month', align: 'center' },
         ],
         mutable_providers: [ ...this.providers ],
+        inst_spec_ids: [],
         footer_props: { 'items-per-page-options': [10,50,100,-1] },
         bulk_actions: [ 'Set Active', 'Set Inactive', 'Connect', 'Disconnect' ],
         connect_options: ['Connected', 'Not Connected'],
@@ -263,8 +264,6 @@
                   this.dtKey += 1;           // update the datatable
                 } else if (Action=='Connect') {
                   for (const provider of Rows) {
-                    // let connected_inst = provider.connected.find( ii => ii.id == Context);
-                    // if (typeof(connected_inst) != 'undefined') {
                     if (provider.connected.length>0) {
                       skip_count += 1;
                     } else {
@@ -352,6 +351,7 @@
                   this.mutable_providers[provIdx].conso_id = response.data.provider.conso_id;
                   this.mutable_providers[provIdx].connected = response.data.provider.connected;
                   this.mutable_providers[provIdx].connectors = response.data.provider.connectors;
+                  this.mutable_providers[provIdx].connection_count = response.data.provider.connection_count;
                   this.mutable_providers[provIdx].day_of_month = response.data.provider.day_of_month;
                   this.mutable_providers[provIdx].restricted = response.data.provider.restricted;
                   this.mutable_providers[provIdx].allow_inst_specific = response.data.provider.allow_inst_specific;
@@ -391,10 +391,15 @@
                 axios.delete('/providers/'+provid)
                      .then( (response) => {
                        if (response.data.result) {
+                         // just deleted an inst-specifc provider? Restore the conso-global if it exists
+                         if (this.inst_context>1 && this.inst_spec_ids.includes(provider.id)) {
+                           this.inst_spec_ids.splice(this.inst_spec_ids.findIndex(p => p==provider.id),1);
+                         }
                          provider.inst_id = null;
                          provider.conso_id = null;
                          provider.inst_name = null;
                          provider.connected = [];
+                         provider.connection_count = Math.max(provider.connection_count-1,0);
                          provider.day_of_month = '';
                          provider.can_edit = false;
                          provider.can_delete = false;
@@ -420,11 +425,15 @@
       ...mapGetters(['is_admin', 'datatable_options']),
       filtered_providers: function() {
         if (this.connect_filter == 'Connected') {
-           return this.mutable_providers.filter(p => p.inst_name!=null);
+           return (this.inst_context==1) ? this.mutable_providers.filter(p => p.conso_id!=null && p.inst_id==1)
+                                         : this.mutable_providers.filter(p => p.conso_id!=null &&
+                                           (p.inst_id==this.inst_context || (!this.inst_spec_ids.includes(p.id) && p.inst_id==1)));
         } else if (this.connect_filter == 'Not Connected') {
-           return this.mutable_providers.filter(p => p.inst_name==null);
+           return this.mutable_providers.filter(p => p.conso_id==null && p.inst_id==1);
         } else {
-          return [...this.mutable_providers];
+          return (this.inst_context==1) ? this.mutable_providers.filter(p => p.inst_id==1)
+                                        : this.mutable_providers.filter(p => (p.inst_id==this.inst_context ||
+                                                                          (!this.inst_spec_ids.includes(p.id) && p.inst_id==1)));
         }
       },
     },
@@ -448,6 +457,13 @@
       this.headers.push({ text: '', value: 'action', sortable: false });
     },
     mounted() {
+      // Update the array of inst-specific (global) provider IDs when context is inst-specific
+      if (this.inst_context > 1) {
+        this.mutable_providers.forEach( (prov) => {
+          if (prov.inst_id == this.inst_context) this.inst_spec_ids.push(prov.id);
+        });
+      }
+
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);
       this.dtKey += 1;           // force re-render of the datatable

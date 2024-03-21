@@ -193,7 +193,8 @@ class InstitutionController extends Controller
         }
 
         // Get the institution and sushi settings
-        $institution = Institution::with('users', 'users.roles','institutionGroups')->findOrFail($id);
+        $institution = Institution::with('users', 'users.roles','institutionGroups','institutionGroups.institutions:id,name')
+                                  ->findOrFail($id);
         $sushi_settings = SushiSetting::with('provider','provider.globalProv')->where('inst_id',$institution->id)->get();
 
         // Get most recent harvest and set can_delete flag
@@ -202,8 +203,10 @@ class InstitutionController extends Controller
         $institution['default_fiscalYr'] = config('ccplus.fiscalYr');
 
         // Related models we'll be passing
-        $all_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['id','name'])->toArray();
-        $institution['groups'] = $institution->institutionGroups()->pluck('institution_group_id')->all();
+        $all_groups = InstitutionGroup::with('institutions:id,name')->orderBy('name', 'ASC')->get();
+        $groupIds = $institution->institutionGroups()->pluck('institutiongroups.id')->toArray();
+        $institution['groups'] = $all_groups->whereIn('id',$groupIds)->values()->toArray();
+        $all_groups = $all_groups->toArray();
 
         // Add on Sushi Settings
         $institution['sushiSettings'] = $sushi_settings;
@@ -217,41 +220,50 @@ class InstitutionController extends Controller
             if ($r['name'] == 'Viewer') $all_roles[$idx]['name'] = "Viewer";
         }
 
-        // Get all (consortium) providers this inst might be connected to
-        $conso_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest','reports:id,name',
-                                          'globalProv')->whereIn('inst_id', [1,$id])->orderBy('name', 'ASC')->get();
-
+        // Get all providers this inst might be connected to
+        $raw_providers = Provider::whereIn('inst_id', [1,$id])->get();
+        $inst_prov_ids  = $raw_providers->where('inst_id',$id)->pluck('id')->toArray();
+        $conso_prov_ids = $raw_providers->where('inst_id',1)->pluck('id')->toArray();
+        $combined_ids = array_unique(array_merge($inst_prov_ids, $conso_prov_ids));
+        $inst_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest','reports:id,name',
+                                         'globalProv')->whereIn('id',$combined_ids)->orderBy('name', 'ASC')->get();
         // Get master report definitions
         $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
 
         // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
         $global_providers = GlobalProvider::orderBy('name', 'ASC')->get();
-        $all_providers = $global_providers->map( function($rec) use ($master_reports, $conso_providers, $thisUser, $id) {
+
+
+        // $global_providers->map( function($rec) use ($master_reports, $inst_providers, $thisUser, $id) {
+        $output_providers = [];
+        foreach ($global_providers as $rec) {
             $rec->global_prov = $rec->toArray();
             $rec->connectors = $rec->connectionFields();
-            $rec->connected = $conso_providers->where('global_id',$rec->id)->pluck('institution')->toArray();
-            $rec->connection_count = count($rec->connected);
-            $inst_connection = $conso_providers->where('global_id',$rec->id)->where('inst_id',$id)->first();
-            // Initialize connectability to NO if the global is connected to anything and YES if not connected
-            $rec->can_connect = ($rec->connection_count == 0) ? true : false;
-            // Setup default values for the columns in the U/I
-            $rec->conso_id = null;
-            $rec->inst_name = null;
-            $rec->day_of_month = null;
-            $rec->can_delete = false;
-            $reports_string = ($rec->master_reports) ?
-                               $this->makeReportString($rec->master_reports, $master_reports) : '';
-            $report_state = $this->reportState($rec->master_reports, $master_reports);
-            // Global provider is attached
-            if ($rec->connection_count > 0) {
-                // get the provider record
-                $prov_data = ($inst_connection) ? $inst_connection : $conso_providers->where('global_id',$rec->id)->first();
+            // Set a record for both an inst-specific and consortium-wide provider definition
+            // (the U/I will have to hide/set-precedence)
+            $connected = false;
+            for ($i=0; $i<2; $i++) {
+                $_inst = ($i==0) ? $id : $i;
+                // Setup default values for the columns in the U/I
+                $rec->conso_id = null;
+                $rec->inst_name = null;
+                $rec->day_of_month = null;
+                $rec->can_delete = false;
+                $rec->can_connect = true;   // default to true if global is not connected
+                $rec->connected = array();
+                $rec->connection_count = 0;
+                $reports_string = ($rec->master_reports) ?
+                                   $this->makeReportString($rec->master_reports, $master_reports) : '';
+                $report_state = $this->reportState($rec->master_reports, $master_reports);
+
+                // Get the provider data
+                $prov_data = $inst_providers->where('global_id',$rec->id)->where('inst_id',$_inst)->first();
                 if ($prov_data) {
-                    // If there is ONE connection, and it is to the consortium, set can_connect to the inst_specifc flag.
-                    // If it is not a conso-connected provider, leave it off
-                    if ($rec->connection_count == 1 && $prov_data->inst_id == 1) {
-                        $rec->can_connect = $prov_data->allow_inst_specific;
-                    }
+                    $connected = true;
+                    $rec->connected = $prov_data->toArray();
+                    $rec->connection_count = 1;
+                    // For a conso-provider, set can_connect to value of inst_specifc flag (inst-specific is already connected)
+                    $rec->can_connect = ($prov_data->inst_id == 1) ? $prov_data->allow_inst_specific : false;
                     $rec->conso_id = $prov_data->id;
                     $rec->name = $prov_data->name;
                     $rec->inst_id = $prov_data->inst_id;
@@ -269,15 +281,23 @@ class InstitutionController extends Controller
                         $reports_string = $this->makeReportString($report_ids, $master_reports);
                         $report_state = $this->reportState($report_ids, $master_reports);
                     }
+                    $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;
+                    $rec->report_state = $report_state;
+                    $output_providers[] = $rec->toArray();
                 }
             }
-            $rec->report_state = $report_state;
-            $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;
-            return $rec;
-        })->toArray();
+            // Include unconnected globals in the array
+            if (!$connected) {
+                $rec->report_state = $report_state;
+                $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;
+                $output_providers[] = $rec->toArray();
+            }
+
+        }
+        $all_providers = array_values($output_providers);
 
         // Pull an array for unset global providers
-        $existingIds = $conso_providers->pluck('global_id')->toArray();
+        $existingIds = $inst_providers->pluck('global_id')->toArray();
         $unset_global = GlobalProvider::whereNotIn('id',$existingIds)->orderBy('name', 'ASC')->get();
 
         // Get 10 most recent harvests

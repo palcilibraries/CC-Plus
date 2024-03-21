@@ -3,7 +3,10 @@
     <v-container grid-list-md>
       <v-form v-model="formValid" :key="'UFrm'+form_key">
         <v-row class="d-flex ma-2" no-gutters>
-         <v-col v-if="mutable_dtype=='edit'" class="d-flex pt-4 justify-center"><h1 align="center">Edit Sushi Connection</h1></v-col>
+         <v-col v-if="mutable_dtype=='edit'" class="d-flex pt-4 justify-center">
+           <h1 v-if="sushi_prov.inst_id==1" align="center">Edit Consortium Sushi Credentials</h1>
+           <h1 v-else align="center">Edit Institutional Sushi Credentials</h1>
+         </v-col>
          <v-col v-else class="d-flex pt-4 justify-center"><h1 align="center">Create Sushi Connection</h1></v-col>
         </v-row>
         <div v-if="sushi_inst.id==null || sushi_prov.id==null">
@@ -15,7 +18,7 @@
             <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_inst.name }}</strong></v-col>
             <v-col cols="2" class="d-flex justify-center"> &lt;&lt; -- &gt;&gt; </v-col>
             <v-col v-if="providers.length>1" class="d-flex px-2" cols="5">
-              <v-autocomplete :items="connectable_providers" v-model="sushi_prov" return-object item-text="name"
+              <v-autocomplete :items="providers" v-model="sushi_prov" return-object item-text="name"
                               label="Choose a Provider"></v-autocomplete>
             </v-col>
             <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_prov.name}}</strong></v-col>
@@ -52,7 +55,8 @@
     </div>
     <v-row class="d-flex ma-2" >
       <v-col v-if="sushi_inst.id!=null && sushi_prov.id!=null" class="d-flex px-2 justify-center">
-        <v-btn small class='btn' color="primary" @click="saveSetting" :disabled="!formValid">Save</v-btn>
+        <v-btn small class='btn' color="primary" @click="saveSetting"
+               :disabled="!formValid || (mutable_dtype=='edit' && !setting.can_edit)">Save</v-btn>
       </v-col>
       <v-col v-if="sushi_inst.id!=null && sushi_prov.id!=null" class="d-flex px-2 justify-center">
         <v-btn small color="secondary" type="button" @click="testSettings">Test Settings</v-btn>

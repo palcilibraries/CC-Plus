@@ -12,13 +12,13 @@
         <div v-if="sushi_inst.id==null || sushi_prov.id==null">
           <v-row class="d-flex ma-2 justify-center" no-gutters>
             <v-col v-if="institutions.length>1" class="d-flex px-2" cols="5">
-              <v-autocomplete :items="institutions" v-model="sushi_inst" return-object item-text="name"
+              <v-autocomplete :items="connectable_institutions" v-model="sushi_inst" return-object item-text="name"
                               label="Choose an Institution"></v-autocomplete>
             </v-col>
             <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_inst.name }}</strong></v-col>
             <v-col cols="2" class="d-flex justify-center"> &lt;&lt; -- &gt;&gt; </v-col>
             <v-col v-if="providers.length>1" class="d-flex px-2" cols="5">
-              <v-autocomplete :items="providers" v-model="sushi_prov" return-object item-text="name"
+              <v-autocomplete :items="connectable_providers" v-model="sushi_prov" return-object item-text="name"
                               label="Choose a Provider"></v-autocomplete>
             </v-col>
             <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_prov.name}}</strong></v-col>
@@ -28,6 +28,13 @@
           <v-row class="d-flex ma-2 justify-center" no-gutters>
             <strong>{{ sushi_inst.name }} &lt;&lt; -- &gt;&gt; {{ sushi_prov.name }}</strong>
           </v-row>
+          <v-row v-if="mutable_dtype == 'create' || setting.can_edit" class="d-flex mx-2" no-gutters>
+            <v-col class="d-flex px-2" cols="8">
+              <v-switch v-model="enable_switch" dense label="Enable Harvesting"
+                        @change="statusval=(enable_switch) ? 'Enabled' : 'Disabled'"
+              ></v-switch>
+            </v-col>
+          </v-row>
           <template v-for="cnx in sushi_prov.connectors">
             <v-row class="d-flex mx-2" no-gutters>
               <v-col class="d-flex px-2" cols="8">
@@ -36,12 +43,6 @@
               </v-col>
             </v-row>
           </template>
-          <v-row class="d-flex ma-2" no-gutters>
-            <v-col class="d-flex px-2" cols="4">
-              <v-select :items="statuses" v-model="statusval" label="Status" :readonly="form.status=='Suspended'"
-              ></v-select>
-            </v-col>
-          </v-row>
           <div v-if="showTest">
             <div>{{ testStatus }}</div>
             <div v-for="row in testData">{{ row }}</div>
@@ -92,8 +93,8 @@
         testStatus: '',
         setting_id: null,
         mutable_dtype: this.dtype,
-        statuses: ['Enabled','Disabled','Suspended','Incomplete'],
         statusval: 'Enabled',
+        enable_switch: 1,
         form: new window.Form({
             inst_id: null,
             prov_id: null,
@@ -229,8 +230,27 @@
                                             : { id: null, global_id: null, global_prov: { id:null, connectors: []} };
       },
       connectable_providers() {
-        if (this.mutable_dtype == 'edit') return this.providers;
-        return this.providers.filter(p => (p.can_connect==1));
+        if (this.mutable_dtype == 'edit' || this.form.inst_id == null) return this.providers;
+        return this.providers.filter( p => (p.inst_id == null || p.inst_id == 1) &&
+                                            this.filtered_settings.filter( s => s.prov_id == p.conso_id )
+                                                                  .every( s2 => { s2.inst_id != this.form.inst_id })
+                                    );
+      },
+      connectable_institutions() {
+        if (this.mutable_dtype == 'edit' || this.form.prov_id == null) return this.institutions;
+        return this.institutions.filter( ii => this.filtered_settings.filter( s => s.inst_id == ii.id )
+                                                                     .every( s2 => { s2.prov_id != this.form.prov_id })
+                                       );
+      },
+      filtered_settings() {
+        if ( this.form.inst_id == null) {
+          return (this.form.prov_id == null) ? [ ...this.all_settings ]
+                                             : this.all_settings.filter( s => s.prov_id == this.form.prov_id );
+        } else {
+          return (this.form.prov_id == null) ? this.all_settings.filter( s => s.inst_id == this.form.inst_id )
+                                             : this.all_settings.filter( s => s.inst_id == this.form.inst_id &&
+                                                                              s.prov_id == this.form.prov_id );
+        }
       },
     },
     mounted() {

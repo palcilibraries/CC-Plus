@@ -161,6 +161,15 @@ class SushiQWorker extends Command
                     continue;
                 }
 
+                // Skip any harvest(s) related to a sushisetting that is not (or no longer) Active (the settings
+                // may have been changed since the harvest was defined) - if found, set harvest status to Stopped.
+                 if ($job->harvest->sushiSetting->status != 'Enabled') {
+                     $job->harvest->status = 'Stopped';
+                     $job->harvest->save();
+                     $job->delete();
+                     continue;
+                 }
+
                // Check the job url against all active urls and skip if there's a match
                // (this should also skip any job that gets grabbed by another worker between when
                // we built the $job_ids array and this point.)

@@ -21,6 +21,7 @@ class CreateFailedHarvestsTable extends Migration
             $table->integer('error_id')->unsigned();
             $table->string('process_step')->nullable();
             $table->string('detail')->nullable();
+            $table->string('help_url')->nullable();
             $table->timestamps();
 
             $table->foreign('harvest_id')->references('id')->on('harvestlogs')->onDelete('cascade');

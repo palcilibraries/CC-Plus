@@ -18,7 +18,7 @@ class FailedHarvest extends Model
    * @var array
    */
     protected $fillable = [
-      'harvest_id', 'process_step', 'error_id', 'detail'
+      'harvest_id', 'process_step', 'error_id', 'detail', 'help_url'
     ];
 
     public function harvest()

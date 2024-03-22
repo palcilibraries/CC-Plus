@@ -60,6 +60,8 @@ class SushiQWorker extends Command
     public function __construct()
     {
         parent::__construct();
+        // $this->global_providers = GlobalProvider::where('is_active', true)->get();
+        // $this->connection_fields = ConnectionField::get();
         try {
           $this->global_providers = GlobalProvider::where('is_active', true)->get();
         } catch (\Exception $e) {
@@ -285,14 +287,14 @@ class SushiQWorker extends Command
                   $error = CcplusError::where('id',3030)->first();
                   FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'SUSHI',
                                         'error_id' => 3030, 'detail' => $sushi->message . $sushi->detail,
-                                        'created_at' => $ts]);
+                                        'help_url' => $sushi->help_url, 'created_at' => $ts]);
                 } else {
                     try {
                         $valid_report = $sushi->validateJson();
                     } catch (\Exception $e) {
                         FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'COUNTER',
                                               'error_id' => 100, 'detail' => 'Validation error: ' . $e->getMessage(),
-                                              'created_at' => $ts]);
+                                              'help_url' => $sushi->help_url, 'created_at' => $ts]);
                         $this->line($ts . " " . $ident . "Report failed COUNTER validation : " . $e->getMessage());
                     }
                 }
@@ -321,7 +323,8 @@ class SushiQWorker extends Command
                     ['id' => $sushi->error_code, 'message' => $error_msg, 'severity' => $severity_id]
                 );
                 FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => $sushi->step,
-                                      'error_id' => $error->id, 'detail' => $sushi->detail, 'created_at' => $ts]);
+                                      'error_id' => $error->id, 'detail' => $sushi->detail,
+                                      'help_url' => $sushi->help_url, 'created_at' => $ts]);
                 if ($sushi->error_code != 10) {
                     $sushi->detail .= " (URL: " . $request_uri . ")";
                 }

@@ -311,14 +311,14 @@
             if ( (this.inst_context==1 && this.filters['global_prov'].length==0) ||
                  (this.inst_context>1 && this.filters['inst_prov'].length==0) ) {
               this.limit_prov_ids = (conso_only==0) ? this.providers.filter(p => p.conso_id!=null).map(p => p.conso_id)
-                                                    : this.providers.filter(p => p.conso_id!=null && p.inst_id==conso_only)
+                                                    : this.providers.filter(p => p.conso_id!=null && p.inst_id==1)
                                                                     .map(p=>p.conso_id);
             } else {
               let _filters = (this.inst_context == 1) ? this.filters['global_prov'] : this.filters['inst_prov'];
               this.limit_prov_ids = (conso_only==0)
                                     ? this.providers.filter(p => p.conso_id!=null && _filters.includes(p.id))
                                                     .map(p=>p.conso_id)
-                                    : this.providers.filter(p => p.conso_id!=null && p.inst_id==conso_only && _filters.includes(p.id))
+                                    : this.providers.filter(p => p.conso_id!=null && p.inst_id==1 && _filters.includes(p.id))
                                                     .map(p=>p.conso_id);
 
               // If changing the conso switch means no matches found, keep at least the current filter set

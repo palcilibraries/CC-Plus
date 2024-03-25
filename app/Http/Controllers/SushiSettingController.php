@@ -247,9 +247,12 @@ class SushiSettingController extends Controller
         if (!auth()->user()->hasAnyRole(['Admin']) && $fields['inst_id'] != auth()->user()->inst_id) {
             return response()->json(['result' => false, 'msg' => 'You can only assign settings for your institution']);
         }
-        // if global_id is not null, we need to create a provider record on-the-fly as an institution-specific
+        // if prov_id is missing, try to create a provider record on-the-fly as an institution-specific
         // provider before creating the sushisetting record.
-        if (isset($form_data['global_id'])) {
+        if (!isset($form_data['prov_id']) && !isset($form_data['global_id'])) {
+            return response()->json(['result' => false, 'msg' => 'Provider assignment is required']);
+        }
+        if (!isset($form_data['prov_id'])) {
             if (!is_null($form_data['global_id'])) {
                 $gp = GlobalProvider::where('id',$form_data['global_id'])->first();
                 if ($gp) {
@@ -260,6 +263,8 @@ class SushiSettingController extends Controller
                 } else {
                     return response()->json(['result' => false, 'msg' => 'Database error! Cannot find global provider record!']);
                 }
+            } else {
+                return response()->json(['result' => false, 'msg' => 'Global provider value is missing or undefined']);
             }
         }
         // create the new sushi setting record (get existing if already defined)

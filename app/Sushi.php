@@ -5,6 +5,7 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Client;
+use App\CcplusError;
 use \ubfr\c5tools\JsonR5Report;
 use \ubfr\c5tools\CheckResult;
 use \ubfr\c5tools\ParseException;
@@ -122,9 +123,15 @@ class Sushi extends Model
                 return "Success";
             }
 
-           // Not queued, signal error. If severity is non-Fatal, the message and code are
-           // set already and we'll return Success to allow the caller to report it (or not).
+           // Not queued, signal error.
             $this->step = "SUSHI";
+
+            // Override JSON severity with value from CC+ Error table if the code is found there.
+            // If code unrecognized and severity is non-Fatal, return Success and let caller handle it.
+            $known_error = CcplusError::with('severity')->where('id',$this->error_code)->first();
+            if ($known_error) {
+                $this->severity = strtoupper($known_error->severity->name);
+            }
             if ($this->severity == 'ERROR' || $this->severity == 'FATAL') {
                 return "Fail";
             }
@@ -251,15 +258,16 @@ class Sushi extends Model
     }
 
     /**
-     * Scan the JSON from a SUSHI for exceptions and set returned details in
-     * public class variables
+     * Scan the JSON from a SUSHI request for exceptions and set returned details in
+     * public class variables (sometimes exceptions are expressed differently!)
+     *   * JSON Property named "Exception" takes precedence over "Exceptions".
+     *   * If an array of exceptions is returned, only the first is reported.
+     *     The raw JSON, however, will still hold all the returned data.
      *
      * @return boolean $has_exception
      */
     public function jsonHasExceptions()
     {
-        // Check JSON for Exceptions. Sometimes they're expressed differently
-        // Property named "Exception" takes precedence over "Exceptions", and only first is set if an array is found
         $jException = null;
         // Code+Message at the root of returned JSON treated-as-Exception
         if (property_exists($this->json, 'Code') && property_exists($this->json, 'Message')) {
@@ -279,8 +287,8 @@ class Sushi extends Model
                 }
             }
         }
-        // Set if found, and return true/false
-        if ($jException) {
+        // Set class globals if found, and return true/false
+        if (!is_null($jException)) {
             $this->saveExceptionData($jException);
             return true;
         }

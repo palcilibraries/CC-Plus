@@ -431,7 +431,7 @@
         } else if (this.connect_filter == 'Not Connected') {
            return this.mutable_providers.filter(p => p.conso_id==null && p.inst_id==1);
         } else {
-          return (this.inst_context==1) ? this.mutable_providers.filter(p => p.inst_id==1)
+          return (this.inst_context==1) ? this.mutable_providers.filter(p => p.conso_id==null || p.inst_id==1)
                                         : this.mutable_providers.filter(p => (p.inst_id==this.inst_context ||
                                                                           (!this.inst_spec_ids.includes(p.id) && p.inst_id==1)));
         }

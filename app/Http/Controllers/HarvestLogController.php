@@ -138,7 +138,6 @@ class HarvestLogController extends Controller
             if ($show_all) {
                 if (sizeof($filters['group']) > 0) {
                     foreach ($filters['group'] as $group_id) {
-                        // $group = InstitutionGroup::with('institutions:id')->where('id',$group_id)->first();
                         $group = $groups->where('id',$group_id)->first();
                         if ($group) {
                             $_insts = $group->institutions->pluck('id')->toArray();
@@ -173,12 +172,12 @@ class HarvestLogController extends Controller
                                       })
                                       ->when(sizeof($filters['prov']) > 0, function ($qry) use ($filters) {
                                           return $qry->whereIn('prov_id', $filters['prov']);
-                                      })
-                                      ->pluck('id')->toArray();
+                                      })->get(['id','inst_id','prov_id']);
+            $settings_ids = $settings->pluck('id')->toArray();
             $harvest_data = HarvestLog::
                 with('report:id,name','sushiSetting','sushiSetting.institution:id,name','sushiSetting.provider:id,name,inst_id',
                      'failedHarvests','failedHarvests.ccplusError')
-                ->whereIn('sushisettings_id', $settings)
+                ->whereIn('sushisettings_id', $settings_ids)
                 ->orderBy('updated_at', 'DESC')
                 ->when(sizeof($filters['rept']) > 0, function ($qry) use ($filters) {
                     return $qry->whereIn('report_id', $filters['rept']);
@@ -200,6 +199,39 @@ class HarvestLogController extends Controller
                     }
                 })
                 ->get();
+
+            // Rebuild filtering option arrays to update the U/I
+            $filter_options = array('group' => [], 'inst' => [], 'prov' => [], 'rept' => [], 'harv_stat' => []);
+            $settings_inst_ids = $harvest_data->unique('sushiSetting.inst_id')->pluck('sushiSetting.inst_id')->toArray();
+            $option_ids = array_merge($filters['inst'], $settings_inst_ids);
+            $filter_options['inst'] = Institution::with('sushiSettings:id,inst_id,prov_id')->whereIn('id', $option_ids)
+                                                 ->get(['id','name'])->toArray();
+
+            $source_ids = $harvest_data->unique('sushiSetting.prov_id')->pluck('sushiSetting.prov_id')->toArray();
+            $option_ids = array_merge($filters['prov'], $source_ids);
+            $filter_options['prov'] = Provider::with('reports')->whereIn('id', $option_ids)
+                                              ->orderBy('name', 'ASC')->get(['id','name','inst_id'])->toArray();
+
+            $source_ids = $harvest_data->unique('report_id')->pluck('report_id')->toArray();
+            $option_ids = array_merge($filters['rept'], $source_ids);
+            $filter_options['rept'] = Report::whereIn('id', $option_ids)->orderBy('name', 'asc')->get()->toArray();
+
+            $_values = $harvest_data->unique('status')->pluck('status')->toArray();
+            $filter_options['harv_stat'] = array_merge($filters['harv_stat'], $_values);
+
+            // Build groups based on insts
+            $groups = InstitutionGroup::with('institutions')->orderBy('name', 'ASC')->get(['id','name']);
+            foreach ($groups as $key => $grp) {
+                if (!$grp->institutions) {
+                    $groups->forget($key);
+                } else {
+                    $grp_inst_ids = $grp->institutions->pluck('id')->toArray();
+                    if (count(array_intersect($grp_inst_ids, $settings_inst_ids)) == 0) {
+                        $groups->forget($key);
+                    }
+                }
+            }
+            $filter_options['group'] = $groups->toArray();
 
             // Apply connectedBy filter (if given) and format records for display , limit to 500 output records
             $harvests = array();
@@ -248,7 +280,7 @@ class HarvestLogController extends Controller
             array_unshift($updated_ym , 'Last 24 hours');
 
             return response()->json(['harvests' => $harvests, 'updated' => $updated_ym, 'truncated' => $truncated,
-                                     'error_codes' => $error_codes], 200);
+                                     'options' => $filter_options, 'error_codes' => $error_codes], 200);
 
         // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {

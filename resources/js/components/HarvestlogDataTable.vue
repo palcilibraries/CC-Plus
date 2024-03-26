@@ -26,7 +26,7 @@
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
-        <v-autocomplete :items="providers" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
+        <v-autocomplete :items="filter_options['prov']" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
                         label="Provider(s)" item-text="name" item-value="id">
           <template v-slot:prepend-item>
             <v-list-item>
@@ -41,7 +41,7 @@
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-autocomplete :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters()" multiple
+        <v-autocomplete :items="filter_options['inst']" v-model="mutable_filters['inst']" @change="updateFilters()" multiple
                         label="Institution(s)"  item-text="name" item-value="id"
         ></v-autocomplete>
       </v-col>
@@ -50,7 +50,7 @@
         <div v-if="mutable_filters['group'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('group')"/>&nbsp;
         </div>
-        <v-select :items="groups" v-model="mutable_filters['group']" @change="updateFilters()" multiple
+        <v-select :items="filter_options['group']" v-model="mutable_filters['group']" @change="updateFilters()" multiple
                   label="Institution Group(s)"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
@@ -58,7 +58,7 @@
         <div v-if="mutable_filters['rept'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('rept')"/>&nbsp;
         </div>
-        <v-select :items="reports" v-model="mutable_filters['rept']" @change="updateFilters()" multiple
+        <v-select :items="filter_options['rept']" v-model="mutable_filters['rept']" @change="updateFilters()" multiple
                   label="Report(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
@@ -66,7 +66,7 @@
         <div v-if="mutable_filters['harv_stat'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('harv_stat')"/>&nbsp;
         </div>
-        <v-select :items="statuses" v-model="mutable_filters['harv_stat']" @change="updateFilters()" multiple
+        <v-select :items="filter_options['harv_stat']" v-model="mutable_filters['harv_stat']" @change="updateFilters()" multiple
                   label="Status(es)" item-text="name" item-value="name"
         ></v-select>
       </v-col>
@@ -205,6 +205,7 @@
                         { action:'Restart', status:'Queued'},
                         { action:'Delete',  status:'Delete'}
                       ],
+        filter_options: { 'inst': [], 'prov': [], 'rept': [], 'group': [], 'harv_stat': [] },
         harv: {},
         selectedRows: [],
         minYM: '',
@@ -287,6 +288,9 @@
                  .then((response) => {
                      this.mutable_harvests = response.data.harvests;
                      this.mutable_updated = response.data.updated;
+                     Object.keys(response.data.options).forEach( (key) =>  {
+                        this.filter_options[key] = [...response.data.options[key]];
+                     });
                      if (typeof(response.data.error_codes) != 'undefined') {
                        this.errorCodes = [...response.data.error_codes];
                      }
@@ -451,6 +455,13 @@
       if (!this.is_admin && !this.is_viewer) {
          this.headers.splice(this.headers.findIndex(h=>h.value == "inst_name"),1);
       }
+
+      // Set initial filter options
+      this.filter_options.inst = [...this.institutions];
+      this.filter_options.prov = [...this.providers];
+      this.filter_options.rept = [...this.reports];
+      this.filter_options.group = [...this.groups];
+      this.filter_options.harv_stat = [...this.statuses];
 
       // Update store and apply filters now that they're set
       this.loading = true;

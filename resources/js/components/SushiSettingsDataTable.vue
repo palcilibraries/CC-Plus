@@ -304,7 +304,9 @@
           },
           // Applies limit-to consortium switch by updating/managing the array of providers to limit to
           // (limit_prov_ids holds  conso provider ids... NOT global ids, and controls displayed settings)
-          updateConsoLimit() {
+          updateConsoLimit(filt) {
+            // Update filter options by default unless filt is passed
+            var update_options = (typeof filt !== 'undefined') ? false : true;
             // conso_only is the inst-to-limit to (1=consortium inst), or 0 means ALL, including inst-specific
             let conso_only = (this.conso_switch) ? this.inst_context : 0;
             // If no filters active, just apply the conso_only
@@ -324,8 +326,7 @@
               // If changing the conso switch means no matches found, keep at least the current filter set
               if (this.limit_prov_ids.length == 0 && _filters.length > 0) this.limit_prov_ids = _filters;
             }
-            // let _filt = (this.inst_context == 1) ? "global_prov" : "inst_prov";
-            this.updateFilterOptions('ALL');
+            if (update_options) this.updateFilterOptions('ALL');
           },
           // Called onChange inst or group filter
           updateInstFilter() {
@@ -354,7 +355,7 @@
                 return;
               }
               if (filter == 'global_prov' || filter=='inst_prov') {
-                this.updateConsoLimit();
+                this.updateConsoLimit(filter); // don't update options twice
               }
               this.$store.dispatch('updateAllFilters',this.filters);
               this.updateFilterOptions(filter);
@@ -363,7 +364,7 @@
               this.filters[filter] = (filter == 'group') ? 0 : [];
               if (filter == 'inst' || filter == 'group') this.limit_inst_ids = [];
               if (filter == 'global_prov' || filter=='inst_prov') {
-                this.updateConsoLimit();
+                this.updateConsoLimit(filter); // don't update options twice
               }
               this.$store.dispatch('updateAllFilters',this.filters);
               this.updateFilterOptions(filter);
@@ -405,9 +406,11 @@
 
               // rebuild providers
               if (just_cleared || !changed_filter.includes('prov')) {
-                let _filt = (this.inst_context==1) ? this.filters['global_prov'] : this.filters['inst_prov'];
+                let _filt = this.filters[changed_filter];
                 let prov_ids = this.filtered_settings.map(s => s.prov_id);
-                this.filter_options['prov'] = this.all_providers.filter(p => (prov_ids.includes(p.conso_id) ||
+                this.filter_options['prov'] = (this.inst_context==1) ?
+                                               this.all_providers.filter(p => (prov_ids.includes(p.id) || _filt.includes(p.id))) :
+                                               this.all_providers.filter(p => (prov_ids.includes(p.conso_id) ||
                                                                               _filt.includes(p.conso_id)));
               }
               // rebuild status

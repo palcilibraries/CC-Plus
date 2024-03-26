@@ -53,8 +53,10 @@ class Sushi extends Model
         $client = new Client();   //GuzzleHttp\Client
 
         // ASME (there may be others) checks the Agent and returns 403 if it doesn't like what it sees
+        // Disable http_errors and tell Guzzle to return JSON (instead of embedding exceptions in a text "message")
         $options = [
-            'headers' => ['User-Agent' => "Mozilla/5.0 (CC-Plus custom) Firefox/80.0"]
+            'http_errors' => false,
+            'headers' => [ 'Accept' => 'application/json', 'User-Agent' => "Mozilla/5.0 (CC-Plus custom) Firefox/80.0" ]
         ];
 
        // Make the request and convert into JSON

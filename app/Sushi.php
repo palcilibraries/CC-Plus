@@ -276,14 +276,22 @@ class Sushi extends Model
         // Test for Exception(s) at the root of the JSON
         } elseif (property_exists($this->json, 'Exception') || property_exists($this->json, 'Exceptions')) {
             $ex_prop = (property_exists($this->json, 'Exception')) ? "Exception" : "Exceptions";
-            $jException = (is_array($this->json->$ex_prop)) ? $this->json->$ex_prop[0] : $this->json->$ex_prop;
+            if (is_array($this->json->$ex_prop)) {
+                $jException = (count($this->json->$ex_prop)>0) ? $this->json->$ex_prop[0] : null;
+            } else {
+                $jException = $this->json->$ex_prop;
+            }
         // Test for Exception(s) returned in the JSON header
         } elseif (property_exists($this->json, 'Report_Header')) {
             $header = $this->json->Report_Header;
             if (is_object($header)) {
                 if (property_exists($header, 'Exception') || property_exists($header, 'Exceptions')) {
                     $ex_prop = (property_exists($header, 'Exception')) ? "Exception" : "Exceptions";
-                    $jException = (is_array($header->$ex_prop)) ? $header->$ex_prop[0] : $header->$ex_prop;
+                    if (is_array($header->$ex_prop)) {
+                        $jException = (count($header->$ex_prop)>0) ? $header->$ex_prop[0] : null;
+                    } else {
+                        $jException = $header->$ex_prop;
+                    }
                 }
             }
         }

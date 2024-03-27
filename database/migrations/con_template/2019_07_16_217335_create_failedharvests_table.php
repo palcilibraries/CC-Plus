@@ -20,7 +20,7 @@ class CreateFailedHarvestsTable extends Migration
             $table->integer('harvest_id')->unsigned();
             $table->integer('error_id')->unsigned();
             $table->string('process_step')->nullable();
-            $table->string('detail')->nullable();
+            $table->text('detail')->nullable();
             $table->string('help_url')->nullable();
             $table->timestamps();
 

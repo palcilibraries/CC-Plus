@@ -307,10 +307,10 @@
                         }
                      });
                      this.truncatedResult = response.data.truncated;
+                     this.loading = false;
                      this.dtKey++;
                  })
                  .catch(err => console.log(err));
-             this.loading = false;
         },
         updateOptions(options) {
             if (Object.keys(this.mutable_options).length === 0) return;

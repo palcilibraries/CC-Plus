@@ -455,7 +455,7 @@ class SushiSettingController extends Controller
         if ($request->filters) {
             $filters = json_decode($request->filters, true);
         } else {
-            $filters = array('inst' => [], 'global_prov' => [], 'inst_prov' => [], 'group' => 0);
+            $filters = array('inst' => [], 'global_prov' => [], 'inst_prov' => [], 'harv_stat' => [], 'group' => 0);
         }
         $context = 1;
         if ($request->input('context')) {
@@ -512,6 +512,11 @@ class SushiSettingController extends Controller
             $msg = "Export failed : could not find requested provider(s).";
             return response()->json(['result' => false, 'msg' => $msg]);
         }
+
+        // Set status filter
+        $status_filters = (count($filters['harv_stat'])>0) ? $filters['harv_stat'] : null;
+        $status_name = (count($filters['harv_stat']) == 1) ? $filters['harv_stat'][0] : "";
+
         // Get all connection fields
         $all_connectors = ConnectionField::get();
         // Set name if only one provider being exported
@@ -524,6 +529,9 @@ class SushiSettingController extends Controller
                       })
                       ->when($prov_filters, function ($query, $prov_filters) {
                         return $query->whereIn('prov_id', $prov_filters);
+                      })
+                      ->when($status_filters, function ($qry) use ($status_filters) {
+                          return $qry->whereIn('status', $status_filters);
                       })
                       ->get();
 
@@ -712,7 +720,7 @@ class SushiSettingController extends Controller
 
         // Give the file a meaningful filename
         $fileName = "CCplus";
-        if (!$inst_filters && !$prov_filters && is_null($group)) {
+        if (!$inst_filters && !$prov_filters && !$status_filters && is_null($group)) {
             $fileName .= "_" . session('ccp_con_key', '') . "_All";
         } else {
             if (!$inst_filters) {
@@ -728,6 +736,9 @@ class SushiSettingController extends Controller
                 $fileName .= "_AllProviders";
             } else {
                 $fileName .= ($prov_name == "") ? "_SomeProviders": "_" . preg_replace('/ /', '', $prov_name);
+            }
+            if ( count($status_filters) > 0) {
+                $fileName .= ($status_name == "") ? "_SomeStauses" : "_".$status_name;
             }
         }
         $fileName .= "_SushiSettings.xlsx";

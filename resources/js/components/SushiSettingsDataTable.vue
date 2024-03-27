@@ -488,7 +488,7 @@
               this.success = '';
               this.failure = '';
               let url = "/sushi-export?export_missing="+this.export_missing;
-              if (this.filters['inst'].length > 0 || this.filters['group'] != 0 ||
+              if (this.filters['inst'].length > 0 || this.filters['group'] != 0 || this.filters['harv_stat'].length >0 ||
                   this.filters['global_prov'].length > 0 || this.filters['inst_prov'].length > 0) {
                   url += "&context="+this.inst_context+"&filters="+JSON.stringify(this.filters);
               }

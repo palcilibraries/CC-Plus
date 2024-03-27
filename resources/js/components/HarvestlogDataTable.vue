@@ -94,11 +94,11 @@
                     label="Connected By"
           ></v-select>
         </v-col>
-        <v-col v-if="errorCodes.length>1" class="d-flex px-2 align-center" cols="2">
+        <v-col v-if="filter_options['errors'].length>0" class="d-flex px-2 align-center" cols="2">
           <div v-if="mutable_filters['error_code']!=null && mutable_filters['error_code']!=''" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('error_code')"/>&nbsp;
           </div>
-          <v-select :items="errorCodes" v-model="mutable_filters['error_code']" @change="updateFilters()"
+          <v-select :items="filter_options['errors']" v-model="mutable_filters['error_code']" @change="updateFilters()"
                     label="Error Code"
           ></v-select>
         </v-col>
@@ -123,7 +123,7 @@
             <v-simple-table>
               <thead>
                 <tr><th colspan="3"><center>Failed Harvest Attempts (Harvest ID: {{ item.id }})</center></th></tr>
-                <tr><th>Attempted</th><th>Error Code</th><th>Message</th></tr>
+                <tr><th>Attempted</th><th>Error Code</th><th>Message</th><th>Provider Help</th></tr>
               </thead>
               <template v-for="attempt in item.failed">
                 <tbody>
@@ -135,7 +135,18 @@
                         <v-icon title="COUNTER Error Details" @click="goCounter()">mdi-open-in-new</v-icon>
                       </span>
                     </td>
-                    <td>{{ attempt.message }}</td>
+                    <td>
+                      {{ attempt.message }}
+                      <span v-if="item.error_code>0 && attempt.id==item.max_fail_id">
+                        <v-icon title="Download" @click="goURL('/harvests/'+item.id+'/raw')">mdi-download</v-icon>
+                      </span>
+                    </td>
+                    <td>
+                      <span v-if="attempt.help_url.length>0">
+                        <v-icon title="Help" @click="goURL(attempt.help_url)">mdi-help-box-outline</v-icon>
+                      </span>
+                      <span v-else>&nbsp;</span>
+                    </td>
                   </tr>
                   <tr v-if="attempt.detail.length>0">
                     <td>&nbsp;</td>
@@ -172,6 +183,7 @@
             groups: { type:Array, default: () => [] },
             providers: { type:Array, default: () => [] },
             reports: { type:Array, default: () => [] },
+            errors: { type:Array, default: () => [] },
             bounds: { type:Array, default: () => [] },
             filters: { type:Object, default: () => {} },
            },
@@ -197,7 +209,6 @@
         allConso: false,
         expanded: [],
         connectedBy: ['Consortium', 'Institution'],
-        errorCodes: [],
         truncatedResult: false,
         statuses: ['Active', 'Fail', 'Queued', 'Stopped', 'Success'],
         status_changeable: ['Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
@@ -205,7 +216,7 @@
                         { action:'Restart', status:'Queued'},
                         { action:'Delete',  status:'Delete'}
                       ],
-        filter_options: { 'inst': [], 'prov': [], 'rept': [], 'group': [], 'harv_stat': [] },
+        filter_options: { 'inst': [], 'prov': [], 'rept': [], 'group': [], 'harv_stat': [], 'errors': [] },
         harv: {},
         selectedRows: [],
         minYM: '',
@@ -289,12 +300,14 @@
                      this.mutable_harvests = response.data.harvests;
                      this.mutable_updated = response.data.updated;
                      Object.keys(response.data.options).forEach( (key) =>  {
-                        this.filter_options[key] = [...response.data.options[key]];
+                        if (response.data.options[key].length>0) {
+                          this.filter_options[key] = [...response.data.options[key]];
+                        } else {
+                          this.filter_options[key] = [];
+                        }
                      });
-                     if (typeof(response.data.error_codes) != 'undefined') {
-                       this.errorCodes = [...response.data.error_codes];
-                     }
                      this.truncatedResult = response.data.truncated;
+                     this.dtKey++;
                  })
                  .catch(err => console.log(err));
              this.loading = false;
@@ -389,6 +402,9 @@
         goCounter() {
             window.open("https://cop5.projectcounter.org/en/5.0.3/appendices/f-handling-errors-and-exceptions.html", "_blank");
         },
+        goURL(url) {
+          window.open(url, "_blank");
+        },
         expandRow (item) {
           this.expanded = item === this.expanded[0] ? [] : [item]
         },
@@ -455,13 +471,6 @@
       if (!this.is_admin && !this.is_viewer) {
          this.headers.splice(this.headers.findIndex(h=>h.value == "inst_name"),1);
       }
-
-      // Set initial filter options
-      this.filter_options.inst = [...this.institutions];
-      this.filter_options.prov = [...this.providers];
-      this.filter_options.rept = [...this.reports];
-      this.filter_options.group = [...this.groups];
-      this.filter_options.harv_stat = [...this.statuses];
 
       // Update store and apply filters now that they're set
       this.loading = true;

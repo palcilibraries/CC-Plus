@@ -882,9 +882,8 @@ class HarvestLogController extends Controller
         $rec['error_code'] = null;
         $rec['status'] = $harvest->status;
         $rec['failed'] = [];
-        $rec['max_fail_id'] = null;
         if ($harvest->failedHarvests) {
-            $rec['max_fail_id'] = $harvest->failedHarvests->max('id');
+            $max_fail_id = $harvest->failedHarvests->max('id');
             foreach ($harvest->failedHarvests->sortByDesc('created_at') as $fh) {
                 $info = array("id" => $fh->id, "ts" => date("Y-m-d H:i:s", strtotime($fh->created_at)),
                               "code" => $fh->ccplusError->id, "message" => $fh->ccplusError->message);
@@ -893,7 +892,7 @@ class HarvestLogController extends Controller
                 $info['help_url'] = (is_null($fh->help_url)) ? "" : $fh->help_url;
                 $rec['failed'][] = $info;
             }
-            $last = $harvest->failedHarvests->where('id',$rec['max_fail_id'])->first();
+            $last = $harvest->failedHarvests->where('id',$max_fail_id)->first();
             if ($last && ($harvest->status != 'Success' || $last->ccplusError->id == 3030)) {
                 $rec['error_code'] = $last->ccplusError->id;
                 $rec['error'] = $last->ccplusError->toArray();

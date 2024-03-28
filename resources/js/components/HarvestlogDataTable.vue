@@ -18,7 +18,7 @@
         <div v-if="mutable_filters['updated']!=null && mutable_filters['updated']!=''" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('updated')"/>&nbsp;
         </div>
-        <v-select :items="mutable_updated" v-model="mutable_filters['updated']" @change="updateFilters()"
+        <v-select :items="mutable_updated" v-model="mutable_filters['updated']" @change="updateFilters('updated')"
                   label="Updated"
         ></v-select>
       </v-col>
@@ -26,7 +26,7 @@
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
-        <v-autocomplete :items="filter_options['prov']" v-model="mutable_filters['prov']" @change="updateFilters()" multiple
+        <v-autocomplete :items="filter_options['prov']" v-model="mutable_filters['prov']" @change="updateFilters('prov')" multiple
                         label="Provider(s)" item-text="name" item-value="id">
           <template v-slot:prepend-item>
             <v-list-item>
@@ -41,7 +41,7 @@
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-autocomplete :items="filter_options['inst']" v-model="mutable_filters['inst']" @change="updateFilters()" multiple
+        <v-autocomplete :items="filter_options['inst']" v-model="mutable_filters['inst']" @change="updateFilters('inst')" multiple
                         label="Institution(s)"  item-text="name" item-value="id"
         ></v-autocomplete>
       </v-col>
@@ -50,7 +50,7 @@
         <div v-if="mutable_filters['group'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('group')"/>&nbsp;
         </div>
-        <v-select :items="filter_options['group']" v-model="mutable_filters['group']" @change="updateFilters()" multiple
+        <v-select :items="filter_options['group']" v-model="mutable_filters['group']" @change="updateFilters('group')" multiple
                   label="Institution Group(s)"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
@@ -58,7 +58,7 @@
         <div v-if="mutable_filters['rept'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('rept')"/>&nbsp;
         </div>
-        <v-select :items="filter_options['rept']" v-model="mutable_filters['rept']" @change="updateFilters()" multiple
+        <v-select :items="filter_options['rept']" v-model="mutable_filters['rept']" @change="updateFilters('rept')" multiple
                   label="Report(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
@@ -66,8 +66,8 @@
         <div v-if="mutable_filters['harv_stat'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('harv_stat')"/>&nbsp;
         </div>
-        <v-select :items="filter_options['harv_stat']" v-model="mutable_filters['harv_stat']" @change="updateFilters()" multiple
-                  label="Status(es)" item-text="name" item-value="name"
+        <v-select :items="filter_options['harv_stat']" v-model="mutable_filters['harv_stat']" @change="updateFilters('harv_stat')"
+                  multiple label="Status(es)" item-text="name" item-value="name"
         ></v-select>
       </v-col>
     </v-row>
@@ -90,7 +90,7 @@
           <div v-if="mutable_filters['connected_by']!=null && mutable_filters['connected_by']!=''" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('connected_by')"/>&nbsp;
           </div>
-          <v-select :items="connectedBy" v-model="mutable_filters['connected_by']" @change="updateFilters()"
+          <v-select :items="connectedBy" v-model="mutable_filters['connected_by']" @change="updateFilters('connected_by')"
                     label="Connected By"
           ></v-select>
         </v-col>
@@ -98,7 +98,7 @@
           <div v-if="mutable_filters['error_code']!=null && mutable_filters['error_code']!=''" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('error_code')"/>&nbsp;
           </div>
-          <v-select :items="filter_options['errors']" v-model="mutable_filters['error_code']" @change="updateFilters()"
+          <v-select :items="filter_options['errors']" v-model="mutable_filters['error_code']" @change="updateFilters('error_code')"
                     label="Error Code"
           ></v-select>
         </v-col>
@@ -123,34 +123,35 @@
             <v-simple-table>
               <thead>
                 <tr><th colspan="3"><center>Failed Harvest Attempts (Harvest ID: {{ item.id }})</center></th></tr>
-                <tr><th>Attempted</th><th>Error Code</th><th>Message</th><th>Provider Help</th></tr>
+                <tr><th>Attempted</th><th>Message</th><th>Provider Help</th><th>Error Code</th></tr>
               </thead>
               <template v-for="attempt in item.failed">
                 <tbody>
                   <tr>
-                    <td>{{ attempt.ts }}</td>
-                    <td>
-                      {{ attempt.code }}
-                      <span v-if="attempt.code>1000">
-                        <v-icon title="COUNTER Error Details" @click="goCounter()">mdi-open-in-new</v-icon>
-                      </span>
-                    </td>
-                    <td>
+                    <td width="10%">{{ attempt.ts }}</td>
+                    <td width="70%">
                       {{ attempt.message }}
                       <span v-if="item.error_code>0 && attempt.id==item.max_fail_id">
-                        <v-icon title="Download" @click="goURL('/harvests/'+item.id+'/raw')">mdi-download</v-icon>
+                        <v-icon title="Download JSON Error Message" @click="goURL('/harvests/'+item.id+'/raw')">mdi-download</v-icon>
                       </span>
                     </td>
-                    <td>
+                    <td width="10%">
                       <span v-if="attempt.help_url.length>0">
                         <v-icon title="Help" @click="goURL(attempt.help_url)">mdi-help-box-outline</v-icon>
                       </span>
                       <span v-else>&nbsp;</span>
                     </td>
+                    <td width="10%">
+                      {{ attempt.code }}
+                      <span v-if="attempt.code>1000">
+                        <v-icon title="COUNTER Error Details" @click="goCounter()">mdi-open-in-new</v-icon>
+                      </span>
+                    </td>
                   </tr>
                   <tr v-if="attempt.detail.length>0">
-                    <td>&nbsp;</td>
+                    <td width="10%">&nbsp;</td>
                     <td colspan="2">{{ attempt.detail }}</td>
+                    <td width="10%">&nbsp;</td>
                   </tr>
                 </tbody>
               </template>
@@ -248,9 +249,9 @@
     methods: {
         // Changing filters means clearing SelectedRows - otherwise Bulk Actions could affect
         // one of many rows no longer displayed.
-        updateFilters() {
+        updateFilters(filt) {
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
-            this.updateLogRecords();
+            this.updateLogRecords(filt);
             this.selectedRows = [];
             if (this.mutable_filters['inst'].length>0 || this.mutable_filters['group'].length>0) {
                 this.inst_filter = (this.mutable_filters['inst'].length>0) ? "I" : "G";
@@ -265,7 +266,7 @@
               }
             });
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
-            this.updateLogRecords();
+            this.updateLogRecords('none');
             this.inst_filter = null;
             this.rangeKey += 1;           // force re-render of the date-range component
         },
@@ -281,10 +282,11 @@
                 if (filter=='inst' || filter=='group') this.inst_filter = null;
             }
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
-            this.updateLogRecords();
+            this.updateLogRecords('none');
             this.selectedRows = [];
         },
-        updateLogRecords() {
+        // filt holds the filter options to be left alone when the JSON returns options
+        updateLogRecords(filt) {
             this.success = "";
             this.failure = "";
             this.loading = true;
@@ -300,10 +302,12 @@
                      this.mutable_harvests = response.data.harvests;
                      this.mutable_updated = response.data.updated;
                      Object.keys(response.data.options).forEach( (key) =>  {
-                        if (response.data.options[key].length>0) {
-                          this.filter_options[key] = [...response.data.options[key]];
-                        } else {
-                          this.filter_options[key] = [];
+                        if ( key != filt ) {
+                          if (response.data.options[key].length>0) {
+                            this.filter_options[key] = [...response.data.options[key]];
+                          } else {
+                            this.filter_options[key] = [];
+                          }
                         }
                      });
                      this.truncatedResult = response.data.truncated;
@@ -474,7 +478,7 @@
 
       // Update store and apply filters now that they're set
       this.loading = true;
-      this.updateLogRecords();
+      this.updateLogRecords('none');
       this.dtKey += 1;           // force re-render of the datatable
 
       // Subscribe to store updates

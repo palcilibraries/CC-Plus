@@ -166,6 +166,12 @@ class SushiQWorker extends Command
                 // Skip any harvest(s) related to a sushisetting that is not (or no longer) Active (the settings
                 // may have been changed since the harvest was defined) - if found, set harvest status to Stopped.
                  if ($job->harvest->sushiSetting->status != 'Enabled') {
+                     $error = CcplusError::where('id',50)->first();
+                     if ($error) {
+                         FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'Initiation',
+                                               'error_id' => 50, 'detail' => $error->explanation . $error_suggestion,
+                                               'created_at' => $ts]);
+                     }
                      $job->harvest->status = 'Stopped';
                      $job->harvest->save();
                      $job->delete();
@@ -223,16 +229,30 @@ class SushiQWorker extends Command
 
            // If provider or institution is inactive, toss the job and move on
             if (!$setting->provider->is_active) {
-                $this->line($ts . " " . $ident . 'Provider: ' . $setting->provider->name .
-                            ' is INACTIVE , queue entry removed and harvest status set to Stopped.');
+                $error = CcplusError::where('id',60)->first();
+                if ($error) {
+                    FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'Initiation',
+                                          'error_id' => 60, 'detail' => $error->explanation . $error_suggestion,
+                                          'created_at' => $ts]);
+                } else {
+                    $this->line($ts . " " . $ident . 'Provider: ' . $setting->provider->name .
+                                ' is INACTIVE , queue entry removed and harvest status set to Stopped.');
+                }
                 $job->delete();
                 $job->harvest->status = 'Stopped';
                 $job->harvest->save();
                 continue;
             }
             if (!$setting->institution->is_active) {
-                $this->line($ts . " " . $ident . 'Institution: ' . $setting->institution->name .
-                            ' is INACTIVE , queue entry removed and harvest status set to Stopped.');
+                $error = CcplusError::where('id',70)->first();
+                if ($error) {
+                    FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'Initiation',
+                                          'error_id' => 70, 'detail' => $error->explanation . $error_suggestion,
+                                          'created_at' => $ts]);
+                } else {
+                    $this->line($ts . " " . $ident . 'Institution: ' . $setting->institution->name .
+                                ' is INACTIVE , queue entry removed and harvest status set to Stopped.');
+                }
                 $job->delete();
                 $job->harvest->status = 'Stopped';
                 $job->harvest->save();

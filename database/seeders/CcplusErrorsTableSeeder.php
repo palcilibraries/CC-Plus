@@ -41,6 +41,21 @@ class CcplusErrorsTableSeeder extends Seeder
                 'suggestion' => 'Contact the provider to report this issue.',
                 'new_status' => 'Stopped'
             ],
+            ['id'=>50, 'message' => 'SUSHI Settings are not Enabled - harvest will be Stopped','severity_id' => 99,
+                'explanation' => 'The sushi settings in CC-Plus must be enabled in order to harvest. ',
+                'suggestion' => 'Verify that the sushi settings related to this harvest are enabled.',
+                'new_status' => 'Stopped'
+            ],
+            ['id'=>60, 'message' => 'Provider is marked as Inactive - harvest will be Stopped','severity_id' => 99,
+                'explanation' => 'The sushi settings in CC-Plus must be enabled in order to harvest. ',
+                'suggestion' => 'Verify that the provider related to this harvest is enabled.',
+                'new_status' => 'Stopped'
+            ],
+            ['id'=>70, 'message' => 'Institution is marked as Inactive - harvest will be Stopped','severity_id' => 99,
+                'explanation' => 'The CC-Plus institution must be Active in order to harvest. ',
+                'suggestion' => 'Verify that the institution related to this harvest is enabled.',
+                'new_status' => 'Stopped'
+            ],
             ['id'=>100, 'message' => 'COUNTER report failed validation', 'severity_id' => 99,
                 'explanation' => 'The report received from the provider did not conform to COUNTER specificiations.',
                 'suggestion' => 'Contact the provider to report this issue.',
@@ -50,8 +65,7 @@ class CcplusErrorsTableSeeder extends Seeder
            // SUSHI errors : 1XXX - 3XXX
             DB::table($table)->insert([
             ['id'=>1000, 'message' => 'Service Not Available', 'severity_id' => 99,
-                'explanation' => 'The request to the SUSHI server was successful, but the service is currently not' .
-                                 ' running.',
+                'explanation' => 'The SUSHI service for the provider is not responding',
                 'suggestion' => 'Contact the provider to report this issue.',
                 'new_status' => 'ReQueued'
             ],
@@ -95,6 +109,11 @@ class CcplusErrorsTableSeeder extends Seeder
                                 ' the provider.',
                 'new_status' => 'Stopped'
             ],
+            ['id'=>2011, 'message' => 'Global Reports Not Supported', 'severity_id'=>12,
+                'explanation' => 'The Provider does not support Global Reports.',
+                'suggestion' => 'Check details from the raw JSON',
+                'new_status' => 'Stopped'
+            ],
             ['id'=>2020, 'message' => 'APIKey Invalid', 'severity_id'=>12,
                 'explanation' => 'The APIKey for the request was not recognized by the report provider.',
                 'suggestion' => 'Check your SUSHI credentials and verify that they are complete and correct with' .
@@ -130,13 +149,13 @@ class CcplusErrorsTableSeeder extends Seeder
             ],
             ['id'=>3032, 'message' => 'Usage No Longer Available for Requested Dates', 'severity_id'=>12,
                 'explanation' => 'Usage data for the requested month is not available.',
-                'suggestion' => 'Wait for the next retry or stop the harvest for now and restart it later. If this' .
-                                ' error persists, contact the report provider to learn more details about the missing data.',
+                'suggestion' => 'Contact the report provider to learn more details about the missing data.' .
+                                ' The dataset could still be available, just not via the SUSHI service.',
                 'new_status' => 'ReQueued'
             ],
             ['id'=>3040, 'message' => 'Partial Data Returned', 'severity_id' => 11,
                 'explanation' => 'The request did not return a complete report.',
-                'suggestion' => 'Work with the CC-PLUS admin to correct this error.',
+                'suggestion' => 'Work with the CC-PLUS admin and report provider to correct this error.',
                 'new_status' => 'Stopped'
             ],
             ['id'=>3050, 'message' => 'Parameter Not Recognized in this Context', 'severity_id' => 11,

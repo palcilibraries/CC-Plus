@@ -232,7 +232,7 @@ class SushiQWorker extends Command
                 $error = CcplusError::where('id',60)->first();
                 if ($error) {
                     FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'Initiation',
-                                          'error_id' => 60, 'detail' => $error->explanation . $error_suggestion,
+                                          'error_id' => 60, 'detail' => $error->explanation . $error->suggestion,
                                           'created_at' => $ts]);
                 } else {
                     $this->line($ts . " " . $ident . 'Provider: ' . $setting->provider->name .
@@ -247,7 +247,7 @@ class SushiQWorker extends Command
                 $error = CcplusError::where('id',70)->first();
                 if ($error) {
                     FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'Initiation',
-                                          'error_id' => 70, 'detail' => $error->explanation . $error_suggestion,
+                                          'error_id' => 70, 'detail' => $error->explanation . $error->suggestion,
                                           'created_at' => $ts]);
                 } else {
                     $this->line($ts . " " . $ident . 'Institution: ' . $setting->institution->name .

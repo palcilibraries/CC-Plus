@@ -200,8 +200,43 @@ class HarvestLogController extends Controller
                 })
                 ->get();
 
-            // Rebuild filtering option arrays to update the U/I
+            // Apply connectedBy and error_code filters (if given) and format records for display , limit to 500 output records
+            $harvests = array();
+            $updated_ym = array();
             $filter_options = array('group' => [], 'inst' => [], 'prov' => [], 'rept' => [], 'harv_stat' => [], 'errors' => []);
+            $count = 0;
+            $truncated = false;
+            $max_records = 500;
+            foreach ($harvest_data as $key => $harvest) {
+                // Skip records as-needed
+                if ( ($connectedBy=='Consortium' && $harvest->sushiSetting->provider->inst_id != 1) ||
+                     ($connectedBy=='Institution' && $harvest->sushiSetting->provider->inst_id == 1) ) {
+                    $harvest_data->forget($key);
+                    continue;
+                }
+                $formatted_harvest = $this->formatRecord($harvest);
+                if (!is_null($formatted_harvest['error_code']) &&
+                    !in_array($formatted_harvest['error_code'], $filter_options['errors'])) {
+                    $filter_options['errors'][] = $formatted_harvest['error_code'];
+                }
+                if (!is_null($filters['error_code']) && $filters['error_code']!=null &&
+                    $formatted_harvest['error_code'] != $filters['error_code']) {
+                    $harvest_data->forget($key);
+                    continue;
+                }
+                // bump counter and add the record to the output array
+                $count += 1;
+                if ($count > $max_records) {
+                    $truncated = true;
+                    break;
+                }
+                $harvests[] = $formatted_harvest;
+                if (!in_array(substr($harvest->updated_at,0,7), $updated_ym)) {
+                    $updated_ym[] = substr($harvest->updated_at,0,7);
+                }
+            }
+
+            // Rebuild filtering option arrays to update the U/I
             $settings_inst_ids = $harvest_data->unique('sushiSetting.inst_id')->pluck('sushiSetting.inst_id')->toArray();
             $option_ids = array_merge($filters['inst'], $settings_inst_ids);
             $filter_options['inst'] = Institution::with('sushiSettings:id,inst_id,prov_id')->whereIn('id', $option_ids)
@@ -219,7 +254,7 @@ class HarvestLogController extends Controller
             $_values = $harvest_data->unique('status')->pluck('status')->toArray();
             $filter_options['harv_stat'] = array_merge($filters['harv_stat'], $_values);
 
-            // Build groups based on insts
+            // Group options based on insts
             $groups = InstitutionGroup::with('institutions')->orderBy('name', 'ASC')->get(['id','name']);
             foreach ($groups as $key => $grp) {
                 if (!$grp->institutions) {
@@ -232,39 +267,6 @@ class HarvestLogController extends Controller
                 }
             }
             $filter_options['group'] = $groups->toArray();
-
-            // Apply connectedBy filter (if given) and format records for display , limit to 500 output records
-            $harvests = array();
-            $updated_ym = array();
-            $count = 0;
-            $truncated = false;
-            $max_records = 500;
-            foreach ($harvest_data as $harvest) {
-                // Skip records as-needed
-                if ( ($connectedBy=='Consortium' && $harvest->sushiSetting->provider->inst_id != 1) ||
-                     ($connectedBy=='Institution' && $harvest->sushiSetting->provider->inst_id == 1) ) {
-                    continue;
-                }
-                $formatted_harvest = $this->formatRecord($harvest);
-                if (!is_null($formatted_harvest['error_code']) &&
-                    !in_array($formatted_harvest['error_code'], $filter_options['errors'])) {
-                    $filter_options['errors'][] = $formatted_harvest['error_code'];
-                }
-                if (!is_null($filters['error_code']) && $filters['error_code']!=null &&
-                    $formatted_harvest['error_code'] != $filters['error_code']) {
-                    continue;
-                }
-                // bump counter and add the record to the output array
-                $count += 1;
-                if ($count > $max_records) {
-                    $truncated = true;
-                    break;
-                }
-                $harvests[] = $formatted_harvest;
-                if (!in_array(substr($harvest->updated_at,0,7), $updated_ym)) {
-                    $updated_ym[] = substr($harvest->updated_at,0,7);
-                }
-            }
 
             // sort error codes ascending and updated_ym options descending
             sort($filter_options['errors']);

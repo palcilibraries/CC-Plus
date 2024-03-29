@@ -169,7 +169,7 @@ class SushiQWorker extends Command
                      $error = CcplusError::where('id',50)->first();
                      if ($error) {
                          FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'Initiation',
-                                               'error_id' => 50, 'detail' => $error->explanation . $error_suggestion,
+                                               'error_id' => 50, 'detail' => $error->explanation . $error->suggestion,
                                                'created_at' => $ts]);
                      }
                      $job->harvest->status = 'Stopped';

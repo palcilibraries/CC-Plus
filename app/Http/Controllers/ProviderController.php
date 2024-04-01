@@ -212,36 +212,16 @@ class ProviderController extends Controller
             $settings = SushiSetting::with('institution')
                                     ->where('prov_id',$provider->id)->where('inst_id', $thisUser->inst_id)->get();
         }
+
         // If is_active is changing, check and update related sushi settings
         if ($was_active != $provider->is_active) {
             foreach ($settings as $setting) {
-              // skip disabled settings
-                if ($setting->status == 'Disabled') continue;
-              // If required connectors all have values, check to see if sushi setting status needs updating
-                if ($setting->isComplete()) {
-                  // Setting is Enabled, provider going inactive, suspend it
-                    if ($setting->status == 'Enabled' && $was_active && !$provider->is_active ) {
-                        $setting->update(['status' => 'Suspended']);
-                    }
-                  // Setting is Suspended, provider going active with active institution, enable it
-                    if ($setting->status == 'Suspended' && !$was_active && $provider->is_active &&
-                        $setting->institution->is_active) {
-                        $setting->update(['status' => 'Enabled']);
-                    }
-                  // Setting status is Incomplete, provider is active and institution is active, enable it
-                    if ($setting->status == 'Incomplete' && $provider->is_active && $setting->institution->is_active) {
-                        $setting->update(['status' => 'Enabled']);
-                    }
-              // If required conenctors are missing value(s), mark them and update setting status tp Incomplete
+                // Went from Active to Inactive
+                if ($was_active) {
+                    $setting->update(['status' => 'Disabled']);
+                // Went from Inactive to Active
                 } else {
-                    $setting_updates = array('status' => 'Incomplete');
-                    foreach ($fields as $fld) {
-                        $name = $fld['name'];
-                        if ($setting->$name == null || $setting->$name == '') {
-                            $setting_updates[$name] = "-missing-";
-                        }
-                    }
-                    $setting->update($setting_updates);
+                    $setting->resetStatus();
                 }
             }
         }

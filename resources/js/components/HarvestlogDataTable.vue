@@ -120,42 +120,44 @@
         </template>
         <template v-slot:expanded-item="{ headers, item }">
           <td v-if="item.error_code>0" :colspan="headers.length">
-            <v-simple-table>
-              <thead>
-                <tr><th colspan="3"><center>Failed Harvest Attempts (Harvest ID: {{ item.id }})</center></th></tr>
-                <tr><th>Attempted</th><th>Message</th><th>Provider Help</th><th>Error Code</th></tr>
-              </thead>
-              <template v-for="attempt in item.failed">
-                <tbody>
-                  <tr>
-                    <td width="10%">{{ attempt.ts }}</td>
-                    <td width="70%">
-                      {{ attempt.message }}
-                      <span v-if="item.error_code>0 && attempt.id==item.max_fail_id">
-                        <v-icon title="Download JSON Error Message" @click="goURL('/harvests/'+item.id+'/raw')">mdi-download</v-icon>
-                      </span>
-                    </td>
-                    <td width="10%">
-                      <span v-if="attempt.help_url.length>0">
-                        <v-icon title="Help" @click="goURL(attempt.help_url)">mdi-help-box-outline</v-icon>
-                      </span>
-                      <span v-else>&nbsp;</span>
-                    </td>
-                    <td width="10%">
-                      {{ attempt.code }}
-                      <span v-if="attempt.code>1000">
-                        <v-icon title="COUNTER Error Details" @click="goCounter()">mdi-open-in-new</v-icon>
-                      </span>
-                    </td>
-                  </tr>
-                  <tr v-if="attempt.detail.length>0">
-                    <td width="10%">&nbsp;</td>
-                    <td colspan="2">{{ attempt.detail }}</td>
-                    <td width="10%">&nbsp;</td>
-                  </tr>
-                </tbody>
-              </template>
-            </v-simple-table>
+            <v-row class="d-flex py-2 justify-center" no-gutters>
+              <strong>Failed Harvest Attempts (Harvest ID: {{ item.id }})</strong>
+              <span>
+                <v-icon title="Download Last JSON Error Message" @click="goURL('/harvests/'+item.id+'/raw')">mdi-download</v-icon>
+              </span>
+            </v-row>
+            <v-row class="d-flex pa-1 align-center" no-gutters>
+              <v-col class="d-flex px-2" cols="2"><strong>Attempted</strong></v-col>
+              <v-col class="d-flex px-2" cols="8"><strong>Message</strong></v-col>
+              <v-col class="d-flex px-2" cols="1"><strong>Help</strong></v-col>
+              <v-col class="d-flex px-2" cols="1"><strong>Error</strong></v-col>
+            </v-row>
+            <v-row class="d-flex py-1 align-center" no-gutters><hr width="100%"></v-row>
+            <div v-for="attempt in item.failed" :key="item.id" class="report-field">
+              <v-row class="d-flex ma-0" no-gutters>
+                <v-col class="d-flex px-2" cols="2">{{ attempt.ts }}</v-col>
+                <v-col class="d-flex px-2" cols="8">
+                  {{ attempt.message }}
+                </v-col>
+                <v-col class="d-flex px-2" cols="1">
+                  <span v-if="attempt.help_url.length>0">
+                    <v-icon title="Provider Error Help" @click="goURL(attempt.help_url)">mdi-help-box-outline</v-icon>
+                  </span>
+                  <span v-else>&nbsp;</span>
+                </v-col>
+                <v-col class="d-flex px-2" cols="1">
+                  {{ attempt.code }}
+                  <span v-if="attempt.code>1000">
+                    <v-icon title="COUNTER Error Details" @click="goCounter()">mdi-open-in-new</v-icon>
+                  </span>
+                </v-col>
+              </v-row>
+              <v-row v-if="attempt.detail.length>0" class="d-flex ma-0" no-gutters>
+                <v-col class="d-flex" cols="2">&nbsp;</v-col>
+                <v-col class="d-flex" cols="8">{{ attempt.detail }}</v-col>
+                <v-col class="d-flex" cols="2">&nbsp;</v-col>
+              </v-row>
+            </div>
           </td>
         </template>
       </v-data-table>

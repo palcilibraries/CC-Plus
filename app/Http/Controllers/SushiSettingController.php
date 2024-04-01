@@ -325,19 +325,14 @@ class SushiSettingController extends Controller
             }
         }
 
-        // Set new status
-        $new_status = (isset($input['status'])) ? $input['status'] : $setting->status;
-        if ($new_status == 'Enabled') {
-            if (!$setting->provider->is_active || !$setting->institution->is_active) {
-                $new_status = 'Suspended';
-            } else if ($missing_count > 0) {
-                $new_status = 'Incomplete';
+        // Apply connection fields from input.
+        // U/I may pass blank or null values to replace what's there
+        foreach ($connectors as $cnx) {
+            if (isset($input[$cnx])) {
+                $setting->$cnx = trim($input[$cnx]);
             }
         }
-        if ($new_status != $setting->status) {
-            $updates['status'] = $new_status;
-        }
-        $setting->update($updates);
+        $setting->resetStatus();
 
         // Finish setting up the return object
         $setting->provider->connectors = $setting->provider->globalProv->connectionFields();

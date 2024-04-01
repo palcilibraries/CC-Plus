@@ -406,7 +406,7 @@
 
               // rebuild providers
               if (just_cleared || !changed_filter.includes('prov')) {
-                let _filt = this.filters[changed_filter];
+                let _filt = (changed_filter == 'ALL') ? [] : this.filters[changed_filter];
                 let prov_ids = this.filtered_settings.map(s => s.prov_id);
                 this.filter_options['prov'] = (this.inst_context==1) ?
                                                this.all_providers.filter(p => (prov_ids.includes(p.id) || _filt.includes(p.id))) :
@@ -422,7 +422,8 @@
               }
           },
           getSettings() {
-            let url = "/sushisettings?json=1";
+            let _filters = JSON.stringify(this.filters);
+            let url = "/sushisettings?json=1&filters="+_filters;
             if (this.inst_context > 1) url+="&context="+this.inst_context;
             axios.get(url)
                  .then((response) => {

@@ -95,4 +95,26 @@ class SushiSetting extends Model
         }
         return false;
     }
+
+    // Resets status and connection fields when updating or an institution or provider status is made Active
+    public function resetStatus()
+    {
+        $new_status = ($this->institution->is_active && $this->provider->is_active) ? 'Enabled' : 'Disabled';
+        if ($this->isComplete() || $new_status == 'Disabled') {
+            // Inst+Prov active and settings complete sets to "Enabled", otherwise sets to "Disabled"
+            $this->status = $new_status;
+        // Getting here means inst+prov are both Active but settings are incomplete. update the field values
+        } else {
+            $required = $this->provider->globalProv->connectors;
+            $fields = $this->global_connectors->whereIn('id',$required);
+            $this->status = 'Incomplete';
+            foreach ($fields as $fld) {
+                $name = $fld->name;
+                if ($this->$name == null || $this->$name == '') {
+                    $this->$name = "-missing-";
+                }
+            }
+        }
+        $this->save();
+    }
 }

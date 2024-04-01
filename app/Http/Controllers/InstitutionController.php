@@ -377,34 +377,33 @@ class InstitutionController extends Controller
        // Admins update everything from $input
         } else {
             // Update the record and assign groups
-             $institution->update($input);
-             if (isset($input['institution_groups'])) {
-                 $institution->institutionGroups()->detach();
-                 foreach ($request->input('institution_groups') as $g) {
-                     $institution->institutionGroups()->attach($g);
-                 }
-             }
-             $institution->load('institutionGroups');
+            $institution->update($input);
+            if (isset($input['institution_groups'])) {
+                $institution->institutionGroups()->detach();
+                foreach ($request->input('institution_groups') as $g) {
+                    $institution->institutionGroups()->attach($g);
+                }
+            }
+            $institution->load('institutionGroups');
 
-             // If changing from active to inactive, suspend related sushi settings
-              $settings = array();
-              if ( $was_active && !$institution->is_active ) {
-                  SushiSetting::where('inst_id',$institution->id)->where('status','Enabled')
-                              ->update(['status' => 'Suspended']);
-              }
+            // If is_active is changing, check and update related sushi settings
+            $settings = SushiSetting::with('provider','provider.globalProv')->where('inst_id',$institution->id)->get();
+            if ($was_active != $institution->is_active) {
+                foreach ($settings as $setting) {
+                    // Went from Active to Inactive
+                    if ($was_active) {
+                        $setting->update(['status' => 'Disabled']);
+                    // Went from Inactive to Active
+                    } else {
+                        $setting->resetStatus();
+                    }
+                }
+            }
 
-             // If changing from inactive to active, enable suspended settings where institution is also active
-              if ( !$was_active && $institution->is_active ) {
-                 SushiSetting::join('providers as Prov', 'sushisettings.prov_id', 'Prov.id')
-                             ->where('Prov.is_active', 1)->where('sushisettings.inst_id',$institution->id)
-                             ->where('status','Suspended')->update(['status' => 'Enabled']);
-              }
-
-             // Return updated institution data
-              $settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
-              $harvest_count = $settings->whereNotNull('last_harvest')->count();
-              $institution->can_delete = ($harvest_count > 0 || $institution->id == 1) ? false : true;
-              $institution->sushiSettings = $settings->toArray();
+            // Return updated institution data
+            $harvest_count = $settings->whereNotNull('last_harvest')->count();
+            $institution->can_delete = ($harvest_count > 0 || $institution->id == 1) ? false : true;
+            $institution->sushiSettings = $settings->toArray();
         }
 
         // Tack on a tring for all the group memberships

@@ -492,6 +492,15 @@ class GlobalProviderController extends Controller
               $field_labels[] = $cnx['label'];
           }
       }
+      // The registry API doesn't know about CC+ extra_args. If set in the original, carry it forward
+      foreach ($provider->connectionFields() as $cf) {
+          if ($cf['name'] == 'extra_args') {
+              $connectors[] = $cf['id'];
+              $field_labels[] = $cf['label'];
+              break;
+          }
+      }
+
       $return_data['connectors'] = $connectors;
       $return_data['connection_fields'] = $field_labels;
       $return_data['server_url_r5'] = $services->url;

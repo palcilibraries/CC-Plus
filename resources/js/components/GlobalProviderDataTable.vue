@@ -138,7 +138,7 @@
                   <v-list-item class="verydense"><strong>Connection Fields</strong></v-list-item>
                   <v-list-item v-for="cnx in all_connectors" :key="cnx.name" class="verydense">
                     <v-checkbox :value="form.connector_state[cnx.name]" :key="cnx.name" :label="cnx.label"
-                                v-model="form.connector_state[cnx.name]" dense>
+                                v-model="form.connector_state[cnx.name]"  @change="changeConnector() "dense>
                     </v-checkbox>
                   </v-list-item>
                 </v-list>
@@ -208,6 +208,8 @@
         provDialog: false,
         dialog_title: '',
         current_provider_id: null,
+        current_connector_state: {},
+        warnConnectors: false,
         updated_at: null,
         import_type: '',
         import_types: ['Add or Update', 'Full Replacement'],
@@ -218,7 +220,7 @@
         selectedRows: [],
         loading: true,
         search: '',
-        footer_props: { 'items-per-page-options': [5,50,100,-1] },
+        footer_props: { 'items-per-page-options': [10,50,100,-1] },
         headers: [
           { text: 'Status', value: 'status' },
           { text: 'Provider ', value: 'name', align: 'start' },
@@ -259,12 +261,13 @@
             this.dialog_title = "Edit Global Provider";
             let _prov = this.mutable_providers.find(p => p.id == gp_id);
             this.current_provider_id = gp_id;
+            this.current_connector_state = Object.assign({},_prov.connector_state);
+            this.form.connector_state = Object.assign({},_prov.connector_state);
             this.form.registry_id = _prov.registry_id;
             this.form.name = _prov.name;
             this.form.abbrev = _prov.abbrev;
             this.form.is_active = _prov.is_active;
             this.form.server_url_r5 = _prov.server_url_r5;
-            this.form.connector_state = _prov.connector_state;
             this.form.report_state = _prov.report_state;
             this.form.extra_pattern = _prov.extra_pattern;
             this.form.notifications_url = _prov.notifications_url;
@@ -282,7 +285,7 @@
             this.form.abbrev = this.new_provider.abbrev;
             this.form.is_active = this.new_provider.is_active;
             this.form.server_url_r5 = this.new_provider.server_url_r5;
-            this.form.connector_state = this.new_provider.connector_state;
+            this.form.connector_state = Object.assign({},_this.new_provider.connector_state);
             this.form.report_state = this.new_provider.report_state;
             this.form.extra_pattern = this.new_provider.extra_pattern;
             this.form.notifications_url = this.new_provider.notifications_url;
@@ -336,6 +339,18 @@
                  }
                })
                .catch(error => {});
+        },
+        // Set flag if we need to warn about connectors being turned off (happens when saving)
+        changeConnector() {
+          let all_match = true;
+          Object.keys(this.form.connector_state).forEach( (cnx) => {
+            if (this.form.connector_state[cnx] != this.current_connector_state[cnx]) all_match = false;
+            if (this.current_connector_state[cnx] == true &&
+                (this.form.connector_state[cnx] == null || this.form.connector_state[cnx] == false)) {
+                this.warnConnectors = true;
+            }
+          });
+          if (this.warnConnectors && all_match) this.warnConnectors = false;
         },
         processBulk() {
             this.success = "";
@@ -471,26 +486,58 @@
               let idx = this.mutable_providers.findIndex(p => p.id == this.current_provider_id);
               var canDelete = this.mutable_providers[idx].can_delete;
               var connectionCount = this.mutable_providers[idx].connection_count;
-              this.form.patch('/global/providers/'+this.current_provider_id)
-              .then( (response) => {
-                  if (response.result) {
-                      this.failure = '';
-                      this.success = response.msg;
-                      // Update the provider entry in the mutable array
-                      this.mutable_providers[idx] = response.provider;
-                      this.mutable_providers[idx]['can_delete'] = canDelete;
-                      this.mutable_providers[idx]['connection_count'] = connectionCount;
-                      this.mutable_providers.sort((a,b) => {
-                        if ( a.name < b.name ) return -1;
-                        if ( a.name > b.name ) return 1;
-                        return 0;
-                      });
-                  } else {
-                      this.success = '';
-                      this.failure = response.msg;
+              // If a required connector was turned off, popup a warning
+              if (this.warnConnectors) {
+                let warning_html = "One or more required connectors has been marked as no longer required. The current "+
+                                   " values defined for these connectors will be cleared THROUGH ALL INSTANCES from the "+
+                                   " sushi settings when the provider is saved.<br />";
+                warning_html += "Having good exports of the sushi definitions for all instances could be valuable if you find"
+                warning_html += " you need to re-enable the modified connector field.";
+                Swal.fire({
+                  title: 'Continue to save?', html: warning_html, icon: 'warning', showCancelButton: true,
+                  confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, proceed'
+                }).then((result) => {
+                  if (result.value) {
+                    // Apply update
+                    this.form.patch('/global/providers/'+this.current_provider_id)
+                    .then( (response) => {
+                        if (response.result) {
+                            this.failure = '';
+                            // Update the provider entry in the mutable array
+                            this.mutable_providers[idx] = Object.assign({}, response.provider);
+                            this.mutable_providers[idx]['can_delete'] = canDelete;
+                            this.mutable_providers[idx]['connection_count'] = connectionCount;
+                            this.mutable_providers.sort( (a,b) => {
+                                return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+                            });
+                            this.success = response.msg;
+                        } else {
+                            this.success = '';
+                            this.failure = response.msg;
+                        }
+                    });
                   }
-              });
-
+                });
+              } else {
+                // Apply update
+                this.form.patch('/global/providers/'+this.current_provider_id)
+                .then( (response) => {
+                    if (response.result) {
+                        this.failure = '';
+                        this.success = response.msg;
+                        // Update the provider entry in the mutable array
+                        this.mutable_providers[idx] = Object.assign({}, response.provider);
+                        this.mutable_providers[idx]['can_delete'] = canDelete;
+                        this.mutable_providers[idx]['connection_count'] = connectionCount;
+                        this.mutable_providers.sort((a,b) => {
+                            return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+                        });
+                    } else {
+                        this.success = '';
+                        this.failure = response.msg;
+                    }
+                });
+              }
             // Create new global provider
             } else {
                 this.form.post('/global/providers')
@@ -501,9 +548,7 @@
                         // Add the new provider onto the mutable array and re-sort it
                         this.mutable_providers.push(response.provider);
                         this.mutable_providers.sort((a,b) => {
-                          if ( a.name < b.name ) return -1;
-                          if ( a.name > b.name ) return 1;
-                          return 0;
+                            return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
                         });
                     } else {
                         this.success = '';
@@ -558,12 +603,12 @@
     },
     beforeCreate() {
         // Load existing store data
-		this.$store.commit('initialiseStore');
-	},
+	    	this.$store.commit('initialiseStore');
+  	},
     beforeMount() {
         // Set page name in the store
         this.$store.dispatch('updatePageName','globalproviders');
-	},
+	  },
     mounted() {
       // Initialize the connection fields and reports checkboxes for a new provider
       this.all_connectors.forEach( cnx => {

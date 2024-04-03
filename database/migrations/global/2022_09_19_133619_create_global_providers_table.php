@@ -20,6 +20,7 @@ class CreateGlobalProvidersTable extends Migration
           $table->string('abbrev')->nullable();
           $table->index('name');
           $table->boolean('is_active')->default(1);
+          $table->boolean('refreshable')->default(1);
           $table->json('master_reports')->default(1);
           $table->json('connectors')->default(1);
           $table->string('server_url_r5')->nullable();

@@ -143,6 +143,7 @@ class GlobalProviderController extends Controller
       $provider = new GlobalProvider;
       $provider->name = $input['name'];
       $provider->is_active = $input['is_active'];
+      $provider->refreshable = $input['refreshable'];
       $provider->server_url_r5 = $input['server_url_r5'];
 
       // Turn array of connection checkboxes into an array of IDs
@@ -209,6 +210,7 @@ class GlobalProviderController extends Controller
       $input = $request->all();
       $isActive = ($input['is_active']) ? 1 : 0;
       $provider->is_active = $isActive;
+      $provider->refreshable = ($input['refreshable']) ? 1 : 0;
 
       // Pull all connection fields and master reports
       $all_connectors = ConnectionField::get();
@@ -434,6 +436,9 @@ class GlobalProviderController extends Controller
       }
       if (is_null($provider->registry_id) || $provider->registry_id == '') {
           return response()->json(['result' => false, 'msg' => "COUNTER Registry ID undefined!"]);
+      }
+      if (!$provider->refreshable) {
+          return response()->json(['result' => false, 'msg' => "Registry refresh is disallowed for " . $provider->name . " !"]);
       }
 
       // Get master reports and connection_fields

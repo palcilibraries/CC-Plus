@@ -87,7 +87,7 @@ class ReportController extends Controller
                                        ->get(['id','name'])->toArray();
             $inst_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
             $providers = Provider::with('reports')->whereIn('id', $provs_with_data)->orderBy('name', 'ASC')
-                                 ->get(['id','name'])->toArray();
+                                 ->get(['id','name','inst_id'])->toArray();
         } else {    // limited view
             $user_inst = $thisUser->inst_id;
             $institutions = Institution::where('id', '=', $user_inst)->get(['id','name'])->toArray();
@@ -96,7 +96,7 @@ class ReportController extends Controller
                                  ->where(function ($query) use ($user_inst) {
                                      $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
                                  })
-                                 ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+                                 ->orderBy('name', 'ASC')->get(['id','name','inst_id'])->toArray();
         }
         $reports = Report::with('children')->orderBy('id', 'asc')->get()->toArray();
         $field_data = ReportField::orderBy('id', 'asc')->with('reportFilter')->get();

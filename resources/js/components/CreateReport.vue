@@ -6,43 +6,36 @@
     <div v-if="this.is_admin || this.is_viewer">
       <v-row class="d-flex align-mid" no-gutters>
         <v-col v-if="inst_group_id==0" class="d-flex ma-2" cols="3" sm="3">
-          <v-select
-            :items="institutions"
-            v-model="inst"
-            @change="onInstChange"
-            multiple
-            label="Limit by Institution"
-            item-text="name"
-            item-value="id"
-            hint="Limit the report by institution"
-          ></v-select>
+          <v-autocomplete :items="institutions" v-model="inst" label="Limit by Institution" @change="onInstChange" multiple
+                          item-text="name" item-value="id" hint="Limit the report by institution"
+          ></v-autocomplete>
         </v-col>
         <v-col v-if="inst==0 && inst_group_id==0 " class="d-flex" cols="1" sm="1"><strong>OR</strong></v-col>
         <v-col v-if="inst==0" class="d-flex ma-2" cols="3" sm="3">
-          <v-select
-              :items="inst_groups"
-              v-model="inst_group_id"
-              @change="onGroupChange"
-              label="Limit by Institution Group"
-              item-text="name"
-              item-value="id"
-              hint="Limit the report to an institution group"
-          ></v-select>
+          <v-autocomplete :items="inst_groups" v-model="inst_group_id" label="Limit by Institution Group" @change="onGroupChange"
+                          item-text="name" item-value="id" hint="Limit the report to an institution group"
+          ></v-autocomplete>
         </v-col>
       </v-row>
     </div>
     <v-row class="mb-0 py-0" no-gutters>
       <v-col class="ma-2" cols="3" sm="3">
-        <v-select
-            :items="providers"
-            v-model="prov"
-            @change="onProvChange"
-            multiple
-            label="Limit by Provider"
-            item-text="name"
-            item-value="id"
-            hint="Limit the report by provider"
-        ></v-select>
+        <v-container fluid>
+          <v-autocomplete :items="providers" v-model="prov" label="Limit by Provider" @change="onProvChange" multiple
+                          item-text="name" item-value="id" hint="Limit the report by provider">
+            <template #item="{ item, on, attrs }">
+              <v-list-item v-on="on" v-bind="attrs" #default="{ active }">
+                <v-list-item-action>
+                  <v-checkbox :ripple="false" :input-value="active"></v-checkbox>
+                </v-list-item-action>
+                <v-list-item-avatar>
+                  <v-icon>{{ providerIcon(item) }}</v-icon>
+                </v-list-item-avatar>
+                <v-list-item-content> {{ item.name }} </v-list-item-content>
+              </v-list-item>
+            </template>
+          </v-autocomplete>
+        </v-container>
       </v-col>
     </v-row>
     <h5>Choose a Report Type</h5>
@@ -298,6 +291,9 @@
             this.resetForm('fields');
             window.location.assign("/reports/preview?filters=" + JSON.stringify(params));
             return false;
+        },
+        providerIcon (prov) {
+            return (prov.inst_id == 1) ? 'mdi-account-multiple' : 'mdi-home-outline';
         },
     },
     computed: {

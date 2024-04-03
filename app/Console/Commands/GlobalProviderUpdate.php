@@ -117,7 +117,12 @@ class GlobalProviderUpdate extends Command
 
             // Create or ppdate existing record in global_providers table
             $global_provider = GlobalProvider::where('registry_id',$platform->id)->orWhere('name',$platform->name)->first();
-            if (!$global_provider) {
+            if ($global_provider) {
+                if (!$global_provider->refreshable) {
+                    $this->error("Registry refresh is disallowed for " . $provider->name . " .. skipping ..");
+                    continue;
+                }
+            } else {
                 $global_provider = new GlobalProvider;
             }
             $global_provider->registry_id = $platform->id;

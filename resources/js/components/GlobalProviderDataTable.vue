@@ -159,7 +159,12 @@
                 <v-text-field v-model="form.extra_pattern" label="Extra Arguments Pattern" outlined dense></v-text-field>
               </v-col>
             </v-row>
-            <v-row class="d-flex ma-0" no-gutters>
+            <v-row class="d-flex ma-0 align-center" no-gutters>
+              <v-col class="d-flex px-4">
+                <v-switch v-model="form.refreshable" label="Enable COUNTER API Refresh" dense></v-switch>
+              </v-col>
+            </v-row>
+            <v-row v-if="form.refreshable" class="d-flex ma-0" no-gutters>
               <v-col class="d-flex pl-4" cols="9">
                 <v-text-field v-model="form.registry_id" label="COUNTER Registry ID" outlined dense></v-text-field>
               </v-col>
@@ -230,14 +235,15 @@
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],
-        new_provider: {'registry_id': '', 'id': null, 'name': '', 'is_active': 1, 'report_state': {}, 'connector_state': {},
-                       'server_url_r5': '', 'extra_pattern': null, 'notifications_url': ''},
+        new_provider: {'registry_id': '', 'id': null, 'name': '', 'is_active': 1, 'refreshable': 1, 'report_state': {},
+                       'connector_state': {}, 'server_url_r5': '', 'extra_pattern': null, 'notifications_url': ''},
         formValid: true,
         form: new window.Form({
             registry_id: '',
             name: '',
             abbrev: '',
             is_active: 1,
+            refreshable: 1,
             server_url_r5: '',
             connector_state: [],
             report_state: [],
@@ -267,6 +273,7 @@
             this.form.name = _prov.name;
             this.form.abbrev = _prov.abbrev;
             this.form.is_active = _prov.is_active;
+            this.form.refreshable = _prov.refreshable;
             this.form.server_url_r5 = _prov.server_url_r5;
             this.form.report_state = _prov.report_state;
             this.form.extra_pattern = _prov.extra_pattern;
@@ -284,6 +291,7 @@
             this.form.name = this.new_provider.name;
             this.form.abbrev = this.new_provider.abbrev;
             this.form.is_active = this.new_provider.is_active;
+            this.form.refreshable = this.new_provider.refreshable;
             this.form.server_url_r5 = this.new_provider.server_url_r5;
             this.form.connector_state = Object.assign({},_this.new_provider.connector_state);
             this.form.report_state = this.new_provider.report_state;

@@ -54,7 +54,7 @@ class SushiSettingController extends Controller
         // If filtering by group, get the institution IDs for the group
         $group_insts = array();
         if ($filters['group'] != 0) {
-            $group = InstitutionGroup::with('institutions:id,nanme')->find($filters['group']);
+            $group = InstitutionGroup::with('institutions:id,name')->find($filters['group']);
             if ($group) {
                 $group_insts = $group->institutions->pluck('id')->toArray();
             }

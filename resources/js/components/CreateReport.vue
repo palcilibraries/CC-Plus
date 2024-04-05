@@ -3,26 +3,26 @@
     <div v-if="selections_made">
       <v-btn color="gray" small @click="resetForm('all')">Reset Selections</v-btn>
     </div>
-    <div v-if="this.is_admin || this.is_viewer">
-      <v-row class="d-flex align-mid" no-gutters>
-        <v-col v-if="inst_group_id==0" class="d-flex ma-2" cols="3" sm="3">
-          <v-autocomplete :items="institutions" v-model="inst" label="Limit by Institution" @change="onInstChange" multiple
-                          item-text="name" item-value="id" hint="Limit the report by institution"
-          ></v-autocomplete>
-        </v-col>
-        <v-col v-if="inst==0 && inst_group_id==0 " class="d-flex" cols="1" sm="1"><strong>OR</strong></v-col>
-        <v-col v-if="inst==0" class="d-flex ma-2" cols="3" sm="3">
-          <v-autocomplete :items="inst_groups" v-model="inst_group_id" label="Limit by Institution Group" @change="onGroupChange"
-                          item-text="name" item-value="id" hint="Limit the report to an institution group"
-          ></v-autocomplete>
-        </v-col>
-      </v-row>
-    </div>
-    <v-row class="mb-0 py-0" no-gutters>
-      <v-col class="ma-2" cols="3" sm="3">
+    <v-row v-if="this.is_admin || this.is_viewer" class="d-flex mt-1 mx-2 align-mid" no-gutters>
+      <v-col v-if="inst_group_id==0" class="d-flex px-2" cols="3" sm="3">
+        <v-autocomplete :items="filter_options['inst']" v-model="selected_insts" label="Limit by Institution" multiple
+                        @change="onInstChange" item-text="name" item-value="id" hint="Limit the report by institution"
+        ></v-autocomplete>
+      </v-col>
+      <v-col v-if="selected_insts.length==0 && inst_group_id==0" class="d-flex pr-2 justify-center" cols="1" sm="1">
+        <strong>OR</strong>
+      </v-col>
+      <v-col v-if="selected_insts.length==0" class="d-flex pa-0" cols="3" sm="3">
+        <v-autocomplete :items="filter_options['group']" v-model="inst_group_id" label="Limit by Institution Group"
+                        @change="onInstChange" item-text="name" item-value="id" hint="Limit the report to an institution group"
+        ></v-autocomplete>
+      </v-col>
+    </v-row>
+    <v-row class="d-flex mt-1 mx-2" no-gutters>
+      <v-col class="d-flex" cols="3" sm="3">
         <v-container fluid>
-          <v-autocomplete :items="providers" v-model="prov" label="Limit by Provider" @change="onProvChange" multiple
-                          item-text="name" item-value="id" hint="Limit the report by provider">
+          <v-autocomplete :items="filter_options['prov']" v-model="selected_provs" label="Limit by Provider" multiple
+                          @change="onProvChange" item-text="name" item-value="id" hint="Limit the report by provider">
             <template #item="{ item, on, attrs }">
               <v-list-item v-on="on" v-bind="attrs" #default="{ active }">
                 <v-list-item-action>
@@ -39,8 +39,11 @@
       </v-col>
     </v-row>
     <h5>Choose a Report Type</h5>
-    <v-row class="mb-0 py-0" no-gutters>
-      <v-col class="ma-2 pa-0">
+    <v-row class="d-flex ma-0" no-gutters>
+      The metrics and settings for the selected report or view can be customized in the next steps.
+    </v-row>
+    <v-row class="d-flex mt-1 mx-2" no-gutters>
+      <v-col class="d-flex pa-0">
         <div v-if="working">
             <span>...Working... checking available data for requested Institution(s) and Provider(s)</span>
         </div>
@@ -55,11 +58,7 @@
                 <h4>Title</h4>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
-                <p>
-                    Available Views<br />
-                    Your selection here will provide you with some default settings to get started, but you'll
-                    still be able to customize the report if you need to.
-                </p>
+                <p>Available Views</p>
                 <v-radio :label="reports[0].legend+' ('+reports[0].name+')'" :value='reports[0]'></v-radio>
                 <v-radio v-for="(value, idx) in tr_reports" :key="idx" :value="value"
                          :label="value.name+' : '+value.legend"></v-radio>
@@ -107,8 +106,8 @@
       </v-col>
     </v-row>
     <h5 v-if="dialogs.date">Choose Report Dates</h5>
-    <v-row v-if="dialogs.date" class="d-flex ma-0" no-gutters>
-        <v-col class="ma-2 pa-0">
+    <v-row v-if="dialogs.date" class="d-flex mt-1 mx-2" no-gutters>
+        <v-col class="d-flex pa-0">
           <v-radio-group v-model="dateRange" @change="onDateRangeChange">
             <v-radio :label="'Latest Month ['+maxYM+']'" value='latestMonth'></v-radio>
             <v-radio :label="'Latest Year ['+latestYear+']'" value='latestYear'></v-radio>
@@ -120,7 +119,7 @@
           </div>
         </v-col>
     </v-row>
-    <v-row v-if="dialogs.done" no-gutters>
+    <v-row v-if="dialogs.done" class="d-flex mt-1 mx-2" no-gutters>
       <v-btn color="primary" small @click="goRedirect">Finish</v-btn>
     </v-row>
   </v-form>
@@ -146,8 +145,8 @@
             working: true,
             selections_made: false,
             dialogs: { date: false, done:false },
-            inst: [],
-            prov: [],
+            selected_insts: [],
+            selected_provs: [],
             inst_group_id: 0,
             selectedReport: {},
             masterId: 0,
@@ -161,6 +160,9 @@
             pr_reports: this.reports[2].children,
             ir_reports: this.reports[3].children,
             report_data: {},
+            filter_options: {'inst': [], 'prov': [], 'group': []},
+            limit_inst_ids: [],
+            limit_prov_ids: [],
         }
     },
     watch: {
@@ -196,8 +198,8 @@
             this.dialogs.done = false;
             this.selections_made = false;
             // Reset locally bound variables
-            this.inst = 0;
-            this.prov = 0;
+            this.selected_insts = [];
+            this.selected_provs = [];
             this.masterId = 0;
             this.inst_group_id = 0;
             this.selectedReport = {};
@@ -206,22 +208,33 @@
             this.$store.dispatch('updateInstGroupFilter',0);
             this.$store.dispatch('updateProviderFilter',[]);
             this.$store.dispatch('updateReportId',1);
-            if (type == 'all') this.updateAvailable();
+            if (type == 'all') this.updateAvailable('all');
         },
         onInstChange () {
-            this.$store.dispatch('updateInstitutionFilter',this.inst);
-            this.selections_made = true;
-            this.updateAvailable();
-        },
-        onGroupChange () {
-            this.$store.dispatch('updateInstGroupFilter',this.inst_group_id);
-            this.selections_made = true;
-            this.updateAvailable();
+            if (this.selected_insts.length > 0) {
+                this.limit_inst_ids = [ ...this.selected_insts ];
+                this.$store.dispatch('updateInstitutionFilter',this.selected_insts);
+                this.updateAvailable('inst');
+                this.selections_made = true;
+            } else if (this.inst_group_id > 0) {
+                this.limit_inst_ids = [];
+                let group = this.inst_groups.find(g => g.id == this.inst_group_id);
+                if (typeof(group) != 'undefined') {
+                    group.institutions.forEach( (inst) => { this.limit_inst_ids.push(inst.id) } );
+                }
+                this.$store.dispatch('updateInstGroupFilter',this.inst_group_id);
+                this.updateAvailable('group');
+                this.selections_made = true;
+            } else {
+                this.inst_group_id = 0;
+                this.limit_inst_ids = [];
+            }
         },
         onProvChange () {
-            this.$store.dispatch('updateProviderFilter',this.prov);
+            this.limit_prov_ids = [ ...this.selected_provs ];
+            this.$store.dispatch('updateProviderFilter',this.selected_provs);
             this.selections_made = true;
-            this.updateAvailable();
+            this.updateAvailable('prov');
         },
         onReportChange () {
             // If selectedReport (or form) got reset
@@ -256,7 +269,7 @@
             this.selections_made = true;
             this.dialogs.done = true;
         },
-        updateAvailable () {
+        updateAvailable(filt) {
             let filters = JSON.stringify(this.all_filters);
             this.working = true;
             axios.get('/reports-available?filters='+filters)
@@ -265,6 +278,51 @@
                      this.working = false;
                  })
                  .catch(error => {});
+            this.updateOptions(filt);
+        },
+        // Update inst, provider, and group filter options
+        updateOptions(changed_filter) {
+            // If no active filters, reset everything
+            if (this.limit_inst_ids.length==0 && this.limit_prov_ids.length==0) {
+                this.filter_options.inst = (this.is_admin || this.is_viewer) ? [...this.institutions] : [this.institutions[0]];
+                this.filter_options.group = (this.is_admin || this.is_viewer) ? [...this.inst_groups] : [];
+                this.filter_options.prov = (this.is_admin || this.is_viewer) ? this.providers.filter(p => p.inst_id == 1) :
+                    this.providers.filter(p => (p.inst_id == 1 || p.inst_id == this.institutions[0].id));
+                return;
+            }
+            // Set flag if changed_filter was just reset (so we can reset the options)
+            let just_cleared = ( ( (changed_filter == 'inst' || changed_filter == 'group') && this.limit_inst_ids.length==0 ) ||
+                                 ( changed_filter == 'prov' && this.limit_prov_ids.length==0 ) );
+
+            // Rebuild options for Providers
+            if (just_cleared || changed_filter != 'prov') {
+              if (this.is_admin || this.is_viewer) {
+                this.filter_options.prov = this.providers.filter(p => p.inst_id == 1 || this.limit_inst_ids.includes(p.inst_id));
+              } else {
+                this.filter_options.prov = this.providers.filter(p => (p.inst_id == 1 || p.inst_id == this.institutions[0].id));
+              }
+            }
+
+            // Rebuild options for Insts and Groups (from Insts)
+            if ( just_cleared || (changed_filter == 'prov') ) {
+              if (this.is_admin || this.is_viewer) {
+                  let provider_inst_ids = this.filter_options.prov.map(p => p.inst_id);
+                  this.filter_options['inst'] = this.institutions.filter( ii => (provider_inst_ids.includes(ii.id) ||
+                                                                                this.limit_inst_ids.includes(ii.id)));
+                  var group_ids = [];
+                  this.inst_groups.forEach( (gg) => {
+                    gg.institutions.forEach( (ii) => {
+                      if ( this.filter_options['inst'].includes(ii.id) && !group_ids.includes(gg.id)) group_ids.push(gg.id);
+                    });
+                  });
+                  this.filter_options['group'] = this.inst_groups.filter(g => (group_ids.includes(g.id) ||
+                                                                               this.inst_group_id == g.id));
+              } else {
+                  this.filter_options['inst'] = [this.institutions[0]];
+                  this.filter_options.group = [];
+              }
+           }
+
         },
         goRedirect () {
             // only pass filters that apply to the selected report
@@ -272,13 +330,13 @@
                                   'report_id': this.selectedReport.id,
                                   'fromYM': this.all_filters['fromYM'],
                                   'toYM': this.all_filters['toYM'],
-                                  'prov_id': this.prov
+                                  'prov_id': this.selected_provs
                                 };
             // Institution Group is not a field, but it IS a filter.
             if (this.inst_group_id > 0) {   // groups gets precedence over individual insts
                 report_filters['institutiongroup_id'] = this.inst_group_id;
             } else {
-                report_filters['inst_id'] = this.inst;
+                report_filters['inst_id'] = this.selected_insts;
             }
             this.fields.forEach(field => {
                 if (field.report_id == this.selectedReport.id && typeof(field.column) != null) {
@@ -307,25 +365,36 @@
       },
     },
     beforeCreate() {
-        // Load existing store data
-		this.$store.commit('initialiseStore');
-	},
+      // Load existing store data
+	    this.$store.commit('initialiseStore');
+  	},
     beforeMount() {
-        // Set page name in the store
-        this.$store.dispatch('updatePageName','preview');
-	},
+      // Set page name in the store
+      this.$store.dispatch('updatePageName','preview');
+    },
     mounted() {
-      // set dialog starting point
-      if (!this.is_admin && !this.is_viewer) {
-          this.inst=[this.institutions[0].id];
+      // set dialog starting points and boundaries
+      this.limit_prov_ids = [];
+      if (this.is_admin || this.is_viewer) {
+        this.selected_insts = [];
+        this.limit_inst_ids = [];
+        this.filter_options.inst = [...this.institutions];
+        this.filter_options.group = [...this.inst_groups];
+        this.filter_options.prov = this.providers.filter(p => p.inst_id == 1);
+      } else {
+        this.selected_insts = [this.institutions[0].id];
+        this.limit_inst_ids = [this.institutions[0].id];
+        this.filter_options.inst = [this.institutions[0]];
+        this.filter_options.group = [];
+        this.filter_options.prov = this.providers.filter(p => (p.inst_id == 1 || p.inst_id == this.institutions[0].id));
       }
 
       // Subscribe to store updates and intialize filters and options
       this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
-      this.$store.dispatch('updateInstitutionFilter',this.inst);
+      this.$store.dispatch('updateInstitutionFilter',this.selected_insts);
       this.$store.dispatch('updateInstGroupFilter',this.inst_group_id);
-      this.$store.dispatch('updateProviderFilter',this.prov);
-      this.updateAvailable();
+      this.$store.dispatch('updateProviderFilter',this.selected_provs);
+      this.updateAvailable('all');
 
       console.log('CreateReport Component mounted.');
     }

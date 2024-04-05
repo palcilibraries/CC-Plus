@@ -143,4 +143,9 @@ class User extends Authenticatable
         if ($this->roles()->where("name", $role)->first()) return true;
         return 0;
     }
+
+    public function getFY()
+    {
+        return (is_null($this->fiscalYr)) ? config('ccplus.fiscalYr'): $this->fiscalYr;
+    }
 }

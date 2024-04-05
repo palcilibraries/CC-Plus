@@ -85,7 +85,7 @@ class ReportController extends Controller
             $insts_with_data = self::hasHarvests('inst_id');
             $institutions = Institution::whereIn('id', $insts_with_data)->orderBy('name', 'ASC')->where('id', '<>', 1)
                                        ->get(['id','name'])->toArray();
-            $inst_groups = InstitutionGroup::orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
+            $inst_groups = InstitutionGroup::with('institutions:id,name')->orderBy('name', 'ASC')->get(['name', 'id'])->toArray();
             $providers = Provider::with('reports')->whereIn('id', $provs_with_data)->orderBy('name', 'ASC')
                                  ->get(['id','name','inst_id'])->toArray();
         } else {    // limited view

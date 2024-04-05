@@ -108,8 +108,9 @@ class ReportController extends Controller
 
         // set FiscalYr for the user, default to Jan if missing
         $fy_month = 1;
-        if ( !is_null($thisUser->fiscalYr) ) {
-            $date = date_parse($thisUser->fiscalYr);
+        $userFY = $thisUser->getFY();
+        if ( !is_null($userFY) ) {
+            $date = date_parse($userFY);
             $fy_month = $date['month'];
         }
         return view('reports.create', compact('institutions', 'inst_groups', 'providers', 'reports', 'fields', 'fy_month'));

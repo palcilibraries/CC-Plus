@@ -48,6 +48,12 @@
           <v-icon large color="red" title="Inactive" @click="changeStatus(item.id,1)">mdi-toggle-switch-off</v-icon>
         </span>
       </template>
+      <template v-slot:item.name="{ item }">
+        <span v-if="item.refreshable==0">
+          <v-icon title="COUNTER API Updates Disabled">mdi-sync-off</v-icon>&nbsp;
+        </span>
+        {{ item.name }}
+      </template>
       <template v-slot:item.connection_fields="{ item }">
         <v-row v-for="cnx in item.connection_fields" :key="item.id+cnx" class="d-flex ma-0" no-gutters>
           <v-col class="d-flex pa-0">{{ cnx }}</v-col>

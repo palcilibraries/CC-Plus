@@ -33,7 +33,10 @@ class AdminController extends Controller
         $role_data = Role::orderBy('id', 'ASC')->get(['name', 'id']);
         $roles = array();
         foreach ($role_data as $_role) {
+            if ($_role->id > auth()->user()->maxRole()) continue;
             if ($_role->name == "Manager") $_role->name = "Local Admin";
+            if ($_role->name == 'Admin') $_role->name = "Consortium Admin";
+            if ($_role->name == 'Viewer') $_role->name = "Consortium Viewer";
             $roles[] = $_role;
         }
 

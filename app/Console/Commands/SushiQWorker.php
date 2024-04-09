@@ -166,10 +166,10 @@ class SushiQWorker extends Command
                 // Skip any harvest(s) related to a sushisetting that is not (or no longer) Active (the settings
                 // may have been changed since the harvest was defined) - if found, set harvest status to Stopped.
                  if ($job->harvest->sushiSetting->status != 'Enabled') {
-                     $error = CcplusError::where('id',50)->first();
+                     $error = CcplusError::where('id',9050)->first();
                      if ($error) {
                          FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'Initiation',
-                                               'error_id' => 50, 'detail' => $error->explanation . $error->suggestion,
+                                               'error_id' => 9050, 'detail' => $error->explanation . $error->suggestion,
                                                'created_at' => $ts]);
                      }
                      $job->harvest->status = 'Stopped';
@@ -229,10 +229,10 @@ class SushiQWorker extends Command
 
            // If provider or institution is inactive, toss the job and move on
             if (!$setting->provider->is_active) {
-                $error = CcplusError::where('id',60)->first();
+                $error = CcplusError::where('id',9060)->first();
                 if ($error) {
                     FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'Initiation',
-                                          'error_id' => 60, 'detail' => $error->explanation . $error->suggestion,
+                                          'error_id' => 9060, 'detail' => $error->explanation . $error->suggestion,
                                           'created_at' => $ts]);
                 } else {
                     $this->line($ts . " " . $ident . 'Provider: ' . $setting->provider->name .
@@ -244,10 +244,10 @@ class SushiQWorker extends Command
                 continue;
             }
             if (!$setting->institution->is_active) {
-                $error = CcplusError::where('id',70)->first();
+                $error = CcplusError::where('id',9070)->first();
                 if ($error) {
                     FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'Initiation',
-                                          'error_id' => 70, 'detail' => $error->explanation . $error->suggestion,
+                                          'error_id' => 9070, 'detail' => $error->explanation . $error->suggestion,
                                           'created_at' => $ts]);
                 } else {
                     $this->line($ts . " " . $ident . 'Institution: ' . $setting->institution->name .
@@ -313,7 +313,7 @@ class SushiQWorker extends Command
                         $valid_report = $sushi->validateJson();
                     } catch (\Exception $e) {
                         FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'COUNTER',
-                                              'error_id' => 100, 'detail' => 'Validation error: ' . $e->getMessage(),
+                                              'error_id' => 9100, 'detail' => 'Validation error: ' . $e->getMessage(),
                                               'help_url' => $sushi->help_url, 'created_at' => $ts]);
                         $this->line($ts . " " . $ident . "Report failed COUNTER validation : " . $e->getMessage());
                     }
@@ -345,7 +345,7 @@ class SushiQWorker extends Command
                 FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => $sushi->step,
                                       'error_id' => $error->id, 'detail' => $sushi->detail,
                                       'help_url' => $sushi->help_url, 'created_at' => $ts]);
-                if ($sushi->error_code != 10) {
+                if ($sushi->error_code != 9010) {
                     $sushi->detail .= " (URL: " . $request_uri . ")";
                 }
                 $this->line($ts . " " . $ident . "SUSHI Exception (" . $sushi->error_code . ") : " .

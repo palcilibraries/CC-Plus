@@ -65,7 +65,7 @@ class Sushi extends Model
         } catch (\Exception $e) {
             $this->detail = $e->getMessage();
             $this->step = "HTTP";
-            $this->error_code = 10;
+            $this->error_code = 9010;
             $this->message = "SUSHI HTTP request failed, verify URL : ";
             return "Fail";
         }
@@ -98,7 +98,7 @@ class Sushi extends Model
         if (json_last_error() !== JSON_ERROR_NONE) {
               $this->detail = json_last_error_msg();
               $this->step = "JSON";
-              $this->error_code = 20;
+              $this->error_code = 9020;
               $this->message = "Error decoding JSON : ";
               return "Fail";
         }
@@ -109,7 +109,7 @@ class Sushi extends Model
             $this->detail = " request returned " . (is_array($this->json) ? 'an array' : 'a scalar');
             $this->step = "JSON";
             $this->message = "JSON is not an object : ";
-            $this->error_code = 30;
+            $this->error_code = 9030;
             return "Fail";
         }
 

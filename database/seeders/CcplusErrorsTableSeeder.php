@@ -20,45 +20,9 @@ class CcplusErrorsTableSeeder extends Seeder
 
         // Make sure table is empty
         if (DB::table($table)->get()->count() == 0) {
-           // CCPLUS errors : 00XX - 09XX
             DB::table($table)->insert([
             ['id'=>0, 'message' => 'Undefined error', 'severity_id' => 11, 'explanation' => '',
                 'suggestion' => 'Please contact your CC-PLUS admin for more information.',
-                'new_status' => 'Stopped'
-            ],
-            ['id'=>10, 'message' => 'SUSHI HTTP request failed, verify URL','severity_id' => 99,
-                'explanation' => 'The request to the SUSHI server failed to connect.',
-                'suggestion' => 'Check that the URL in the provider settings is correct and retry.',
-                'new_status' => 'Stopped'
-            ],
-            ['id'=>20, 'message' => 'Error decoding JSON', 'severity_id' => 99,
-                'explanation' => 'The report received from the provider has technical errors in its formatting.',
-                'suggestion' => 'Contact the provider to report this issue.',
-                'new_status' => 'Stopped'
-            ],
-            ['id'=>30, 'message' => 'JSON is not an object', 'severity_id' => 99,
-                'explanation' => 'The SUSHI service returned non-JSON data.',
-                'suggestion' => 'Contact the provider to report this issue.',
-                'new_status' => 'Stopped'
-            ],
-            ['id'=>50, 'message' => 'SUSHI Settings are not Enabled - harvest will be Stopped','severity_id' => 99,
-                'explanation' => 'The sushi settings in CC-Plus must be enabled in order to harvest. ',
-                'suggestion' => 'Verify that the sushi settings related to this harvest are enabled.',
-                'new_status' => 'Stopped'
-            ],
-            ['id'=>60, 'message' => 'Provider is marked as Inactive - harvest will be Stopped','severity_id' => 99,
-                'explanation' => 'The sushi settings in CC-Plus must be enabled in order to harvest. ',
-                'suggestion' => 'Verify that the provider related to this harvest is enabled.',
-                'new_status' => 'Stopped'
-            ],
-            ['id'=>70, 'message' => 'Institution is marked as Inactive - harvest will be Stopped','severity_id' => 99,
-                'explanation' => 'The CC-Plus institution must be Active in order to harvest. ',
-                'suggestion' => 'Verify that the institution related to this harvest is enabled.',
-                'new_status' => 'Stopped'
-            ],
-            ['id'=>100, 'message' => 'COUNTER report failed validation', 'severity_id' => 99,
-                'explanation' => 'The report received from the provider did not conform to COUNTER specificiations.',
-                'suggestion' => 'Contact the provider to report this issue.',
                 'new_status' => 'Stopped'
             ],
             ]);
@@ -201,6 +165,44 @@ class CcplusErrorsTableSeeder extends Seeder
                   'new_status' => 'Stopped'
             ],
             ]);
+            // CCPLUS errors : 9000 - 9999
+             DB::table($table)->insert([
+             ['id'=>9010, 'message' => 'SUSHI HTTP request failed, verify URL','severity_id' => 99,
+                 'explanation' => 'The request to the SUSHI server failed to connect.',
+                 'suggestion' => 'Check that the URL in the provider settings is correct and retry.',
+                 'new_status' => 'Stopped'
+             ],
+             ['id'=>9020, 'message' => 'Error decoding JSON', 'severity_id' => 99,
+                 'explanation' => 'The report received from the provider has technical errors in its formatting.',
+                 'suggestion' => 'Contact the provider to report this issue.',
+                 'new_status' => 'Stopped'
+             ],
+             ['id'=>9030, 'message' => 'JSON is not an object', 'severity_id' => 99,
+                 'explanation' => 'The SUSHI service returned non-JSON data.',
+                 'suggestion' => 'Contact the provider to report this issue.',
+                 'new_status' => 'Stopped'
+             ],
+             ['id'=>9050, 'message' => 'SUSHI Settings are not Enabled - harvest will be Stopped','severity_id' => 99,
+                 'explanation' => 'The sushi settings in CC-Plus must be enabled in order to harvest. ',
+                 'suggestion' => 'Verify that the sushi settings related to this harvest are enabled.',
+                 'new_status' => 'Stopped'
+             ],
+             ['id'=>9060, 'message' => 'Provider is marked as Inactive - harvest will be Stopped','severity_id' => 99,
+                 'explanation' => 'The sushi settings in CC-Plus must be enabled in order to harvest. ',
+                 'suggestion' => 'Verify that the provider related to this harvest is enabled.',
+                 'new_status' => 'Stopped'
+             ],
+             ['id'=>9070, 'message' => 'Institution is marked as Inactive - harvest will be Stopped','severity_id' => 99,
+                 'explanation' => 'The CC-Plus institution must be Active in order to harvest. ',
+                 'suggestion' => 'Verify that the institution related to this harvest is enabled.',
+                 'new_status' => 'Stopped'
+             ],
+             ['id'=>9100, 'message' => 'COUNTER report failed validation', 'severity_id' => 99,
+                 'explanation' => 'The report received from the provider did not conform to COUNTER specificiations.',
+                 'suggestion' => 'Contact the provider to report this issue.',
+                 'new_status' => 'Stopped'
+             ],
+             ]);
         }
     }
 }

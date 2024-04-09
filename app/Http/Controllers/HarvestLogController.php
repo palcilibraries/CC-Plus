@@ -574,9 +574,15 @@ class HarvestLogController extends Controller
         }
 
         // Query the sushisettings for providers connected to the requested inst IDs
+//NOTE:: Need better testing data
         if (in_array(0,$inst_ids)) {
-            // If inst_ids array includes a value=0, it means user chose "Entire Consortium"
-            $availables = SushiSetting::where('status','Enabled')->pluck('prov_id')->toArray();
+            // If inst_ids array includes a value=0, it means user included "Entire Consortium"
+            $all_enabled = SushiSetting::with('provider')->where('status','Enabled')->get();
+            $conso_providers = $all_enabled->where('provider.inst_id',1)->pluck('prov_id')->toArray();
+            $conso_globals = $all_enabled->where('provider.inst_id',1)->pluck('provider.global_id')->toArray();
+            $inst_providers = $all_enabled->whereNotIn('provider.global_id',$conso_globals)
+                                          ->pluck('prov_id')->toArray();
+            $availables = array_merge($conso_providers,$inst_providers);
         } else {
             $availables = SushiSetting::where('status','Enabled')->whereIn('inst_id',$inst_ids)->pluck('prov_id')->toArray();
         }
@@ -889,8 +895,8 @@ class HarvestLogController extends Controller
             foreach ($harvest->failedHarvests->sortByDesc('created_at') as $fh) {
                 $info = array("id" => $fh->id, "ts" => date("Y-m-d H:i:s", strtotime($fh->created_at)),
                               "code" => $fh->ccplusError->id, "message" => $fh->ccplusError->message);
-                $info['detail'] = ($fh->ccplusError->id <= 100) ? $fh->detail : "";
-                $info['detail'] = ($fh->ccplusError->id <= 100) ? $fh->detail : "";
+                // U/I will point to COUNTER docs for details on COUNTER error codes
+                $info['detail'] = ($fh->ccplusError->id < 1000 || $fh->ccplusError->id >= 9000) ? $fh->detail : "";
                 $info['help_url'] = (is_null($fh->help_url)) ? "" : $fh->help_url;
                 $rec['failed'][] = $info;
             }

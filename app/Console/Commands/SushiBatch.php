@@ -261,7 +261,7 @@ class SushiBatch extends Command
                     } catch (\Exception $e) {
                        // Update logs
                         FailedHarvest::insert(['harvest_id' => $harvest->id, 'process_step' => 'COUNTER',
-                                               'error_id' => 100, 'detail' => 'Validation error: ' . $e->getMessage(),
+                                               'error_id' => 9100, 'detail' => 'Validation error: ' . $e->getMessage(),
                                                'created_at' => $ts]);
                         $this->line("COUNTER report failed validation : " . $e->getMessage());
                         $harvest->status = 'Fail';

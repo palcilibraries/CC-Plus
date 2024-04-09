@@ -147,7 +147,7 @@
                 </v-col>
                 <v-col class="d-flex px-2" cols="1">
                   {{ attempt.code }}
-                  <span v-if="attempt.code>1000">
+                  <span v-if="attempt.code>=1000 && attempt.code<9000">
                     <v-icon title="COUNTER Error Details" @click="goCounter()">mdi-open-in-new</v-icon>
                   </span>
                 </v-col>

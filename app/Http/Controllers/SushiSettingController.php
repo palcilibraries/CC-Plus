@@ -385,6 +385,12 @@ class SushiSettingController extends Controller
        // Construct and execute the test request for a PR report of last month
         $_uri .= '/reports/pr?';
         $uri_auth = "";
+
+        // If a platform value is set, start with it
+        if (!is_null($setting->provider->globalProv->platform_name)) {
+            $uri_auth = "platform=" . $setting->provider->globalProv->platform_name;
+        }
+
         $fields = array('customer_id', 'requestor_id', 'api_key', 'extra_args');
         foreach ($fields as $fld) {
           if (isset($input[$fld])) {

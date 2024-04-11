@@ -160,9 +160,9 @@
                 </v-list>
               </v-col>
             </v-row>
-            <v-row v-if="form.connector_state['extra_args']" class="d-flex ma-0" no-gutters>
+            <v-row class="d-flex ma-0" no-gutters>
               <v-col class="d-flex px-4" cols="8">
-                <v-text-field v-model="form.platform_name" label="Platform Name" outlined dense></v-text-field>
+                <v-text-field v-model="form.platform_name" label="Platform" outlined dense></v-text-field>
               </v-col>
             </v-row>
             <v-row class="d-flex ma-0 align-center" no-gutters>

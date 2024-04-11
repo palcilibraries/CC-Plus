@@ -162,7 +162,7 @@
             </v-row>
             <v-row v-if="form.connector_state['extra_args']" class="d-flex ma-0" no-gutters>
               <v-col class="d-flex px-4" cols="8">
-                <v-text-field v-model="form.extra_pattern" label="Extra Arguments Pattern" outlined dense></v-text-field>
+                <v-text-field v-model="form.platform_name" label="Platform Name" outlined dense></v-text-field>
               </v-col>
             </v-row>
             <v-row class="d-flex ma-0 align-center" no-gutters>
@@ -242,7 +242,7 @@
         ],
         mutable_providers: [ ...this.providers],
         new_provider: {'registry_id': '', 'id': null, 'name': '', 'is_active': 1, 'refreshable': 1, 'report_state': {},
-                       'connector_state': {}, 'server_url_r5': '', 'extra_pattern': null, 'notifications_url': ''},
+                       'connector_state': {}, 'server_url_r5': '', 'platform_name': null, 'notifications_url': ''},
         formValid: true,
         form: new window.Form({
             registry_id: '',
@@ -254,7 +254,7 @@
             connector_state: [],
             report_state: [],
             notifications_url: '',
-            extra_pattern: null,
+            platform_name: null,
         }),
         dayRules: [
             v => !!v || "Day of month is required",
@@ -282,7 +282,7 @@
             this.form.refreshable = _prov.refreshable;
             this.form.server_url_r5 = _prov.server_url_r5;
             this.form.report_state = _prov.report_state;
-            this.form.extra_pattern = _prov.extra_pattern;
+            this.form.platform_name = _prov.platform_name;
             this.form.notifications_url = _prov.notifications_url;
             this.updated_at = _prov.updated_at;
             this.providerImportDialog = false;
@@ -301,7 +301,7 @@
             this.form.server_url_r5 = this.new_provider.server_url_r5;
             this.form.connector_state = Object.assign({},_this.new_provider.connector_state);
             this.form.report_state = this.new_provider.report_state;
-            this.form.extra_pattern = this.new_provider.extra_pattern;
+            this.form.platform_name = this.new_provider.platform_name;
             this.form.notifications_url = this.new_provider.notifications_url;
             this.updated_at = null;
             this.providerImportDialog = false;

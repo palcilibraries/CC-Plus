@@ -164,13 +164,17 @@ class Sushi extends Model
         foreach ($connectors as $cnx) {
             $argv = ($uri_auth == "") ? "?" : "&";
             if ($cnx == 'extra_args') {
-                // Remove leading '& or '?' and traiiling '=' from provider extra_pattern
-                $pattern = rtrim(ltrim(trim($setting->provider->globalProv->extra_pattern),'&?'),'=');
-                $argv .= $pattern . "=" . urlencode( $setting->{$cnx} );
+                // Tack on extra_args intact from the setting
+                $argv .= $setting->{$cnx};
             } else {
                 $argv .= $cnx . "=" . urlencode( $setting->{$cnx} );
             }
             $uri_auth .= $argv;
+        }
+
+        // If a platform value is set, add it
+        if (!is_null($setting->provider->globalProv->platform_name)) {
+            $uri_auth .= "&platform=" . $setting->provider->globalProv->platform_name;
         }
 
         // Return the URI if we're not building a report request

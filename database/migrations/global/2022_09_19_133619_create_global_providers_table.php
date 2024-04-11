@@ -25,7 +25,7 @@ class CreateGlobalProvidersTable extends Migration
           $table->json('connectors')->default(1);
           $table->string('server_url_r5')->nullable();
           $table->string('notifications_url')->nullable();
-          $table->string('extra_pattern')->nullable();
+          $table->string('platform_name')->nullable();
           $table->timestamps();
         });
     }

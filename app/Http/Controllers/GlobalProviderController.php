@@ -145,22 +145,18 @@ class GlobalProviderController extends Controller
       $provider->is_active = $input['is_active'];
       $provider->refreshable = $input['refreshable'];
       $provider->server_url_r5 = $input['server_url_r5'];
+      $provider->platform_name = $input['platform_name'];
 
       // Turn array of connection checkboxes into an array of IDs
-      $extraArgs = false;
       $connectors = array();
       $this->getConnectionFields();
       foreach ($allConnectors as $cnx) {
           if (!isset($input['connector_state'][$cnx->name])) continue;
           if ($input['connector_state'][$cnx->name]) {
-              if ($cnx->name == 'extra_args') $extraArgs = true;
               $connectors[] = $cnx->id;
           }
       }
       $provider->connectors = $connectors;
-      if ($extraArgs && !is_null($input['extra_pattern'])) {
-          $provider->extra_pattern = $input['extra_pattern'];
-      }
 
       // Turn array of report checkboxes into an array of IDs
       $master_reports = array();
@@ -254,10 +250,8 @@ class GlobalProviderController extends Controller
           }
           $connectors_changed = ($provider->connectors != $new_connectors);
           $provider->connectors = $new_connectors;
-          if (isset($input['extra_pattern'])) {
-              $provider->extra_pattern = ($extraArgs) ? $input['extra_pattern'] : null;
-          }
       }
+      $provider->platform_name = (isset($input['platform_name'])) ? $input['platform_name'] : null;
 
       // Turn array of report checkboxes into an array of IDs
       $reports_string = "";
@@ -745,7 +739,7 @@ class GlobalProviderController extends Controller
         $providers_sheet->setCellValue('J1', 'Requestor-ID');
         $providers_sheet->setCellValue('K1', 'API-Key');
         $providers_sheet->setCellValue('L1', 'Extra-Args');
-        $providers_sheet->setCellValue('M1', 'Extra-Args-Pattern');
+        $providers_sheet->setCellValue('M1', 'Platform Name');
         $row = 2;
         foreach ($global_providers as $provider) {
             $providers_sheet->getRowDimension($row)->setRowHeight(15);
@@ -762,7 +756,7 @@ class GlobalProviderController extends Controller
                 $value = (in_array($field->id, $provider->connectors)) ? 'Y' : 'N';
                 $providers_sheet->setCellValue($cnx_col[$field->name] . $row, $value);
             }
-            $providers_sheet->setCellValue('M' . $row, $provider->extra_pattern);
+            $providers_sheet->setCellValue('M' . $row, $provider->platform_name);
             $row++;
         }
 
@@ -886,7 +880,7 @@ class GlobalProviderController extends Controller
             $_prov['connectors'] = $connectors;
             // Extra argument pattern gets saved only if ExtraArgs column = 'Y'
             if ($row[11] == 'Y') {
-                $_prov['extra_pattern'] = $row[12];
+                $_prov['platform_name'] = $row[12];
             }
 
             // Update or create the Provider record

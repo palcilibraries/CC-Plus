@@ -387,8 +387,8 @@ class SushiSettingController extends Controller
         $uri_auth = "";
 
         // If a platform value is set, start with it
-        if (!is_null($setting->provider->globalProv->platform_name)) {
-            $uri_auth = "platform=" . $setting->provider->globalProv->platform_name;
+        if (!is_null($provider->globalProv->platform_name)) {
+            $uri_auth = "platform=" . $provider->globalProv->platform_name;
         }
 
         $fields = array('customer_id', 'requestor_id', 'api_key', 'extra_args');

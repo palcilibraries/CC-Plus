@@ -119,7 +119,7 @@
           <v-icon title="Close" @click="expand(false)" v-if="item.error_code>0 && isExpanded">mdi-close</v-icon>
         </template>
         <template v-slot:expanded-item="{ headers, item }">
-          <td v-if="item.error_code>0" :colspan="headers.length">
+          <td v-if="item.failed.length>0" :colspan="headers.length">
             <v-row class="d-flex py-2 justify-center" no-gutters>
               <strong>Failed Harvest Attempts (Harvest ID: {{ item.id }})</strong>
               <span>

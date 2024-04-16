@@ -446,13 +446,13 @@ class ProviderController extends Controller
      * Build string representation of master_reports array
      *
      * @param  Array  $reports
+     * @param  Collection  $master_reports
      * @return String
      */
-    private function makeReportString($reports) {
+    private function makeReportString($reports, $master_reports) {
         $report_string = '';
-        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
         foreach ($master_reports as $mr) {
-            if ($reports->where('id',$mr->id)->first()) {
+            if (in_array($mr->id,$reports)) {
                 $report_string .= ($report_string == '') ? '' : ', ';
                 $report_string .= $mr->name;
             }

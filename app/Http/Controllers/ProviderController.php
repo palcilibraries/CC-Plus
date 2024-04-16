@@ -459,4 +459,349 @@ class ProviderController extends Controller
         }
         return $report_string;
     }
+
+    /**
+     * Export provider records from the database.
+     * NOTE:: Provider exports are based on GLOBAL providers, and related to institutions.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+     public function export(Request $request)
+    {
+        $thisUser = auth()->user();
+
+        // Only admins and managers can export
+        abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
+        $consodb = config('database.connections.consodb.database');
+
+       // Admins get all providers
+        if ($thisUser->hasRole("Admin")) {
+            $providers = DB::table($consodb . '.providers as prv')
+                      ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
+                      ->orderBy('prov_name', 'ASC')
+                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.global_id','prv.is_active','prv.inst_id',
+                             'prv.restricted','prv.allow_inst_specific','inst.name as inst_name','day_of_month',]);
+       // Managers get all consortia-wide providers and those that match user's inst_id
+       // (excludes providers assigned to institutions.)
+        } else {
+            $providers = DB::table($consodb . '.providers as prv')
+                      ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
+                      ->where('prv.inst_id', 1)
+                      ->orWhere('prv.inst_id', $thisUser->inst_id)
+                      ->orderBy('prov_name', 'ASC')
+                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.global_id','prv.is_active','prv.inst_id',
+                             'prv.restricted','prv.allow_inst_specific','inst.name as inst_name','day_of_month',]);
+        }
+
+        // Get all providers, with reports
+        $all_providers = Provider::with('reports')->get();
+
+        // Setup some styles arrays
+        $leftbold_style = [
+            'font' => ['bold' => true,],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,],
+        ];
+        $topleft_style = [
+            'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP,
+                            'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+                           ],
+        ];
+
+        // Setup the spreadsheet and build the static ReadMe sheet
+        $spreadsheet = new Spreadsheet();
+        $info_sheet = $spreadsheet->getActiveSheet();
+        $info_sheet->setTitle('HowTo Import');
+        $info_sheet->mergeCells('A1:E7');
+        $info_sheet->getStyle('A1:E8')->applyFromArray($topleft_style);
+        $info_sheet->getStyle('A1:E7')->getAlignment()->setWrapText(true);
+        $top_txt  = "The Providers tab represents a starting place for updating or importing settings. The table\n";
+        $top_txt .= "below describes the datatype and order that the import expects. Any Import rows without a global provider\n";
+        $top_txt .= "ID value in column A and a valid Institution ID column B will be ignored. If values are missing or invalid\n";
+        $top_txt .= "for columns (B-H), but not required, they will be set to the 'Default'.\n\n";
+        $top_txt .= "Any header row or columns beyond 'H' will be ignored. Once the data sheet contains everything\n";
+        $top_txt .= "to be updated or inserted, save the sheet as a CSV and import it into CC-Plus.";
+        $info_sheet->setCellValue('A1', $top_txt);
+        $info_sheet->getStyle('A8')->applyFromArray($leftbold_style);
+        $info_sheet->setCellValue('A8', "NOTE:");
+        $info_sheet->mergeCells('B8:E10');
+        $info_sheet->getStyle('B8:E10')->applyFromArray($topleft_style);
+        $info_sheet->getStyle('B8:E10')->getAlignment()->setWrapText(true);
+        $info_sheet->getStyle('A12:E20')->applyFromArray($topleft_style);
+        $note_txt  = "Provider imports cannot be used to delete existing providers; only additions and updates are\n";
+        $note_txt .= "supported. The recommended approach is to add to, or modify, a previously run full export\n";
+        $note_txt .= "to ensure that desired end result is achieved.";
+        $info_sheet->setCellValue('B8', $note_txt);
+        $info_sheet->getStyle('A12:E12')->applyFromArray($leftbold_style);
+        $info_sheet->setCellValue('A12', 'Column Name');
+        $info_sheet->setCellValue('B12', 'Data Type');
+        $info_sheet->setCellValue('C12', 'Description');
+        $info_sheet->setCellValue('D12', 'Required');
+        $info_sheet->setCellValue('E12', 'Default');
+        $info_sheet->setCellValue('A13', 'Global Provider ID');
+        $info_sheet->setCellValue('B13', 'Integer');
+        $info_sheet->setCellValue('C13', 'Unique CC-Plus Provider ID');
+        $info_sheet->setCellValue('D13', 'Yes');
+        $info_sheet->setCellValue('A14', 'Institution ID');
+        $info_sheet->setCellValue('B14', 'Integer');
+        $info_sheet->setCellValue('C14', 'Unique CC-Plus Institution ID (Consortium is ID=1)');
+        $info_sheet->setCellValue('D14', 'Yes');
+        $info_sheet->setCellValue('A15', 'Name');
+        $info_sheet->setCellValue('B15', 'String');
+        $info_sheet->setCellValue('C15', 'Provider name');
+        $info_sheet->setCellValue('D15', 'No');
+        $info_sheet->setCellValue('E15', 'Global Provider Name');
+        $info_sheet->setCellValue('A16', 'Active');
+        $info_sheet->setCellValue('B16', 'String (Y or N)');
+        $info_sheet->setCellValue('C16', 'Make the provider active?');
+        $info_sheet->setCellValue('D16', 'No');
+        $info_sheet->setCellValue('E16', 'Yes');
+        $info_sheet->setCellValue('A17', 'Restricted');
+        $info_sheet->setCellValue('B17', 'String (Y or N)');
+        $info_sheet->setCellValue('C17', 'Allow local Admins to modify SUSHI credentials');
+        $info_sheet->setCellValue('D17', 'No');
+        $info_sheet->setCellValue('E17', 'Yes');
+        $info_sheet->setCellValue('A18', 'Inst-Specific');
+        $info_sheet->setCellValue('B18', 'String (Y or N)');
+        $info_sheet->setCellValue('C18', 'Allow Institutional-Specific Definition (when InstID=1)');
+        $info_sheet->setCellValue('D18', 'No');
+        $info_sheet->setCellValue('E18', 'No');
+        $info_sheet->setCellValue('A19', 'Harvest Day');
+        $info_sheet->setCellValue('B19', 'Integer');
+        $info_sheet->setCellValue('C19', 'Day of the month to harvest provider reports (1-28)');
+        $info_sheet->setCellValue('D19', 'No');
+        $info_sheet->setCellValue('E19', '15');
+        $info_sheet->setCellValue('A20', 'Master Reports');
+        $info_sheet->setCellValue('B20', 'Integer');
+        $info_sheet->setCellValue('C20', 'CSV list of Master Report IDs to Harvest (e.g. : 1,3)');
+        $info_sheet->setCellValue('D20', 'No');
+        $info_sheet->setCellValue('E20', 'None');
+        // Set row height and auto-width columns for the sheet
+
+        for ($r = 1; $r < 21; $r++) {
+            $info_sheet->getRowDimension($r)->setRowHeight(15);
+        }
+        $info_columns = array('A','B','C','D','E');
+        foreach ($info_columns as $col) {
+            $info_sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Load the provider data into a new sheet
+        $providers_sheet = $spreadsheet->createSheet();
+        $providers_sheet->setTitle('Providers');
+        $providers_sheet->setCellValue('A1', 'Global Id');
+        $providers_sheet->setCellValue('B1', 'Institution ID');
+        $providers_sheet->setCellValue('C1', 'Name');
+        $providers_sheet->setCellValue('D1', 'Active');
+        $providers_sheet->setCellValue('E1', 'Restricted');
+        $providers_sheet->setCellValue('F1', 'Inst-Specific');
+        $providers_sheet->setCellValue('G1', 'Harvest Day');
+        $providers_sheet->setCellValue('H1', 'Master Reports');
+        $providers_sheet->setCellValue('J1', 'Institution Name');
+        $providers_sheet->setCellValue('K1', 'Report Names');
+        $row = 2;
+        foreach ($providers as $provider) {
+            $providers_sheet->getRowDimension($row)->setRowHeight(15);
+            $providers_sheet->setCellValue('A' . $row, $provider->global_id);
+            $providers_sheet->setCellValue('B' . $row, $provider->inst_id);
+            $providers_sheet->setCellValue('C' . $row, $provider->prov_name);
+            $_stat = ($provider->is_active) ? "Y" : "N";
+            $providers_sheet->setCellValue('D' . $row, $_stat);
+            $_restricted = ($provider->restricted) ? "Y" : "N";
+            $providers_sheet->setCellValue('E' . $row, $_restricted);
+            $_ais = ($provider->allow_inst_specific) ? "Y" : "N";
+            $providers_sheet->setCellValue('F' . $row, $_ais);
+            $providers_sheet->setCellValue('G' . $row, $provider->day_of_month);
+            $_name = ($provider->inst_id == 1) ? "Entire Consortium" : $provider->inst_name;
+            $this_prov = $all_providers->where('id', '=', $provider->prov_id)->first();
+            if (isset($this_prov->reports)) {
+                $_report_ids = "";
+                $_report_names = "";
+                foreach ($this_prov->reports as $rpt) {
+                    $_report_ids .= $rpt->id . ", ";
+                    $_report_names .= $rpt->name . ", ";
+                }
+                $_report_ids = rtrim(trim($_report_ids), ',');
+                $_report_names = rtrim(trim($_report_names), ',');
+                $providers_sheet->setCellValue('H' . $row, $_report_ids);
+                $providers_sheet->setCellValue('K' . $row, $_report_names);
+            } else {
+                $providers_sheet->setCellValue('H' . $row, 'NULL');
+            }
+            $providers_sheet->setCellValue('J' . $row, $_name);
+            $row++;
+        }
+
+        // Auto-size and style the output sheet
+        $columns = array('A','B','C','D','E','F','G','H','I','J','K');
+        foreach ($columns as $col) {
+            $providers_sheet->getColumnDimension($col)->setAutoSize(true);
+            $providers_sheet->getStyle($col)->applyFromArray($topleft_style);
+        }
+        $providers_sheet->getStyle('A1:K1')->applyFromArray($leftbold_style);
+
+        // Give the file a meaningful filename
+        if ($thisUser->hasRole('Admin')) {
+            $fileName = "CCplus_" . session('ccp_con_key', '') . "_Providers.xlsx";
+        } else {
+            $fileName = "CCplus_" . preg_replace('/ /', '', $thisUser->institution->name) . "_Providers.xlsx";
+        }
+
+        // redirect output to client browser
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename=' . $fileName);
+        header('Cache-Control: max-age=0');
+        $writer->save('php://output');
+    }
+
+    /**
+     * Import providers from a CSV file to the database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function import(Request $request)
+    {
+        // Only Admins can import provider data
+        abort_unless(auth()->user()->hasRole('Admin'), 403);
+
+        // Handle and validate inputs
+        $this->validate($request, ['csvfile' => 'required']);
+        if (!$request->hasFile('csvfile')) {
+            return response()->json(['result' => false, 'msg' => 'Error accessing CSV import file']);
+        }
+
+        // Get the CSV data
+        $file = $request->file("csvfile")->getRealPath();
+        $csvData = file_get_contents($file);
+        $rows = array_map("str_getcsv", explode("\n", $csvData));
+        if (sizeof($rows) < 1) {
+            return response()->json(['result' => false, 'msg' => 'Import file is empty, no changes applied.']);
+        }
+
+        // Get existing global_provider, consortium provider, institution, and reports data
+        $global_providers = GlobalProvider::get();
+        $providers = Provider::with('reports','institution')->get();
+        $institutions = Institution::get();
+        $master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)
+                                 ->get(['id','name']);
+
+        // Process the input rows
+        $cur_prov_id = 0;
+        $prov_skipped = 0;
+        $prov_updated = 0;
+        $prov_created = 0;
+        $seen_provs = array();          // keep track of provider already processed while looping
+        foreach ($rows as $row) {
+
+            // Ignore bad/missing/invalid Global IDs and/or headers
+            if (!isset($row[0])) {
+                continue;
+            }
+            if ($row[0] == "" || !is_numeric($row[0]) || !is_numeric($row[1]) || sizeof($row) < 7) {
+                continue;
+            }
+
+            // valid global provider is required
+            $global_id = intval($row[0]);
+            $global_prov = $global_providers->where("id", $global_id)->first();
+            if (!$global_prov) {
+                continue;
+            }
+
+            // valid institution is required
+            $inst_id = intval($row[1]);
+            $institution = $institutions->where("id", $inst_id)->first();
+            if (!$institution) {
+                continue;
+            }
+
+            // see if there is a match on existing providers
+            $current_prov = $providers->where("global_id", $global_id)->where('inst_id',$inst_id)->first();
+            $cur_prov_id = ($current_prov) ? $current_prov->id : null;
+
+            // If we already processed this provider, skip this record
+            if ($current_prov && in_array($cur_prov_id, $seen_provs)) {
+                $prov_skipped++;
+                continue;
+            }
+
+            // Update/Add the provider data/settings
+            // Check ID and name columns for silliness or errors
+            $_name = trim($row[2]);
+            if (strlen($_name) < 1) {       // If import-name empty, use global name
+                $_name = trim($global_prov->name);
+            }
+
+            // Ok - we're gonna save something - Enforce defaults
+            $_active = ($row[3] == 'N') ? 0 : 1;
+            $_restricted = ($row[4] == 'N') ? 0 : 1;
+            $_allow_inst = ($row[5] == 'Y' && $inst_id==1) ? 1 : 0;
+            $_day = ($row[6] == '') ? 15 : intval($row[6]);
+            if ($_day < 1 || $_day > 28) {
+                $_day = 15;
+            }
+
+            // Put provider data columns into an array
+            $_prov = array('id' => $cur_prov_id, 'global_id' => $global_id, 'inst_id' => $inst_id, 'name' => $_name,
+                           'is_active' => $_active, 'restricted' => $_restricted, 'allow_inst_specific' => $_allow_inst,
+                           'day_of_month' => $_day);
+
+            // Update or create the Provider record
+            if ($current_prov) {      // Update
+                $current_prov->update($_prov);
+                $prov_updated++;
+            } else {                 // Create
+                $current_prov = Provider::create($_prov);
+                $cur_prov_id = $current_prov->id;
+                $prov_created++;
+            }
+
+            // Set reports
+            $current_prov->reports()->detach();
+            $_report_ids = preg_split('/,/', $row[7]);
+            if (sizeof($_report_ids) > 0) {
+                foreach ($_report_ids as $r) {
+                    $r_id = intval(trim($r));
+                    if (is_numeric($r_id)) {
+                        $report = $master_reports->where('id', '=', $r_id)->first();
+                        if ($report) {
+                            $current_prov->reports()->attach($r_id);
+                        }
+                    }
+                }
+            }
+            $seen_provs[] = $cur_prov_id;
+        }
+
+        // return the current full list of groups with a success message
+        $detail = "";
+        $detail .= ($prov_updated > 0) ? $prov_updated . " updated" : "";
+        if ($prov_created > 0) {
+            $detail .= ($detail != "") ? ", " . $prov_created . " added" : $prov_created . " added";
+        }
+        if ($prov_skipped > 0) {
+            $detail .= ($detail != "") ? ", " . $prov_skipped . " skipped" : $prov_skipped . " skipped";
+        }
+        $msg  = 'Import successful, Providers : ' . $detail;
+
+        // return response()->json(['result' => true, 'msg' => $msg, 'providers' => $providers]);
+        return response()->json(['result' => true, 'msg' => $msg]);
+    }
+
+    /**
+     * Return an array of booleans for report-state from provider reports columns
+     *
+     * @param  Array  $reports
+     * @param  Collection  $master_reports
+     * @return Array  $report-state
+     */
+    private function reportState($reports, $master_reports) {
+        $rpt_state = array();
+        foreach ($master_reports as $rpt) {
+            $rpt_state[$rpt->name] = (in_array($rpt->id, $reports)) ? true : false;
+        }
+        return $rpt_state;
+    }
 }

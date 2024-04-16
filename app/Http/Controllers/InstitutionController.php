@@ -239,9 +239,32 @@ class InstitutionController extends Controller
         foreach ($global_providers as $rec) {
             $rec->global_prov = $rec->toArray();
             $rec->connectors = $rec->connectionFields();
+
+            // Set master reports to only the globally available ones and add names
+            $_reports = [];
+            foreach ($master_reports as $rpt) {
+                if (in_array($rpt->id, $rec->master_reports)) {
+                    $_reports[] = array('id' => $rpt->id, 'name' => $rpt->name);
+                }
+            }
+            $rec->master_reports = $_reports;
+
+            // Set connected to hold both conso and inst if they're enabled
+            $has_inst_connection = false;
+            $connected = array();
+            for ($i=0; $i<2; $i++) {
+                $_inst = ($i==0) ? $id : $i;
+                $prov_data = $inst_providers->where('global_id',$rec->id)->where('inst_id',$_inst)->first();
+                if ($prov_data) {
+                    if ($_inst == $id) $has_inst_connection = true;
+                    $_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
+                    $connected[] = array('id' => $prov_data->inst_id, 'name' => $_name);
+                }
+            }
+            $rec->connected = $connected;
+
             // Set a record for both an inst-specific and consortium-wide provider definition
             // (the U/I will have to hide/set-precedence)
-            $connected = false;
             for ($i=0; $i<2; $i++) {
                 $_inst = ($i==0) ? $id : $i;
                 // Setup default values for the columns in the U/I
@@ -249,21 +272,26 @@ class InstitutionController extends Controller
                 $rec->inst_name = null;
                 $rec->day_of_month = null;
                 $rec->can_delete = false;
-                $rec->can_connect = true;   // default to true if global is not connected
-                $rec->connected = array();
-                $rec->connection_count = 0;
+                $rec->can_connect = true;   // default is true if global is not connected
                 $reports_string = ($rec->master_reports) ?
                                    $this->makeReportString($rec->master_reports, $master_reports) : '';
                 $report_state = $this->reportState($rec->master_reports, $master_reports);
 
+                // If no connections, just add the global and skip out
+                if ($i==0 && count($connected)==0) {
+                    $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;
+                    $rec->report_state = $report_state;
+                    $output_providers[] = $rec->toArray();
+                    break;
+                }
+                $rec->connection_count = ($_inst==1) ? count($connected) : 1;
+
                 // Get the provider data
                 $prov_data = $inst_providers->where('global_id',$rec->id)->where('inst_id',$_inst)->first();
                 if ($prov_data) {
-                    $connected = true;
-                    $rec->connected = $prov_data->toArray();
-                    $rec->connection_count = 1;
-                    // For a conso-provider, set can_connect to value of inst_specifc flag (inst-specific is already connected)
-                    $rec->can_connect = ($prov_data->inst_id == 1) ? $prov_data->allow_inst_specific : false;
+                    // For a conso-provider, set can_connect true if inst_specific is aloowed and not already inst-connected
+                    $rec->can_connect = ($prov_data->inst_id==1 && $prov_data->allow_inst_specific && !$has_inst_connection) ?
+                                         true : false;
                     $rec->conso_id = $prov_data->id;
                     $rec->name = $prov_data->name;
                     $rec->inst_id = $prov_data->inst_id;
@@ -286,13 +314,6 @@ class InstitutionController extends Controller
                     $output_providers[] = $rec->toArray();
                 }
             }
-            // Include unconnected globals in the array
-            if (!$connected) {
-                $rec->report_state = $report_state;
-                $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;
-                $output_providers[] = $rec->toArray();
-            }
-
         }
         $all_providers = array_values($output_providers);
 

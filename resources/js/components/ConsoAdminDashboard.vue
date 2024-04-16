@@ -52,7 +52,7 @@
   	    <v-expansion-panel-content>
           <provider-data-table :key="provKey" :providers="mutable_providers" :institutions="mutable_institutions"
                                :master_reports="master_reports" @connect-prov="connectProv" @disconnect-prov="disconnectProv"
-                               @change-prov="updateProv"
+                               @change-prov="updateProv" @bulk-update="bulkProv"
           ></provider-data-table>
         </v-expansion-panel-content>
 	    </v-expansion-panel>
@@ -128,6 +128,11 @@
       bulkInst (institutions) {
         this.mutable_institutions = [ ...institutions ];
         this.provKey += 1; // inform the provider component of the change
+        this.sushiKey += 1;
+        this.groupKey += 1;
+      },
+      bulkProv (providers) {
+        this.mutable_providers = [ ...providers ];
         this.sushiKey += 1;
         this.groupKey += 1;
       },

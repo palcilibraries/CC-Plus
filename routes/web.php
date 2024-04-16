@@ -46,6 +46,8 @@ Route::resource('/providers', 'ProviderController')->middleware(['auth','cache.h
 Route::post('/providers/connect', 'ProviderController@connect')->name('providers.connect')
      ->middleware(['auth','role:Admin,Manager']);
 Route::get('/available-providers', 'HarvestLogController@availableProviders')->middleware(['auth']);
+Route::post('/providers/import', 'ProviderController@import')->name('providers.import');
+Route::get('/providers-export', 'ProviderController@export')->name('providers.export');
 // Sushi and Harvests
 Route::resource('/harvests', 'HarvestLogController')->middleware(['auth','cache.headers:no_store']);
 Route::get('/harvests/{id}/raw', 'HarvestLogController@downloadRaw')->name('harvests.download')

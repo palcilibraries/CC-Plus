@@ -309,7 +309,7 @@ class ProviderController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Connect a global provider.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
@@ -318,45 +318,68 @@ class ProviderController extends Controller
     {
         $thisUser = auth()->user();
         abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
-
+        // Handle inputs
         if (is_null($request->input('inst_id')) || is_null($request->input('global_id'))) {
             return response()->json(['result' => false, 'msg' => 'Store Failed: missing input arguments!']);
         }
+        $input = $request->all();
 
-        // Create the provider
-        $global_provider = GlobalProvider::findOrFail($request->input('global_id'));
-        $provider = new Provider;
-        $provider->name = $global_provider->name;
-        $provider->inst_id = $request->input('inst_id');
-        $provider->restricted = ($request->input('inst_id') == 1) ? 1 : 0;
-        $provider->global_id = $request->input('global_id');
-        $provider->is_active = $global_provider->is_active;
-        $provider->save();
-
-        // Setup return object
-        $provider->load('institution');
-
-        // Enable all available reports (based on the global provider)
-        $reports_string = '';
-        $report_state = array();
-        $all_master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
-        $global_reports = $global_provider->master_reports;
-        foreach ($all_master_reports as $mr) {
-          if ( in_array($mr->id, $global_provider->master_reports) ) {
-              $provider->reports()->attach($mr->id);
-              $reports_string .= ($reports_string == "") ? "" : ", ";
-              $reports_string .= $mr->name;
-              $report_state[$mr->name] = true;
-          } else {
-              $report_state[$mr->name] = false;
-          }
+        // Local Admins only create providers for their own institutions
+        if (!($thisUser->hasRole('Admin')) && $input['inst_id'] != $thisUser->inst_id) {
+            $input['inst_id'] = $thisUser->inst_id;
         }
 
-        // If requrested, create a sushi-setting to give a "starting point" for connecting it later
-        $stub = ($request->input('sushi_stub')) ? $request->input('sushi_stub') : 0;
+        // Create the provider
+        $global_provider = GlobalProvider::findOrFail($input['global_id']);
+        $provider = new Provider;
+        $provider->inst_id = $input['inst_id'];
+        $provider->global_id = $input['global_id'];
+        $provider->name = (isset($input['name'])) ? $input['name'] : $global_provider->name;
+        $provider->is_active = (isset($input['is_active'])) ? $input['is_active'] : $global_provider->is_active;
+        $restricted_default = ($input['inst_id'] == 1) ? 1 : 0;
+        $provider->restricted = (isset($input['restricted'])) ? $restricted_default : $input['restricted'];
+        $provider->allow_inst_specific = (isset($input['allow_inst_specific'])) ? $input['allow_inst_specific'] : 0;
+        $provider->save();
+
+        // Attach reports and set report_state
+        $report_state = array();
+        $all_master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
+
+        // If report_state given as input, set reports based on it
+        if (isset($input['report_state'])) {
+            $report_state = $input['report_state'];
+            // attach reports to the provider, but only if the requested one(s) are in global:master_reports
+            $global_master_list = $global_provider->master_reports;
+            foreach ($global_master_list as $id) {
+                $master = $all_master_reports->where('id',$id)->first();
+                if (!$master) continue;
+                if ($report_state[$master->name]) {
+                    $provider->reports()->attach($id);
+                }
+            }
+        // Otherwise, enable all available reports for the global provider
+        } else {
+            foreach ($all_master_reports as $mr) {
+                $report_state[$mr->name] = ( in_array($mr->id, $global_provider->master_reports) );
+                if ($report_state[$mr->name]) {
+                  $provider->reports()->attach($mr->id);
+                }
+            }
+        }
+
+        // Set reports_string (for UI) based on report_state
+        $reports_string = '';
+        foreach ($all_master_reports as $mr) {
+            if ($report_state[$mr->name]) {
+              $reports_string .= ($reports_string == "") ? "" : ", ";
+              $reports_string .= $mr->name;
+            }
+        }
+        // If requested, create a sushi-setting to give a "starting point" for connecting it later
+        $stub = (isset($input['sushi_stub'])) ? $input['sushi_stub'] : 0;
         if ($stub) {
             $sushi_setting = new SushiSetting;
-            $sushi_setting->inst_id = $request->input('inst_id');
+            $sushi_setting->inst_id = $input['inst_id'];
             $sushi_setting->prov_id = $provider->id;
             // Add required conenction fields to sushi args
             foreach ($global_provider->connectionFields() as $cnx) {
@@ -366,11 +389,20 @@ class ProviderController extends Controller
             $sushi_setting->save();
         }
 
-        // Setup return object; start by getting names of connected institutions
+        // Setup return object
+        $provider->load('institution');
+
+        // Get names of connected institutions
         $conso_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest',
                                           'reports:id,name','globalProv')->where('global_id', $global_provider->id)->get();
-        $global_provider->connected = $conso_providers->where('global_id',$global_provider->id)->pluck('institution')->toArray();
-        $global_provider->connection_count = count($global_provider->connected);
+        if ($provider->inst_id == 1) {
+            $global_provider->connected = $conso_providers->pluck('institution')->toArray();
+            $global_provider->connection_count = count($global_provider->connected);
+        } else {
+            $cnx = $conso_providers->where('inst_id',$provider->inst_id)->pluck('institution')->toArray();
+            $global_provider->connected = array($cnx);
+            $global_provider->connection_count = 1;
+        }
         $global_provider->conso_id = $provider->id;
         $global_provider->inst_id = $provider->inst_id;
         $global_provider->can_connect = false;
@@ -386,7 +418,7 @@ class ProviderController extends Controller
         $global_provider->can_edit = $provider->canManage();
         $global_provider->can_delete = $provider->canManage();
         // return the global provider data with the consorium provider data merged in
-        return response()->json(['result' => true, 'msg' => 'Provider created successfully', 'provider' => $global_provider]);
+        return response()->json(['result' => true, 'msg' => 'Provider successfully connected', 'provider' => $global_provider]);
     }
 
     /**

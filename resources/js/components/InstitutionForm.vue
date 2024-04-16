@@ -273,7 +273,7 @@
             },
             disconnectProv (prov) {
               var idx = this.mutable_providers.findIndex(p => p.id == prov.id);
-              this.mutable_providers.splice(idx,1,prov);
+              this.mutable_providers.splice(idx,1);
               let global_data = prov.global_prov;
               this.mutable_unset.push(global_data);
               this.mutable_unset.sort((a,b) => {

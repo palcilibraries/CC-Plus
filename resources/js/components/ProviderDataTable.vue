@@ -5,7 +5,15 @@
       <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
     <v-row class="d-flex mt-2" no-gutters>
-      <v-col class="d-flex" cols="9">&nbsp;</v-col>
+      <v-col class="d-flex" cols="3">&nbsp;</v-col>
+      <v-col class="d-flex px-1" cols="3">
+        <v-btn small color="primary" @click="providerImportForm">Import Providers</v-btn>
+      </v-col>
+      <v-col class="d-flex px-1" cols="3">
+        <a @click="doProvExport">
+          <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export Providers to Excel
+        </a>
+      </v-col>
       <v-col class="d-flex px-2 " cols="3">
         <v-text-field v-model="search" label="Search" prepend-inner-icon="mdi-magnify" single-line hide-details clearable
         ></v-text-field>
@@ -53,25 +61,29 @@
         </div>
       </template>
       <template v-slot:item.name="{ item }">
-        <span v-if="item.inst_id==1">
-          <v-icon title="Consortium Provider">mdi-account-multiple</v-icon>&nbsp;
+        <span>
+          <v-icon v-if="item.inst_id==1" title="Consortium Provider">mdi-account-multiple</v-icon>
+          <v-icon v-else-if="item.inst_id>1" title="Institutional Provider">mdi-home-outline</v-icon>
+          <v-icon v-else title="Unconncted Global Provider">mdi-sync-off</v-icon>
         </span>
         {{ item.name }}
       </template>
       <template v-slot:item.inst_name="{ item }">
         <span v-if="item.inst_id==1 || inst_context!=1">{{ item.inst_name }}</span>
         <span v-else-if="item.connected.length>1">{{ item.inst_name }} &nbsp;</span>
-        <span v-else><a :href="'/institutions/'+item.inst_id">{{ item.inst_name }}</a></span>
+        <span v-else>
+          <a :href="'/institutions/'+item.inst_id" title="View Institution in new tab" target="_blank">{{ item.inst_name }}</a>
+        </span>
         <span v-if="item.connected.length>1 || (item.connected.length>0 && item.conso_id==null)">
           <v-icon title="Show Institutions" @click="showConnected(item.id)">mdi-open-in-app</v-icon>
         </span>
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
-          <v-btn v-if="item.can_connect" icon @click="connectOne(item.id)">
+          <v-btn v-if="item.can_connect" icon @click="connectProvider(item.id)">
             <v-icon title="Connect Provider">mdi-connection</v-icon>
           </v-btn>
-          <v-btn v-if="item.can_edit" icon @click="editProvider(item.id)">
+          <v-btn v-if="item.can_edit" icon @click="editProvider(item.conso_id)">
             <v-icon title="Edit Provider">mdi-cog-outline</v-icon>
           </v-btn>
           <v-btn v-else icon><v-icon color="#c9c9c9">mdi-cog-outline</v-icon></v-btn>
@@ -89,10 +101,54 @@
         Your search for "{{ search }}" found no results.
       </v-alert>
     </v-data-table>
+    <v-dialog v-model="providerImportDialog" max-width="1200px">
+      <v-card>
+        <v-card-title>Import Providers</v-card-title>
+        <v-spacer></v-spacer>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-file-input show-size label="CC+ Import File (CSV)" v-model="csv_upload" accept="text/csv" outlined
+            ></v-file-input>
+            <v-col class="d-flex justify-center" cols="8">
+              <strong>Note: &nbsp;</strong><br />
+              Provider imports function exclusively as Updates. No existing provider records will be deleted.<br />
+              Providers assigned to  Institution ID: 1 are, by convention, consortium-wide providers.
+            </v-col>
+            <p>
+              The import process evaluates input rows to determine if a row defines an existing, or new, provider.
+              A match for an existing provider depends on matching a Global Provider ID in column-A, and a
+              valid Institutional ID in column-B. If these are not found, the record is ignored. If an existing
+              provider is found for the Global-Id and Insitution-ID, that provider is updated. If no provider exists
+              for the Global/Institution pair, a NEW provider entry will be created.
+            </p>
+            <p>
+              Providers can be renamed via import by providing a Global Provider ID in column-A, the corresponding
+              Institution ID in column-B and a replacement name in column-C. Be aware that the new name takes effect
+              immediately, and will be associated with all harvested usage data that may have been collected using
+              the OLD name (data is stored by the System ID, not the name.)
+            </p>
+            <p>
+              For these reasons, use caution when using this import function. Generating an Provider export FIRST
+              will supply detailed instructions for importing on the "How to Import" tab. Generating a new Provider
+              export AFTER an import operation is a good way to confirm that all the settings are as-desired.
+            </p>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-col class="d-flex">
+            <v-btn x-small color="primary" type="submit" @click="providerImportSubmit">Run Import</v-btn>
+          </v-col>
+          <v-col class="d-flex">
+            <v-btn class='btn' x-small type="button" color="primary" @click="providerImportDialog=false">Cancel</v-btn>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-dialog v-model="connectedDialog" content-class="ccplus-dialog">
-      <h1 align="center">Institutions connected to<br />{{ current_provider.name }}</h1>
+      <h1 align="center">Institutions connected to<br />{{ cur_provider.name }}</h1>
       <hr>
-      <div v-for="inst in current_provider.connected">
+      <div v-for="inst in cur_provider.connected">
         <v-row class="d-flex mx-2" no-gutters>
           <v-col class="d-flex px-2">
             {{ inst.name }} &nbsp;
@@ -102,8 +158,8 @@
       </div>
     </v-dialog>
     <v-dialog v-model="provDialog" content-class="ccplus-dialog">
-      <provider-dialog dtype="edit" :provider="cur_provider" :institutions="institutions" :master_reports="master_reports"
-                       @prov-complete="provDialogDone" :key="dialogKey"
+      <provider-dialog :dtype="dialog_type" :key="dialogKey" :provider="cur_provider" :institutions="dialog_institutions"
+                       @prov-complete="provDialogDone"
       ></provider-dialog>
     </v-dialog>
   </div>
@@ -132,7 +188,6 @@
           { text: 'Harvest Day', value: 'day_of_month', align: 'center' },
         ],
         mutable_providers: [ ...this.providers ],
-        inst_spec_ids: [],
         footer_props: { 'items-per-page-options': [10,50,100,-1] },
         bulk_actions: [ 'Set Active', 'Set Inactive', 'Connect', 'Disconnect' ],
         connect_options: ['Connected', 'Not Connected'],
@@ -140,6 +195,10 @@
         selectedRows: [],
         dtKey: 1,
         dialogKey: 1,
+        csv_upload: null,
+        dialog_type: 'connect',
+        dialog_institutions: [ ...this.institutions ],
+        providerImportDialog: false,
         mutable_options: {},
         search: '',
         new_provider: null,
@@ -147,12 +206,16 @@
         provDialog: false,
         connectedDialog: false,
         connect_filter: 'Connected',
-        current_provider: {},
         sushi_insts: [],
         sushi_provs: [],
       }
     },
     methods:{
+        providerImportForm () {
+            this.csv_upload = null;
+            this.provDialog = false;
+            this.providerImportDialog = true;
+        },
         changeStatus(consoId, state) {
           axios.patch('/providers/'+consoId, { is_active: state })
                .then( (response) => {
@@ -174,7 +237,22 @@
             this.$store.dispatch('updateDatatableOptions',this.mutable_options);
         },
         editProvider (provId) {
-            this.cur_provider = this.mutable_providers.find(p => p.id == provId);
+            this.cur_provider = Object.assign({},this.mutable_providers.find(p => p.conso_id == provId));
+            this.dialog_institutions = [ {'id' : this.cur_provider.inst_id, 'name' : this.cur_provider.inst_name} ];
+            this.dialog_type = 'edit';
+            this.provDialog = true;
+            this.dialogKey += 1;
+        },
+        connectProvider (provId) {
+            this.cur_provider = Object.assign({},this.mutable_providers.find(p => p.id == provId));
+            this.cur_provider.day_of_month = 15;
+            this.cur_provider.global_id = this.cur_provider.id;
+            this.cur_provider.inst_id = this.inst_context;
+            this.dialog_institutions = this.institutions.filter( ii => !this.providers.filter(p => (p.id == provId))
+                                                                                      .map(p2 => p2.inst_id).includes(ii.id));
+            // clear report_state flags - make the user turn on what they want
+            Object.keys(this.cur_provider.report_state).forEach( (key) =>  { this.cur_provider.report_state[key] = false; });
+            this.dialog_type = 'connect';
             this.provDialog = true;
             this.dialogKey += 1;
         },
@@ -182,16 +260,28 @@
             this.success = '';
             this.failure = '';
             if (result == 'Success') {
-                let _idx = this.mutable_providers.findIndex(p => p.id == prov.global_id);
-                this.mutable_providers[_idx].name = prov.name;
-                this.mutable_providers[_idx].is_active = prov.is_active;
-                this.mutable_providers[_idx].day_of_month = prov.day_of_month;
-                this.mutable_providers[_idx].reports_string = prov.reports_string;
-                this.mutable_providers[_idx].restricted = prov.restricted;
-                this.mutable_providers[_idx].allow_inst_specific = prov.allow_inst_specific;
+                let _inst = {'id': prov.inst_id, 'name': prov.inst_name};
+                // Add new provider to mutable array if it is inst-specific
+                if (prov.inst_id > 1) {
+                  let newProv = Object.assign({},prov);
+                  newProv.connected = [_inst];
+                  newProv.connected_count = 1;
+                  newProv.allow_inst_specific = false;
+                  this.mutable_providers.push(newProv);
+                  this.mutable_providers.sort((a,b) => {
+                    if ( a.name < b.name ) return -1;
+                    if ( a.name > b.name ) return 1;
+                    return 0;
+                  });
+                }
+                // Update global provider connected data
+                let _idx = this.mutable_providers.findIndex(p => p.inst_id==1 && p.id == prov.id);
+                this.mutable_providers[_idx].can_connect = false;
+                this.mutable_providers[_idx].connection_count += 1;
+                this.mutable_providers[_idx].connected.push(_inst);
                 this.success = msg;
                 this.dtKey += 1;
-                this.$emit('change-prov', prov);
+                this.$emit('connect-prov', this.mutable_providers[_idx]);
             } else if (result == 'Fail') {
                 this.failure = msg;
             } else if (result != 'Cancel') {
@@ -322,7 +412,7 @@
             this.selectedRows = [];
         },
         showConnected(id) {
-            this.current_provider = this.mutable_providers.find(p => p.id == id);
+            this.cur_provider = this.mutable_providers.find(p => p.id == id);
             this.connectedDialog = true;
         },
         goInst(id) {
@@ -373,8 +463,9 @@
         destroy (provid) {
             this.success = '';
             this.failure = '';
-            var provIdx = this.mutable_providers.findIndex(p => p.conso_id == provid);
+            var provIdx  = this.mutable_providers.findIndex(p => p.conso_id == provid);
             var provider = this.mutable_providers[provIdx];
+            var consoIdx = this.mutable_providers.findIndex(p => p.id==provider.id && p.inst_id==1);
             Swal.fire({
               title: 'Are you sure?',
               text: "Disconnecting a provider cannot be reversed, only manually reconnected."+
@@ -386,36 +477,75 @@
               confirmButtonColor: '#3085d6',
               cancelButtonColor: '#d33',
               confirmButtonText: 'Yes, proceed'
-            }).then((result) => {
+            }).then( (result) => {
               if (result.value) {
                 axios.delete('/providers/'+provid)
                      .then( (response) => {
-                       if (response.data.result) {
-                         // just deleted an inst-specifc provider? Restore the conso-global if it exists
-                         if (this.inst_context>1 && this.inst_spec_ids.includes(provider.id)) {
-                           this.inst_spec_ids.splice(this.inst_spec_ids.findIndex(p => p==provider.id),1);
-                         }
-                         provider.inst_id = null;
-                         provider.conso_id = null;
-                         provider.inst_name = null;
-                         provider.connected = [];
-                         provider.connection_count = Math.max(provider.connection_count-1,0);
-                         provider.day_of_month = '';
-                         provider.can_edit = false;
-                         provider.can_delete = false;
-                         provider.can_connect = true;
-                         this.mutable_providers.splice(provIdx,1,provider);
-                         this.$emit('disconnect-prov', provider);
-                         this.success = 'Provider successfully disconnected';
-                         this.dtKey += 1;           // update the datatable
-                       } else {
+                       if (!response.data.result) {
                          this.success = '';
                          this.failure = response.data.msg;
+                         return;
                        }
+                       // consoIdx points to a conso-provider and just deleted an inst-specific connection?
+                       if ( consoIdx >= 0 && this.inst_context>1 ) {
+                           let conso_prov = Object.assign({},this.mutable_providers[consoIdx]);
+                           conso_prov.connected = conso_prov.connected.filter( (inst) => {
+                               return inst.id !== this.inst_context
+                           });
+                           conso_prov.connection_count = conso_prov.connected.count;
+                           conso_prov.can_connect = conso_prov.allow_inst_specific;
+                           this.mutable_providers[consoIdx] = Object.assign({}, conso_prov);
+                           this.$emit('change-prov', conso_prov);
+                       }
+                       this.mutable_providers.splice(provIdx,1);
+                       this.$emit('disconnect-prov', provider);
+                       this.success = 'Provider successfully disconnected';
+                       this.dtKey += 1;           // update the datatable
                      })
                      .catch({});
-              }
-            }).catch({});
+                }
+              })
+              .catch({});
+        },
+        providerImportSubmit (event) {
+            this.success = '';
+            if (this.csv_upload==null) {
+                this.failure = 'A CSV import file is required';
+                return;
+            }
+            this.failure = '';
+            let formData = new FormData();
+            formData.append('csvfile', this.csv_upload);
+            axios.post('/providers/import', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                  })
+                 .then( (response) => {
+                     if (response.data.result) {
+                        this.failure = '';
+                        this.success = response.data.msg;
+                        // Update provider data from the ProviderController and refresh the table
+                        axios.get("/providers?json=1").then((resp2) => {
+                            this.mutable_providers = resp2.data.providers;
+                            this.dtKey += 1;
+                        })
+                        .catch(err => console.log(err));
+                         this.$emit('bulk-update', this.mutable_providers);
+                     } else {
+                         this.success = '';
+                         this.failure = response.data.msg;
+                     }
+                 });
+             this.providerImportDialog = false;
+        },
+        doProvExport () {
+            let url = "/providers-export";
+            if (this.connect_filter != null) {
+                let _cf = (this.connect_filter == 'Not Connected') ? 0 : 1;
+                url += "?connected="+_cf;
+            }
+            window.location.assign(url);
         },
         goEdit (provId) {
             window.location.assign('/providers/'+provId+'/edit');
@@ -425,16 +555,26 @@
       ...mapGetters(['is_admin', 'datatable_options']),
       filtered_providers: function() {
         if (this.connect_filter == 'Connected') {
-           return (this.inst_context==1) ? this.mutable_providers.filter(p => p.conso_id!=null && p.inst_id==1)
-                                         : this.mutable_providers.filter(p => p.conso_id!=null &&
-                                           (p.inst_id==this.inst_context || (!this.inst_spec_ids.includes(p.id) && p.inst_id==1)));
+           return (this.inst_context==1) ? this.mutable_providers.filter(p => p.inst_id==1 && this.conso_provids.includes(p.id))
+                                         : this.mutable_providers.filter(p => p.inst_id==this.inst_context ||
+                                                                              this.conso_provids.includes(p.id));
+                                         // : this.mutable_providers.filter(p => p.inst_id==this.inst_context ||
+                                         //            (this.conso_provids.includes(p.id) && !this.instspec_provids.includes(p.id)));
         } else if (this.connect_filter == 'Not Connected') {
-           return this.mutable_providers.filter(p => p.conso_id==null && p.inst_id==1);
+           return this.mutable_providers.filter(p => (p.can_connect &&
+                      !this.mutable_providers.filter(p2 => p2.id == p.id).map(p3 => p3.inst_id).includes(this.inst_context)));
         } else {
-          return (this.inst_context==1) ? this.mutable_providers.filter(p => p.conso_id==null || p.inst_id==1)
-                                        : this.mutable_providers.filter(p => (p.inst_id==this.inst_context ||
-                                                                          (!this.inst_spec_ids.includes(p.id) && p.inst_id==1)));
+          // return this.mutable_providers.filter(p => (p.conso_id==null || p.inst_id==1 || p.inst_id==this.inst_context));
+          return (this.inst_context==1) ? this.mutable_providers
+                                        : this.mutable_providers.filter(p => (p.conso_id==null || p.inst_id==1 ||
+                                                                              p.inst_id==this.inst_context));
         }
+      },
+      instspec_provids: function() {
+        return this.mutable_providers.filter(p => p.inst_id == this.inst_context).map(p2 => p2.id);
+      },
+      conso_provids: function() {
+        return this.mutable_providers.filter(p => p.inst_id == 1).map(p2 => p2.id);
       },
     },
     beforeCreate() {
@@ -457,13 +597,6 @@
       this.headers.push({ text: '', value: 'action', sortable: false });
     },
     mounted() {
-      // Update the array of inst-specific (global) provider IDs when context is inst-specific
-      if (this.inst_context > 1) {
-        this.mutable_providers.forEach( (prov) => {
-          if (prov.inst_id == this.inst_context) this.inst_spec_ids.push(prov.id);
-        });
-      }
-
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);
       this.dtKey += 1;           // force re-render of the datatable

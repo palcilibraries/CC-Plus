@@ -343,9 +343,9 @@ class GlobalProviderController extends Controller
                           $setting_updates['status'] = ($con_prov->is_active && $setting->institution->is_active) ?
                                                         'Enabled' : 'Suspended';
                       }
-                      // Setting is Complete; clear '-missing-' labels on unused fields
+                      // Setting is Complete; clear '-required--' labels on unused fields
                       foreach ($unused_fields as $uf) {
-                          if ($setting->$uf == '-missing-') {
+                          if ($setting->$uf == '-required-') {
                               $setting_updates[$uf]= '';
                           }
                       }
@@ -354,7 +354,7 @@ class GlobalProviderController extends Controller
                       $setting_updates['status'] = 'Incomplete';
                       foreach ($fields as $fld) {
                           if ($setting->$fld == null || $setting->$fld == '') {
-                              $setting_updates[$fld] = "-missing-";
+                              $setting_updates[$fld] = "-required-";
                           }
                       }
                   }

@@ -14,22 +14,22 @@
       <v-row>
         <v-col v-if="setting.provider.connectors.some(c => c.name === 'customer_id')" cols="3">
           <strong>Customer ID: </strong>
-          <span v-if="form.customer_id == '-missing-'" class="Incomplete"><em>required</em></span>
+          <span v-if="form.customer_id == '-required-'" class="Incomplete"><em>required</em></span>
           <span v-else>{{ form.customer_id }}</span>
         </v-col>
       	<v-col v-if="setting.provider.connectors.some(c => c.name === 'requestor_id')" cols="3">
           <strong>Requestor ID: </strong>
-          <span v-if="form.requestor_id == '-missing-'" class="Incomplete"><em>required</em></span>
+          <span v-if="form.requestor_id == '-required-'" class="Incomplete"><em>required</em></span>
           <span v-else>{{ form.requestor_id }}</span>
         </v-col>
       	<v-col v-if="setting.provider.connectors.some(c => c.name === 'api_key')" cols="3">
           <strong>API Key: </strong>
-          <span v-if="form.api_key == '-missing-'" class="Incomplete"><em>required</em></span>
+          <span v-if="form.api_key == '-required-'" class="Incomplete"><em>required</em></span>
           <span v-else>{{ form.api_key }}</span>
         </v-col>
         <v-col v-if="setting.provider.connectors.some(c => c.name === 'extra_args')" cols="3">
           <strong>Extra Args: </strong>
-          <span v-if="form.extra_args == '-missing-'" class="Incomplete"><em>required</em></span>
+          <span v-if="form.extra_args == '-required-'" class="Incomplete"><em>required</em></span>
           <span v-else>{{ form.extra_args }}</span>
         </v-col>
       </v-row>

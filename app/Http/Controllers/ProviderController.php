@@ -383,7 +383,7 @@ class ProviderController extends Controller
             $sushi_setting->prov_id = $provider->id;
             // Add required conenction fields to sushi args
             foreach ($global_provider->connectionFields() as $cnx) {
-                $sushi_setting->{$cnx['name']} = "-missing-";
+                $sushi_setting->{$cnx['name']} = "-required-";
             }
             $sushi_setting->status = "Incomplete";
             $sushi_setting->save();

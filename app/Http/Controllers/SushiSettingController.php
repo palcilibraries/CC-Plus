@@ -317,9 +317,9 @@ class SushiSettingController extends Controller
         foreach ($connectors as $cnx) {
             $cnx_value = (isset($input[$cnx])) ? trim($input[$cnx]) : $setting->$cnx;
             if (is_null($cnx_value) || $cnx_value == '') {
-                $cnx_value = '-missing-';
+                $cnx_value = '-required-';
             }
-            $missing_count += ($cnx_value == '-missing-') ? 1 : 0;
+            $missing_count += ($cnx_value == '-required-') ? 1 : 0;
             if (isset($input[$cnx])) {
                 $updates[$cnx] = $cnx_value;
             }
@@ -849,7 +849,7 @@ class SushiSettingController extends Controller
                                                   ->pluck('name')->toArray();
             foreach ($required_connectors as $cnx) {
                 if ( is_null($_args[$cnx]) || trim($_args[$cnx]) == '' ) {
-                    $_args[$cnx] = "-missing-";
+                    $_args[$cnx] = "-required-";
                     $missing_count++;
                 }
             }

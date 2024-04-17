@@ -448,7 +448,7 @@
                   // Step-2 - If we just connected an inst-specific provider, create a new, stubbed-out connection automatically
                   if (this.inst_context > 1) {
                     var stub = {'inst_id' : this.inst_context, 'prov_id' : response.data.provider.conso_id, };
-                    response.data.provider.connectors.forEach( (cnx) => { stub[cnx.name] = '-missing-'; });
+                    response.data.provider.connectors.forEach( (cnx) => { stub[cnx.name] = '-required-'; });
                     axios.post('/sushisettings', stub)
                          .catch(error => {});
                   }

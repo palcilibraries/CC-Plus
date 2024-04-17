@@ -59,7 +59,7 @@ class SushiSetting extends Model
         $required = $this->provider->globalProv->connectors;
         $connectors = $this->global_connectors->whereIn('id',$required)->pluck('name')->toArray();
         foreach ($connectors as $cnx) {
-            if (is_null($this->$cnx) || trim($this->$cnx) == '' || $this->$cnx == '-missing-') return false;
+            if (is_null($this->$cnx) || trim($this->$cnx) == '' || $this->$cnx == '-required-') return false;
         }
         return true;
     }
@@ -111,7 +111,7 @@ class SushiSetting extends Model
             foreach ($fields as $fld) {
                 $name = $fld->name;
                 if ($this->$name == null || $this->$name == '') {
-                    $this->$name = "-missing-";
+                    $this->$name = "-required-";
                 }
             }
         }

@@ -8,6 +8,11 @@ use \Illuminate\Contracts\Cache\Factory;
 
 class GlobalSettingController extends Controller
 {
+  public function __construct()
+  {
+      $this->middleware(['auth','role:GlobalAdmin']);
+  }
+
   /**
    * Index method for GlobalSetting Controller
    *

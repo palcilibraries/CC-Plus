@@ -109,7 +109,7 @@ class AdminController extends Controller
                 $output_providers[] = $rec->toArray();
             }
 
-            // Include all connected providers connected to the global in the array
+            // Include all providers connected to the global in the array
             foreach ($connected_providers as $prov_data) {
                 $rec->inst_id = $prov_data->inst_id;
                 $rec->inst_name = $prov_data->institution->name;

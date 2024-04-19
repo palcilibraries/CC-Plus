@@ -647,11 +647,53 @@ class SushiSettingController extends Controller
             $info_sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // Load the settings data into a new sheet
-        $inst_sheet = $spreadsheet->createSheet();
+        // Process existing settings into an array
+        // If we're adding in "missing" settings, keep track of the pairs added
+        $data_rows = array();
+        $existing = array();
+        foreach ($settings as $setting) {
+            $data_rows[] = array( 'A' => $setting->inst_id, 'B' => $setting->institution->local_id,
+                                  'C' => $setting->prov_id, 'D' => $setting->status, 'E' => $setting->customer_id,
+                                  'F' => $setting->requestor_id, 'G' => $setting->api_key, 'H' => $setting->extra_args,
+                                  'J' => $setting->institution->name, 'K' => $setting->provider->name );
+            if ($export_missing && !in_array(array($setting->inst_id, $setting->prov_id), $existing)) {
+                $existing[] = array($setting->inst_id, $setting->prov_id);
+            }
+        }
 
-        // Align column-D for the data sheet on center
-        $active_column_cells = "D2:D" . strval($settings->count()+1);
+        // If we're adding missing settings to the export, get and add output data rows
+        // (Only includes settings that are missing for is_active INST <-> PROV pairs)
+        if ($export_missing) {
+            foreach ($institutions as $inst) {
+                // If inst is inactive, skip it
+                if (!$inst->is_active) continue;
+                foreach ($providers as $prov) {
+                    // If prov is inactive or not connected to a globalProv, skip it
+                    if (!$prov->is_active || is_null($prov->globalProv)) continue;
+                    // If setting is already in data_rows, skip it
+                    if (in_array(array($inst->id, $prov->id), $existing)) continue;
+                    // Okay, adding the data; get/set connector values
+                    $required_connectors = $all_connectors->whereIn('id',$prov->globalProv->connectors)
+                                                          ->pluck('name')->toArray();
+                    $custID = (in_array('customer_id',$required_connectors)) ? '-required-' : '';
+                    $reqID  = (in_array('requestor_id',$required_connectors)) ? '-required-' : '';
+                    $apiKey = (in_array('api_key',$required_connectors)) ? '-required-' : '';
+                    $extra_args = (in_array('extra_args',$required_connectors)) ? '-required-' : '';
+                    $data_rows[] = array( 'A' => $inst->id, 'B' => $inst->local_id, 'C' => $prov->id, 'D' => 'Incomplete',
+                                          'E' => $custID, 'F' => $reqID, 'G' => $apiKey, 'H' => $extra_args,
+                                          'J' => $inst->name, 'K' => $prov->name );
+                }
+            }
+        }
+
+        // Sort data rows by inst_id, then by prov_id
+        $colA  = array_column($data_rows, 'A');
+        $colC = array_column($data_rows, 'C');
+        array_multisort($colA, SORT_ASC, $colC, SORT_ASC, $data_rows);
+
+        // Setup a new sheet for the data rows
+        $inst_sheet = $spreadsheet->createSheet();
+        $active_column_cells = "D2:D" . strval(count($data_rows)+1);  // align column-D for the data sheet on center
         $inst_sheet->getStyle($active_column_cells)->applyFromArray($centered_style);
         $inst_sheet->setTitle('Settings');
         $inst_sheet->setCellValue('A1', 'Institution ID (CC+ System ID)');
@@ -664,53 +706,14 @@ class SushiSettingController extends Controller
         $inst_sheet->setCellValue('H1', 'Extra Args');
         $inst_sheet->setCellValue('J1', 'Institution-Name');
         $inst_sheet->setCellValue('K1', 'Provider-Name');
-        $row = 2;
-        foreach ($settings as $setting) {
-            $inst_sheet->getRowDimension($row)->setRowHeight(15);
-            $inst_sheet->setCellValue('A' . $row, $setting->inst_id);
-            $inst_sheet->setCellValue('B' . $row, $setting->institution->local_id);
-            $inst_sheet->setCellValue('C' . $row, $setting->prov_id);
-            $inst_sheet->setCellValue('D' . $row, $setting->status);
-            $inst_sheet->setCellValue('E' . $row, $setting->customer_id);
-            $inst_sheet->setCellValue('F' . $row, $setting->requestor_id);
-            $inst_sheet->setCellValue('G' . $row, $setting->api_key);
-            $inst_sheet->setCellValue('H' . $row, $setting->extra_args);
-            $inst_sheet->setCellValue('J' . $row, $setting->institution->name);
-            $inst_sheet->setCellValue('K' . $row, $setting->provider->name);
-            $row++;
-        }
 
-        // Include the active INST and PROV pairings without defined settions?
-        if ($export_missing) {
-          foreach ($institutions as $inst) {
-              // If inst is inactive, skip it
-              if (!$inst->is_active) continue;
-              foreach ($providers as $prov) {
-                  // If prov is inactive or not connected to a globalProv, skip it
-                  if (!$prov->is_active || is_null($prov->globalProv)) continue;
-                  // If setting exists, we already added it to the sheet, so skip it
-                  if ($settings->where('inst_id', $inst->id)->where('prov_id',$prov->id)->first()) continue;
-                  // Okay, add to the sheet
-                  $inst_sheet->getRowDimension($row)->setRowHeight(15);
-                  $inst_sheet->setCellValue('A' . $row, $inst->id);
-                  $inst_sheet->setCellValue('B' . $row, $inst->local_id);
-                  $inst_sheet->setCellValue('C' . $row, $prov->id);
-                  $inst_sheet->setCellValue('D' . $row, "Incomplete");
-                  $required_connectors = $all_connectors->whereIn('id',$prov->globalProv->connectors)
-                                                        ->pluck('name')->toArray();
-                  $custID = (in_array('customer_id',$required_connectors)) ? '-required-' : '';
-                  $reqID  = (in_array('requestor_id',$required_connectors)) ? '-required-' : '';
-                  $apiKey = (in_array('api_key',$required_connectors)) ? '-required-' : '';
-                  $extra_args = (in_array('extra_args',$required_connectors)) ? '-required-' : '';
-                  $inst_sheet->setCellValue('E' . $row, $custID);
-                  $inst_sheet->setCellValue('F' . $row, $reqID);
-                  $inst_sheet->setCellValue('G' . $row, $apiKey);
-                  $inst_sheet->setCellValue('H' . $row, $extra_args);
-                  $inst_sheet->setCellValue('J' . $row, $inst->name);
-                  $inst_sheet->setCellValue('K' . $row, $prov->name);
-                  $row++;
-              }
-          }
+        // Put data rows into the sheet
+        $row = 2;
+        foreach ($data_rows as $data) {
+            foreach ($data as $col => $val) {
+                $inst_sheet->setCellValue($col.$row, $val);
+            }
+            $row++;
         }
 
         // Auto-size the columns
@@ -842,7 +845,9 @@ class SushiSettingController extends Controller
             }
 
             // Put settings (except status) into an array for the update call
-            $_args = array('customer_id' => $row[4], 'requestor_id' => $row[5], 'api_key' => $row[6], 'extra_args' => $row[7]);
+            $_args = array('status' => $row[3], 'customer_id' => $row[4], 'requestor_id' => $row[5], 'api_key' => $row[6],
+                           'extra_args' => $row[7]);
+
             // Mark any missing connectors
             $missing_count = 0;
             $required_connectors = $all_connectors->whereIn('id',$current_prov->globalProv->connectors)
@@ -850,25 +855,26 @@ class SushiSettingController extends Controller
             foreach ($required_connectors as $cnx) {
                 if ( is_null($_args[$cnx]) || trim($_args[$cnx]) == '' ) {
                     $_args[$cnx] = "-required-";
-                    $missing_count++;
                 }
+                if ($_args[$cnx] == "-required-") $missing_count++;
             }
 
             // Figure out/assign status - default to Enabled
-            $_args['status'] = (in_array($row[3], array('Enabled','Disabled','Suspended','Incomplete'))) ? $row[3] : 'Enabled';
-            // Override status to Suspended if the institution or provider is not active
-            if (!$current_inst->is_active || !$current_prov->is_active) {
-                $_args['status'] = 'Suspended';
+            if ( !in_array($row[3], array('Enabled','Disabled','Suspended','Incomplete')) ||
+                 ($missing_count==0 && $current_inst->is_active && $current_prov->is_active) ) {
+                $_args['status'] = 'Enabled';
+            } else if (!$current_inst->is_active || !$current_prov->is_active) {
+              $_args['status'] = 'Suspended';
             }
-            // Override status to Incomplete if required fields not aet & it was about to be set to Enabled
+
+            // Override status to Incomplete if a required connector is missing & it was about to be set to Enabled
             if ($_args['status'] == 'Enabled' && $missing_count>0) {
                 $_args['status'] = 'Incomplete';
                 $incomplete++;
             }
 
             // Update or create the settings
-            $current_setting = SushiSetting::
-                updateOrCreate(['inst_id' => $current_inst->id, 'prov_id' => $row[2]], $_args);
+            $current_setting = SushiSetting::updateOrCreate(['inst_id' => $current_inst->id, 'prov_id' => $row[2]], $_args);
             $updated++;
         }
 

@@ -64,7 +64,6 @@
         <span>
           <v-icon v-if="item.inst_id==1" title="Consortium Provider">mdi-account-multiple</v-icon>
           <v-icon v-else-if="item.inst_id>1" title="Institutional Provider">mdi-home-outline</v-icon>
-          <v-icon v-else title="Unconncted Global Provider">mdi-sync-off</v-icon>
         </span>
         {{ item.name }}
       </template>
@@ -273,15 +272,22 @@
                     if ( a.name > b.name ) return 1;
                     return 0;
                   });
-                }
+                  this.$emit('connect-prov', newProv);
                 // Update global provider connected data
-                let _idx = this.mutable_providers.findIndex(p => p.inst_id==1 && p.id == prov.id);
-                this.mutable_providers[_idx].can_connect = false;
-                this.mutable_providers[_idx].connection_count += 1;
-                this.mutable_providers[_idx].connected.push(_inst);
+                } else {
+                  let _idx = this.mutable_providers.findIndex(p => p.id == prov.id && (p.inst_id==1 || p.inst_id==null));
+                  if (_idx >= 0) {
+                    this.mutable_providers[_idx].inst_id = prov.inst_id;
+                    this.mutable_providers[_idx].inst_name = prov.inst_name;
+                    this.mutable_providers[_idx].conso_id = prov.conso_id;
+                    this.mutable_providers[_idx].can_connect = false;
+                    this.mutable_providers[_idx].connection_count += 1;
+                    this.mutable_providers[_idx].connected.push(_inst);
+                    this.$emit('connect-prov', this.mutable_providers[_idx]);
+                  }
+                }
                 this.success = msg;
                 this.dtKey += 1;
-                this.$emit('connect-prov', this.mutable_providers[_idx]);
             } else if (result == 'Fail') {
                 this.failure = msg;
             } else if (result != 'Cancel') {
@@ -466,17 +472,17 @@
             var provIdx  = this.mutable_providers.findIndex(p => p.conso_id == provid);
             var provider = this.mutable_providers[provIdx];
             var consoIdx = this.mutable_providers.findIndex(p => p.id==provider.id && p.inst_id==1);
+            let notice = "Disconnecting a provider cannot be reversed, only manually reconnected."+
+                  " Because this provider has no harvested usage data, it can be safely"+
+                  " removed. NOTE: All Sushi settings connected to this provider"+
+                  " will also be removed.";
+            if ( provider.inst_id == 1) {
+              notice += "<br /><font color='red'><strong>WARNING - This is a consortium-wide provider</strong>"+
+                        " Deleting it will remove ALL existing Sushi settings consortium-wide.</font>";
+            }
             Swal.fire({
-              title: 'Are you sure?',
-              text: "Disconnecting a provider cannot be reversed, only manually reconnected."+
-                    " Because this provider has no harvested usage data, it can be safely"+
-                    " removed. NOTE: All Sushi settings connected to this provider"+
-                    " will also be removed.",
-              icon: 'warning',
-              showCancelButton: true,
-              confirmButtonColor: '#3085d6',
-              cancelButtonColor: '#d33',
-              confirmButtonText: 'Yes, proceed'
+              title: 'Are you sure?', html: notice, icon: 'warning', showCancelButton: true,
+              confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, proceed'
             }).then( (result) => {
               if (result.value) {
                 axios.delete('/providers/'+provid)

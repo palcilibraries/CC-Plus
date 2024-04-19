@@ -337,7 +337,7 @@ class ProviderController extends Controller
         $provider->name = (isset($input['name'])) ? $input['name'] : $global_provider->name;
         $provider->is_active = (isset($input['is_active'])) ? $input['is_active'] : $global_provider->is_active;
         $restricted_default = ($input['inst_id'] == 1) ? 1 : 0;
-        $provider->restricted = (isset($input['restricted'])) ? $restricted_default : $input['restricted'];
+        $provider->restricted = (isset($input['restricted'])) ? $input['restricted'] : $restricted_default;
         $provider->allow_inst_specific = (isset($input['allow_inst_specific'])) ? $input['allow_inst_specific'] : 0;
         $provider->save();
 

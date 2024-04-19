@@ -407,7 +407,7 @@ class ProviderController extends Controller
         $global_provider->inst_id = $provider->inst_id;
         $global_provider->can_connect = false;
         $global_provider->connectors = $global_provider->connectionFields();
-        $global_provider->inst_name = ($provider->inst_id == 1) ? 'Entire Consortium' : $provider->institution->name;
+        $global_provider->inst_name = $provider->institution->name;
         $global_provider->active = ($provider->is_active) ? 'Active' : 'Inactive';
         $global_provider->day_of_month = $provider->day_of_month;
         $global_provider->last_harvest = null;

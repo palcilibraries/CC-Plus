@@ -37,13 +37,13 @@
         <v-col class="d-flex px-2" cols="3">
           <v-switch v-model="form.is_active" dense label="Active?"></v-switch>
         </v-col>
-        <v-col v-if="is_admin && form.inst_id==1" class="d-flex px-2" cols="9">
+        <v-col v-if="is_admin" class="d-flex px-2" cols="9">
           <v-switch v-model="allow_sushi" label="Allow Local Admins to Modify Credentials" @change="changeRestricted" dense
           ></v-switch>
         </v-col>
       </v-row>
       <v-row class="d-flex mx-2 my-0" no-gutters>
-        <v-col v-if="is_admin && dtype!='connect'" class="d-flex px-2">
+        <v-col v-if="is_admin && form.inst_id==1" class="d-flex px-2">
           <v-switch v-model="form.allow_inst_specific" dense label="Allow Local Admins To Add An Institution-Specific Copy"
           ></v-switch>
         </v-col>

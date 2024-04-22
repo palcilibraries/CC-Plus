@@ -259,31 +259,40 @@
             this.success = '';
             this.failure = '';
             if (result == 'Success') {
-                let _inst = {'id': prov.inst_id, 'name': prov.inst_name};
-                // Add new provider to mutable array if it is inst-specific
-                if (prov.inst_id > 1) {
-                  let newProv = Object.assign({},prov);
-                  newProv.connected = [_inst];
-                  newProv.connected_count = 1;
-                  newProv.allow_inst_specific = false;
-                  this.mutable_providers.push(newProv);
-                  this.mutable_providers.sort((a,b) => {
-                    if ( a.name < b.name ) return -1;
-                    if ( a.name > b.name ) return 1;
-                    return 0;
-                  });
-                  this.$emit('connect-prov', newProv);
-                // Update global provider connected data
+                // For edit/update , find and replace the provider using conso_id
+                if (this.dialog_type == 'edit') {
+                  let _idx = this.mutable_providers.findIndex(p => p.id == prov.id);
+                  this.mutable_providers.splice(_idx,1,prov);
+                  this.$emit('change-prov', this.mutable_providers[_idx]);
+                // connect operations differ based on inst_id
                 } else {
-                  let _idx = this.mutable_providers.findIndex(p => p.id == prov.id && (p.inst_id==1 || p.inst_id==null));
-                  if (_idx >= 0) {
-                    this.mutable_providers[_idx].inst_id = prov.inst_id;
-                    this.mutable_providers[_idx].inst_name = prov.inst_name;
-                    this.mutable_providers[_idx].conso_id = prov.conso_id;
-                    this.mutable_providers[_idx].can_connect = false;
-                    this.mutable_providers[_idx].connection_count += 1;
-                    this.mutable_providers[_idx].connected.push(_inst);
-                    this.$emit('connect-prov', this.mutable_providers[_idx]);
+                  let _inst = {'id': prov.inst_id, 'name': prov.inst_name};
+                  // Add new provider to mutable array if it is inst-specific
+                  if (prov.inst_id > 1) {
+                    let newProv = Object.assign({},prov);
+                    newProv.connected = [_inst];
+                    newProv.connected_count = 1;
+                    newProv.allow_inst_specific = false;
+                    this.mutable_providers.push(newProv);
+                    this.mutable_providers.sort((a,b) => {
+                      if ( a.name < b.name ) return -1;
+                      if ( a.name > b.name ) return 1;
+                      return 0;
+                    });
+                    this.$emit('connect-prov', newProv);
+                  // Update global provider connected data
+                  } else {
+                    let _idx = this.mutable_providers.findIndex(p => p.id == prov.id && (p.inst_id==1 || p.inst_id==null));
+                    if (_idx >= 0) {
+                      this.mutable_providers[_idx].inst_id = prov.inst_id;
+                      this.mutable_providers[_idx].inst_name = prov.inst_name;
+                      this.mutable_providers[_idx].conso_id = prov.conso_id;
+                      this.mutable_providers[_idx].can_connect = false;
+                      this.mutable_providers[_idx].can_delete = (this.is_admin || prov.inst_id==this.inst_context) ? true : false;
+                      this.mutable_providers[_idx].connection_count += 1;
+                      this.mutable_providers[_idx].connected.push(_inst);
+                      this.$emit('connect-prov', this.mutable_providers[_idx]);
+                    }
                   }
                 }
                 this.success = msg;

@@ -406,7 +406,7 @@ class HarvestLogController extends Controller
             } else {
                 // A value of 0 in inst_ids means we're doing entire consortium
                 if (in_array(0,$input["inst"])) {
-                    $inst_ids = Institution::where('is_active',true)->where('id','<>',1)->pluck('id')->toArray();
+                    $inst_ids = Institution::where('is_active',true)->pluck('id')->toArray();
                 } else {
                     $inst_ids = $input["inst"];
                 }

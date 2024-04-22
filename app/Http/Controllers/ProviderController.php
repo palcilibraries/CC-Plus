@@ -82,7 +82,7 @@ class ProviderController extends Controller
             $connected_providers = $conso_providers->where('global_id',$rec->id);
             foreach ($connected_providers as $prov_data) {
                 $_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
-                $connected_insts[] = array('id' => $prov_data->instid, 'name' => $_name);
+                $connected_insts[] = array('id' => $prov_data->inst_id, 'name' => $_name);
             }
 
             // Include globals not connected to the consortium in the array
@@ -233,17 +233,21 @@ class ProviderController extends Controller
     public function update(Request $request, $id)
     {
         $thisUser = auth()->user();
-        $provider = Provider::with('globalProv')->findOrFail($id);
+        $provider = Provider::with('globalProv','reports')->findOrFail($id);
         if (!$provider->canManage()) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
+        if (!$provider->globalProv) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Global Provider Undefined']);
+        }
+        $global_provider = $provider->globalProv;
         $was_active = $provider->is_active;
-        $fields = ConnectionField::whereIn('id',$provider->globalProv->connectors)->get()->values()->toArray();
+        $fields = ConnectionField::whereIn('id',$global_provider->connectors)->get()->values()->toArray();
 
         // Validate form inputs
         $this->validate($request, ['is_active' => 'required']);
         $input = $request->all();
-        $prov_input = array_except($input,array('master_reports','allow_sushi'));
+        $prov_input = array_except($input,array('master_reports','allow_sushi','report_state'));
 
         // Disallow a manager restricting themselves from their own institution-specific provider
         if (isset($input['allow_sushi'])) {
@@ -254,18 +258,19 @@ class ProviderController extends Controller
         }
 
         // Update the record and assign reports in master_reports
+        $report_ids = [];
         $provider->update($prov_input);
-        $all_master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
-        if (!is_null($request->input('report_state'))) {
+        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
+        if (isset($input['report_state'])) {
             $provider->reports()->detach();
-            $report_state = $request->input('report_state');
             // attach reports to the provider, but only if the requested one(s) are in global:master_reports
-            $global_master_list = $provider->globalProv->master_reports;
+            $global_master_list = $global_provider->master_reports;
             foreach ($global_master_list as $id) {
-                $master = $all_master_reports->where('id',$id)->first();
+                $master = $master_reports->where('id',$id)->first();
                 if (!$master) continue;
-                if ($report_state[$master->name]) {
+                if ($input['report_state'][$master->name]) {
                     $provider->reports()->attach($id);
+                    $report_ids[] = $id;
                 }
             }
         }
@@ -275,8 +280,6 @@ class ProviderController extends Controller
             $settings = SushiSetting::with('institution')
                                     ->where('prov_id',$provider->id)->where('inst_id', $thisUser->inst_id)->get();
         }
-
-        // If is_active is changing, check and update related sushi settings
         if ($was_active != $provider->is_active) {
             foreach ($settings as $setting) {
                 // Went from Active to Inactive
@@ -289,23 +292,56 @@ class ProviderController extends Controller
             }
         }
 
-        // return flags for enabled master-reports
-        $rpt_state = [];
-        foreach ($all_master_reports as $rpt) {
-            $rpt_state[$rpt->name] = ($provider->reports->where('name',$rpt->name)->first()) ? true : false;
+        // Build return provider data Object that matches what indexx() sends
+        $conso_providers = Provider::with('institution:id,name')->where('global_id', $global_provider->id)->get();
+        $return_provider = $global_provider;
+        $return_provider->global_prov = $global_provider->toArray();
+        $return_provider->connectors = $global_provider->connectionFields();
+        $return_provider->can_connect = true; //    "      "    "       "         "       "
+        $return_provider->can_delete = false;
+        // Set master reports to the globally available ones and add names
+        $_reports = [];
+        foreach ($master_reports as $rpt) {
+            if (in_array($rpt->id, $global_provider->master_reports)) {
+                $_reports[] = array('id' => $rpt->id, 'name' => $rpt->name);
+            }
         }
-        $provider->report_state = $rpt_state;
-        $provider->reports_string = ($provider->reports) ? $this->makeReportString($provider->reports) : 'None';
-        $provider->connectors = $provider->globalProv->connectionFields();
-
-        // Return updated provider data
-        $provider->load('reports:reports.id,reports.name');
-        $last_harvest = $settings->max('last_harvest');
-        $provider['can_delete'] = (is_null($last_harvest)) ? true : false;
-        $provider['sushiSettings'] = $settings->toArray();
+        $return_provider->master_reports = $_reports;
+        // Set connected institution data for all outpute records
+        $connected_insts = array();
+        $connected_providers = $conso_providers->where('global_id',$global_provider->id);
+        foreach ($connected_providers as $prov_data) {
+            $_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
+            $connected_insts[] = array('id' => $prov_data->inst_id, 'name' => $_name);
+        }
+        $conso_connection = $connected_providers->where('inst_id',1)->first();
+        $return_provider->inst_id = $provider->inst_id;
+        $return_provider->inst_name = $provider->institution->name;
+        // inst-specific providers show only one connection; consortium providers include all
+        $return_provider->connected = ($provider->inst_id==1) ? $connected_insts
+                                      : array( array('id' => $provider->inst_id, 'name' => $return_provider->inst_name) );
+        $return_provider->connection_count = count($return_provider->connected);
+        $return_provider->can_edit = true;  // canManage() should be true to ever get here...
+        $return_provider->conso_id = $provider->id;
+        $return_provider->is_active = $provider->is_active;
+        $return_provider->active = ($provider->is_active) ? 'Active' : 'Inactive';
+        $return_provider->day_of_month = $provider->day_of_month;
+        $return_provider->last_harvest = $provider->sushiSettings->max('last_harvest');
+        $return_provider->can_delete = (is_null($provider->last_harvest)) ? true : false;
+        $return_provider->restricted = $provider->restricted;
+        $return_provider->allow_inst_specific = $provider->allow_inst_specific;
+        if ($conso_connection) {
+            $return_provider->can_connect = ($conso_connection->allow_inst_specific && $provider->inst_id == 1) ? true : false;
+        } else {
+            $return_provider->can_connect = ($provider->inst_id == 1) ? true : false;
+        }
+        if ($prov_data->reports) {
+            $return_provider->reports_string = $this->makeReportString($report_ids, $master_reports);
+            $return_provider->report_state = $this->reportState($report_ids, $master_reports);
+        }
 
         return response()->json(['result' => true, 'msg' => 'Provider settings successfully updated',
-                                 'provider' => $provider]);
+                                 'provider' => $return_provider]);
     }
 
     /**

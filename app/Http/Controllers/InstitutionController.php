@@ -793,13 +793,13 @@ class InstitutionController extends Controller
         $institutions = Institution::with('institutionGroups')->orderBy('name', 'ASC')
                                    ->get(['id','name','local_id','is_active']);
         foreach ($institutions as $inst) {
-            $_groups = "";
+            $inst->group_string = "";
+            $inst->groups = $inst->institutionGroups()->pluck('institution_group_id')->all();
             foreach ($inst->institutionGroups as $group) {
-                $_groups .= $group->name . ", ";
+                $inst->group_string .= ($inst->group_string == "") ? "" : ", ";
+                $inst->group_string .= $group->name;
             }
-            $i_data = $inst->toArray();
-            $i_data['groups'] = rtrim(trim($_groups), ',');
-            $inst_data[] = $i_data;
+            $inst_data[] = $inst->toArray();
         }
 
         // return the current full list of groups with a success message

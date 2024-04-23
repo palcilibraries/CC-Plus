@@ -501,16 +501,16 @@
                          this.failure = response.data.msg;
                          return;
                        }
-                       // consoIdx points to a conso-provider and just deleted an inst-specific connection?
-                       if ( consoIdx >= 0 && this.inst_context>1 ) {
-                           let conso_prov = Object.assign({},this.mutable_providers[consoIdx]);
-                           conso_prov.connected = conso_prov.connected.filter( (inst) => {
-                               return inst.id !== this.inst_context
+                       // consoIdx points to a conso-provider and user just deleted an inst-specific connection?
+                       if ( consoIdx >= 0 && provider.inst_id>1 ) {
+                           let connected = [ ...this.mutable_providers[consoIdx].connected ];
+                           this.mutable_providers[consoIdx].connected = connected.filter( (inst) => {
+                               return inst.id !== provider.inst_id;
                            });
-                           conso_prov.connection_count = conso_prov.connected.count;
-                           conso_prov.can_connect = conso_prov.allow_inst_specific;
-                           this.mutable_providers[consoIdx] = Object.assign({}, conso_prov);
-                           this.$emit('change-prov', conso_prov);
+                           this.mutable_providers[consoIdx].connection_count =
+                              Math.max(this.mutable_providers[consoIdx].connection_count-1,0);
+                           this.mutable_providers[consoIdx].can_connect = this.mutable_providers[consoIdx].allow_inst_specific;
+                           this.$emit('change-prov', this.mutable_providers[consoIdx]);
                        }
                        this.mutable_providers.splice(provIdx,1);
                        this.$emit('disconnect-prov', provider);

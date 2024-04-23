@@ -117,7 +117,8 @@
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-col class="d-flex">
-            <v-btn x-small color="primary" type="submit" @click="institutionImportSubmit">Run Import</v-btn>
+            <v-btn x-small color="primary" type="submit" @click="institutionImportSubmit" :disabled="csv_upload==null"
+            >Run Import</v-btn>
           </v-col>
           <v-col class="d-flex">
             <v-btn class='btn' x-small type="button" color="primary" @click="institutionImportDialog=false">Cancel</v-btn>

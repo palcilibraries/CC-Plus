@@ -174,7 +174,7 @@
               <v-col class="d-flex pl-4" cols="9">
                 <v-text-field v-model="form.registry_id" label="COUNTER Registry ID" outlined dense></v-text-field>
               </v-col>
-              <v-col class="d-flex px-2" cols="3">
+              <v-col v-if="showRefresh" class="d-flex px-2" cols="3">
                 <v-btn x-small color="primary" type="button" @click="registryRefresh(null)">Registry Refresh</v-btn>
               </v-col>
             </v-row>
@@ -217,6 +217,7 @@
         providerImportDialog: false,
         settingsImportDialog: false,
         provDialog: false,
+        showRefresh: false,
         dialog_title: '',
         current_provider_id: null,
         current_connector_state: {},
@@ -241,7 +242,7 @@
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],
-        new_provider: {'registry_id': '', 'id': null, 'name': '', 'is_active': 1, 'refreshable': 1, 'report_state': {},
+        new_provider: {'registry_id': '', 'id': null, 'name': '', 'is_active': 1, 'refreshable': 0, 'report_state': {},
                        'connector_state': {}, 'server_url_r5': '', 'platform_name': null, 'notifications_url': ''},
         formValid: true,
         form: new window.Form({
@@ -284,6 +285,7 @@
             this.form.report_state = _prov.report_state;
             this.form.platform_name = _prov.platform_name;
             this.form.notifications_url = _prov.notifications_url;
+            this.showRefresh = _prov.refreshable; // button only displays when refreshable in form AND saved provider are true
             this.updated_at = _prov.updated_at;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
@@ -306,6 +308,7 @@
             this.updated_at = null;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
+            this.showRefresh = false;
             this.provDialog = true;
         },
         enableImportForm () {

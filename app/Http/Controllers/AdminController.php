@@ -98,7 +98,7 @@ class AdminController extends Controller
             $connected_providers = $conso_providers->where('global_id',$rec->id);
             foreach ($connected_providers as $prov_data) {
                 $_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
-                $connected_insts[] = array('id' => $prov_data->instid, 'name' => $_name);
+                $connected_insts[] = array('id' => $prov_data->inst_id, 'name' => $_name);
             }
 
             // Include globals not connected to the consortium in the array

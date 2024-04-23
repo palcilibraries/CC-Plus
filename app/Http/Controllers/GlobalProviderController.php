@@ -476,6 +476,7 @@ class GlobalProviderController extends Controller
       $return_data['registry_id'] = $json->id;
       $return_data['name'] = $json->name;
       $return_data['abbrev'] = $json->abbrev;
+      $return_data['platform'] = $provider->platform; // preserve unchanged
 
       // Get reports available
       $available = $masterReports->whereIn('name',array_column($json->reports,'report_id'));

@@ -240,7 +240,7 @@ class HarvestLogController extends Controller
             $settings_inst_ids = $harvest_data->unique('sushiSetting.inst_id')->pluck('sushiSetting.inst_id')->toArray();
             $option_ids = array_merge($filters['inst'], $settings_inst_ids);
             $filter_options['inst'] = Institution::with('sushiSettings:id,inst_id,prov_id')->whereIn('id', $option_ids)
-                                                 ->get(['id','name'])->toArray();
+                                                 ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
 
             $source_ids = $harvest_data->unique('sushiSetting.prov_id')->pluck('sushiSetting.prov_id')->toArray();
             $option_ids = array_merge($filters['prov'], $source_ids);

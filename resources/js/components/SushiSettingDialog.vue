@@ -264,6 +264,7 @@
           this.form.api_key = this.setting.api_key;
           this.form.extra_args = this.setting.extra_args;
           this.statusval = this.setting.status;
+          this.enable_switch = (this.setting.status == 'Enabled') ? 1 : 0;
           this.sushi_prov = { ...this.setting.provider};
           this.sushi_inst = { ...this.setting.institution};
       } else {

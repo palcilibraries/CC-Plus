@@ -292,6 +292,7 @@ class SushiSettingController extends Controller
        // Validate form inputs
         $this->validate($request, ['inst_id' => 'required', 'prov_id' => 'required']);
         $input = $request->all();
+        $fields = array_except($input,array('global_id'));
 
        // Ensure user is allowed to change the settings
         $provider = Provider::findOrFail($input['prov_id']);
@@ -304,35 +305,35 @@ class SushiSettingController extends Controller
         $setting = SushiSetting::with('institution','provider','provider.globalProv')
                                ->where('inst_id',$input['inst_id'])->where('prov_id',$input['prov_id'])
                                ->first();
+
+        // Create a new setting?
         if (!$setting) {
-            $setting = SushiSetting::create($input);
+            $setting = SushiSetting::create($fields);
+            $setting->load('institution','provider','provider.globalProv');
+        // Not creating, update $setting with user inputs
+        } else {
+            foreach ($fields as $fld => $val) {
+                $setting->$fld = $val;
+            }
         }
 
         // Get required connectors
         $connectors = ConnectionField::whereIn('id',$setting->provider->globalProv->connectors)->pluck('name')->toArray();
 
-        // Chack connection fields and input values
-        $updates = array();
-        $missing_count = 0;
+        // Check/update connection fields; any null/blank required connectors get updated
         foreach ($connectors as $cnx) {
-            $cnx_value = (isset($input[$cnx])) ? trim($input[$cnx]) : $setting->$cnx;
-            if (is_null($cnx_value) || $cnx_value == '') {
-                $cnx_value = '-required-';
-            }
-            $missing_count += ($cnx_value == '-required-') ? 1 : 0;
-            if (isset($input[$cnx])) {
-                $updates[$cnx] = $cnx_value;
+            if (is_null($setting->$cnx) || $setting->$cnx == '') {
+                $setting->$cnx = '-required-';
             }
         }
 
-        // Apply connection fields from input.
-        // U/I may pass blank or null values to replace what's there
-        foreach ($connectors as $cnx) {
-            if (isset($input[$cnx])) {
-                $setting->$cnx = trim($input[$cnx]);
-            }
+        // If user requested Disabled status, save as-is
+        if ($input['status'] == 'Disabled') {
+            $setting->save();
+        // Otherwise, update status (based on connectors and prov/inst is_active)( and save)
+        } else {
+            $setting->resetStatus();
         }
-        $setting->resetStatus();
 
         // Finish setting up the return object
         $setting->provider->connectors = $setting->provider->globalProv->connectionFields();

@@ -36,9 +36,9 @@
         <v-select :items="connect_options" v-model="connect_filter" label="Filter by Connection Status"></v-select>
       </v-col>
     </v-row>
-    <v-data-table v-model="selectedRows" :headers="headers" :items="filtered_providers" show-select item-key="conso_id"
-                  :options="mutable_options" :search="search" @update:options="updateOptions" :footer-props="footer_props"
-                  :key="'mp'+dtKey">
+    <v-data-table v-model="selectedRows" :headers="headers" :items="filtered_providers" show-select :options="mutable_options"
+                  :search="search" @update:options="updateOptions" :footer-props="footer_props"
+                  :key="'mp'+dtKey" item-value="id+'_'+conso_id">
       <template v-slot:item.status="{ item }">
         <div v-if="item.conso_id==null">
           <span v-if="item.is_active"><v-icon large color="green" title="Active Global Provider">mdi-toggle-switch</v-icon></span>
@@ -574,13 +574,10 @@
            return (this.inst_context==1) ? this.mutable_providers.filter(p => p.inst_id==1 && this.conso_provids.includes(p.id))
                                          : this.mutable_providers.filter(p => p.inst_id==this.inst_context ||
                                                                               this.conso_provids.includes(p.id));
-                                         // : this.mutable_providers.filter(p => p.inst_id==this.inst_context ||
-                                         //            (this.conso_provids.includes(p.id) && !this.instspec_provids.includes(p.id)));
         } else if (this.connect_filter == 'Not Connected') {
            return this.mutable_providers.filter(p => (p.can_connect &&
                       !this.mutable_providers.filter(p2 => p2.id == p.id).map(p3 => p3.inst_id).includes(this.inst_context)));
         } else {
-          // return this.mutable_providers.filter(p => (p.conso_id==null || p.inst_id==1 || p.inst_id==this.inst_context));
           return (this.inst_context==1) ? this.mutable_providers
                                         : this.mutable_providers.filter(p => (p.conso_id==null || p.inst_id==1 ||
                                                                               p.inst_id==this.inst_context));

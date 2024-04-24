@@ -255,7 +255,7 @@
                 sushi_provs: [],
                 current_setting: {},
                 sushiDialogType: '',
-                conso_switch: 1,
+                conso_switch: 0,
                 // Actual headers array is built from these in mounted()
                 header_fields: [
                   { label: 'Status', name: 'status' },
@@ -651,7 +651,6 @@
                   if (new_cnx) this.updateHeaders();
                   this.dtKey += 1;
               } else if (result == 'Updated') {
-                  // this.all_settings[this.all_settings.findIndex(s => s.id == setting.id)] = setting;
                   Object.assign(this.all_settings[this.all_settings.findIndex(s => s.id == setting.id)],setting);
                   this.dtKey += 1;
               } else if (result == 'Fail') {

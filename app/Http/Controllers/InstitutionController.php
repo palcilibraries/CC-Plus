@@ -233,8 +233,7 @@ class InstitutionController extends Controller
         // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
         $global_providers = GlobalProvider::orderBy('name', 'ASC')->get();
 
-
-        // $global_providers->map( function($rec) use ($master_reports, $inst_providers, $thisUser, $id) {
+        $item_key = 0;
         $output_providers = [];
         foreach ($global_providers as $rec) {
             $rec->global_prov = $rec->toArray();
@@ -250,13 +249,15 @@ class InstitutionController extends Controller
             $rec->master_reports = $_reports;
 
             // Set connected to hold both conso and inst if they're enabled
-            $has_inst_connection = false;
+            $inst_connected = false;
+            $conso_connected = false;
             $connected = array();
             for ($i=0; $i<2; $i++) {
                 $_inst = ($i==0) ? $id : $i;
                 $prov_data = $inst_providers->where('global_id',$rec->id)->where('inst_id',$_inst)->first();
                 if ($prov_data) {
-                    if ($_inst == $id) $has_inst_connection = true;
+                    if ($_inst == 1) $conso_connected = true;
+                    if ($_inst == $id) $inst_connected = true;
                     $_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
                     $connected[] = array('id' => $prov_data->inst_id, 'name' => $_name);
                 }
@@ -269,6 +270,7 @@ class InstitutionController extends Controller
                 $_inst = ($i==0) ? $id : $i;
                 // Setup default values for the columns in the U/I
                 $rec->conso_id = null;
+                $rec->inst_id = null;
                 $rec->inst_name = null;
                 $rec->day_of_month = null;
                 $rec->can_delete = false;
@@ -277,12 +279,16 @@ class InstitutionController extends Controller
                                    $this->makeReportString($rec->master_reports, $master_reports) : '';
                 $report_state = $this->reportState($rec->master_reports, $master_reports);
 
-                // If no connections, just add the global and skip out
-                if ($i==0 && count($connected)==0) {
+                // Add global definition if not conso-connected.
+                if ($_inst==1 & !$conso_connected) {
                     $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;
                     $rec->report_state = $report_state;
+                    $rec->item_key = $item_key;
                     $output_providers[] = $rec->toArray();
-                    break;
+                    $item_key++;
+                    if (count($connected) == 0) { // go get next global, we're done
+                        continue;
+                    }
                 }
                 $rec->connection_count = ($_inst==1) ? count($connected) : 1;
 
@@ -290,7 +296,7 @@ class InstitutionController extends Controller
                 $prov_data = $inst_providers->where('global_id',$rec->id)->where('inst_id',$_inst)->first();
                 if ($prov_data) {
                     // For a conso-provider, set can_connect true if inst_specific is aloowed and not already inst-connected
-                    $rec->can_connect = ($prov_data->inst_id==1 && $prov_data->allow_inst_specific && !$has_inst_connection) ?
+                    $rec->can_connect = ($prov_data->inst_id==1 && $prov_data->allow_inst_specific && !$inst_connected) ?
                                          true : false;
                     $rec->conso_id = $prov_data->id;
                     $rec->name = $prov_data->name;
@@ -311,7 +317,9 @@ class InstitutionController extends Controller
                     }
                     $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;
                     $rec->report_state = $report_state;
+                    $rec->item_key = $item_key;
                     $output_providers[] = $rec->toArray();
+                    $item_key++;
                 }
             }
         }

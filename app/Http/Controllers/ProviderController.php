@@ -48,8 +48,9 @@ class ProviderController extends Controller
                                           'institution:id,name')->orderBy('name','ASC')->get();
 
         // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
-        $global_providers = GlobalProvider::orderBy('name', 'ASC')->get();
+        $global_providers = GlobalProvider::orderBy('name')->get()->sortBy('name', SORT_NATURAL|SORT_FLAG_CASE);
 
+        $item_key = 0;
         $output_providers = [];
         foreach ($global_providers as $rec) {
             $rec->global_prov = $rec->toArray();
@@ -90,7 +91,9 @@ class ProviderController extends Controller
             if (!$conso_connection) {
                 $rec->connected = array();
                 $rec->connection_count = 0;
+                $rec->item_key = $item_key;
                 $output_providers[] = $rec->toArray();
+                $item_key++;
             }
 
             // Include all providers connected to the global in the array
@@ -120,7 +123,9 @@ class ProviderController extends Controller
                     $rec->reports_string = $this->makeReportString($report_ids, $master_reports);
                     $rec->report_state = $this->reportState($report_ids, $master_reports);
                 }
+                $rec->item_key = $item_key;
                 $output_providers[] = $rec->toArray();
+                $item_key++;
             }
         }
         $providers = array_values($output_providers);
@@ -377,40 +382,32 @@ class ProviderController extends Controller
         $provider->allow_inst_specific = (isset($input['allow_inst_specific'])) ? $input['allow_inst_specific'] : 0;
         $provider->save();
 
-        // Attach reports and set report_state
-        $report_state = array();
+        // Attach reports and setup report_state and available_reports
         $all_master_reports = Report::where('revision', '=', 5)->where('parent_id', '=', 0)->get(['id','name']);
-
-        // If report_state given as input, set reports based on it
-        if (isset($input['report_state'])) {
-            $report_state = $input['report_state'];
-            // attach reports to the provider, but only if the requested one(s) are in global:master_reports
-            $global_master_list = $global_provider->master_reports;
-            foreach ($global_master_list as $id) {
-                $master = $all_master_reports->where('id',$id)->first();
-                if (!$master) continue;
-                if ($report_state[$master->name]) {
-                    $provider->reports()->attach($id);
-                }
-            }
-        // Otherwise, enable all available reports for the global provider
-        } else {
-            foreach ($all_master_reports as $mr) {
-                $report_state[$mr->name] = ( in_array($mr->id, $global_provider->master_reports) );
-                if ($report_state[$mr->name]) {
-                  $provider->reports()->attach($mr->id);
+        $report_state = array();
+        $available_reports = array();
+        $global_master_ids = $global_provider->master_reports;
+        foreach ($all_master_reports as $rpt) {
+            $report_state[$rpt->name] = false;
+            if (in_array($rpt->id, $global_master_ids)) {
+                $available_reports[] = array('id' => $rpt->id, 'name' => $rpt->name);
+                if (isset($input['report_state'])) {
+                    if ($input['report_state'][$rpt->name]) {
+                        $provider->reports()->attach($rpt->id);
+                        $report_state[$rpt->name] = true;
+                    }
                 }
             }
         }
 
         // Set reports_string (for UI) based on report_state
         $reports_string = '';
-        foreach ($all_master_reports as $mr) {
-            if ($report_state[$mr->name]) {
-              $reports_string .= ($reports_string == "") ? "" : ", ";
-              $reports_string .= $mr->name;
+        foreach ($report_state as $name => $val) {
+            if ($val) {
+                $reports_string .= ($reports_string == "") ? $name : ", " . $name;
             }
         }
+
         // If requested, create a sushi-setting to give a "starting point" for connecting it later
         $stub = (isset($input['sushi_stub'])) ? $input['sushi_stub'] : 0;
         if ($stub) {
@@ -449,6 +446,7 @@ class ProviderController extends Controller
         $global_provider->last_harvest = null;
         $global_provider->report_state = $report_state;
         $global_provider->reports_string = $reports_string;
+        $global_provider->master_reports = $available_reports;
         $global_provider->restricted = $provider->restricted;
         $global_provider->allow_inst_specific = false;
         $global_provider->can_edit = $provider->canManage();

@@ -67,6 +67,7 @@ class AdminController extends Controller
         // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
         $global_providers = GlobalProvider::orderBy('name', 'ASC')->get();
 
+        $item_key = 0;
         $output_providers = [];
         foreach ($global_providers as $rec) {
             $rec->global_prov = $rec->toArray();
@@ -105,8 +106,10 @@ class AdminController extends Controller
             $conso_connection = $connected_providers->where('inst_id',1)->first();
             if (!$conso_connection) {
                 $rec->connected = array();
-                $rec->connection_count = 0;
+                $rec->connection_count = $connected_providers->count();
+                $rec->item_key = $item_key;
                 $output_providers[] = $rec->toArray();
+                $item_key++;
             }
 
             // Include all providers connected to the global in the array
@@ -136,7 +139,9 @@ class AdminController extends Controller
                     $rec->reports_string = $this->makeReportString($report_ids, $master_reports);
                     $rec->report_state = $this->reportState($report_ids, $master_reports);
                 }
+                $rec->item_key = $item_key;
                 $output_providers[] = $rec->toArray();
+                $item_key++;
             }
         }
         $providers = array_values($output_providers);

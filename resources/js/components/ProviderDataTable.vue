@@ -38,7 +38,7 @@
     </v-row>
     <v-data-table v-model="selectedRows" :headers="headers" :items="filtered_providers" show-select :options="mutable_options"
                   :search="search" @update:options="updateOptions" :footer-props="footer_props"
-                  :key="'mp'+dtKey" item-value="id+'_'+conso_id">
+                  :key="'mp'+dtKey" item-key="item_key">
       <template v-slot:item.status="{ item }">
         <div v-if="item.conso_id==null">
           <span v-if="item.is_active"><v-icon large color="green" title="Active Global Provider">mdi-toggle-switch</v-icon></span>
@@ -265,35 +265,32 @@
                   let _idx = this.mutable_providers.findIndex(p => p.id == prov.id);
                   this.mutable_providers.splice(_idx,1,prov);
                   this.$emit('change-prov', this.mutable_providers[_idx]);
-                // connect operations differ based on inst_id
+                // connect operations differ based on the inst_id being assigned to the new connection
                 } else {
-                  let _inst = {'id': prov.inst_id, 'name': prov.inst_name};
-                  // Add new provider to mutable array if it is inst-specific
+                  // connecting to specific inst
                   if (prov.inst_id > 1) {
-                    let newProv = Object.assign({},prov);
-                    newProv.connected = [_inst];
-                    newProv.connected_count = 1;
-                    newProv.allow_inst_specific = false;
-                    this.mutable_providers.push(newProv);
-                    this.mutable_providers.sort((a,b) => {
-                      if ( a.name < b.name ) return -1;
-                      if ( a.name > b.name ) return 1;
-                      return 0;
+                    prov.item_key = this.mutable_providers.count + 1;
+                    this.mutable_providers.push(prov);
+                    this.mutable_providers.sort( (a,b) => {
+                        return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
                     });
-                    this.$emit('connect-prov', newProv);
-                  // Update global provider connected data
+                    this.$emit('connect-prov', prov);
+                    // Add inst to the connected array of the global provider
+                    let _glo = this.mutable_providers.findIndex(p => p.id == prov.id && (p.inst_id==1 || p.inst_id==null));
+                    if (_glo >= 0) {
+                      let _inst = {'id': prov.inst_id, 'name': prov.inst_name};
+                      // update global provider connected fields and can_delete
+                      this.mutable_providers[_glo].connection_count += 1;
+                      this.mutable_providers[_glo].connected.push(_inst);
+                      this.$emit('change-prov', this.mutable_providers[_glo]);
+                    }
+                  // connecting to consortium
                   } else {
-                    let _idx = this.mutable_providers.findIndex(p => p.id == prov.id && (p.inst_id==1 || p.inst_id==null));
-                    if (_idx >= 0) {
+                      let _idx = this.mutable_providers.findIndex(p => p.id == prov.id);
                       this.mutable_providers[_idx].inst_id = prov.inst_id;
                       this.mutable_providers[_idx].inst_name = prov.inst_name;
                       this.mutable_providers[_idx].conso_id = prov.conso_id;
-                      this.mutable_providers[_idx].can_connect = false;
-                      this.mutable_providers[_idx].can_delete = (this.is_admin || prov.inst_id==this.inst_context) ? true : false;
-                      this.mutable_providers[_idx].connection_count += 1;
-                      this.mutable_providers[_idx].connected.push(_inst);
-                      this.$emit('connect-prov', this.mutable_providers[_idx]);
-                    }
+                      this.$emit('change-prov', this.mutable_providers[_glo]);
                   }
                 }
                 this.success = msg;
@@ -573,14 +570,14 @@
         if (this.connect_filter == 'Connected') {
            return (this.inst_context==1) ? this.mutable_providers.filter(p => p.inst_id==1 && this.conso_provids.includes(p.id))
                                          : this.mutable_providers.filter(p => p.inst_id==this.inst_context ||
-                                                                              this.conso_provids.includes(p.id));
+                                           (this.conso_provids.includes(p.id) && !this.instspec_provids.includes(p.id)));
         } else if (this.connect_filter == 'Not Connected') {
            return this.mutable_providers.filter(p => (p.can_connect &&
                       !this.mutable_providers.filter(p2 => p2.id == p.id).map(p3 => p3.inst_id).includes(this.inst_context)));
         } else {
           return (this.inst_context==1) ? this.mutable_providers
-                                        : this.mutable_providers.filter(p => (p.conso_id==null || p.inst_id==1 ||
-                                                                              p.inst_id==this.inst_context));
+                                        : this.mutable_providers.filter(p => p.inst_id==this.inst_context ||
+                                              ((p.conso_id==null || p.inst_id==1) && !this.instspec_provids.includes(p.id)));
         }
       },
       instspec_provids: function() {

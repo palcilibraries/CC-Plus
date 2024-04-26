@@ -29,11 +29,12 @@
         <span v-if="selectedRows.length>0" class="form-fail">( Will affect {{ selectedRows.length }} rows )</span>
         <span v-else> &nbsp;</span>
       </v-col>
-      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+      <v-col class="d-flex px-2 align-center" cols="3">
         <div v-if="connect_filter!=null" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="connect_filter=null"/>&nbsp;
         </div>
-        <v-select :items="connect_options" v-model="connect_filter" label="Filter by Connection Status"></v-select>
+        <v-select :items="connect_options" v-model="connect_filter" item-text="text" item-value="val"
+                  label="Filter by Connection Status"></v-select>
       </v-col>
     </v-row>
     <v-data-table v-model="selectedRows" :headers="headers" :items="filtered_providers" show-select :options="mutable_options"
@@ -190,7 +191,7 @@
         mutable_providers: [ ...this.providers ],
         footer_props: { 'items-per-page-options': [10,50,100,-1] },
         bulk_actions: [ 'Set Active', 'Set Inactive', 'Connect', 'Disconnect' ],
-        connect_options: ['Connected', 'Not Connected'],
+        connect_options: [],
         bulkAction: null,
         selectedRows: [],
         dtKey: 1,
@@ -607,6 +608,10 @@
       this.headers.push({ text: '', value: 'action', sortable: false });
     },
     mounted() {
+      // Set connection-filter options based on context
+      let text_0 = (this.inst_context == 1) ? "Consortium Connections" : "Institutional Connections";
+      this.connect_options = [ {'text': text_0, 'val': "Connected"}, {'text': "Not Connected", 'val': "Not Connected"} ];
+
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);
       this.dtKey += 1;           // force re-render of the datatable

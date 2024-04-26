@@ -42,18 +42,18 @@
               <v-col v-if='filter_data["provider"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["provider"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('provider')"/>&nbsp;
-                <v-select :items='filter_options.provider' v-model='filter_data.provider.value' multiple
-                          @change="setFilter('provider')" label="Provider" item-text="name" item-value="id"
-                ></v-select>
+                <v-autocomplete :items='filter_options.provider' v-model='filter_data.provider.value' multiple
+                                @change="setFilter('provider')" label="Provider" item-text="name" item-value="id"
+                ></v-autocomplete>
               </v-col>
             </div>
             <div v-if='filter_data["platform"].active' cols="3" sm="2">
               <v-col v-if='filter_data["platform"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["platform"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('platform')"/>&nbsp;
-                <v-select :items='filter_options.platform' v-model='filter_data.platform.value' multiple
-                          @change="setFilter('platform')" label="Platform" item-text="name" item-value="id"
-                ></v-select>
+                <v-autocomplete :items='filter_options.platform' v-model='filter_data.platform.value' multiple
+                                @change="setFilter('platform')" label="Platform" item-text="name" item-value="id"
+                ></v-autocomplete>
               </v-col>
             </div>
             <div v-if='!filterGroup && filter_data["institution"].active'
@@ -61,19 +61,19 @@
               <v-col v-if='filter_data["institution"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["institution"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('institution')"/>&nbsp;
-                <v-select :items='filter_options.institution' v-model='filter_data.institution.value' multiple
-                          @change="setFilter('institution')" label="Institution" item-text="name" item-value="id"
-                ></v-select>
+                <v-autocomplete :items='filter_options.institution' v-model='filter_data.institution.value' multiple
+                                @change="setFilter('institution')" label="Institution" item-text="name" item-value="id"
+                ></v-autocomplete>
               </v-col>
             </div>
             <div v-if='filterGroup && filter_data["institutiongroup"].active' cols="3" sm="2">
               <v-col v-if='filter_data["institutiongroup"].value >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["institutiongroup"].value > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('institutiongroup')"/>&nbsp;
-                <v-select :items='filter_options.institutiongroup' v-model='filter_data.institutiongroup.value'
-                          @change="setFilter('institutiongroup')" label="Institution Group"
-                          item-text="name" item-value="id"
-                ></v-select>
+                <v-autocomplete :items='filter_options.institutiongroup' v-model='filter_data.institutiongroup.value'
+                                @change="setFilter('institutiongroup')" label="Institution Group"
+                                item-text="name" item-value="id"
+                ></v-autocomplete>
               </v-col>
             </div>
             <div v-if='filter_data["datatype"].active' cols="3" sm="2">

@@ -133,9 +133,11 @@
         <span class="dt_action">
           <v-icon title="Manual Harvest in new tab" @click="goHarvest(item)">mdi-open-in-new</v-icon>
           &nbsp; &nbsp;
-          <v-icon title="Edit Sushi Settings" @click="editSetting(item)">mdi-cog-outline</v-icon>
+          <v-icon v-if="item.can_edit" title="Edit Sushi Settings" @click="editSetting(item)">mdi-cog-outline</v-icon>
+          <v-icon v-else color="#c9c9c9">mdi-cog-outline</v-icon>
           &nbsp; &nbsp;
-          <v-icon title="Delete connection" @click="destroy(item)">mdi-trash-can-outline</v-icon>
+          <v-icon v-if="item.can_edit" title="Delete connection" @click="destroy(item)">mdi-trash-can-outline</v-icon>
+          <v-icon v-else color="#c9c9c9">mdi-trash-can-outline</v-icon>
         </span>
       </template>
       <v-alert slot="no-results" :value="true" color="error" icon="warning">

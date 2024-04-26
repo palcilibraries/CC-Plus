@@ -424,35 +424,33 @@ class ProviderController extends Controller
 
         // Setup return object
         $provider->load('institution');
+        $provider->conso_id = $provider->id;
+        $provider->id = $global_provider->id;
 
         // Get names of connected institutions
         $conso_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest',
                                           'reports:id,name','globalProv')->where('global_id', $global_provider->id)->get();
         if ($provider->inst_id == 1) {
-            $global_provider->connected = $conso_providers->pluck('institution')->toArray();
-            $global_provider->connection_count = count($global_provider->connected);
+            $provider->connected = $conso_providers->pluck('institution')->toArray();
+            $provider->connection_count = count($global_provider->connected);
         } else {
             $cnx = $conso_providers->where('inst_id',$provider->inst_id)->pluck('institution')->toArray();
-            $global_provider->connected = array($cnx);
-            $global_provider->connection_count = 1;
+            $provider->connected = array($cnx);
+            $provider->connection_count = 1;
         }
-        $global_provider->conso_id = $provider->id;
-        $global_provider->inst_id = $provider->inst_id;
-        $global_provider->can_connect = false;
-        $global_provider->connectors = $global_provider->connectionFields();
-        $global_provider->inst_name = $provider->institution->name;
-        $global_provider->active = ($provider->is_active) ? 'Active' : 'Inactive';
-        $global_provider->day_of_month = $provider->day_of_month;
-        $global_provider->last_harvest = null;
-        $global_provider->report_state = $report_state;
-        $global_provider->reports_string = $reports_string;
-        $global_provider->master_reports = $available_reports;
-        $global_provider->restricted = $provider->restricted;
-        $global_provider->allow_inst_specific = false;
-        $global_provider->can_edit = $provider->canManage();
-        $global_provider->can_delete = $provider->canManage();
+        $provider->can_connect = false;
+        $provider->connectors = $global_provider->connectionFields();
+        $provider->inst_name = $provider->institution->name;
+        $provider->active = ($provider->is_active) ? 'Active' : 'Inactive';
+        $provider->last_harvest = null;
+        $provider->report_state = $report_state;
+        $provider->reports_string = $reports_string;
+        $provider->master_reports = $available_reports;
+        $provider->allow_inst_specific = false;
+        $provider->can_edit = $provider->canManage();
+        $provider->can_delete = $provider->canManage();
         // return the global provider data with the consorium provider data merged in
-        return response()->json(['result' => true, 'msg' => 'Provider successfully connected', 'provider' => $global_provider]);
+        return response()->json(['result' => true, 'msg' => 'Provider successfully connected', 'provider' => $provider]);
     }
 
     /**

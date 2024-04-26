@@ -615,6 +615,7 @@ class InstitutionController extends Controller
         $inst_sheet->setCellValue('E1', 'FTE');
         $inst_sheet->setCellValue('F1', 'Group IDs');
         $inst_sheet->setCellValue('G1', 'Notes');
+        $inst_sheet->setCellValue('I1', 'Group Names');
         $row = 2;
 
         // Align column-D for the data sheet on center
@@ -632,11 +633,14 @@ class InstitutionController extends Controller
             $inst_sheet->setCellValue('E' . $row, $inst->fte);
             // Make a CSV list of the group assignments and put into col-F
             $group_list = "";
+            $group_names = "";
             foreach ($inst->institutionGroups as $group) {
                 $group_list .= ($group_list=="") ? $group->id : ",$group->id";
+                $group_names .= ($group_names=="") ? $group->name : ",$group->name";
             }
             $inst_sheet->setCellValue('F' . $row, $group_list);
             $inst_sheet->setCellValue('G' . $row, $inst->notes);
+            $inst_sheet->setCellValue('I' . $row, $group_names);
             $row++;
         }
 

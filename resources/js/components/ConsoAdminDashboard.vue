@@ -167,8 +167,9 @@
       },
       connectProv (prov) {
         var idx = this.mutable_providers.findIndex(p => p.id == prov.id);
-        this.mutable_providers.splice(idx,1,prov);
-        this.mutable_unset.splice(this.mutable_unset.findIndex(p => p.id==prov.global_id),1);
+        if (idx >= 0) this.mutable_providers.splice(idx,1,prov);
+        var uidx = this.mutable_unset.findIndex(p => p.id == prov.id);
+        if (uidx >= 0) this.mutable_unset.splice(uidx,1);
         this.sushiKey += 1;
       },
       disconnectProv (prov) {

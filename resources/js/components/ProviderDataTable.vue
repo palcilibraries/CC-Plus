@@ -270,7 +270,7 @@
                 } else {
                   // connecting to specific inst
                   if (prov.inst_id > 1) {
-                    prov.item_key = this.mutable_providers.count + 1;
+                    prov.item_key = this.mutable_providers.length + 1;
                     this.mutable_providers.push(prov);
                     this.mutable_providers.sort( (a,b) => {
                         return a.name.toLowerCase().localeCompare(b.name.toLowerCase());

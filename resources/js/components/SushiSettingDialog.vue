@@ -48,6 +48,9 @@
             <div v-for="row in testData">{{ row }}</div>
           </div>
         </div>
+        <v-row v-if="service_url!=null" class="d-flex ma-2" no-gutters>
+         <v-col class="d-flex pl-4">Sushi Service URL : {{ service_url }}</v-col>
+        </v-row>
       </v-form>
     </v-container>
     <div v-if="success || failure" class="status-message">
@@ -95,6 +98,7 @@
         mutable_dtype: this.dtype,
         statusval: 'Enabled',
         enable_switch: 1,
+        service_url: null,
         form: new window.Form({
             inst_id: null,
             prov_id: null,
@@ -267,6 +271,7 @@
           this.enable_switch = (this.setting.status == 'Enabled') ? 1 : 0;
           this.sushi_prov = { ...this.setting.provider};
           this.sushi_inst = { ...this.setting.institution};
+          this.service_url = this.setting.provider.global_prov.server_url_r5;
       } else {
           this.statusval = 'Enabled';
           this.sushi_inst = { ...this.default_inst};

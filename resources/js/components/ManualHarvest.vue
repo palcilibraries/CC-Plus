@@ -78,9 +78,10 @@
           <v-checkbox v-model="form.skip_harvested" label="Skip Previously Harvested Reports" dense></v-checkbox>
         </v-col>
       </v-row>
-      <div class="status-message" v-if="success || failure">
+      <div class="status-message" v-if="success || failure || working">
         <span v-if="success" class="good" role="alert" v-text="success"></span>
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+        <span v-if="working" class="work" role="alert" v-text="working"></span>
       </div>
       <v-row v-if="form.reports.length>0" no-gutters>
         <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Submit</v-btn>
@@ -106,6 +107,7 @@
         return {
             success: '',
             failure: '',
+            working: '',
             selections_made: false,
             form: new window.Form({
                 inst: [],
@@ -218,9 +220,11 @@
             }
             if (this.form.toYM == '' && this.form.fromYM != '') this.form.toYM = this.form.fromYM;
             if (this.form.fromYM == '' && this.form.toYM != '') this.form.fromYM = this.form.toYM;
+            this.working = ' ... Creating and updating harvest records ...';
             this.form.post('/harvests')
                 .then((response) => {
                     if (response.result) {
+                      this.working = '';
                         this.failure = '';
                         this.success = response.msg;
                         if (response.new_harvests.length>0) {

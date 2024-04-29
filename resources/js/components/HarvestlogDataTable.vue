@@ -112,6 +112,12 @@
           </span>
           {{ item.prov_name }}
         </template>
+        <template v-slot:item.error_code="{ item }">
+          <span v-if="item.error_code==null && item.status=='Success'">
+            <v-icon title="Download Raw JSON Data" @click="goURL('/harvests/'+item.id+'/raw')">mdi-download</v-icon>
+          </span>
+          <span v-else> {{ item.error_code }}</span>
+        </template>
         <template v-slot:item.data-table-expand="{ item, isExpanded, expand }">
           <v-icon title="Error Details" @click="expand(true)" v-if="item.error_code>0 && !isExpanded" color="#F29727">
             mdi-alert-outline

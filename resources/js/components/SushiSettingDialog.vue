@@ -19,7 +19,17 @@
             <v-col cols="2" class="d-flex justify-center"> &lt;&lt; -- &gt;&gt; </v-col>
             <v-col v-if="providers.length>1" class="d-flex px-2" cols="5">
               <v-autocomplete :items="connectable_providers" v-model="sushi_prov" return-object item-text="name"
-                              label="Choose a Provider"></v-autocomplete>
+                              label="Choose a Provider">
+                <template #item="{ item, on, attrs }">
+                  <v-list-item v-on="on" v-bind="attrs" #default="{ active }">
+                    <v-list-item-avatar>
+                      <v-icon v-if="item.inst_id==1">mdi-account-multiple</v-icon>
+                      <v-icon v-else-if="item.inst_id >1">mdi-home-outline</v-icon>
+                    </v-list-item-avatar>
+                    <v-list-item-content> {{ item.name }} </v-list-item-content>
+                  </v-list-item>
+                </template>
+              </v-autocomplete>
             </v-col>
             <v-col v-else class="d-flex px-2" cols="5"><strong>{{ sushi_prov.name}}</strong></v-col>
           </v-row>
@@ -235,7 +245,7 @@
       },
       connectable_providers() {
         if (this.mutable_dtype == 'edit' || this.form.inst_id == null) return this.providers;
-        return this.providers.filter( p => (p.inst_id == null || p.inst_id == 1) &&
+        return this.providers.filter( p => (p.inst_id == this.form.inst_id || p.inst_id == 1 || p.inst_id == null) &&
                                             this.filtered_settings.filter( s => s.prov_id == p.conso_id )
                                                                   .every( s2 => { s2.inst_id != this.form.inst_id })
                                     );
@@ -276,6 +286,7 @@
           this.statusval = 'Enabled';
           this.sushi_inst = { ...this.default_inst};
           this.sushi_prov = { ...this.default_prov};
+          if (this.institutions.length == 1) this.form.inst_id = this.institutions[0].id;
       }
       console.log('SushiDialog Component mounted.');
     }

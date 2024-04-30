@@ -95,6 +95,10 @@ class GlobalProviderUpdate extends Command
                 if ($services != "") continue;
                 $services = $svc->url;
             }
+            if (is_null($services) || $services == "") {
+                $this->error("Cannot find sushi details URL for: " . $platform->name . " .. skipping ..");
+                continue;
+            }
 
             // request the sushi details
             $connectors = array();
@@ -102,16 +106,16 @@ class GlobalProviderUpdate extends Command
             $notifications_url = null;
             $details = self::requestURI($services);
             if (!is_object($details)) {
-                $this->error("Error getting sushi details for: " . $platform->name . " ... continuing");
+                $this->error("Error getting sushi details for: " . $platform->name . " .. skipping ..");
+                continue;
+            }
 
             // Get connection fields (for now, assumes customer_id is always required)
-            } else {
-                $server_url_r5 = $details->url;
-                $notifications_url = $details->notifications_url;
-                foreach ($api_connectors as $key => $cnx) {
-                    if ($key == 'customer_id_info' || $details->{$key}) {
-                        $connectors[] = $cnx['id'];
-                    }
+            $server_url_r5 = $details->url;
+            $notifications_url = $details->notifications_url;
+            foreach ($api_connectors as $key => $cnx) {
+                if ($key == 'customer_id_info' || $details->{$key}) {
+                    $connectors[] = $cnx['id'];
                 }
             }
 

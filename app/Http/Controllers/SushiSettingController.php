@@ -63,20 +63,15 @@ class SushiSettingController extends Controller
         // Skip querying for records unless we're returning json
         // The vue-component will run a request for initial data once it is mounted
         if ($json) {
-            // Pulling Sushi Connections for institution->show() means we need to de-dupe any settings for
-            // inst-specific providers that also have a consortium definition
-            $limit_prov_ids = [];
+            // Apply context (if given) to institution and provider filters
             $context = 1;
+            $limit_prov_ids = [];
             if ($request->input('context')) {
                 $context = ($request->input('context') > 0) ? $request->input('context') : 1;
             }
             if ($context > 1) {
-                $filters['inst'] = array($context);
-                $inst_provs = Provider::where('inst_id',$context)->get();
-                $inst_prov_ids = $inst_provs->pluck('id')->toArray();
-                $inst_global_ids = $inst_provs->pluck('global_id')->toArray();
-                $conso_prov_ids = Provider::where('inst_id',1)->whereNotIn('global_id',$inst_global_ids)->pluck('id')->toArray();
-                $limit_prov_ids = array_merge($conso_prov_ids,$inst_prov_ids);
+                  $filters['inst'] = array($context);
+                  $limit_prov_ids = Provider::whereIn('inst_id',[1,$context])->pluck('id')->toArray();
             }
 
             // Get sushi settings

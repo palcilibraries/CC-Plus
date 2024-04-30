@@ -119,7 +119,7 @@ class GlobalProviderUpdate extends Command
             $global_provider = GlobalProvider::where('registry_id',$platform->id)->orWhere('name',$platform->name)->first();
             if ($global_provider) {
                 if (!$global_provider->refreshable) {
-                    $this->error("Registry refresh is disallowed for " . $provider->name . " .. skipping ..");
+                    $this->error("Registry refresh is disallowed for " . $global_provider->name . " .. skipping ..");
                     continue;
                 }
             } else {

@@ -97,8 +97,10 @@
         <span v-else>{{ item.institution.name }}</span>
       </template>
       <template v-slot:item.provider.name="{ item }">
-        <span v-if="item.provider.inst_id==1">
-          <v-icon title="Consortium Provider">mdi-account-multiple</v-icon>&nbsp;
+        <span>
+          <v-icon v-if="item.provider.inst_id==1" title="Consortium Provider">mdi-account-multiple</v-icon>
+          <v-icon v-else-if="item.provider.inst_id>1" title="Institutional Provider">mdi-home-outline</v-icon>
+          &nbsp;
         </span>
         <span v-if="item.provider.is_active==0" class="isInactive">{{ item.provider.name }}</span>
         <span v-else>{{ item.provider.name }}</span>
@@ -691,11 +693,13 @@
           },
           connectable_providers() {
             if (this.conso_switch == 0) {
-              return this.providers.filter(p => p.inst_id == null ||
-                                                (p.inst_id == 1 && p.allow_inst_specific ||
-                                                 this.all_settings.filter(s => s.prov_id == p.conso_id)
-                                                                  .map(s2 => s2.inst_id).length<this.institutions.length)
-                                          );
+              return (this.inst_context == 1) ? this.providers.filter(p => p.inst_id==null ||
+                                                    this.all_settings.filter(s => s.prov_id==p.conso_id)
+                                                                     .map(s2 => s2.inst_id).length<this.institutions.length)
+                                              : this.providers.filter(p => ( (this.is_admin || !p.restricted) &&
+                                                                             (p.inst_id==1 || p.inst_id==this.inst_context) ) &&
+                                                    this.all_settings.filter(s => s.prov_id == p.conso_id)
+                                                                     .map(s2 => s2.inst_id).length<this.institutions.length);
             } else {
               return this.contextual_providers.filter(p => this.all_settings.filter(s => s.prov_id == p.conso_id)
                                                                             .map(s2 => s2.inst_id).length<this.institutions.length

@@ -592,6 +592,7 @@
                            if (response.data.result) {
                                this.mutable_providers.splice(this.mutable_providers.findIndex(p=>p.id == gpid),1);
                                this.success = "Global provider deleted successfully.";
+                               this.dtKey += 1;
                            } else {
                                this.success = '';
                                this.failure = response.data.msg;

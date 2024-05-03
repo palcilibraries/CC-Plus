@@ -83,13 +83,13 @@ Route::resource('/alertsettings', 'AlertSettingController')
 Route::post('/alertsettings-fields-refresh', 'AlertSettingController@fieldsRefresh')->middleware(['auth','role:Admin,Manager']);
 // Global admin routes
 Route::get('/admin', 'AdminController@index')->name('adminHome')->middleware(['auth','role:Admin,Manager']);
-Route::get('/global/home', 'GlobalAdminController@index')->name('global.home')->middleware('auth','role:GlobalAdmin');
-Route::resource('/global/config', 'GlobalSettingController')->middleware('auth','role:GlobalAdmin');
-Route::resource('/global/providers', 'GlobalProviderController', ['as' => 'global'])->middleware('auth','role:GlobalAdmin');
+Route::get('/server/home', 'GlobalAdminController@index')->name('server.home')->middleware('auth','role:ServerAdmin');
+Route::resource('/server/config', 'GlobalSettingController')->middleware('auth','role:ServerAdmin');
+Route::resource('/global/providers', 'GlobalProviderController', ['as' => 'global'])->middleware('auth','role:ServerAdmin');
 Route::post('/global/providers/registry-refresh', 'GlobalProviderController@registryRefresh')->name('global.providers.registry');
 Route::post('/global/providers/import', 'GlobalProviderController@import')->name('global.providers.import');
 Route::get('/global/providers/export/{type}', 'GlobalProviderController@export')->name('global.providers.export');
-Route::resource('/consortia', 'ConsortiumController')->middleware('auth','role:GlobalAdmin');
+Route::resource('/consortia', 'ConsortiumController')->middleware('auth','role:ServerAdmin');
 Route::post('/change-instance', 'GlobalAdminController@changeInstance')->name('global.changeInstance')
-     ->middleware('auth','role:GlobalAdmin');
+     ->middleware('auth','role:ServerAdmin');
 Route::get('/consoadmin', 'AdminController@index')->name('admin.home')->middleware('auth','role:Admin');

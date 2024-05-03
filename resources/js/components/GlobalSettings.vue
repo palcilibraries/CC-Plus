@@ -17,7 +17,7 @@
       </v-row>
       <v-row class="d-flex ma-0" no-gutters>
         <v-col class="d-flex pa-0 justify-center">
-          <v-btn small color="primary" type="button" @click="formSubmit()">Update All Globals</v-btn>
+          <v-btn small color="primary" type="button" @click="formSubmit()">Update All Settings</v-btn>
         </v-col>
       </v-row>
     </form>
@@ -41,7 +41,7 @@
         formSubmit (event) {
             this.success = '';
             this.failure = '';
-            axios.post('/global/config', {
+            axios.post('/server/config', {
                 all_globals: this.mutable_settings
             })
             .then( (response) => {
@@ -55,7 +55,7 @@
         },
     },
     mounted() {
-      console.log('Global Settings component mounted.');
+      console.log('Server Settings component mounted.');
     }
   }
 </script>

@@ -94,8 +94,8 @@ class LoginController extends Controller
         $user->last_login = now();
         $user->save();
         session()->flash("success","");
-        if ($user->hasRole('GlobalAdmin')) {
-            return redirect("/global/home");
+        if ($user->hasRole('ServerAdmin')) {
+            return redirect("/server/home");
         } else if ($user->hasRole('Admin')) {
           return redirect("/consoadmin");
         } else {

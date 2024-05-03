@@ -82,7 +82,7 @@ class UserController extends Controller
             if ($filters['stat'] != 'ALL') {
                 $filter_stat = ($filters['stat'] == 'Active') ? 1 : 0;
             }
-            $global_admin = config('ccplus.global_admin');
+            $server_admin = config('ccplus.server_admin');
             $user_data = User::with('roles','institution:id,name')
                              ->when($filters['inst'], function ($qry) use ($filters) {
                                  return $qry->where('inst_id', $filters['inst']);
@@ -90,7 +90,7 @@ class UserController extends Controller
                              ->when(!is_null($filter_stat), function ($qry) use ($filter_stat) {
                                  return $qry->where('is_active', $filter_stat);
                              })
-                             ->where('email', '<>', $global_admin)
+                             ->where('email', '<>', $server_admin)
                              ->orderBy('name', 'ASC')->get();
 
             // Make user role names one string, role IDs into an array, and status to a string for the view
@@ -112,7 +112,7 @@ class UserController extends Controller
 
                 // non-admins with Viewer get it tacked onto their role_string
                 if ( $rec->roles->where('name', 'Viewer')->first() ) {
-                    if (!$rec->roles->whereIn('name', ['GlobalAdmin','Admin'])->first() ) {
+                    if (!$rec->roles->whereIn('name', ['ServerAdmin','Admin'])->first() ) {
                         $user['role_string'] .= ", Consortium Viewer";
                     }
                 }
@@ -249,7 +249,7 @@ class UserController extends Controller
     {
         $user = User::with('roles')->findOrFail($id);
         abort_unless($user->canManage(), 403);
-        if ($user->hasRole('GlobalAdmin') && $user->email == config('ccplus.global_admin')) {
+        if ($user->hasRole('ServerAdmin') && $user->email == config('ccplus.server_admin')) {
             return response()->json(['result' => false, 'msg' => 'Show (403) - Forbidden']);
         }
 
@@ -267,7 +267,7 @@ class UserController extends Controller
         $thisUser = auth()->user();
         $user = User::findOrFail($id);
         abort_unless($user->canManage(), 403);
-        if ($user->hasRole('GlobalAdmin') && $user->email == config('ccplus.global_admin')) {
+        if ($user->hasRole('ServerAdmin') && $user->email == config('ccplus.server_admin')) {
             return response()->json(['result' => false, 'msg' => 'Edit (403) - Forbidden']);
         }
         $user->roles = $user->roles()->pluck('role_id')->all();
@@ -299,7 +299,7 @@ class UserController extends Controller
         $thisUser = auth()->user();
         $user = User::findOrFail($id);
         if (!$user->canManage() ||
-            ($user->hasRole('GlobalAdmin') && $user->email == config('ccplus.global_admin')) ) {
+            ($user->hasRole('ServerAdmin') && $user->email == config('ccplus.server_admin')) ) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
 
@@ -386,7 +386,7 @@ class UserController extends Controller
         if ($updated_user['role_string'] == 'Admin') $updated_user['role_string'] = "Consortium Admin";
         // non-admins with Viewer get it tacked onto their role_string
         if ( $user->roles->where('name', 'Viewer')->first() ) {
-            if (!$user->roles->whereIn('name', ['GlobalAdmin','Admin'])->first() ) {
+            if (!$user->roles->whereIn('name', ['ServerAdmin','Admin'])->first() ) {
                 $updated_user['role_string'] .= ", Consortium Viewer";
             }
         }
@@ -405,7 +405,7 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
         if (!$user->canManage() ||
-            ($user->hasRole('GlobalAdmin') && $user->email == config('ccplus.global_admin')) ) {
+            ($user->hasRole('ServerAdmin') && $user->email == config('ccplus.server_admin')) ) {
             return response()->json(['result' => false, 'msg' => 'Delete failed (403) - Forbidden']);
         }
         if (auth()->id() == $id) {

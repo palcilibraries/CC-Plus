@@ -29,7 +29,7 @@
             </ul>
             <!-- Right Side Of Navbar -->
             <ul class="navbar-nav ml-auto">
-              <li v-if="is_globaladmin && ccp_key!=''" class="nav-item py-1">
+              <li v-if="is_serveradmin && ccp_key!=''" class="nav-item py-1">
                 <v-select :items="consortia" v-model="cur_key" label="Instance" item-text="name"
                           item-value="ccp_key" @change="changeInstance" dense outlined hide-details
                 ></v-select>
@@ -44,7 +44,7 @@
                       {{ mutable_user["name"] }}<span class="caret"></span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                  <li v-if="!is_globaladmin" class="nav-item" >
+                  <li v-if="!is_serveradmin" class="nav-item" >
                     <!-- <a class="dropdown-item" :href="profile_url">Profile</a> -->
                     <a class="dropdown-item" @click="userDialog=true">Profile</a>
                   </li>
@@ -80,7 +80,7 @@ export default {
             homeUrl: "/",
             navList: [
               { url: "/", name: "Home", role: "All" },
-              { url: "/global/home", name: "Global Admin", role: "GlobalAdmin" },
+              { url: "/server/home", name: "Server Admin", role: "ServerAdmin" },
               { url: "/consoadmin", name: "Consortium Admin", role: "Admin"},
               { url: "#", name: "My Institution", role: "ManagerOnly"},
               { url: "/harvests", name: "Harvesting", role: "All"},
@@ -110,11 +110,11 @@ export default {
       isVisible(item) {
         if (item.role == 'All') return true;
         if (item.role == 'ManagerOnly') return (this.is_manager && !this.is_admin);
-        if (this.is_globaladmin) return true;
+        if (this.is_serveradmin) return true;
         if (this.is_admin) {
-            return (item.role != 'GlobalAdmin');
+            return (item.role != 'ServerAdmin');
         } else if (this.is_manager) {
-            return (item.role != 'Admin' && item.role != 'GlobalAdmin');
+            return (item.role != 'Admin' && item.role != 'ServerAdmin');
         } else if (this.is_viewer) {
             return (item.role == 'Viewer');
         }
@@ -142,7 +142,7 @@ export default {
       },
     },
     computed: {
-      ...mapGetters(['is_manager','is_admin','is_viewer','is_globaladmin'])
+      ...mapGetters(['is_manager','is_admin','is_viewer','is_serveradmin'])
     },
     mounted() {
         // Get user's max role
@@ -160,14 +160,14 @@ export default {
         this.$store.dispatch('updateAccess', max_role);
         this.$store.dispatch('updateUserInst', this.user["inst_id"]);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
-        if (this.is_globaladmin) {
+        if (this.is_serveradmin) {
             this.consortia.push({'ccp_key': 'con_template', 'name': 'Template'});
             if (this.consortia.some(con => con.ccp_key == this.ccp_key)) this.cur_key = this.ccp_key;
         }
         // Set homeUrl based on role
         var _idx = null;
-        if (this.is_globaladmin) {
-            this.homeUrl = "/global/home";
+        if (this.is_serveradmin) {
+            this.homeUrl = "/server/home";
         } else if (this.is_admin) {
             this.homeUrl = "/consoadmin";
         } else if (this.is_manager) {

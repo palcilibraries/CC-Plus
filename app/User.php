@@ -65,20 +65,20 @@ class User extends Authenticatable
 
     public function canManage()
     {
-      // GlobalAdmin can manage any user and is only changeable by another GlobalAdmin
-        if (auth()->user()->hasRole("GlobalAdmin")) {
+      // ServerAdmin can manage any user and is only changeable by another ServerAdmin
+        if (auth()->user()->hasRole("ServerAdmin")) {
             return true;
         } else {
-            if ($this->roles()->where("name", "GlobalAdmin")->first()) return false;
+            if ($this->roles()->where("name", "ServerAdmin")->first()) return false;
         }
 
-      // Admin can manage any non-GlobalAdmin user
+      // Admin can manage any non-ServerAdmin user
         if (auth()->user()->hasRole("Admin")) return true;
 
       // Managers can manage users at their own inst, but not Adminss or Viewers
         if (auth()->user()->hasRole("Manager")) {
             if ($this->id == auth()->id()) return true;   // Manager can manage self regardless of their other roles
-            return ($this->hasAnyRole(['GlobalAdmin','Admin','Viewer'])) ? false : auth()->user()->inst_id == $this->inst_id;
+            return ($this->hasAnyRole(['ServerAdmin','Admin','Viewer'])) ? false : auth()->user()->inst_id == $this->inst_id;
         }
       // Users can manage themselves
         return $this->id == auth()->id();
@@ -116,7 +116,7 @@ class User extends Authenticatable
 
     public function hasAnyRole($roles)
     {
-        if ($this->roles()->where("name", "GlobalAdmin")->first()) return true;
+        if ($this->roles()->where("name", "ServerAdmin")->first()) return true;
         if (is_array($roles)) {
             if ($this->roles()->whereIn('name', $roles)->first()) return true;
         } else {
@@ -139,7 +139,7 @@ class User extends Authenticatable
 
     public function hasRole($role)
     {
-        if ($this->roles()->where("name", "GlobalAdmin")->first()) return true;
+        if ($this->roles()->where("name", "ServerAdmin")->first()) return true;
         if ($this->roles()->where("name", $role)->first()) return true;
         return 0;
     }

@@ -40,11 +40,11 @@ class ConsortiumCommand extends Command
      */
     public function handle()
     {
-      // The email (username) and password for the global admin account have to be set in .env
-        $global_admin = config('ccplus.global_admin');
-        $global_admin_pass = config('ccplus.global_admin_pass');
-        if (strlen($global_admin) == 0 || strlen($global_admin_pass) == 0) {
-            $this->error('Global Admin credential in .env is undefined!');
+      // The email (username) and password for the server admin account have to be set in .env
+        $server_admin = config('ccplus.server_admin');
+        $server_admin_pass = config('ccplus.server_admin_pass');
+        if (strlen($server_admin) == 0 || strlen($server_admin_pass) == 0) {
+            $this->error('Server Admin credential in .env is undefined!');
             return 0;
         }
       // Get basic info for the new consortium
@@ -135,11 +135,11 @@ class ConsortiumCommand extends Command
         DB::table($global_db . '.consortia')->insert($conso_data);
         $this->line('<fg=cyan>Consortium added to global database.');
 
-      // Create the GlobalAdmin account in the users table using values from the .env file
+      // Create the ServerAdmin account in the users table using values from the .env file
         DB::table($conso_db . ".users")->insert([
-        ['name' => 'Global Administrator',
-         'password' => $global_admin_pass,
-         'email' => $global_admin,
+        ['name' => 'Server Administrator',
+         'password' => $server_admin_pass,
+         'email' => $server_admin,
          'inst_id' => 1,
          'is_active' => 1]
         ]);
@@ -157,7 +157,7 @@ class ConsortiumCommand extends Command
          'is_active' => 1]
         ]);
 
-      // Set roles for GlobalAdmin and 'Administrator'
+      // Set roles for ServerAdmin and 'Administrator'
         DB::table($conso_db . ".role_user")->insert(['role_id' =>  999, 'user_id' => 1]);
         DB::table($conso_db . ".role_user")->insert(['role_id' =>  99, 'user_id' => 2]);
 

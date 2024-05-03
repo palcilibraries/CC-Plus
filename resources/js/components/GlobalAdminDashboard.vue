@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Global Admin</h1>
+    <h1>Server Administration</h1>
     <v-expansion-panels multiple focusable v-model="panels">
       <!-- Instances -->
       <v-expansion-panel>
@@ -14,7 +14,7 @@
       <!-- Providers -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h2>Global Providers</h2>
+          <h2>Platform Definitions</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <global-provider-data-table :providers="providers" :master_reports="master_reports"
@@ -25,7 +25,7 @@
       <!-- Settings -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h2>Global Settings</h2>
+          <h2>Server Settings</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <global-settings :settings="settings"></global-settings>

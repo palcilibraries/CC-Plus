@@ -23,7 +23,7 @@ class ResetAdminPW extends Command
      *
      * @var string
      */
-    protected $description = 'Reset Global Admin password in Consortium Databases';
+    protected $description = 'Reset Server Admin password in Consortium Databases';
 
     /**
      * Create a new command instance.
@@ -43,14 +43,14 @@ class ResetAdminPW extends Command
     public function handle()
     {
        // Make sure the username is set
-        $global_admin = config('ccplus.global_admin');
-        if (strlen($global_admin) == 0 ) {
-            $this->error('Global Administrator username is not properly defined (verify or reseed the global settings) !');
+        $server_admin = config('ccplus.server_admin');
+        if (strlen($server_admin) == 0 ) {
+            $this->error('Server Administrator username is not properly defined (verify or reseed the server settings table) !');
             return 0;
         }
         // Prompt for a new password value
-        $global_admin_pass = $this->ask("Enter a new password for the '" . $global_admin . "' user (required) ", false);
-        if (!$global_admin_pass) {
+        $server_admin_pass = $this->ask("Enter a new password for the '" . $server_admin . "' user (required) ", false);
+        if (!$server_admin_pass) {
             $this->error('A new password value is required.');
             return 0;
         }
@@ -95,8 +95,8 @@ class ResetAdminPW extends Command
         }
 
        // Update the value in the global_settings table
-        $hashed_password = Hash::make($global_admin_pass);
-        $_setting = GlobalSetting::where('name', 'global_admin_pass')->first();
+        $hashed_password = Hash::make($server_admin_pass);
+        $_setting = GlobalSetting::where('name', 'server_admin_pass')->first();
         if (!$_setting) {
             $this->error('Cannot load global admin setting from database!');
             return 0;
@@ -110,7 +110,7 @@ class ResetAdminPW extends Command
        // Update all passwords for the requested databases
         foreach ($databases as $_db) {
            $pw_qry  = "UPDATE " . $_db . ".users SET password = '" . $hashed_password;
-           $pw_qry .= "' where email='" . $global_admin . "'";
+           $pw_qry .= "' where email='" . $server_admin . "'";
            $result = DB::statement($pw_qry);
            $this->line('<fg=cyan>' . $_db . ' Successfully Updated.');
         }
@@ -120,7 +120,7 @@ class ResetAdminPW extends Command
         if ($update_con_template) {
             config(['database.connections.consodb.database' => 'ccplus_con_template']);
             $globalAdminRole = \App\Role::where('name','GlobalAdmin')->first();
-            $user = \App\User::where('email', $global_admin)->first();
+            $user = \App\User::where('email', $server_admin)->first();
             if ($globalAdminRole && $user) {
                 $user->roles()->detach();
                 $user->roles()->attach($globalAdminRole->id);

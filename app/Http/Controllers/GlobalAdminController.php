@@ -18,7 +18,7 @@ class GlobalAdminController extends Controller
 
     public function __construct()
     {
-        $this->middleware(['auth','role:GlobalAdmin']);
+        $this->middleware(['auth','role:ServerAdmin']);
     }
 
     /**
@@ -36,8 +36,8 @@ class GlobalAdminController extends Controller
         $this->getConnectionFields();
         $all_connectors = $allConnectors->toArray();
 
-        // Get global settings, minus the global admin credentials
-        $skip_vars = array('global_admin','global_admin_pass');
+        // Get global settings, minus the server admin credentials
+        $skip_vars = array('server_admin','server_admin_pass');
         $settings = GlobalSetting::whereNotIn('name',$skip_vars)->pluck('value', 'name')->toArray();
 
         // Get global providers and preserve the current instance database setting

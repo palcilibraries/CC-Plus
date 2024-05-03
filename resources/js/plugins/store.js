@@ -8,7 +8,7 @@ export const store = new Vuex.Store({
       admin: false,
       manager: false,
       viewer: false,
-      globaladmin: false,
+      serveradmin: false,
       user_inst_id: 0,
       dashboard: '',
       page_name: 'default',
@@ -47,11 +47,11 @@ export const store = new Vuex.Store({
                                            groupDesc: [], multiSort: false, mustSort: false }
                   },
           preview: { filters: {report_id: 1, fromYM: "", toYM: "", inst_id: [], institutiongroup_id: 0, plat_id: [],
-                               prov_id: [], yop: [], datatype_id: [], accesstype_id: [], sectiontype_id: [],
+                               db_id: [], prov_id: [], yop: [], datatype_id: [], accesstype_id: [], sectiontype_id: [],
                                accessmethod_id: [] },
                      datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [] }
                    },
-          sushi: { filters: {inst: [], group: 0, global_prov: [], inst_prov: [], harv_stat: []},
+          sushi: { filters: {inst: [], group: 0, server_prov: [], inst_prov: [], harv_stat: []},
                            datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                        groupDesc: [], multiSort: false, mustSort: false }
                  },
@@ -80,18 +80,18 @@ export const store = new Vuex.Store({
       }
     },
     SET_ACCESS(state, access) {
-      if (access=='GlobalAdmin' || access=='SuperUser') {
-          state.globaladmin=true;
+      if (access=='ServerAdmin' || access=='SuperUser') {
+          state.serveradmin=true;
           state.admin=true;
           state.manager=true;
           state.viewer=true;
       } else if (access=='Admin') {
-          state.globaladmin=false;
+          state.serveradmin=false;
           state.admin=true;
           state.manager=true;
           state.viewer=true;
       } else {
-          state.globaladmin=false;
+          state.serveradmin=false;
           state.admin=false;
           // These are independent of each other, and can both be true
           if (access=='Manager') state.manager = true;
@@ -144,6 +144,9 @@ export const store = new Vuex.Store({
     },
     SET_PROVIDER_FILTER(state, prov) {
         state.page_options[state.page_name].filters.prov_id = prov;
+    },
+    SET_DATABASE_FILTER(state, dbase) {
+        state.page_options[state.page_name].filters.db_id = dbase;
     },
     SET_SECTIONTYPE_FILTER(state, type) {
         state.page_options[state.page_name].filters.sectiontype_id = type;
@@ -208,6 +211,9 @@ export const store = new Vuex.Store({
     updateProviderFilter({ commit }, prov) {
       commit('SET_PROVIDER_FILTER', prov);
     },
+    updateDataBaseFilter({ commit }, prov) {
+      commit('SET_DATABASE_FILTER', prov);
+    },
     updateSectionTypeFilter({ commit }, type) {
       commit('SET_SECTIONTYPE_FILTER', type);
     },
@@ -222,7 +228,7 @@ export const store = new Vuex.Store({
     },
   },
   getters: {
-    is_globaladmin: state => { return state.globaladmin },
+    is_serveradmin: state => { return state.serveradmin },
     is_admin: state => { return state.admin },
     is_manager: state => { return state.manager },
     is_viewer: state => { return state.viewer },

@@ -14,7 +14,7 @@
             <v-icon title="CC+ Provider ID">mdi-crosshairs-gps</v-icon>&nbsp; {{ provider.conso_id }}
           </div>
         </v-col>
-        <v-col v-if="is_globaladmin" class="d-flex px-2" cols="2">
+        <v-col v-if="is_serveradmin" class="d-flex px-2" cols="2">
           <div class="idbox">
             <v-icon title="CC+ Provider ID (Global)">mdi-web</v-icon>&nbsp; {{ provider.id }}
           </div>
@@ -156,7 +156,7 @@
       },
     },
     computed: {
-      ...mapGetters(['is_admin','is_globaladmin']),
+      ...mapGetters(['is_admin','is_serveradmin']),
       instRules() {
           if (this.dtype == 'connect') {
               return [ v => !!v || 'Institution is required' ];

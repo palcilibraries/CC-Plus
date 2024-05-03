@@ -22,9 +22,9 @@ class GlobalProvider extends Model
    */
     protected $attributes = ['registry_id' => null, 'name' => '', 'abbrev' => null, 'is_active' => 1, 'refreshable' => 1,
                              'master_reports' => '{}', 'connectors' => '{}', 'server_url_r5' => '', 'notifications_url' => null,
-                             'platform_name' => null];
+                             'platform_parm' => null];
     protected $fillable = ['id', 'registry_id', 'name', 'abbrev', 'is_active', 'master_reports', 'connectors', 'server_url_r5',
-                           'notifications_url', 'platform_name'];
+                           'notifications_url', 'platform_parm'];
     protected $casts = ['id'=>'integer', 'is_active'=>'integer', 'refreshable'=>'integer', 'master_reports' => 'array',
                         'connectors' => 'array'];
 

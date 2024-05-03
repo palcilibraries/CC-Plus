@@ -23,7 +23,7 @@ class GlobalProviderUpdate extends Command
      *
      * @var string
      */
-    protected $description = 'Update Global Provider definitions using settings from the Project COUNTER API';
+    protected $description = 'Update Global Platform definitions using settings from the Project COUNTER API';
     private $client;
     private $options;
 
@@ -131,6 +131,7 @@ class GlobalProviderUpdate extends Command
             }
             $global_provider->registry_id = $platform->id;
             $global_provider->name = $platform->name;
+            $global_provider->content_provider = $platform->content_provider_name;
             $global_provider->abbrev = $platform->abbrev;
             $global_provider->master_reports = $reportIds;
             $global_provider->connectors = $connectors;

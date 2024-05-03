@@ -19,13 +19,14 @@ class CreateGlobalProvidersTable extends Migration
           $table->string('name');
           $table->string('abbrev')->nullable();
           $table->index('name');
+          $table->string('content_provider')->nullable();
           $table->boolean('is_active')->default(1);
           $table->boolean('refreshable')->default(1);
           $table->json('master_reports')->default(1);
           $table->json('connectors')->default(1);
           $table->string('server_url_r5')->nullable();
           $table->string('notifications_url')->nullable();
-          $table->string('platform_name')->nullable();
+          $table->string('platform_parm')->nullable();
           $table->timestamps();
         });
     }

@@ -67,14 +67,21 @@ class GlobalProviderController extends Controller
         if ($json) {
 
             // Prep variables for use in querying
+            $filter_norefresh = null;
             $filter_stat = null;
-            if ($filters['stat'] != 'ALL') {
+            if ($filters['stat'] == 'Refresh Disabled') {
+                $filter_norefresh = true;
+            } else if ($filters['stat'] != 'ALL') {
                 $filter_stat = ($filters['stat'] == 'Active') ? 1 : 0;
             }
 
             $gp_data = GlobalProvider::when(!is_null($filter_stat), function ($qry) use ($filter_stat) {
-                                         return $qry->where('is_active', $filter_stat);
-                                       })->orderBy('name', 'ASC')->get();
+                                          return $qry->where('is_active', $filter_stat);
+                                       })
+                                       ->when($filter_norefresh, function ($qry) {
+                                          return $qry->where('refreshable',0);
+                                       })
+                                       ->orderBy('name', 'ASC')->get();
 
             // get all the consortium instances and preserve the current instance database setting
             $instances = Consortium::get();
@@ -85,20 +92,10 @@ class GlobalProviderController extends Controller
             foreach ($gp_data as $gp) {
                 $provider = $gp->toArray();
                 $provider['status'] = ($gp->is_active) ? "Active" : "Inactive";
-                $provider['reports_string'] = ($gp->master_reports) ?
-                                              $this->makeReportString($gp->master_reports) : 'None';
 
                 // Build arrays of booleans for connection fields and reports for the U/I chackboxes
                 $provider['connector_state'] = $this->connectorState($gp->connectors);
                 $provider['report_state'] = $this->reportState($gp->master_reports);
-
-                // Set connection field labels in an array for the datatable display
-                $provider['connection_fields'] = array();
-                foreach ($allConnectors as $fld) {
-                    if ( in_array($fld->id, $gp->connectors) ) {
-                        $provider['connection_fields'][] = $fld->label;
-                    }
-                }
 
                 // Walk all instances scan for harvests connected to this provider
                 // If any are found, the can_delete flag will be set to false to disable deletion option in the U/I
@@ -145,7 +142,7 @@ class GlobalProviderController extends Controller
       $provider->is_active = $input['is_active'];
       $provider->refreshable = $input['refreshable'];
       $provider->server_url_r5 = $input['server_url_r5'];
-      $provider->platform_name = $input['platform_name'];
+      $provider->platform_parm = $input['platform_parm'];
 
       // Turn array of connection checkboxes into an array of IDs
       $connectors = array();
@@ -160,7 +157,7 @@ class GlobalProviderController extends Controller
 
       // Turn array of report checkboxes into an array of IDs
       $master_reports = array();
-      $reports_string = "";
+      // $reports_string = "";
       if (isset($input['report_state'])) {
           $this->getMasterReports();
           foreach ($masterReports as $rpt) {
@@ -178,8 +175,6 @@ class GlobalProviderController extends Controller
       $provider['connection_count'] = 0;
       $provider['status'] = ($provider->is_active) ? "Active" : "Inactive";
       $provider['connector_state'] = $input['connector_state'];
-      $provider['reports_string'] = ($provider->master_reports) ?
-                                    $this->makeReportString($provider->master_reports) : 'None';
       $provider['report_state'] = (isset($input['report_state'])) ? $input['report_state'] : array();
 
       return response()->json(['result' => true, 'msg' => 'Provider successfully created',
@@ -251,18 +246,15 @@ class GlobalProviderController extends Controller
           $connectors_changed = ($provider->connectors != $new_connectors);
           $provider->connectors = $new_connectors;
       }
-      $provider->platform_name = (isset($input['platform_name'])) ? $input['platform_name'] : null;
+      $provider->platform_parm = (isset($input['platform_parm'])) ? $input['platform_parm'] : null;
 
       // Turn array of report checkboxes into an array of IDs
-      $reports_string = "";
       if (isset($input['report_state'])) {
           $master_reports = array();
           foreach ($masterReports as $rpt) {
             if (!isset($input['report_state'][$rpt->name])) continue;
             if ($input['report_state'][$rpt->name]) {
                 $master_reports[] = $rpt->id;
-                $reports_string .= ($reports_string=="") ? "" : ", ";
-                $reports_string .= $rpt->name;
             }
           }
           $provider->master_reports = $master_reports;
@@ -270,21 +262,13 @@ class GlobalProviderController extends Controller
       $provider->save();
       $provider['status'] = ($provider->is_active) ? "Active" : "Inactive";
       $provider['connector_state'] = (isset($input['connector_state'])) ? $input['connector_state'] : array();
-      $provider['reports_string'] = ($reports_string == "") ? 'None' : $reports_string;
+      // $provider['reports_string'] = ($reports_string == "") ? 'None' : $reports_string;
       $provider['report_state'] = (isset($input['report_state'])) ? $input['report_state'] : array();
 
       // Set connection field labels in an array for the datatable display
       $provider['connector_state'] = array();
-      $provider['connection_fields'] = array();
       if (isset($input['connector_state'])) {
           $provider['connector_state'] = $input['connector_state'];
-          $field_labels = array();
-          foreach ($all_connectors as $fld) {
-              if ( in_array($fld->id, $new_connectors) ) {
-                  $field_labels[] = $fld->label;
-              }
-          }
-          $provider['connection_fields'] = $field_labels;
       }
 
       // Get connector fields
@@ -439,7 +423,7 @@ class GlobalProviderController extends Controller
       $this->getMasterReports();
       $this->getConnectionFields();
 
-      // Pull connection fields and map a static array to what the API sends back
+      // Map a static array to conect what the COUNTER API sends back to conbnection_fields
       $api_connectors = array('customer_id_info'      => array('field' => 'customer_id', 'id' => null, 'label' => ''),
                               'requestor_id_required' => array('field' => 'requestor_id', 'id' => null, 'label' => ''),
                               'api_key_required'      => array('field' => 'api_key', 'id' => null, 'label' => '')
@@ -475,6 +459,7 @@ class GlobalProviderController extends Controller
       $return_data = array();
       $return_data['registry_id'] = $json->id;
       $return_data['name'] = $json->name;
+      $return_data['content_provider'] = $json->content_provider_name;
       $return_data['abbrev'] = $json->abbrev;
       $return_data['platform'] = $provider->platform; // preserve unchanged
 
@@ -483,26 +468,26 @@ class GlobalProviderController extends Controller
       $reportIds = $available->pluck('id')->toArray();
       $return_data['master_reports'] = $reportIds;
 
-      // Get connection fields (for now, assumes customer_id is always required)
+      // Get connection fields from JSON sushi_services (for now, assumes customer_id is always required)
       $services = $json->sushi_services[0];
       $field_labels = array();
       foreach ($api_connectors as $key => $cnx) {
           if ($key == 'customer_id_info' || $services->{$key}) {
               $connectors[] = $cnx['id'];
-              $field_labels[] = $cnx['label'];
+              // $field_labels[] = $cnx['label'];
           }
       }
-      // The registry API doesn't know about CC+ extra_args. If set in the original, carry it forward
+      // The registry API doesn't know about CC+ extra_args. If set in the original Global, preserve it
       foreach ($provider->connectionFields() as $cf) {
           if ($cf['name'] == 'extra_args') {
               $connectors[] = $cf['id'];
-              $field_labels[] = $cf['label'];
+              // $field_labels[] = $cf['label'];
               break;
           }
       }
 
       $return_data['connectors'] = $connectors;
-      $return_data['connection_fields'] = $field_labels;
+      // $return_data['connection_fields'] = $field_labels;
       $return_data['server_url_r5'] = $services->url;
       $return_data['notifications_url'] = $services->notifications_url;
 
@@ -512,11 +497,6 @@ class GlobalProviderController extends Controller
       // Add more return data for the U/I
       $return_data['report_state'] = $this->reportState($reportIds);
       $reportNames = $available->pluck('name')->toArray();
-      $return_data['reports_string'] = "";
-      foreach ($reportNames as $rpt) {
-          $return_data['reports_string'] .= ($return_data['reports_string'] == '') ? '' : ', ';
-          $return_data['reports_string'] .= $rpt;
-      }
       $return_data['connection_count'] = count($connectors);
       $return_data['connector_state'] = $this->connectorState($connectors);
 
@@ -570,17 +550,17 @@ class GlobalProviderController extends Controller
         for ($row=1; $row<7; $row++) {
             $info_sheet->mergeCells("A" . $row . ":H" . $row);
         }
-        $info_sheet->setCellValue('A2',"  * The Providers tab represents a starting place for updating or importing settings.");
+        $info_sheet->setCellValue('A2',"  * The Platforms tab represents a starting place for updating or importing settings.");
 
         $richText = new \PhpOffice\PhpSpreadsheet\RichText\RichText();
         $approach = $richText->createTextRun("  * The recommended approach is to add to, or modify, a previously run full export.");
         $approach->getFont()
                  ->setColor( new \PhpOffice\PhpSpreadsheet\Style\Color( \PhpOffice\PhpSpreadsheet\Style\Color::COLOR_RED ) );
         $info_sheet->setCellValue('A3', $richText);
-        $_txt = "  * Only additions and updates are supported. Import cannot be used to delete existing providers.";
+        $_txt = "  * Only additions and updates are supported. Import cannot be used to delete existing platforms.";
         $info_sheet->setCellValue('A4', $_txt);
         $richText = new \PhpOffice\PhpSpreadsheet\RichText\RichText();
-        $richText->createText("  * Once updates to the Providers tab are complete, save the sheet as a ");
+        $richText->createText("  * Once updates to the Platforms tab are complete, save the sheet as a ");
         $saving = $richText->createTextRun("CSV UTF-8");
         $saving->getFont()->setBold(true);
         $richText->createText(" file and import it into CC-Plus.");
@@ -613,7 +593,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C15', 'Yes');
         $info_sheet->setCellValue('D15', 'Integer');
         $info_sheet->setCellValue('E15', '');
-        $info_sheet->setCellValue('F15', 'Unique CC-Plus Provider ID');
+        $info_sheet->setCellValue('F15', 'Unique CC-Plus Platform ID');
         $info_sheet->setCellValue('G15', '');
         $info_sheet->setCellValue('H15', 'Increments if empty');
         $info_sheet->setCellValue('A16', 'B');
@@ -621,7 +601,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C16', 'Yes');
         $info_sheet->setCellValue('D16', 'String');
         $info_sheet->setCellValue('E16', '');
-        $info_sheet->setCellValue('F16', 'Provider name');
+        $info_sheet->setCellValue('F16', 'Platform name');
         $info_sheet->setCellValue('G16', '');
         $info_sheet->setCellValue('H16', '');
         $info_sheet->setCellValue('A17', 'C');
@@ -629,7 +609,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C17', 'Yes');
         $info_sheet->setCellValue('D17', 'String');
         $info_sheet->setCellValue('E17', 'Valid URL');
-        $info_sheet->setCellValue('F17', 'URL for Provider SUSHI service');
+        $info_sheet->setCellValue('F17', 'URL for Platform SUSHI service');
         $info_sheet->setCellValue('G17', '');
         $info_sheet->setCellValue('H17', '');
         $info_sheet->setCellValue('A18', 'D');
@@ -637,7 +617,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C18', '');
         $info_sheet->setCellValue('D18', 'String');
         $info_sheet->setCellValue('E18', 'Y or N');
-        $info_sheet->setCellValue('F18', 'Make the provider active?');
+        $info_sheet->setCellValue('F18', 'Make the platform active?');
         $info_sheet->setCellValue('G18', 'Y');
         $info_sheet->setCellValue('H18', '');
         $info_sheet->setCellValue('A19', 'E');
@@ -645,7 +625,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C19', '');
         $info_sheet->setCellValue('D19', 'String');
         $info_sheet->setCellValue('E19', 'Y or N');
-        $info_sheet->setCellValue('F19', 'Provider supplies DR reports?');
+        $info_sheet->setCellValue('F19', 'Platform supplies DR reports?');
         $info_sheet->setCellValue('G19', 'N');
         $info_sheet->setCellValue('H19', '');
         $info_sheet->setCellValue('A20', 'F');
@@ -653,7 +633,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C20', '');
         $info_sheet->setCellValue('D20', 'String');
         $info_sheet->setCellValue('E20', 'Y or N');
-        $info_sheet->setCellValue('F20', 'Provider supplies IR reports?');
+        $info_sheet->setCellValue('F20', 'Platform supplies IR reports?');
         $info_sheet->setCellValue('G20', 'N');
         $info_sheet->setCellValue('H20', '');
         $info_sheet->setCellValue('A21', 'G');
@@ -661,7 +641,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C21', '');
         $info_sheet->setCellValue('D21', 'String');
         $info_sheet->setCellValue('E21', 'Y or N');
-        $info_sheet->setCellValue('F21', 'Provider supplies PR reports?');
+        $info_sheet->setCellValue('F21', 'Platform supplies PR reports?');
         $info_sheet->setCellValue('G21', 'Y');
         $info_sheet->setCellValue('H21', '');
         $info_sheet->setCellValue('A22', 'H');
@@ -669,7 +649,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C22', '');
         $info_sheet->setCellValue('D22', 'String');
         $info_sheet->setCellValue('E22', 'Y or N');
-        $info_sheet->setCellValue('F22', 'Provider supplies TR reports?');
+        $info_sheet->setCellValue('F22', 'Platform supplies TR reports?');
         $info_sheet->setCellValue('G22', 'N');
         $info_sheet->setCellValue('H22', '');
         $info_sheet->setCellValue('A23', 'I');
@@ -727,7 +707,7 @@ class GlobalProviderController extends Controller
 
         // Load the provider data into a new sheet
         $providers_sheet = $spreadsheet->createSheet();
-        $providers_sheet->setTitle('Providers');
+        $providers_sheet->setTitle('Platforms');
         $providers_sheet->setCellValue('A1', 'Id');
         $providers_sheet->setCellValue('B1', 'Name');
         $providers_sheet->setCellValue('C1', 'Active');
@@ -757,7 +737,7 @@ class GlobalProviderController extends Controller
                 $value = (in_array($field->id, $provider->connectors)) ? 'Y' : 'N';
                 $providers_sheet->setCellValue($cnx_col[$field->name] . $row, $value);
             }
-            $providers_sheet->setCellValue('M' . $row, $provider->platform_name);
+            $providers_sheet->setCellValue('M' . $row, $provider->platform_parm);
             $row++;
         }
 
@@ -768,7 +748,7 @@ class GlobalProviderController extends Controller
         }
 
         // redirect output to client browser
-        $fileName = "CCplus_Global_Providers." . $type;
+        $fileName = "CCplus_Global_Platforms." . $type;
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename=' . $fileName);
@@ -881,7 +861,7 @@ class GlobalProviderController extends Controller
             $_prov['connectors'] = $connectors;
             // Extra argument pattern gets saved only if ExtraArgs column = 'Y'
             if ($row[11] == 'Y') {
-                $_prov['platform_name'] = $row[12];
+                $_prov['platform_parm'] = $row[12];
             }
 
             // Update or create the Provider record
@@ -906,8 +886,8 @@ class GlobalProviderController extends Controller
         foreach ($gp_data as $gp) {
             $provider = $gp->toArray();
             $provider['status'] = ($gp->is_active) ? "Active" : "Inactive";
-            $provider['reports_string'] = ($gp->master_reports) ?
-                                          $this->makeReportString($gp->master_reports) : 'None';
+            // $provider['reports_string'] = ($gp->master_reports) ?
+            //                               $this->makeReportString($gp->master_reports) : 'None';
             $provider['connector_state'] = $this->connectorState($gp->connectors);
             $provider['report_state'] = $this->reportState($gp->master_reports);
             $provider['can_delete'] = true;
@@ -933,9 +913,9 @@ class GlobalProviderController extends Controller
         if ($prov_skipped > 0) {
             $detail .= ($detail != "") ? ", " . $prov_skipped . " skipped" : $prov_skipped . " skipped";
         }
-        $msg  = 'Import successful, Providers : ' . $detail;
+        $msg  = 'Import successful, Platforms : ' . $detail;
 
-        return response()->json(['result' => true, 'msg' => $msg, 'providers' => $updated_providers]);
+        return response()->json(['result' => true, 'msg' => $msg, 'platforms' => $updated_providers]);
     }
 
     /**

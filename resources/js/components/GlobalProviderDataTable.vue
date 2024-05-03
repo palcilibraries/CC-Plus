@@ -2,14 +2,14 @@
   <div>
     <v-row class="d-flex mb-1 align-end" no-gutters>
       <v-col class="d-flex px-2" cols="3">
-        <v-btn small color="primary" @click="createForm()">Add a Global Provider</v-btn>
+        <v-btn small color="primary" @click="createForm()">Add a Platform</v-btn>
       </v-col>
       <v-col class="d-flex px-2" cols="3">
-        <v-btn small color="primary" @click="enableImportForm">Import Providers</v-btn>
+        <v-btn small color="primary" @click="enableImportForm">Import Platforms</v-btn>
       </v-col>
       <v-col class="d-flex px-2" cols="3">
         <a @click="doExport">
-          <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export providers to Excel
+          <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export platforms to Excel
         </a>
       </v-col>
       <v-col class="d-flex px-2" cols="3">
@@ -54,18 +54,16 @@
         </span>
         {{ item.name }}
       </template>
-      <template v-slot:item.connection_fields="{ item }">
-        <v-row v-for="cnx in item.connection_fields" :key="item.id+cnx" class="d-flex ma-0" no-gutters>
-          <v-col class="d-flex pa-0">{{ cnx }}</v-col>
-        </v-row>
-      </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
+          <v-btn icon @click="goURL('https://registry.projectcounter.org/platform/'+item.registry_id)">
+            <v-icon title="Open Registry Details">mdi-open-in-new</v-icon>
+          </v-btn>
           <v-btn icon @click="editForm(item.id)">
-            <v-icon title="Edit Provider">mdi-cog-outline</v-icon>
+            <v-icon title="Edit Platform">mdi-cog-outline</v-icon>
           </v-btn>
           <v-btn v-if="item.can_delete" icon @click="destroy(item.id)">
-            <v-icon title="Delete Provider">mdi-trash-can-outline</v-icon>
+            <v-icon title="Delete Platform">mdi-trash-can-outline</v-icon>
           </v-btn>
           <v-btn v-else icon>
             <v-icon color="#c9c9c9">mdi-trash-can-outline</v-icon>
@@ -78,30 +76,30 @@
     </v-data-table>
     <v-dialog v-model="providerImportDialog" max-width="1200px">
       <v-card>
-        <v-card-title>Import Providers</v-card-title>
+        <v-card-title>Import Platforms</v-card-title>
         </v-card-subtitle>
         <v-card-text>
           <v-container grid-list-md>
             <v-file-input show-size label="CC+ CSV Import File" v-model="csv_upload" accept="text/csv" outlined
             ></v-file-input>
             <p>
-              <strong>Note:&nbsp; Provider imports function exclusively as Updates. No existing provider records will
+              <strong>Note:&nbsp; Platform imports function exclusively as Updates. No existing platform records will
               be deleted.</strong>
             </p>
             <p>
-              The import process overwrites existing settings whenever a match for a Provider-ID is found in column-A
-              of the import file. If no existing setting is found for the specified Provider-ID, a NEW provider will
-              be created with the fields specified. Provider names (column-B) must be unique. Attempting to create
-              a provider (or rename one) using an existing name will be ignored.
+              The import process overwrites existing settings whenever a match for a Platform-ID is found in column-A
+              of the import file. If no existing setting is found for the specified Platform-ID, a NEW platform will
+              be created with the fields specified. Platform names (column-B) must be unique. Attempting to create
+              a platform (or rename one) using an existing name will be ignored.
             </p>
             <p>
-              Providers can be renamed via import by giving the ID in column-A and the replacement name in column-B.
+              Platforms can be renamed via import by giving the ID in column-A and the replacement name in column-B.
               Be aware that the new name takes effect immediately, and will be associated with all harvested usage
               data that may have been collected using the OLD name (data is stored by the ID, not the name.)
             </p>
             <p>
-              For these reasons, use caution when using this import function. Generating a Provider export FIRST will
-              supply detailed instructions for importing on the "How to Import" tab. Generating a new Provider export
+              For these reasons, use caution when using this import function. Generating a Platform export FIRST will
+              supply detailed instructions for importing on the "How to Import" tab. Generating a new Platform export
               AFTER an import operation is a good way to confirm that all the settings are as-desired.
             </p>
           </v-container>
@@ -125,17 +123,22 @@
             </v-row>
             <v-row class="d-flex ma-0" no-gutters>
               <v-col class="d-flex px-4" cols="10">
-                <v-text-field v-model="form.name" label="Name" outlined dense></v-text-field>
+                <v-text-field v-model="form.name" label="Platform" outlined dense></v-text-field>
               </v-col>
               <v-col class="d-flex px-4" cols="2">
                 <div class="idbox">
-                  <v-icon title="CC+ Provider ID">mdi-web</v-icon>&nbsp; {{ current_provider_id }}
+                  <v-icon title="CC+ Platform ID">mdi-web</v-icon>&nbsp; {{ current_provider_id }}
                 </div>
               </v-col>
             </v-row>
             <v-row class="d-flex ma-0" no-gutters>
+              <v-col class="d-flex px-4" cols="10">
+                <v-text-field v-model="form.content_provider" label="Content Platform" outlined dense></v-text-field>
+              </v-col>
+            </v-row>
+            <v-row class="d-flex ma-0" no-gutters>
               <v-col class="d-flex px-4">
-                <v-text-field v-model="form.server_url_r5" label="SUSHI Service URL" outlined dense></v-text-field>
+                <v-text-field v-model="form.server_url_r5" label="SUSHI Server URL" outlined dense></v-text-field>
               </v-col>
             </v-row>
             <v-row class="d-flex ma-0" no-gutters>
@@ -151,7 +154,7 @@
               </v-col>
               <v-col class="d-flex px-4" cols="6">
                 <v-list dense>
-                  <v-list-item class="verydense"><strong>Available Reports</strong></v-list-item>
+                  <v-list-item class="verydense"><strong>Supported Reports</strong></v-list-item>
                   <v-list-item v-for="rpt in master_reports" :key="rpt.name" class="verydense">
                     <v-checkbox :value="form.report_state[rpt.name]" :key="rpt.name" :label="rpt.name"
                                 v-model="form.report_state[rpt.name]" dense>
@@ -162,7 +165,7 @@
             </v-row>
             <v-row class="d-flex ma-0" no-gutters>
               <v-col class="d-flex px-4" cols="8">
-                <v-text-field v-model="form.platform_name" label="Platform" outlined dense></v-text-field>
+                <v-text-field v-model="form.platform_parm" label="Platform Parameter" outlined dense></v-text-field>
               </v-col>
             </v-row>
             <v-row class="d-flex ma-0 align-center" no-gutters>
@@ -184,7 +187,7 @@
               </v-col>
               <v-col class="d-flex px-4" cols="4">
                 <v-btn x-small color="primary" type="button" @click="formSubmit" :disabled="!formValid">
-                  Save Provider
+                  Save Platform
                 </v-btn>
               </v-col>
               <v-col class="d-flex px-4" cols="4">
@@ -226,7 +229,7 @@
         import_type: '',
         import_types: ['Add or Update', 'Full Replacement'],
         mutable_filters: this.filters,
-        status_options: ['ALL', 'Active', 'Inactive'],
+        status_options: ['ALL', 'Active', 'Inactive', 'Refresh Disabled'],
         bulk_actions: [ 'Enable', 'Disable', 'Refresh Registry', 'Delete' ],
         bulkAction: null,
         selectedRows: [],
@@ -235,19 +238,21 @@
         footer_props: { 'items-per-page-options': [10,50,100,-1] },
         headers: [
           { text: 'Status', value: 'status' },
-          { text: 'Provider ', value: 'name', align: 'start' },
+          { text: 'Abbrev', value: 'abbrev', align: 'start' },
+          { text: 'Platform Name', value: 'name', align: 'start' },
+          { text: 'Content Provider', value: 'content_provider', align: 'start' },
           { text: 'Connection Count', value: 'connection_count', align: 'center' },
-          { text: 'Available Reports', value: 'reports_string' },
-          { text: 'Required Credentials', value: 'connection_fields' },
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],
-        new_provider: {'registry_id': '', 'id': null, 'name': '', 'is_active': 1, 'refreshable': 0, 'report_state': {},
-                       'connector_state': {}, 'server_url_r5': '', 'platform_name': null, 'notifications_url': ''},
+        new_provider: {'id': null, 'registry_id': '', 'name': '', 'content_provider': '', 'abbrev': '', 'is_active': 1,
+                       'refreshable': 0, 'report_state': {}, 'connector_state': {}, 'server_url_r5': '',
+                       'platform_parm': null, 'notifications_url': ''},
         formValid: true,
         form: new window.Form({
             registry_id: '',
             name: '',
+            content_provider: '',
             abbrev: '',
             is_active: 1,
             refreshable: 1,
@@ -255,7 +260,7 @@
             connector_state: [],
             report_state: [],
             notifications_url: '',
-            platform_name: null,
+            platform_parm: null,
         }),
         dayRules: [
             v => !!v || "Day of month is required",
@@ -271,20 +276,16 @@
         editForm (gp_id) {
             this.failure = '';
             this.success = '';
-            this.dialog_title = "Edit Global Provider";
+            this.dialog_title = "Edit Platform Settings";
             let _prov = this.mutable_providers.find(p => p.id == gp_id);
             this.current_provider_id = gp_id;
             this.current_connector_state = Object.assign({},_prov.connector_state);
-            this.form.connector_state = Object.assign({},_prov.connector_state);
-            this.form.registry_id = _prov.registry_id;
-            this.form.name = _prov.name;
-            this.form.abbrev = _prov.abbrev;
-            this.form.is_active = _prov.is_active;
-            this.form.refreshable = _prov.refreshable;
-            this.form.server_url_r5 = _prov.server_url_r5;
-            this.form.report_state = _prov.report_state;
-            this.form.platform_name = _prov.platform_name;
-            this.form.notifications_url = _prov.notifications_url;
+            this.form.connector_state = Object.assign({}, _prov.connector_state);
+            Object.keys(this.form).forEach( (key) =>  {
+              if (key != 'connector_state') {
+                this.form[key] = _prov[key];
+              }
+            });
             this.showRefresh = _prov.refreshable; // button only displays when refreshable in form AND saved provider are true
             this.updated_at = _prov.updated_at;
             this.providerImportDialog = false;
@@ -294,17 +295,13 @@
         createForm () {
             this.failure = '';
             this.success = '';
-            this.dialog_title = "Add Global Provider";
-            this.form.registry_id = this.new_provider.registry_id;
-            this.form.name = this.new_provider.name;
-            this.form.abbrev = this.new_provider.abbrev;
-            this.form.is_active = this.new_provider.is_active;
-            this.form.refreshable = this.new_provider.refreshable;
-            this.form.server_url_r5 = this.new_provider.server_url_r5;
-            this.form.connector_state = Object.assign({},_this.new_provider.connector_state);
-            this.form.report_state = this.new_provider.report_state;
-            this.form.platform_name = this.new_provider.platform_name;
-            this.form.notifications_url = this.new_provider.notifications_url;
+            this.dialog_title = "Add Platform Definition";
+            this.form.connector_state = Object.assign({}, this.new_provider.connector_state);
+            Object.keys(this.new_provider).forEach( (key) =>  {
+              if (key != 'connector_state' && key != 'id') {
+                this.form[key] = this.new_provider[key];
+              }
+            });
             this.updated_at = null;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
@@ -372,23 +369,23 @@
         processBulk() {
             this.success = "";
             this.failure = "";
-            let msg = "Bulk processing will process each requested provider sequentially.<br><br>";
+            let msg = "Bulk processing will process each requested platform sequentially.<br><br>";
             if (this.bulkAction == 'Enable') {
-                msg += "Enabling these providers will make them conifgurable by instance administrators.<br/>";
+                msg += "Enabling these platforms will make them conifgurable by instance administrators.<br/>";
                 msg += "Until the required credentials are defined, however, no report retrieval will be performed<br />";
                 msg += "by the CC-Plus automated harvesting system.";
             } else if (this.bulkAction == 'Disable') {
-                msg += "Disabling these providers will disable all related consortium-level provider definitions.<br/>";
-                msg += "This means that no automated report harvesting will happen for these providers, and the<br />";
+                msg += "Disabling these platforms will disable all related consortium-level platform definitions.<br/>";
+                msg += "This means that no automated report harvesting will happen for these platforms, and the<br />";
                 msg += "instance administrators will not be able to set or manage the status as long as they are disabled.";
             } else if (this.bulkAction == 'Refresh Registry') {
-                msg += "You are about to refresh the definitions for the selected providers to the what is kept in the<br/>";
-                msg += "online COUNTER registry. This has the potential to affect harvesting, which reports are available,<br />";
+                msg += "You are about to refresh the definitions for the selected platforms to the what is kept in the<br/>";
+                msg += "online COUNTER registry. This has the potential to affect harvesting, which reports are supported,<br />";
                 msg += "and the credentials required to harvest the reports.";
             } else if (this.bulkAction == 'Delete') {
-                msg += "CAUTION!!<br />Deleting these provider records is not reversible! Providers with harvested";
+                msg += "CAUTION!!<br />Deleting these platform records is not reversible! Platforms with harvested";
                 msg += " data will NOT be deleted.<br />";
-                msg += " NOTE: ALL provider and sushi definitions associated with the selected providers, across all";
+                msg += " NOTE: ALL platform and sushi definitions associated with the selected platforms, across all";
                 msg += " instances in this system will also be deleted!<br />";
             } else {
                 this.failure = "Unrecognized Bulk Action in processBulk!";
@@ -413,12 +410,12 @@
                                  .catch({});
                           }
                       });
-                      this.success = "Selected providers successfully deleted.";
+                      this.success = "Selected platforms successfully deleted.";
                   } else if (this.bulkAction == 'Refresh Registry') {
                       this.selectedRows.forEach( (provider) => {
                           this.registryRefresh(provider.id);
                       });
-                      this.success = "Selected providers successfully updated.";
+                      this.success = "Selected platforms successfully updated.";
                   } else {
                     let state = (this.bulkAction == 'Enable') ? 1 : 0;
                     this.selectedRows.forEach( (provider) => {
@@ -433,7 +430,7 @@
                          })
                          .catch(error => {});
                       });
-                      this.success = "Selected providers successfully updated.";
+                      this.success = "Selected platforms successfully updated.";
                   }
               }
               this.bulkAction = '';
@@ -456,13 +453,12 @@
                      var _idx = this.mutable_providers.findIndex(ii=>ii.id == gpId);
                      if (_idx > -1) {
                        this.mutable_providers[_idx].name = response.data.prov.name;
+                       this.mutable_providers[_idx].content_provider = response.data.prov.content_provider;
                        this.mutable_providers[_idx].abbrev = response.data.prov.abbrev;
                        this.mutable_providers[_idx].server_url_r5 = response.data.prov.server_url_r5;
                        this.mutable_providers[_idx].connectors = response.data.prov.connectors;
                        this.mutable_providers[_idx].connector_state = response.data.prov.connector_state;
-                       this.mutable_providers[_idx].connection_fields = response.data.prov.connection_fields;
                        this.mutable_providers[_idx].report_state = response.data.prov.report_state;
-                       this.mutable_providers[_idx].reports_string = response.data.prov.reports_string;
                        this.mutable_providers[_idx].master_reports = response.data.prov.master_reports;
                        this.mutable_providers[_idx].notifications_url = response.data.prov.notifications_url;
                        this.$emit('change-prov', gpId);
@@ -499,7 +495,7 @@
             this.success = '';
             this.failure = '';
             // Update existing global provider
-            if (this.dialog_title == "Edit Global Provider") {
+            if (this.dialog_title == "Edit Platform Settings") {
               let idx = this.mutable_providers.findIndex(p => p.id == this.current_provider_id);
               var canDelete = this.mutable_providers[idx].can_delete;
               var connectionCount = this.mutable_providers[idx].connection_count;
@@ -507,7 +503,7 @@
               if (this.warnConnectors) {
                 let warning_html = "One or more required connectors has been marked as no longer required. The current "+
                                    " values defined for these connectors will be cleared THROUGH ALL INSTANCES from the "+
-                                   " sushi settings when the provider is saved.<br />";
+                                   " sushi settings when the platform is saved.<br />";
                 warning_html += "Having good exports of the sushi definitions for all instances could be valuable if you find"
                 warning_html += " you need to re-enable the modified connector field.";
                 Swal.fire({
@@ -577,10 +573,10 @@
             this.provDialog = false;
         },
         destroy (gpid) {
-            let warning_html = "Deleting a provider cannot be reversed, only manually recreated."+
-                               " Because this provider has no harvested usage data, it can be safely"+
+            let warning_html = "Deleting a platform cannot be reversed, only manually recreated."+
+                               " Because this platform has no harvested usage data, it can be safely"+
                                " deleted.<br />";
-            warning_html += "<strong>NOTE:</strong><br />ALL Provider entries defined across ALL instances will also";
+            warning_html += "<strong>NOTE:</strong><br />ALL Platform entries defined across ALL instances will also";
             warning_html += " be removed if they exist - INCLUDING all related sushi settings.";
             Swal.fire({
               title: 'Are you sure?', html: warning_html, icon: 'warning', showCancelButton: true,
@@ -591,7 +587,7 @@
                        .then( (response) => {
                            if (response.data.result) {
                                this.mutable_providers.splice(this.mutable_providers.findIndex(p=>p.id == gpid),1);
-                               this.success = "Global provider deleted successfully.";
+                               this.success = "Platform deleted successfully.";
                                this.dtKey += 1;
                            } else {
                                this.success = '';
@@ -615,6 +611,7 @@
         doExport () {
             window.location.assign('/global/providers/export/xlsx');
         },
+        goURL (target) { window.open(target, "_blank"); },
     },
     computed: {
       ...mapGetters(['datatable_options'])

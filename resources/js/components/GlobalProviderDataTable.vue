@@ -280,14 +280,19 @@
             let _prov = this.mutable_providers.find(p => p.id == gp_id);
             this.current_provider_id = gp_id;
             this.current_connector_state = Object.assign({},_prov.connector_state);
-            this.form.connector_state = Object.assign({}, _prov.connector_state);
-            Object.keys(this.form).forEach( (key) =>  {
-              if (key != 'connector_state') {
-                this.form[key] = _prov[key];
-              }
-            });
-            this.showRefresh = _prov.refreshable; // button only displays when refreshable in form AND saved provider are true
+            this.form.connector_state = Object.assign({},_prov.connector_state);
+            this.form.registry_id = _prov.registry_id;
+            this.form.name = _prov.name;
+            this.form.content_provider = _prov.content_provider;
+            this.form.abbrev = _prov.abbrev;
+            this.form.is_active = _prov.is_active;
+            this.form.refreshable = _prov.refreshable;
+            this.form.server_url_r5 = _prov.server_url_r5;
+            this.form.report_state = _prov.report_state;
+            this.form.notifications_url = _prov.notifications_url;
+            this.form.platform_parm = _prov.platform_parm;
             this.updated_at = _prov.updated_at;
+            this.showRefresh = _prov.refreshable; // button only displays when refreshable in form AND saved provider are true
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
             this.provDialog = true;
@@ -296,16 +301,21 @@
             this.failure = '';
             this.success = '';
             this.dialog_title = "Add Platform Definition";
-            this.form.connector_state = Object.assign({}, this.new_provider.connector_state);
-            Object.keys(this.new_provider).forEach( (key) =>  {
-              if (key != 'connector_state' && key != 'id') {
-                this.form[key] = this.new_provider[key];
-              }
-            });
+            this.form.registry_id = this.new_provider.registry_id;
+            this.form.name = this.new_provider.name;
+            this.form.content_provider = this.new_provider.content_provider;
+            this.form.abbrev = this.new_provider.abbrev;
+            this.form.is_active = this.new_provider.is_active;
+            this.form.refreshable = this.new_provider.refreshable;
+            this.form.server_url_r5 = this.new_provider.server_url_r5;
+            this.form.connector_state = Object.assign({},_this.new_provider.connector_state);
+            this.form.report_state = this.new_provider.report_state;
+            this.form.platform_parm = this.new_provider.platform_parm;
+            this.form.notifications_url = this.new_provider.notifications_url;
             this.updated_at = null;
+            this.showRefresh = false;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
-            this.showRefresh = false;
             this.provDialog = true;
         },
         enableImportForm () {

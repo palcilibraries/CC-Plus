@@ -118,7 +118,7 @@ class AdminController extends Controller
                 $rec->inst_name = $prov_data->institution->name;
                 // inst-specific providers show only one connection; consortium providers include all
                 if ($rec->inst_id==1) {
-                    $rec->connected = ($connected_insts;
+                    $rec->connected = $connected_insts;
                 } else {
                     $rec->name = $prov_data->name;
                     $rec->connected = array( array('id' => $rec->inst_id, 'name' => $rec->inst_name) );

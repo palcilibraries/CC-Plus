@@ -120,6 +120,9 @@ class HarvestLogController extends Controller
                 $rec->sushi_enabled = (in_array($rec->id, $enabled_providers));
                 return $rec;
             })->toArray();
+            if ($show_all) {
+                array_unshift($providers, ['id' => 0, 'name' => 'All Consortium Providers', 'inst_id' => 1, 'sushi_enabled' => 1]);
+            }
 
             // Get reports for all that exist in the relationship table
             $table = config('database.connections.consodb.database') . '.' . 'provider_report';
@@ -133,9 +136,20 @@ class HarvestLogController extends Controller
         // Skip querying for records unless we're returning json
         // The vue-component will run a request for JSON data once it is mounted
         if ($json) {
+            // If we're going to limit-by-error_code, get a lest of harvestIDs that match in failedHarvests
+            $limit_harvest_ids = array();
+            if ($filters['error_code']) {
+                $limit_harvest_ids = FailedHarvest::where('error_id',$filters['error_code'])->distinct('harvest_id')
+                                                  ->pluck('harvest_id')->toArray();
+            }
             // Setup limit_to_insts with the instID's we'll pull settings for
             $limit_to_insts = array();
             if ($show_all) {
+                // if checkbox for all-consorrtium is on, clear inst and group Filters
+                if ($show_all && in_array(0,$filters["inst"])) {
+                    $filters['inst'] = array();
+                    $filters['group'] = array();
+                }
                 if (sizeof($filters['group']) > 0) {
                     foreach ($filters['group'] as $group_id) {
                         $group = $groups->where('id',$group_id)->first();
@@ -153,6 +167,15 @@ class HarvestLogController extends Controller
                 }
             } else {
                 $limit_to_insts[] = $thisUser->inst_id;
+            }
+
+            // Setup limit_to_provs with the provID's we'll pull settings for
+            $limit_to_provs = array();
+            if ($show_all && in_array(0,$filters["prov"])) {   //  Get all consortium providers?
+                $limit_to_provs = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
+                                          ->where('inst_id',1)->pluck('id')->toArray();
+            } else {
+                $limit_to_provs = $filters['prov'];
             }
 
             // Set array of statuses to pull (if filter is set)
@@ -185,6 +208,9 @@ class HarvestLogController extends Controller
                 ->when(sizeof($statuses) > 0, function ($qry) use ($statuses) {
                     return $qry->whereIn('status', $statuses);
                 })
+                ->when(count($limit_harvest_ids)>0, function($qry) use ($limit_harvest_ids) {
+                    return $qry->whereIn('id',$limit_harvest_ids);
+                })
                 ->when($filters['fromYM'], function ($qry) use ($filters) {
                     return $qry->where('yearmon', '>=', $filters['fromYM']);
                 })
@@ -203,7 +229,7 @@ class HarvestLogController extends Controller
             // Apply connectedBy and error_code filters (if given) and format records for display , limit to 500 output records
             $harvests = array();
             $updated_ym = array();
-            $filter_options = array('group' => [], 'inst' => [], 'prov' => [], 'rept' => [], 'harv_stat' => [], 'errors' => []);
+            $error_codes = array();
             $count = 0;
             $truncated = false;
             $max_records = 500;
@@ -211,18 +237,11 @@ class HarvestLogController extends Controller
                 // Skip records as-needed
                 if ( ($connectedBy=='Consortium' && $harvest->sushiSetting->provider->inst_id != 1) ||
                      ($connectedBy=='Institution' && $harvest->sushiSetting->provider->inst_id == 1) ) {
-                    $harvest_data->forget($key);
                     continue;
                 }
                 $formatted_harvest = $this->formatRecord($harvest);
-                if (!is_null($formatted_harvest['error_code']) &&
-                    !in_array($formatted_harvest['error_code'], $filter_options['errors'])) {
-                    $filter_options['errors'][] = $formatted_harvest['error_code'];
-                }
-                if (!is_null($filters['error_code']) && $filters['error_code']!=null &&
-                    $formatted_harvest['error_code'] != $filters['error_code']) {
-                    $harvest_data->forget($key);
-                    continue;
+                if (!is_null($formatted_harvest['error_code']) && !in_array($formatted_harvest['error_code'], $error_codes)) {
+                    $error_codes[] = $formatted_harvest['error_code'];
                 }
                 // bump counter and add the record to the output array
                 $count += 1;
@@ -235,41 +254,9 @@ class HarvestLogController extends Controller
                     $updated_ym[] = substr($harvest->updated_at,0,7);
                 }
             }
-
-            // Rebuild filtering option arrays to update the U/I
-            $settings_inst_ids = $harvest_data->unique('sushiSetting.inst_id')->pluck('sushiSetting.inst_id')->toArray();
-            $option_ids = array_merge($filters['inst'], $settings_inst_ids);
-            $filter_options['inst'] = Institution::with('sushiSettings:id,inst_id,prov_id')->whereIn('id', $option_ids)
-                                                 ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
-
-            $source_ids = $harvest_data->unique('sushiSetting.prov_id')->pluck('sushiSetting.prov_id')->toArray();
-            $option_ids = array_merge($filters['prov'], $source_ids);
-            $filter_options['prov'] = Provider::with('reports')->whereIn('id', $option_ids)
-                                              ->orderBy('name', 'ASC')->get(['id','name','inst_id'])->toArray();
-
-            $source_ids = $harvest_data->unique('report_id')->pluck('report_id')->toArray();
-            $option_ids = array_merge($filters['rept'], $source_ids);
-            $filter_options['rept'] = Report::whereIn('id', $option_ids)->orderBy('name', 'asc')->get()->toArray();
-
-            $_values = $harvest_data->unique('status')->pluck('status')->toArray();
-            $filter_options['harv_stat'] = array_merge($filters['harv_stat'], $_values);
-
-            // Group options based on insts
-            $groups = InstitutionGroup::with('institutions')->orderBy('name', 'ASC')->get(['id','name']);
-            foreach ($groups as $key => $grp) {
-                if (!$grp->institutions) {
-                    $groups->forget($key);
-                } else {
-                    $grp_inst_ids = $grp->institutions->pluck('id')->toArray();
-                    if (count(array_intersect($grp_inst_ids, $settings_inst_ids)) == 0) {
-                        $groups->forget($key);
-                    }
-                }
-            }
-            $filter_options['group'] = $groups->toArray();
+            sort($error_codes);
 
             // sort error codes ascending and updated_ym options descending
-            sort($filter_options['errors']);
             usort($updated_ym, function ($time1, $time2) {
                 if (strtotime($time1) < strtotime($time2)) {
                     return 1;
@@ -280,9 +267,8 @@ class HarvestLogController extends Controller
                 }
             });
             array_unshift($updated_ym , 'Last 24 hours');
-
             return response()->json(['harvests' => $harvests, 'updated' => $updated_ym, 'truncated' => $truncated,
-                                     'options' => $filter_options], 200);
+                                     'codes' => $error_codes, 200]);
 
         // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {

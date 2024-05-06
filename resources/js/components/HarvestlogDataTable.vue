@@ -6,8 +6,11 @@
       </div>
       <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM" :key="rangeKey"
       ></date-range>
+      <v-col class="d-flex px-4 align-center" cols="2" sm="2">
+        <v-btn class='btn' small color="primary" @click="updateLogRecords()">{{ update_button }}</v-btn>
+      </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <v-btn class='btn' x-small type="button" @click="clearAllFilters()">Clear Filters</v-btn>
+        <v-btn class='btn' small type="button" @click="clearAllFilters()">Clear Filters</v-btn>
       </v-col>
       <v-col v-if="truncatedResult" class="d-flex px-2 align-center" cols="4">
         <span class="fail" role="alert">Display Truncated To 500 Records</span>
@@ -26,7 +29,7 @@
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
-        <v-autocomplete :items="filter_options['prov']" v-model="mutable_filters['prov']" @change="updateFilters('prov')" multiple
+        <v-autocomplete :items="providers" v-model="mutable_filters['prov']" @change="updateFilters('prov')" multiple
                         label="Provider(s)" item-text="name" item-value="id">
           <template v-slot:prepend-item>
             <v-list-item>
@@ -41,7 +44,7 @@
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-autocomplete :items="filter_options['inst']" v-model="mutable_filters['inst']" @change="updateFilters('inst')" multiple
+        <v-autocomplete :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters('inst')" multiple
                         label="Institution(s)"  item-text="name" item-value="id"
         ></v-autocomplete>
       </v-col>
@@ -50,7 +53,7 @@
         <div v-if="mutable_filters['group'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('group')"/>&nbsp;
         </div>
-        <v-select :items="filter_options['group']" v-model="mutable_filters['group']" @change="updateFilters('group')" multiple
+        <v-select :items="groups" v-model="mutable_filters['group']" @change="updateFilters('group')" multiple
                   label="Institution Group(s)"  item-text="name" item-value="id"
         ></v-select>
       </v-col>
@@ -58,7 +61,7 @@
         <div v-if="mutable_filters['rept'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('rept')"/>&nbsp;
         </div>
-        <v-select :items="filter_options['rept']" v-model="mutable_filters['rept']" @change="updateFilters('rept')" multiple
+        <v-select :items="reports" v-model="mutable_filters['rept']" @change="updateFilters('rept')" multiple
                   label="Report(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
@@ -66,7 +69,7 @@
         <div v-if="mutable_filters['harv_stat'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('harv_stat')"/>&nbsp;
         </div>
-        <v-select :items="filter_options['harv_stat']" v-model="mutable_filters['harv_stat']" @change="updateFilters('harv_stat')"
+        <v-select :items="statuses" v-model="mutable_filters['harv_stat']" @change="updateFilters('harv_stat')"
                   multiple label="Status(es)" item-text="name" item-value="name"
         ></v-select>
       </v-col>
@@ -94,11 +97,11 @@
                     label="Connected By"
           ></v-select>
         </v-col>
-        <v-col v-if="filter_options['errors'].length>0" class="d-flex px-2 align-center" cols="2">
+        <v-col v-if="codes.length>0" class="d-flex px-2 align-center" cols="2">
           <div v-if="mutable_filters['error_code']!=null && mutable_filters['error_code']!=''" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('error_code')"/>&nbsp;
           </div>
-          <v-select :items="filter_options['errors']" v-model="mutable_filters['error_code']" @change="updateFilters('error_code')"
+          <v-select :items="codes" v-model="mutable_filters['error_code']" @change="updateFilters('error_code')"
                     label="Error Code"
           ></v-select>
         </v-col>
@@ -225,7 +228,7 @@
                         { action:'Restart', status:'Queued'},
                         { action:'Delete',  status:'Delete'}
                       ],
-        filter_options: { 'inst': [], 'prov': [], 'rept': [], 'group': [], 'harv_stat': [], 'errors': [] },
+        codes: [],
         harv: {},
         selectedRows: [],
         minYM: '',
@@ -235,7 +238,8 @@
         bulkAction: '',
         success: '',
         failure: '',
-        loading: true,
+        loading: false,
+        update_button: "Display Records",
       }
     },
     watch: {
@@ -248,7 +252,6 @@
               this.mutable_filters['toYM'] = this.filter_by_toYM;
               this.mutable_filters['fromYM'] = this.filter_by_fromYM;
               this.$store.dispatch('updateAllFilters',this.mutable_filters);
-              this.updateLogRecords();
           }
           this.rangeKey += 1;           // force re-render of the date-range component
         }
@@ -259,10 +262,13 @@
         // one of many rows no longer displayed.
         updateFilters(filt) {
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
-            this.updateLogRecords(filt);
             this.selectedRows = [];
-            if (this.mutable_filters['inst'].length>0 || this.mutable_filters['group'].length>0) {
-                this.inst_filter = (this.mutable_filters['inst'].length>0) ? "I" : "G";
+            if (this.mutable_filters['inst'].length>0) {
+                this.inst_filter = "I";
+                this.mutable_filters['group'] = [];
+            } else if (this.mutable_filters['group'].length>0) {
+                this.inst_filter = "G";
+                this.mutable_filters['inst'] = [];
             }
         },
         clearAllFilters() {
@@ -274,7 +280,6 @@
               }
             });
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
-            this.updateLogRecords('none');
             this.inst_filter = null;
             this.rangeKey += 1;           // force re-render of the date-range component
         },
@@ -290,7 +295,6 @@
                 if (filter=='inst' || filter=='group') this.inst_filter = null;
             }
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
-            this.updateLogRecords('none');
             this.selectedRows = [];
         },
         // filt holds the filter options to be left alone when the JSON returns options
@@ -300,25 +304,14 @@
             this.loading = true;
             if (this.filter_by_toYM != null) this.mutable_filters['toYM'] = this.filter_by_toYM;
             if (this.filter_by_fromYM != null) this.mutable_filters['fromYM'] = this.filter_by_fromYM;
-            // For FIRST time getting records, set a special flag to get only latest month
-            if (this.dtKey == 1) {
-                this.mutable_filters['updated'] = "Last 24 hours";
-            }
             let _filters = JSON.stringify(this.mutable_filters);
             axios.get("/harvests?json=1&filters="+_filters)
                  .then((response) => {
                      this.mutable_harvests = response.data.harvests;
                      this.mutable_updated = response.data.updated;
-                     Object.keys(response.data.options).forEach( (key) =>  {
-                        if ( key != filt ) {
-                          if (response.data.options[key].length>0) {
-                            this.filter_options[key] = [...response.data.options[key]];
-                          } else {
-                            this.filter_options[key] = [];
-                          }
-                        }
-                     });
+                     this.codes = [...response.data.codes];
                      this.truncatedResult = response.data.truncated;
+                     this.update_button = "Refresh Records";
                      this.loading = false;
                      this.dtKey++;
                  })
@@ -470,6 +463,14 @@
         }
       });
 
+      // Inst-filter > Group-filter, if one has a value, set the flag
+      if (this.mutable_filters['inst'].length>0) {
+          this.mutable_filters['group'] = [];
+          this.inst_filter = 'I';
+      } else if (this.mutable_filters['group'].length>0) {
+          this.inst_filter = 'G';
+      }
+
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);
 
@@ -483,11 +484,6 @@
       if (!this.is_admin && !this.is_viewer) {
          this.headers.splice(this.headers.findIndex(h=>h.value == "inst_name"),1);
       }
-
-      // Update store and apply filters now that they're set
-      this.loading = true;
-      this.updateLogRecords('none');
-      this.dtKey += 1;           // force re-render of the datatable
 
       // Subscribe to store updates
       this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });

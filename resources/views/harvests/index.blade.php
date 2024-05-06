@@ -7,5 +7,6 @@
             :reports="{{ json_encode($reports) }}"
             :bounds="{{ json_encode($bounds) }}"
             :filters="{{ json_encode($filters) }}"
+            :codes="{{ json_encode($codes) }}"
 ></harvesting>
 @endsection

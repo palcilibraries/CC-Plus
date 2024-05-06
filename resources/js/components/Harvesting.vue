@@ -34,7 +34,7 @@
         </v-expansion-panel-header>
         <v-expansion-panel-content>
           <harvestlog-data-table :harvests="mutable_harvests" :institutions="institutions" :groups="groups" :providers="providers"
-                                 :reports="reports" :bounds="mutable_bounds" :filters="filters" :key="harvKey"
+                                 :reports="reports" :bounds="mutable_bounds" :filters="filters" :codes="codes" :key="harvKey"
           ></harvestlog-data-table>
         </v-expansion-panel-content>
       </v-expansion-panel>
@@ -53,6 +53,7 @@
             reports: { type:Array, default: () => [] },
             bounds: { type:Array, default: () => [] },
             filters: { type:Object, default: () => {} },
+            codes: { type:Array, default: () => [] },
            },
     data () {
         return {
@@ -112,7 +113,8 @@
     mounted() {
         this.harvest_provs = this.providers.filter(p => p.sushi_enabled);
         if (this.harvest_provs.length > 1) {
-          this.harvest_provs.unshift({'id':0, 'name':'All Providers'});
+          this.harvest_provs.unshift({'id': 0, 'name':'All Consortium Providers'});
+          this.harvest_provs.unshift({'id':-1, 'name':'All Providers'});
         }
         this.harvest_insts = [ ...this.institutions];
 

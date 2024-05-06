@@ -38,7 +38,7 @@ class HarvestLogController extends Controller
 
         // Assign optional inputs to $filters array
         $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'harv_stat' => [], 'updated' => null, 'group' => [],
-                         'fromYM' => null, 'toYM' => null, 'connected_by' => null, 'error_code' => null);
+                         'fromYM' => null, 'toYM' => null, 'connected_by' => null, 'codes' => []);
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
@@ -50,7 +50,7 @@ class HarvestLogController extends Controller
             $keys = array_keys($filters);
             foreach ($keys as $key) {
                 if ($request->input($key)) {
-                    if ($key=='fromYM' || $key=='toYM' || $key=='updated' || $key=='connected_by' || $key=='error_code') {
+                    if ($key=='fromYM' || $key=='toYM' || $key=='updated' || $key=='connected_by') {
                         $filters[$key] = $request->input($key);
                     } elseif (is_numeric($request->input($key))) {
                         $filters[$key] = array(intval($request->input($key)));
@@ -131,6 +131,9 @@ class HarvestLogController extends Controller
 
             // Query for min and max yearmon values
             $bounds = $this->harvestBounds();
+
+            // make a list of error codes - for now just return everthing that exists in failedHarvests
+            $codes = FailedHarvest::distinct('error_id')->pluck('error_id')->toArray();
         }
 
         // Skip querying for records unless we're returning json
@@ -138,8 +141,8 @@ class HarvestLogController extends Controller
         if ($json) {
             // If we're going to limit-by-error_code, get a lest of harvestIDs that match in failedHarvests
             $limit_harvest_ids = array();
-            if ($filters['error_code']) {
-                $limit_harvest_ids = FailedHarvest::where('error_id',$filters['error_code'])->distinct('harvest_id')
+            if ($filters['codes']) {
+                $limit_harvest_ids = FailedHarvest::whereIn('error_id',$filters['codes'])->distinct('harvest_id')
                                                   ->pluck('harvest_id')->toArray();
             }
             // Setup limit_to_insts with the instID's we'll pull settings for
@@ -226,10 +229,9 @@ class HarvestLogController extends Controller
                 })
                 ->get();
 
-            // Apply connectedBy and error_code filters (if given) and format records for display , limit to 500 output records
+            // Apply connectedBy filter (if given) and format records for display , limit to 500 output records
             $harvests = array();
             $updated_ym = array();
-            $error_codes = array();
             $count = 0;
             $truncated = false;
             $max_records = 500;
@@ -240,9 +242,6 @@ class HarvestLogController extends Controller
                     continue;
                 }
                 $formatted_harvest = $this->formatRecord($harvest);
-                if (!is_null($formatted_harvest['error_code']) && !in_array($formatted_harvest['error_code'], $error_codes)) {
-                    $error_codes[] = $formatted_harvest['error_code'];
-                }
                 // bump counter and add the record to the output array
                 $count += 1;
                 if ($count > $max_records) {
@@ -254,7 +253,6 @@ class HarvestLogController extends Controller
                     $updated_ym[] = substr($harvest->updated_at,0,7);
                 }
             }
-            sort($error_codes);
 
             // sort error codes ascending and updated_ym options descending
             usort($updated_ym, function ($time1, $time2) {
@@ -267,8 +265,7 @@ class HarvestLogController extends Controller
                 }
             });
             array_unshift($updated_ym , 'Last 24 hours');
-            return response()->json(['harvests' => $harvests, 'updated' => $updated_ym, 'truncated' => $truncated,
-                                     'codes' => $error_codes, 200]);
+            return response()->json(['harvests' => $harvests, 'updated' => $updated_ym, 'truncated' => $truncated, 200]);
 
         // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {
@@ -280,7 +277,8 @@ class HarvestLogController extends Controller
                 'providers',
                 'reports',
                 'bounds',
-                'filters'
+                'filters',
+                'codes'
             ));
         }
     }

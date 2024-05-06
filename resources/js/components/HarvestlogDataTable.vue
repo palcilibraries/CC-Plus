@@ -98,10 +98,10 @@
           ></v-select>
         </v-col>
         <v-col v-if="codes.length>0" class="d-flex px-2 align-center" cols="2">
-          <div v-if="mutable_filters['error_code']!=null && mutable_filters['error_code']!=''" class="x-box">
-            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('error_code')"/>&nbsp;
+          <div v-if="mutable_filters['codes'].length>0" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('codes')"/>&nbsp;
           </div>
-          <v-select :items="codes" v-model="mutable_filters['error_code']" @change="updateFilters('error_code')"
+          <v-select :items="codes" v-model="mutable_filters['codes']" @change="updateFilters('codes')" multiple
                     label="Error Code"
           ></v-select>
         </v-col>
@@ -198,6 +198,7 @@
             errors: { type:Array, default: () => [] },
             bounds: { type:Array, default: () => [] },
             filters: { type:Object, default: () => {} },
+            codes: { type:Array, default: () => [] },
            },
     data () {
       return {
@@ -228,7 +229,6 @@
                         { action:'Restart', status:'Queued'},
                         { action:'Delete',  status:'Delete'}
                       ],
-        codes: [],
         harv: {},
         selectedRows: [],
         minYM: '',
@@ -273,7 +273,7 @@
         },
         clearAllFilters() {
             Object.keys(this.mutable_filters).forEach( (key) =>  {
-              if (key == 'fromYM' || key == 'toYM' || key == 'updated' || key == 'connected_by' || key == 'error_code') {
+              if (key == 'fromYM' || key == 'toYM' || key == 'updated' || key == 'connected_by') {
                   this.mutable_filters[key] = '';
               } else {
                   this.mutable_filters[key] = [];
@@ -288,7 +288,7 @@
                 this.mutable_filters['toYM'] = '';
                 this.mutable_filters['fromYM'] = '';
                 this.rangeKey += 1;           // force re-render of the date-range component
-            } else if (filter == 'updated' || filter == 'connected_by' || filter == 'error_code') {
+            } else if (filter == 'updated' || filter == 'connected_by') {
                 this.mutable_filters[filter] = '';
             } else {
                 this.mutable_filters[filter] = [];
@@ -309,7 +309,6 @@
                  .then((response) => {
                      this.mutable_harvests = response.data.harvests;
                      this.mutable_updated = response.data.updated;
-                     this.codes = [...response.data.codes];
                      this.truncatedResult = response.data.truncated;
                      this.update_button = "Refresh Records";
                      this.loading = false;
@@ -452,7 +451,7 @@
     mounted() {
       // Update any null/empty filters w/ store-values
       Object.keys(this.all_filters).forEach( (key) =>  {
-        if (key == 'fromYM' || key == 'toYM' || key == 'updated' || key == 'connected_by' || key == 'error_code') {
+        if (key == 'fromYM' || key == 'toYM' || key == 'updated' || key == 'connected_by') {
             if (this.mutable_filters[key] == null || this.mutable_filters[key] == "")
                 this.mutable_filters[key] = this.all_filters[key];
         } else {

@@ -13,7 +13,6 @@ class GlobalProvider extends Model
    */
     protected $connection = 'globaldb';
     protected $table = 'global_providers';
-    public $timestamps = false;
 
   /**
    * Mass assignable attributes.

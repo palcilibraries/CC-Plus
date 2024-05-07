@@ -139,12 +139,6 @@ class HarvestLogController extends Controller
         // Skip querying for records unless we're returning json
         // The vue-component will run a request for JSON data once it is mounted
         if ($json) {
-            // If we're going to limit-by-error_code, get a lest of harvestIDs that match in failedHarvests
-            $limit_harvest_ids = array();
-            if ($filters['codes']) {
-                $limit_harvest_ids = FailedHarvest::whereIn('error_id',$filters['codes'])->distinct('harvest_id')
-                                                  ->pluck('harvest_id')->toArray();
-            }
             // Setup limit_to_insts with the instID's we'll pull settings for
             $limit_to_insts = array();
             if ($show_all) {
@@ -211,9 +205,6 @@ class HarvestLogController extends Controller
                 ->when(sizeof($statuses) > 0, function ($qry) use ($statuses) {
                     return $qry->whereIn('status', $statuses);
                 })
-                ->when(count($limit_harvest_ids)>0, function($qry) use ($limit_harvest_ids) {
-                    return $qry->whereIn('id',$limit_harvest_ids);
-                })
                 ->when($filters['fromYM'], function ($qry) use ($filters) {
                     return $qry->where('yearmon', '>=', $filters['fromYM']);
                 })
@@ -242,6 +233,10 @@ class HarvestLogController extends Controller
                     continue;
                 }
                 $formatted_harvest = $this->formatRecord($harvest);
+                if (count($filters['codes'])>0 && !in_array($formatted_harvest['error_code'],$filters['codes'])) {
+                    continue;
+                }
+
                 // bump counter and add the record to the output array
                 $count += 1;
                 if ($count > $max_records) {
@@ -339,7 +334,8 @@ class HarvestLogController extends Controller
                                  ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
             $inst_groups = array();
         }
-        array_unshift($providers, ['id' => 0, 'name' => 'All Providers']);
+        array_unshift($providers, ['id' =>  0, 'name' => 'All Consortium Providers', 'inst_id' => 1, 'sushi_enabled' => 1]);
+        array_unshift($providers, ['id' => -1, 'name' => 'All Providers', 'inst_id' => 1, 'sushi_enabled' => 1]);
 
         // Get reports for all that exist in the relationship table
         $table = config('database.connections.consodb.database') . '.' . 'provider_report';
@@ -403,22 +399,29 @@ class HarvestLogController extends Controller
             return response()->json(['result' => false, 'msg' => 'Error: no matching institutions to harvest']);
         }
         // Get provider info
-        $prov_ids = $input["prov"];
-        if (sizeof($prov_ids) > 0) {
+        if (in_array(0,$input["prov"])) {   //  Get all consortium providers
             $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
-                                 ->whereIn('id', $prov_ids)->get();
-
-            // Non-admin disallowed from harvesting non-consortium providers owned by other institutions
-            if (!$is_admin && $providers[0]->inst_id != $user_inst && $providers[0]->inst_id != 1) {
-                return response()->json(['result' => false, 'msg' => 'Requested provider is not authorized.']);
-            }
-        // if providers array is empty, get all active
+                                 ->where('inst_id',1)->get();
         } else {
-            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
-                                 ->where('is_active', '=', true)
-                                 ->when(!$is_admin, function ($query, $user_inst) {
-                                     return $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
-                                 })->get();
+            $prov_ids = $input["prov"];
+            // Get all providers?
+            if (in_array(-1, $prov_ids) || count($prov_ids) == 0) {
+                $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
+                                     ->where('is_active', '=', true)
+                                     ->when(!$is_admin, function ($query, $user_inst) {
+                                         return $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
+                                     })->get();
+            // $prov_ids has a list of IDs
+            } else {
+                $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
+                                     ->whereIn('id', $prov_ids)->get();
+                // Non-admin disallowed from harvesting inst-specific providers of other insitutions
+                if (!$is_admin) {
+                    if ($providers->whereNotIn('inst_id',[1,$user_inst])->first()) {
+                        return response()->json(['result' => false, 'msg' => 'Error - Not authorized']);
+                    }
+                }
+            }
         }
         // Set the status for the harvests we're creating based on "when"
         $state = "New";

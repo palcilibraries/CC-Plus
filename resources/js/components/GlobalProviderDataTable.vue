@@ -133,7 +133,7 @@
             </v-row>
             <v-row class="d-flex ma-0" no-gutters>
               <v-col class="d-flex px-4" cols="10">
-                <v-text-field v-model="form.content_provider" label="Content Platform" outlined dense></v-text-field>
+                <v-text-field v-model="form.content_provider" label="Content Provider" outlined dense></v-text-field>
               </v-col>
             </v-row>
             <v-row class="d-flex ma-0" no-gutters>

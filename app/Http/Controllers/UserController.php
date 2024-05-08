@@ -99,6 +99,12 @@ class UserController extends Controller
                 // exclude any users that cannot be managed by thisUser from the displayed list
                 if (!$rec->canManage()) continue;
 
+                // If filtering by-role and user has none of the filter-roles, skip to next user
+                if (count($filters['roles']) > 0) {
+                    $hasRole = $rec->roles->whereIn('id',$filters['roles'])->first();
+                    if (!$hasRole) continue;
+                }
+
                 // Setup array for this user data
                 $user = $rec->toArray();
                 $user['fiscalYr'] = ($rec->fiscalYr) ? $rec->fiscalYr : config('ccplus.fiscalYr');

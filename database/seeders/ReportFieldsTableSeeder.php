@@ -101,7 +101,7 @@ class ReportFieldsTableSeeder extends Seeder
 
            // DR Report Info and Optional fields
             DB::table($table)->insert(['id' => 26, 'report_id' => 2, 'legend' => 'Database',
-                'qry' => 'DB.name', 'qry_as' => 'Dbase', 'group_it' => 1, 'active' => 1]);
+                'qry' => 'DB.name', 'qry_as' => 'Dbase', 'group_it' => 1, 'report_filter_id' => 10, 'active' => 1]);
             DB::table($table)->insert(['id' => 27, 'report_id' => 2, 'legend' => 'Provider', 'group_it' => 1,
                 'joins' => '_conso_.providers as PROV', 'qry' => 'PROV.name', 'qry_as' => 'provider',
                 'report_filter_id' => 1]);

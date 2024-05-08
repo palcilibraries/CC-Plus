@@ -38,11 +38,20 @@
         <v-expansion-panel-header>Filters</v-expansion-panel-header>
         <v-expansion-panel-content>
           <v-row v-if="active_filter_count > 0" class="d-flex ma-1 wrap-filters" no-gutters>
+            <div v-if='filter_data["Dbase"].active' cols="3" sm="2">
+              <v-col v-if='filter_data["Dbase"].value.length >= 0' class="d-flex pa-2 align-center">
+                <img v-if='filter_data["Dbase"].value.length > 0' src="/images/red-x-16.png"
+                     alt="clear filter" @click="clearFilter('Dbase')"/>&nbsp;
+                <v-autocomplete :items='mutable_filter_options.database' v-model='filter_data.Dbase.value' multiple
+                                @change="setFilter('Dbase')" label="Database" item-text="name" item-value="id"
+                ></v-autocomplete>
+              </v-col>
+            </div>
             <div v-if='filter_data["provider"].active' cols="3" sm="2">
               <v-col v-if='filter_data["provider"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["provider"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('provider')"/>&nbsp;
-                <v-autocomplete :items='filter_options.provider' v-model='filter_data.provider.value' multiple
+                <v-autocomplete :items='mutable_filter_options.provider' v-model='filter_data.provider.value' multiple
                                 @change="setFilter('provider')" label="Provider" item-text="name" item-value="id"
                 ></v-autocomplete>
               </v-col>
@@ -51,7 +60,7 @@
               <v-col v-if='filter_data["platform"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["platform"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('platform')"/>&nbsp;
-                <v-autocomplete :items='filter_options.platform' v-model='filter_data.platform.value' multiple
+                <v-autocomplete :items='mutable_filter_options.platform' v-model='filter_data.platform.value' multiple
                                 @change="setFilter('platform')" label="Platform" item-text="name" item-value="id"
                 ></v-autocomplete>
               </v-col>
@@ -61,7 +70,7 @@
               <v-col v-if='filter_data["institution"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["institution"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('institution')"/>&nbsp;
-                <v-autocomplete :items='filter_options.institution' v-model='filter_data.institution.value' multiple
+                <v-autocomplete :items='mutable_filter_options.institution' v-model='filter_data.institution.value' multiple
                                 @change="setFilter('institution')" label="Institution" item-text="name" item-value="id"
                 ></v-autocomplete>
               </v-col>
@@ -70,7 +79,7 @@
               <v-col v-if='filter_data["institutiongroup"].value >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["institutiongroup"].value > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('institutiongroup')"/>&nbsp;
-                <v-autocomplete :items='filter_options.institutiongroup' v-model='filter_data.institutiongroup.value'
+                <v-autocomplete :items='mutable_filter_options.institutiongroup' v-model='filter_data.institutiongroup.value'
                                 @change="setFilter('institutiongroup')" label="Institution Group"
                                 item-text="name" item-value="id"
                 ></v-autocomplete>
@@ -80,7 +89,7 @@
               <v-col v-if='filter_data["datatype"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["datatype"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('datatype')"/>&nbsp;
-                <v-select :items='filter_options.datatype' v-model='filter_data.datatype.value' multiple
+                <v-select :items='mutable_filter_options.datatype' v-model='filter_data.datatype.value' multiple
                           @change="setFilter('datatype')" label="Data Type" item-text="name" item-value="id"
                 ></v-select>
               </v-col>
@@ -89,7 +98,7 @@
               <v-col v-if='filter_data["sectiontype"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["sectiontype"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('sectiontype')"/>&nbsp;
-                  <v-select :items='filter_options.sectiontype' v-model='filter_data.sectiontype.value' multiple
+                  <v-select :items='mutable_filter_options.sectiontype' v-model='filter_data.sectiontype.value' multiple
                             @change="setFilter('sectiontype')" label="Section Type" item-text="name" item-value="id"
                 ></v-select>
               </v-col>
@@ -98,7 +107,7 @@
               <v-col v-if='filter_data["accesstype"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["accesstype"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('accesstype')"/>&nbsp;
-                <v-select :items='filter_options.accesstype' v-model='filter_data.accesstype.value' multiple
+                <v-select :items='mutable_filter_options.accesstype' v-model='filter_data.accesstype.value' multiple
                           @change="setFilter('accesstype')" label="Access Type" item-text="name" item-value="id"
                 ></v-select>
               </v-col>
@@ -107,7 +116,7 @@
               <v-col v-if='filter_data["accessmethod"].value.length >= 0' class="d-flex pa-2 align-center">
                 <img v-if='filter_data["accessmethod"].value.length > 0' src="/images/red-x-16.png"
                      alt="clear filter" @click="clearFilter('accessmethod')"/>&nbsp;
-                <v-select :items='filter_options.accessmethod' v-model='filter_data.accessmethod.value' multiple
+                <v-select :items='mutable_filter_options.accessmethod' v-model='filter_data.accessmethod.value' multiple
                           label="Access Method" @change="setFilter('accessmethod')" item-text="name" item-value="id"
                 ></v-select>
               </v-col>
@@ -241,6 +250,7 @@
         report_data: [],
         filter_data: {
           provider: { col:'prov_id', act:'updateProvider', value:[], name:'', active: false },
+          Dbase: { col:'db_id', act:'updateDataBase', value:[], name:'', active: false },
           platform: { col:'plat_id', act:'updatePlatform', value:[], name:'', active: false },
           institution: { col:'inst_id', act:'updateInstitution', value:[], name:'', active: false },
           institutiongroup: { col:'institutiongroup_id', act:'updateInstGroup', value: -1, name:'', active: false },
@@ -372,8 +382,8 @@
             let method = this.filter_data[filter].act+'Filter';
             this.$store.dispatch(method, this.filter_data[filter].value);
             if (this.filter_data[filter].value.constructor != Array) {
-                let idx = this.filter_options[filter].findIndex(f => f.id==this.filter_data[filter].value);
-                this.filter_data[filter].name = this.filter_options[filter][idx].name;
+                let idx = this.mutable_filter_options[filter].findIndex(f => f.id==this.filter_data[filter].value);
+                this.filter_data[filter].name = this.mutable_filter_options[filter][idx].name;
             }
         },
         setYOP() {
@@ -423,6 +433,10 @@
                                 .then((response) => {
                     let items = response.data.usage;
                     resolve({items});
+                    // update database filter options if they cam back with the data
+                    if (typeof(response.data.db_optiosn)!='undefined') {
+                        this.mutable_filter_options['database'] = [ ...response.data.db_options ];
+                    }
                     this.loading = false;
                     this.runtype = '';
                 })
@@ -541,14 +555,17 @@
     beforeCreate() {
         // Load existing store data
 		this.$store.commit('initialiseStore');
-	},
+  	},
     beforeMount() {
         // Set page name in the store
         this.$store.dispatch('updatePageName','preview');
-	},
+  	},
     mounted() {
       // Subscribe store to local storage
       this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
+
+      // Copy filter options into a mutable array
+      this.mutable_filter_options = Object.assign({}, this.filter_options);
 
       // Set initial filter-state for inactive "filterable" columns, and count the active ones
       this.mutable_cols.forEach(col => {
@@ -585,8 +602,8 @@
               } else {
                   if (this.preset_filters[data.col] > 0) {
                     data.value = this.preset_filters[data.col];
-                    let idx = this.filter_options[key].findIndex(f => f.id==data.value);
-                    data.name = this.filter_options[key][idx].name;
+                    let idx = this.mutable_filter_options[key].findIndex(f => f.id==data.value);
+                    data.name = this.mutable_filter_options[key][idx].name;
                   }
               }
           // filter_data column not in preset array, reset it in the store

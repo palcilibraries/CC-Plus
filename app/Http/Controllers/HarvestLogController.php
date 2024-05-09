@@ -815,6 +815,62 @@ class HarvestLogController extends Controller
         return response()->json(['result' => true, 'msg' => 'Log record deleted successfully']);
     }
 
+    /**
+     * Delete multiple harvests
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+     public function bulkDestroy(Request $request)
+     {
+         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+
+         // Get and verify input or bail with error in json response
+         try {
+             $input = json_decode($request->getContent(), true);
+         } catch (\Exception $e) {
+             return response()->json(['result' => false, 'msg' => 'Error decoding input!']);
+         }
+         if (!isset($input['harvests'])) {
+             return response()->json(['result' => false, 'msg' => 'Missing expected inputs!']);
+         }
+
+         // Get the harvests requested
+         $harvests = HarvestLog::whereIn('id', $input['harvests'])->get();
+         $skipped = 0;
+         $msg = "Result: ";
+
+         // Build a list of IDs that current user allowed to delete
+         $deleted = 0;
+         $deleteable_ids = [];
+         foreach ($harvests as $harvest) {
+            if (!$harvest->canManage()) {
+                $skipped++;
+                continue;
+            }
+            $deleteable_ids[] = $harvest->id;
+         }
+         if (count($deleteable_ids) == 0) {
+             return response()->json(['result' => false, 'msg' => 'Error: Authorization failed for requested inputs']);
+         }
+         // Get consortium_id
+         $con = Consortium::where('ccp_key', session('ccp_con_key'))->first();
+         if (!$con) {
+             return response()->json(['result' => false, 'msg' => 'Error: Corrupt session or consortium settings.']);
+         }
+
+         // Delete any related jobs from the global queue before deleting the harvests
+         $result = SushiQueueJob::where('consortium_id',$con->id)->whereIn('harvest_id', $deleteable_ids)->delete();
+
+         // Delete the harvests
+         $deleted = HarvestLog::whereIn('id', $deleteable_ids)->delete();
+
+         // return result
+         $msg .= $deleted . " records deleted";
+         $msg .= ($skipped>0) ? ", and " . $skipped . "records skipped." : " successfully.";
+         return response()->json(['result' => true, 'msg' => $msg, 'removed' => $deleteable_ids]);
+     }
+
     // Turn a fromYM/toYM range into an array of yearmon strings
     private function createYMarray($from, $to)
     {

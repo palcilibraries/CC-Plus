@@ -52,6 +52,8 @@ Route::get('/providers-export', 'ProviderController@export')->name('providers.ex
 Route::resource('/harvests', 'HarvestLogController')->middleware(['auth','cache.headers:no_store']);
 Route::get('/harvests/{id}/raw', 'HarvestLogController@downloadRaw')->name('harvests.download')
      ->middleware(['auth','role:Admin,Manager']);
+Route::post('/bulk-harvest-delete', 'HarvestLogController@bulkDestroy')->name('harvests.bulkDestroy')
+     ->middleware(['auth','role:Admin,Manager']);
 Route::post('/update-harvest-status', 'HarvestLogController@updateStatus')->name('harvests.changeStatus')
      ->middleware(['auth','role:Admin,Manager']);
 Route::resource('/sushisettings', 'SushiSettingController')->middleware(['auth','role:Admin,Manager','cache.headers:no_store']);

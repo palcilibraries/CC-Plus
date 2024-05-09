@@ -493,9 +493,16 @@
               this.success = '';
               this.failure = '';
               let url = "/sushi-export?export_missing="+this.export_missing;
-              if (this.filters['inst'].length > 0 || this.filters['group'] != 0 || this.filters['harv_stat'].length >0 ||
-                  this.filters['global_prov'].length > 0 || this.filters['inst_prov'].length > 0) {
-                  url += "&context="+this.inst_context+"&filters="+JSON.stringify(this.filters);
+              let _filters = {...this.filters};
+              // pass limit_prov_ids as filters['inst_prov'] if set and $ilters['inst_prov'] is empty
+              // (this way we don't miss conso_only if user sets the switch without filtering further)
+              if (this.limit_prov_ids.length>0 && this.filters['inst_prov'].length == 0) {
+                  _filters['inst_prov'] = this.limit_prov_ids;
+              }
+              if (_filters['inst'].length > 0 || _filters['group'] != 0 || _filters['harv_stat'].length >0 ||
+                  _filters['global_prov'].length > 0 || _filters['inst_prov'].length > 0) {
+                  // url += "&context="+this.inst_context+"&filters="+JSON.stringify(_filters);
+                  url += "&filters="+JSON.stringify(_filters);
               }
               window.location.assign(url);
               this.exportDialog = false;

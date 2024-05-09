@@ -454,10 +454,6 @@ class SushiSettingController extends Controller
         } else {
             $filters = array('inst' => [], 'global_prov' => [], 'inst_prov' => [], 'harv_stat' => [], 'group' => 0);
         }
-        $context = 1;
-        if ($request->input('context')) {
-            $context = ($request->input('context') > 0) ? $request->input('context') : 1;
-        }
         $export_missing = ($request->export_missing) ? json_decode($request->export_missing, true) : false;
 
         // Admins have export using group filter, manager can only export their own inst
@@ -495,12 +491,11 @@ class SushiSettingController extends Controller
         $prov_filters = null;
         if (sizeof($filters['global_prov']) == 0 && sizeof($filters['inst_prov']) == 0) {
             $providers = Provider::with('globalProv')->whereIn('inst_id', $provider_insts)->get();
-        } else if ($context==1 && sizeof($filters['global_prov']) > 0) {
+        } else if (sizeof($filters['global_prov']) > 0) {
             $providers = Provider::with('globalProv')->whereIn('global_id', $filters['global_prov'])
                                  ->whereIn('inst_id', $provider_insts)->get();
-            // $prov_filters = $filters['global_prov'];
             $prov_filters = $providers->pluck('id')->toArray();
-        } else if ($context>1 && sizeof($filters['inst_prov']) > 0) {
+        } else if (sizeof($filters['inst_prov']) > 0) {
             $providers = Provider::with('globalProv')->whereIn('id', $filters['inst_prov'])
                                  ->whereIn('inst_id', $provider_insts)->get();
             $prov_filters = $filters['inst_prov'];
@@ -643,31 +638,30 @@ class SushiSettingController extends Controller
             $info_sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // Process existing settings into an array
-        // If we're adding in "missing" settings, keep track of the pairs added
+        // Put settings into output rows array
         $data_rows = array();
-        $existing = array();
         foreach ($settings as $setting) {
             $data_rows[] = array( 'A' => $setting->inst_id, 'B' => $setting->institution->local_id,
                                   'C' => $setting->prov_id, 'D' => $setting->status, 'E' => $setting->customer_id,
                                   'F' => $setting->requestor_id, 'G' => $setting->api_key, 'H' => $setting->extra_args,
                                   'J' => $setting->institution->name, 'K' => $setting->provider->name );
-            if ($export_missing && !in_array(array($setting->inst_id, $setting->prov_id), $existing)) {
-                $existing[] = array($setting->inst_id, $setting->prov_id);
-            }
         }
 
         // If we're adding missing settings to the export, get and add output data rows
         // (Only includes settings that are missing for is_active INST <-> PROV pairs)
         if ($export_missing) {
+            // Get ALL known sushisettings inst_id <> prov_id pairs
+            $existing_sushi_pairs = SushiSetting::select('inst_id','prov_id')->get()->map(function ($setting) {
+                return array($setting->inst_id, $setting->prov_id);
+            })->toArray();
             foreach ($institutions as $inst) {
                 // If inst is inactive, skip it
                 if (!$inst->is_active) continue;
                 foreach ($providers as $prov) {
                     // If prov is inactive or not connected to a globalProv, skip it
                     if (!$prov->is_active || is_null($prov->globalProv)) continue;
-                    // If setting is already in data_rows, skip it
-                    if (in_array(array($inst->id, $prov->id), $existing)) continue;
+                    // If setting exists, skip it
+                    if (in_array(array($inst->id, $prov->id), $existing_sushi_pairs)) continue;
                     // Okay, adding the data; get/set connector values
                     $required_connectors = $all_connectors->whereIn('id',$prov->globalProv->connectors)
                                                           ->pluck('name')->toArray();

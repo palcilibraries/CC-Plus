@@ -328,9 +328,12 @@
         processBulk() {
             this.success = "";
             this.failure = "";
-            let msg = "Bulk processing will proceed through each requested harvest sequentially. Any selected";
-            msg +=  " harvest(s) with a current status of 'Success' or 'Pending' will not be changed.";
-            msg += "<br><br>";
+            let msg = "";
+            if (this.bulkAction != 'Delete') {
+                msg = "Bulk processing will proceed through each requested harvest sequentially. Any selected";
+                msg +=  " harvest(s) with a current status of 'Success' or 'Pending' will not be changed.";
+                msg += "<br><br>";
+            }
             if (this.bulkAction == 'Restart') {
                 msg += "Updating the status for the selected harvests will reset the attempts counters to zero and";
                 msg += " add immediately add the harvests to the processing queue.";
@@ -355,23 +358,21 @@
               if (result.value) {
                 this.success = "Working...";
                 if (this.bulkAction == 'Delete') {
-                    for (let idx=0; idx<this.selectedRows.length; idx++) {
-                      var harvest=this.selectedRows[idx];
-                      if (this.status_changeable.includes(harvest.status)) {
-                        axios.delete('/harvests/'+harvest.id)
-                        .then( (response) => {
-                          if (response.data.result) {
-                            this.mutable_harvests.splice(this.mutable_harvests.findIndex(h=>h.id == harvest.id),1);
-                            this.selectedRows.splice(idx,1);
-                          } else {
-                            this.failure = response.data.msg;
-                            return false;
-                          }
-                        })
-                        .catch({});
-                      }
+                  let settingIDs = this.selectedRows.map( s => s.id );
+                  axios.post('/bulk-harvest-delete', { harvests: settingIDs })
+                  .then( (response) => {
+                    if (response.data.result) {
+                      response.data.removed.forEach( _id => {
+                        this.mutable_harvests.splice(this.mutable_harvests.findIndex( h => h.id == _id),1);
+                      });
+                      this.selectedRows = [];
+                      this.success = response.data.msg;
+                    } else {
+                      this.failure = response.data.msg;
+                      return false;
                     }
-                    if (this.failure == '') this.success = "Selected harvests successfully deleted.";
+                  })
+                  .catch({});
                 } else {
                     this.selectedRows.forEach(harvest => {
                       // Allow change to Active

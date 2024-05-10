@@ -4,7 +4,7 @@
       <v-form v-model="formValid" :key="'UFrm'+form_key">
         <v-row class="d-flex ma-2" no-gutters>
          <v-col v-if="mutable_dtype=='edit'" class="d-flex pt-4 justify-center">
-           <h1 v-if="sushi_prov.inst_id==1" align="center">Edit Consortium Sushi Credentials</h1>
+           <h1 v-if="sushi_prov.inst_id==1" align="center">Edit Consortium SUSHI Credentials</h1>
            <h1 v-else align="center">Edit Institutional SUSHI Credentials</h1>
          </v-col>
          <v-col v-else class="d-flex pt-4 justify-center"><h1 align="center">Create SUSHI Connection</h1></v-col>

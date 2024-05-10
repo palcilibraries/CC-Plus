@@ -5,9 +5,9 @@
         <v-row class="d-flex ma-2" no-gutters>
          <v-col v-if="mutable_dtype=='edit'" class="d-flex pt-4 justify-center">
            <h1 v-if="sushi_prov.inst_id==1" align="center">Edit Consortium Sushi Credentials</h1>
-           <h1 v-else align="center">Edit Institutional Sushi Credentials</h1>
+           <h1 v-else align="center">Edit Institutional SUSHI Credentials</h1>
          </v-col>
-         <v-col v-else class="d-flex pt-4 justify-center"><h1 align="center">Create Sushi Connection</h1></v-col>
+         <v-col v-else class="d-flex pt-4 justify-center"><h1 align="center">Create SUSHI Connection</h1></v-col>
         </v-row>
         <div v-if="sushi_inst.id==null || sushi_prov.id==null">
           <v-row class="d-flex ma-2 justify-center" no-gutters>
@@ -59,7 +59,7 @@
           </div>
         </div>
         <v-row v-if="service_url!=null" class="d-flex ma-2" no-gutters>
-         <v-col class="d-flex pl-4">Sushi Service URL : {{ service_url }}</v-col>
+         <v-col class="d-flex pl-4">SUSHI Service URL : {{ service_url }}</v-col>
         </v-row>
       </v-form>
     </v-container>
@@ -73,7 +73,7 @@
                :disabled="!formValid || (mutable_dtype=='edit' && !setting.can_edit)">Save</v-btn>
       </v-col>
       <v-col v-if="sushi_inst.id!=null && sushi_prov.id!=null" class="d-flex px-2 justify-center">
-        <v-btn small color="secondary" type="button" @click="testSettings">Test Settings</v-btn>
+        <v-btn small color="secondary" type="button" @click="testSettings">Test Credentials</v-btn>
       </v-col>
       <v-col class="d-flex px-2 justify-center">
         <v-btn small class='btn' type="button" color="primary" @click="cancelDialog">Cancel</v-btn>

@@ -240,7 +240,7 @@ class SushiSettingController extends Controller
         $fields = array_except($form_data,array('global_id'));
 
         if (!auth()->user()->hasAnyRole(['Admin']) && $fields['inst_id'] != auth()->user()->inst_id) {
-            return response()->json(['result' => false, 'msg' => 'You can only assign settings for your institution']);
+            return response()->json(['result' => false, 'msg' => 'You can only assign credentials for your institution']);
         }
         // if prov_id is missing, try to create a provider record on-the-fly as an institution-specific
         // provider before creating the sushisetting record.
@@ -273,7 +273,7 @@ class SushiSettingController extends Controller
             $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
             $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->day_of_month,date("Y")));
         }
-        return response()->json(['result' => true, 'msg' => 'Settings successfully created', 'setting' => $setting]);
+        return response()->json(['result' => true, 'msg' => 'Credentials successfully created', 'setting' => $setting]);
     }
 
     /**
@@ -340,7 +340,7 @@ class SushiSettingController extends Controller
             $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->day_of_month,date("Y")));
         }
 
-        return response()->json(['result' => true, 'msg' => 'Setting updated successfully', 'setting' => $setting]);
+        return response()->json(['result' => true, 'msg' => 'Credentials updated successfully', 'setting' => $setting]);
     }
 
     /**
@@ -433,7 +433,7 @@ class SushiSettingController extends Controller
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
         $setting->delete();
-        return response()->json(['result' => true, 'msg' => 'Settings successfully deleted']);
+        return response()->json(['result' => true, 'msg' => 'Credentials successfully deleted']);
     }
     /**
      * Export sushi settings records from the database.
@@ -548,12 +548,12 @@ class SushiSettingController extends Controller
         $info_sheet->mergeCells('A1:E8');
         $info_sheet->getStyle('A1:E8')->applyFromArray($info_style);
         $info_sheet->getStyle('A1:E8')->getAlignment()->setWrapText(true);
-        $top_txt  = "The Settings tab represents a starting place for updating or importing sushi settings.\n";
+        $top_txt  = "The Credentials tab represents a starting place for updating or importing sushi credentials.\n";
         $top_txt .= "The table below describes the datatype and order that the import process requires.\n\n";
         $top_txt .= "Any Import rows without an existing (institution) CC+ System ID in column-A or Local ID";
         $top_txt .= " in column-B AND a valid (provider) ID in column-C will be ignored. If values for the other";
         $top_txt .= " columns are optional and are missing, null, or invalid, they will be set to the 'Default'.\n";
-        $top_txt .= "The data rows on the 'Settings' tab provide reference values for the Provider-ID and";
+        $top_txt .= "The data rows on the 'Credentials' tab provide reference values for the Provider-ID and";
         $top_txt .= " Institution-ID columns.\n\n";
         $top_txt .= "Once the data sheet is ready to import, save the sheet as a CSV and import it into CC-Plus.\n";
         $top_txt .= "Any header row or columns beyond 'G' will be ignored. Columns J-K are informational only.";
@@ -571,7 +571,7 @@ class SushiSettingController extends Controller
         $info_sheet->getStyle('B13:E14')->getAlignment()->setWrapText(true);
         $note_txt  = "When performing imports, be mindful about changing or overwriting existing (system) ID value(s).";
         $note_txt .= "The best approach is to add to, or modify, a full export avoid accidentally overwriting or";
-        $note_txt .= " deleting existing settings.";
+        $note_txt .= " deleting existing credentials.";
         $info_sheet->setCellValue('B13', $note_txt);
         $info_sheet->getStyle('A16:E16')->applyFromArray($head_style);
         $info_sheet->setCellValue('A16', 'Column Name');
@@ -624,7 +624,7 @@ class SushiSettingController extends Controller
         $info_sheet->mergeCells('A27:E29');
         $info_sheet->getStyle('A27:E29')->applyFromArray($head_style);
         $info_sheet->getStyle('A27:E29')->getAlignment()->setWrapText(true);
-        $bot_txt = "Status will be set to 'Suspended' for settings where the Institution or Provider is not active.\n";
+        $bot_txt = "Status will be set to 'Suspended' for credentials where the Institution or Provider is not active.\n";
         $bot_txt .= "Status will be set to 'Incomplete', and the field values marked as missing, if values are not";
         $bot_txt .= " supplied for fields required to connect to the provider (e.g. for customer_id, requestor_id, etc.)";
         $info_sheet->setCellValue('A27', $bot_txt);
@@ -685,7 +685,7 @@ class SushiSettingController extends Controller
         $inst_sheet = $spreadsheet->createSheet();
         $active_column_cells = "D2:D" . strval(count($data_rows)+1);  // align column-D for the data sheet on center
         $inst_sheet->getStyle($active_column_cells)->applyFromArray($centered_style);
-        $inst_sheet->setTitle('Settings');
+        $inst_sheet->setTitle('Credentials');
         $inst_sheet->setCellValue('A1', 'Institution ID (CC+ System ID)');
         $inst_sheet->setCellValue('B1', 'Local Institution Identifier');
         $inst_sheet->setCellValue('C1', 'Provider ID (CC+ System ID)');
@@ -735,7 +735,7 @@ class SushiSettingController extends Controller
                 $fileName .= ($status_name == "") ? "_SomeStauses" : "_".$status_name;
             }
         }
-        $fileName .= "_SushiSettings.xlsx";
+        $fileName .= "_SushiCredentials.xlsx";
 
         // redirect output to client
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
@@ -877,7 +877,7 @@ class SushiSettingController extends Controller
         if ($skipped > 0) {
             $msg .= ($msg != "") ? ", " . $skipped . " skipped" : $skipped . " skipped";
         }
-        $msg  = 'Sushi settings import completed : ' . $msg;
+        $msg  = 'Sushi credentials import completed : ' . $msg;
 
         // Create a return object with the settings to be returned.
         if (!$is_admin) {

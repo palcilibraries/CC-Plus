@@ -147,7 +147,7 @@ class SushiBatch extends Command
 
            // Skip this provider if there are no sushi settings for it
             if (count($provider->sushiSettings) == 0) {
-                $this->line($provider->name . " has no sushi settings defined; skipping...");
+                $this->line($provider->name . " has no sushi credentials defined; skipping...");
                 continue;
             }
 

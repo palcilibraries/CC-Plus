@@ -3,7 +3,7 @@
     <v-row class="d-flex mb-1 align-end" no-gutters>
       <v-col class="d-flex px-2" cols="3">
         <v-btn small color="primary" type="button" @click="importForm" class="section-action">
-          Import Sushi Settings
+          Import SUSHI Credentials
         </v-btn>
       </v-col>
       <v-col class="d-flex px-2" cols="3">
@@ -135,7 +135,7 @@
         <span class="dt_action">
           <v-icon title="Manual Harvest in new tab" @click="goHarvest(item)">mdi-open-in-new</v-icon>
           &nbsp; &nbsp;
-          <v-icon v-if="item.can_edit" title="Edit Sushi Settings" @click="editSetting(item)">mdi-cog-outline</v-icon>
+          <v-icon v-if="item.can_edit" title="Edit SUSHI Credentials" @click="editSetting(item)">mdi-cog-outline</v-icon>
           <v-icon v-else color="#c9c9c9">mdi-cog-outline</v-icon>
           &nbsp; &nbsp;
           <v-icon v-if="item.can_edit" title="Delete connection" @click="destroy(item)">mdi-trash-can-outline</v-icon>
@@ -148,23 +148,23 @@
     </v-data-table>
     <v-dialog v-model="importDialog" max-width="1200px">
       <v-card>
-        <v-card-title>Import Sushi Settings</v-card-title>
+        <v-card-title>Import SUSHI Credentials</v-card-title>
         <v-card-text>
           <v-container grid-list-md>
             <v-file-input show-size label="CC+ Import File (CSV)" v-model="csv_upload" accept="text/csv" outlined
             ></v-file-input>
             <p>
-              <strong>Note:&nbsp; Sushi Settings imports function exclusively as Updates. Existing settings for
+              <strong>Note:&nbsp; SUSHI credential imports function exclusively as Updates. Existing credentials for
               provider-institution pairs not included will be preserved.</strong>
             </p>
             <p>
-              Imports will overwrite existing settings whenever a match for an Institution-ID and Provider-ID are
-              found in the import file. If no setting exists for a given valid provider-institution pair, a new
-              setting will be created and saved. Any values in columns D-H which are NULL, blank, or missing for
+              Imports will overwrite existing credentials whenever a match for an Institution-ID and Provider-ID are
+              found in the import file. If no credentials exist for a given valid provider-institution pair, new
+              credentials will be created and saved. Any values in columns D-H which are NULL, blank, or missing for
               a valid provider-institution pair, will result in the Default value being stored for that field.
             </p>
             <p>
-              Generating an export of the existing settings FIRST will provide detailed instructions for
+              Generating an export of the existing credentials FIRST will provide detailed instructions for
               importing on the "How to Import" tab and will help ensure that the desired end-state is achieved.
             </p>
           </v-container>
@@ -181,7 +181,7 @@
     </v-dialog>
     <v-dialog v-model="exportDialog" max-width="600px">
       <v-card>
-        <v-card-title>Export Sushi Settings</v-card-title>
+        <v-card-title>Export SUSHI Credentials</v-card-title>
         <v-card-text>
           <v-container grid-list-md>
             <p>
@@ -189,9 +189,9 @@
               <strong>In order to retrieve all records, all filters must be cleared first.</strong>
             </p>
             <p>
-              <strong>Note:&nbsp; By default, Sushi Settings exports will only include institutions and providers
+              <strong>Note:&nbsp; By default, SUSHI credentials exports will only include institutions and providers
                 with defined connections. Enabling instution-provider pairs with missing credentials will create
-                an export file containing all Active institution-provider pairs. Connection settings will be
+                an export file containing all Active institution-provider pairs. Connection credentials will be
                 labelled where required or missing.</strong>
             </p>
             <v-checkbox v-model="export_missing" label="Include Connected Institution-Provider pairs with missing credentials?"
@@ -510,17 +510,17 @@
           processBulk() {
               this.success = "";
               this.failure = "";
-              let msg = "Bulk processing will process each requested setting sequentially.<br><br>";
+              let msg = "Bulk processing will process each requested credential sequentially.<br><br>";
               if (this.bulkAction == 'Enable') {
-                  msg += "Enabling the selected setting(s) will cause them to be added to the harvesting queue";
+                  msg += "Enabling the selected credential(s) will cause them to be added to the harvesting queue";
                   msg += " according to the harvest day defined for the provider(s).";
               } else if (this.bulkAction == 'Disable') {
-                  msg += " Disabling the selected setting(s) will leave the attempts counter intact, and will";
-                  msg += " prevent future harvesting attempts. Any queued harvests related to the settings";
+                  msg += " Disabling the selected credential(s) will leave the attempts counter intact, and will";
+                  msg += " prevent future harvesting attempts. Any queued harvests related to the credentials";
                   msg += " will be cancelled; harvests that are 'Active', or 'Pending' will not be changed.";
               } else if (this.bulkAction == 'Delete') {
-                  msg += "Deleting the selected settings records is not reversible! No harvested data will be removed or";
-                  msg += " changed. <br><br><strong>NOTE:</strong> all harvest log records connected to these settings";
+                  msg += "Deleting the selected credentials records is not reversible! No harvested data will be removed or";
+                  msg += " changed. <br><br><strong>NOTE:</strong> all harvest log records connected to these credentials";
                   msg += " will also be deleted!";
               } else {
                   this.failure = "Unrecognized Bulk Action in processBulk!";
@@ -548,7 +548,7 @@
                               }
                           }).catch({});
                       }
-                      this.success = "Selected settings successfully deleted.";
+                      this.success = "Selected credentials successfully deleted.";
                   } else {
                       var new_status = this.bulkAction+'d';
                       this.selectedRows.forEach( (setting) => {
@@ -568,7 +568,7 @@
                               }
                           }).catch(error => {});
                       });
-                      this.success = "Selected settings successfully updated.";
+                      this.success = "Selected credentials successfully updated.";
                   }
                 }
                 this.bulkAction = '';
@@ -594,9 +594,9 @@
               this.sushiDialog = true;
           },
           destroy (setting) {
-              let msg = "Deleting this setting is not reversible!<br /><br />No harvested data will be removed";
+              let msg = "Deleting this credential is not reversible!<br /><br />No harvested data will be removed";
               msg += " or changed. <br><br><strong>NOTE:</strong> all harvest log records connected to this";
-              msg += " setting will also be deleted!";
+              msg += " credential will also be deleted!";
               Swal.fire({
                 title: 'Are you sure?', html: msg, icon: 'warning', showCancelButton: true,
                 confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, proceed'
@@ -667,7 +667,7 @@
               } else if (result == 'Fail') {
                   this.failure = msg;
               } else if (result != 'Cancel') {
-                  this.failure = 'Unexpected Result returned from sushiDialog - programming error!';
+                  this.failure = 'Unexpected Result returned from SUSHI Dialog - programming error!';
               }
               // this.sushi_provs = [{ 'global_prov': {'connectors': []} }];
               this.sushiDialog = false;

@@ -218,7 +218,7 @@ class SushiQWorker extends Command
 
            // Get sushi settings
             if (is_null($job->harvest->sushiSetting)) {     // settings gone? toss the job
-                $this->line($ts . " " . $ident . 'Unknown Sushi Settings ID: ' . $job->harvest->sushisettings_id .
+                $this->line($ts . " " . $ident . 'Unknown Sushi Credentials ID: ' . $job->harvest->sushisettings_id .
                             ' , queue entry removed and harvest status set to Stopped.');
                 $job->delete();
                 $job->harvest->status = 'Stopped';

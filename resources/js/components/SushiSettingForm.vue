@@ -1,11 +1,11 @@
 <template>
   <div class="details">
   	<v-row no-gutters>
-	    <h1 class="section-title">Sushi Settings</h1>
+	    <h1 class="section-title">SUSHI Credentials</h1>
       <v-col class="d-flex px-4 dt_action" cols="2">
-        <v-icon title="Edit Setting" @click="swapForm">mdi-cog-outline</v-icon>
+        <v-icon title="Edit Credentials" @click="swapForm">mdi-cog-outline</v-icon>
         &nbsp; &nbsp;
-        <v-icon title="Delete Setting" @click="destroy(setting.id)">mdi-trash-can-outline</v-icon>
+        <v-icon title="Delete Credentials" @click="destroy(setting.id)">mdi-trash-can-outline</v-icon>
       </v-col>
   	</v-row>
     <div v-if="!showForm">
@@ -90,7 +90,7 @@
             <v-text-field v-model="form.support_email" label="Support Email" outlined></v-text-field>
           </v-col>
           <v-btn small color="primary" type="submit" :disabled="form.errors.any()">
-            Save Settings
+            Save Credentials
           </v-btn>
           <v-btn small type="button" @click="hideForm">cancel</v-btn>
         </form>
@@ -133,7 +133,7 @@
 	            this.form.post('/sushisettings-update')
                     .then( (response) => {
 	                    this.warning = '';
-	                    this.confirm = 'Settings successfully updated.';
+	                    this.confirm = 'Credentials successfully updated.';
                       // Update form fields that may have been changed by the update
                       this.form.status = response.setting.status;
                       this.form.customer_id = response.setting.customer_id;
@@ -151,8 +151,8 @@
             },
             destroy (settingid) {
                 var self = this;
-                let message = "Deleting these settings cannot be reversed, only manually recreated.";
-                message += " NOTE: Harvest Log and Failed Harvest records connected to these settings";
+                let message = "Deleting these credentials cannot be reversed, only manually recreated.";
+                message += " NOTE: Harvest Log and Failed Harvest records connected to these credentials";
                 message += " will also be deleted!";
                 Swal.fire({
                   title: 'Are you sure?',

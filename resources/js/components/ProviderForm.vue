@@ -113,13 +113,13 @@
 	    </v-expansion-panel></v-expansion-panels>
     </div>
     <div class="related-list">
-      <h2 v-if="is_admin" class="section-title">Sushi Settings by Institution </h2>
-      <h2 v-else class="section-title">Sushi Settings</h2>
+      <h2 v-if="is_admin" class="section-title">SUSHI Credentials by Institution </h2>
+      <h2 v-else class="section-title">SUSHI Credentials</h2>
       <div v-if="is_admin">
         <v-row class="d-flex mb-4" no-gutters>
           <v-col class="d-flex pa-0" cols="3">
             <v-btn small color="primary" type="button" @click="enableImportDialog" class="section-action">
-              Import Sushi Settings
+              Import SUSHI Credentials
             </v-btn>
           </v-col>
           <v-col class="d-flex px-1" cols="3">
@@ -142,7 +142,7 @@
               &nbsp; &nbsp;
             </template>
             <v-btn small color="primary" type="submit" :disabled="sushiForm.errors.any()">Connect</v-btn>
-            <v-btn small color="secondary" type="button" @click="testSettings">Test Settings</v-btn>
+            <v-btn small color="secondary" type="button" @click="testSettings">Test Credentials</v-btn>
             <v-btn small type="button" @click="hideSushiForm">cancel</v-btn>
             <div v-if="showTest">
               <div>{{ testStatus }}</div>
@@ -180,7 +180,7 @@
             </td>
             <td :class="item.status">{{ item.status }}</td>
             <td class="dt_action" v-if="is_manager || is_admin">
-              <v-icon title="Settings and harvests" @click="goEditSushi(item.id)">mdi-cog-outline</v-icon>
+              <v-icon title="Credentials and harvests" @click="goEditSushi(item.id)">mdi-cog-outline</v-icon>
               &nbsp; &nbsp;
               <v-icon title="Delete connection" @click="destroySushi(item)">mdi-trash-can-outline</v-icon>
             </td>
@@ -191,23 +191,23 @@
       </v-data-table>
       <v-dialog v-model="importDialog" max-width="1200px">
         <v-card>
-          <v-card-title>Import Sushi Settings</v-card-title>
+          <v-card-title>Import SUSHI Credentials</v-card-title>
           <v-card-text>
             <v-container grid-list-md>
               <v-file-input show-size label="CC+ Import File (CSV)" v-model="csv_upload" accept="text/csv" outlined
               ></v-file-input>
               <p>
-                <strong>Note:&nbsp; Sushi Settings imports function exclusively as Updates. No existing settings
+                <strong>Note:&nbsp; SUSHI Credentials imports function exclusively as Updates. No existing credentials
                 will be deleted.</strong>
               </p>
               <p>
-                Imports will overwrite existing settings whenever a match for an Institution-ID and Provider-ID are
-                found in the import file. If no setting exists for a given valid provider-institution pair, a new
-                setting will be created and saved. Any values in columns D-H which are NULL, blank, or missing for
+                Imports will overwrite existing credentials whenever a match for an Institution-ID and Provider-ID are
+                found in the import file. If no credentials exist for a given valid provider-institution pair, new
+                credentials will be created and saved. Any values in columns D-H which are NULL, blank, or missing for
                 a valid provider-institution pair, will result in the Default value being stored for that field.
               </p>
               <p>
-                Generating an export of the existing settings FIRST will provide detailed instructions for
+                Generating an export of the existing credentials FIRST will provide detailed instructions for
                 importing on the "How to Import" tab and will help ensure that the desired end-state is achieved.
               </p>
             </v-container>
@@ -327,7 +327,7 @@
                   title: 'Are you sure?',
                   text: "Deleting a provider cannot be reversed, only manually recreated."+
                         " Because this provider has no harvested usage data, it can be safely"+
-                        " deleted. NOTE: All SUSHI settings connected to this provider"+
+                        " deleted. NOTE: All SUSHI credentials connected to this provider"+
                         " will also be removed.",
                   icon: 'warning',
                   showCancelButton: true,
@@ -350,10 +350,10 @@
                 })
                 .catch({});
             },
-            destroySushi (setting) {
-                let msg = "Deleting this setting is not reversible!<br /><br />No harvested data will be removed";
-                msg += " or changed. <br><br><strong>NOTE:</strong> all harvest log records connected to this";
-                msg += " setting will also be deleted!";
+            destroySushi (credential) {
+                let msg = "Deleting these credentials is not reversible!<br /><br />No harvested data will be removed";
+                msg += " or changed. <br><br><strong>NOTE:</strong> all harvest log records connected to these";
+                msg += " credentials will also be deleted!";
                 Swal.fire({
                   title: 'Are you sure?', html: msg, icon: 'warning', showCancelButton: true,
                   confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, proceed'

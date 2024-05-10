@@ -658,7 +658,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C23', '');
         $info_sheet->setCellValue('D23', 'String');
         $info_sheet->setCellValue('E23', 'Y or N');
-        $info_sheet->setCellValue('F23', 'Customer ID is required for Sushi connections');
+        $info_sheet->setCellValue('F23', 'Customer ID is required for SUSHI connections');
         $info_sheet->setCellValue('G23', 'Y');
         $info_sheet->setCellValue('H23', '');
         $info_sheet->setCellValue('A24', 'J');
@@ -666,7 +666,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C24', '');
         $info_sheet->setCellValue('D24', 'String');
         $info_sheet->setCellValue('E24', 'Y or N');
-        $info_sheet->setCellValue('F24', 'Requestor ID is required for Sushi connections');
+        $info_sheet->setCellValue('F24', 'Requestor ID is required for SUSHI connections');
         $info_sheet->setCellValue('G24', 'N');
         $info_sheet->setCellValue('H24', '');
         $info_sheet->setCellValue('A25', 'K');
@@ -674,7 +674,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C25', '');
         $info_sheet->setCellValue('D25', 'String');
         $info_sheet->setCellValue('E25', 'Y or N');
-        $info_sheet->setCellValue('F25', 'API Key is required for Sushi connections');
+        $info_sheet->setCellValue('F25', 'API Key is required for SUSHI connections');
         $info_sheet->setCellValue('G25', 'N');
         $info_sheet->setCellValue('H25', '');
         $info_sheet->setCellValue('A26', 'L');
@@ -682,7 +682,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C26', '');
         $info_sheet->setCellValue('D26', 'String');
         $info_sheet->setCellValue('E26', 'Y or N');
-        $info_sheet->setCellValue('F26', 'Extra Arguments are required for Sushi connections');
+        $info_sheet->setCellValue('F26', 'Extra Arguments are required for SUSHI connections');
         $info_sheet->setCellValue('G26', 'N');
         $info_sheet->setCellValue('H26', '');
         $info_sheet->setCellValue('A27', 'M');

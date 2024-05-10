@@ -41,7 +41,7 @@
       <!-- Sushi Settings -->
       <v-expansion-panel>
   	    <v-expansion-panel-header>
-          <h2>Sushi Settings</h2>
+          <h2>SUSHI Credentials</h2>
   	    </v-expansion-panel-header>
   	    <v-expansion-panel-content>
           <sushisettings-data-table :key="sushiKey" :providers="mutable_providers" :institutions="mutable_institutions"
@@ -67,23 +67,23 @@
     </v-dialog>
     <v-dialog v-model="importDialog" max-width="1200px">
       <v-card>
-        <v-card-title>Import Sushi Settings</v-card-title>
+        <v-card-title>Import SUSHI Credentials</v-card-title>
         <v-card-text>
           <v-container grid-list-md>
             <v-file-input show-size label="CC+ Import File (CSV)" v-model="csv_upload" accept="text/csv" outlined
             ></v-file-input>
             <p>
-              <strong>Note:&nbsp; Sushi Settings imports function exclusively as Updates. No existing settings
+              <strong>Note:&nbsp; SUSHI Credential imports operate exclusively as Updates. No existing credentials
               will be deleted.</strong>
             </p>
             <p>
-              Imports will overwrite existing settings whenever a match for an Institution-ID and Provider-ID are
-              found in the import file. If no setting exists for a given valid provider-institution pair, a new
-              setting will be created and saved. Any values in columns D-H which are NULL, blank, or missing for
+              Imports will overwrite existing credentials whenever a match for an Institution-ID and Provider-ID are
+              found in the import file. If no credentials exist for a given valid provider-institution pair, new
+              credentials will be created and saved. Any values in columns D-H which are NULL, blank, or missing for
               a valid provider-institution pair, will result in the Default value being stored for that field.
             </p>
             <p>
-              Generating an export of the existing settings FIRST will provide detailed instructions for
+              Generating an export of the existing credentials FIRST will provide detailed instructions for
               importing on the "How to Import" tab and will help ensure that the desired end-state is achieved.
             </p>
           </v-container>
@@ -223,7 +223,7 @@
                   title: 'Are you sure?',
                   text: "Deleting an institution cannot be reversed, only manually recreated."+
                         " Because this institution has no harvested usage data, it can be safely"+
-                        " deleted. NOTE: All users and SUSHI settings connected to this institution"+
+                        " deleted. NOTE: All users and SUSHI credentials connected to this institution"+
                         " will also be removed.",
                   icon: 'warning',
                   showCancelButton: true,

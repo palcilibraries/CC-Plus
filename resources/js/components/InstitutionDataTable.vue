@@ -313,16 +313,16 @@
                 msg += "Bulk processing will delete each marked institution sequentially.<br>";
                 msg += "Deleting institutions cannot be reversed, they can only be manually recreated.<br><br>";
                 msg += "Any institution that has harvested usage data will be skipped and left unchanged.<br>";
-                msg += "NOTE: All users and SUSHI settings connected to these institutions will also be removed.";
+                msg += "NOTE: All users and SUSHI credentials connected to these institutions will also be removed.";
             } else if (this.bulkAction == 'Set Active') {
                 msg += "Bulk processing will process each requested institution sequentially.<br><br>";
-                msg += "Activating these institutions will affect their Sushi Settings:<br>";
-                msg += "<ul><li>Suspended settings will be enabled</li>";
-                msg += "<li>Disabled settings will remain disabled</li></ul>";
+                msg += "Activating these institutions will affect their SUSHI credentials:<br>";
+                msg += "<ul><li>Suspended credentials will be enabled</li>";
+                msg += "<li>Disabled credentials will remain disabled</li></ul>";
             } else if (this.bulkAction == 'Set Inactive') {
                 msg += "Bulk processing will process each requested institution sequentially.<br><br>";
-                msg += "De-Activating these institutions will affect their Sushi Settings:<br>";
-                msg += "<ul><li>Active settings will be Suspended</li>";
+                msg += "De-Activating these institutions will affect their SUSHI credentials:<br>";
+                msg += "<ul><li>Active credentials will be Suspended</li>";
                 msg += "<li>Queued harvests will NOT be cancelled.</li></ul>";
             } else if (this.bulkAction == 'Create New Group') {
                 this.groupingType = 'Create';
@@ -486,7 +486,7 @@
               title: 'Are you sure?',
               text: "Deleting an institution cannot be reversed, only manually recreated."+
                     " Because this institution has no harvested usage data, it can be safely"+
-                    " deleted. NOTE: All users and SUSHI settings connected to this institution"+
+                    " deleted. NOTE: All users and SUSHI credentials connected to this institution"+
                     " will also be removed.",
               icon: 'warning',
               showCancelButton: true,

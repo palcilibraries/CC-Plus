@@ -313,21 +313,21 @@
             var Rows = [...this.selectedRows];
             let msg = "Bulk processing will process each requested provider sequentially.<br><br>";
             if (Action=='Set Active') {
-                msg += "Activating these providers also enable related sushi connections, if possible. Sushi connection<br/>";
+                msg += "Activating these providers also enable related SUSHI connections, if possible. SUSHI connection<br/>";
                 msg += "status will be automatically set based on the completeness of the credentials and the active/inactive ";
                 msg += "state of any connected institution(s).";
             } else if (Action=='Set Inactive') {
                 msg += "Deactivating these providers will stop all future automated harvesting. Any pending or queued<br />";
-                msg += "harvesting jobs will not be affected. Any related and sushi credentials will be set to 'Suspended'.";
+                msg += "harvesting jobs will not be affected. Any related and SUSHI credentials will be set to 'Suspended'.";
             } else if (Action=='Connect') {
-                msg += "Connecting these providers will add a sushi-setting with empty credentials for each row, and the<br/>";
-                msg += "setting(s) will be flagged as 'Incomplete'. Until the required credentials are defined, no report<br />";
+                msg += "Connecting these providers will add an empty set of SUSHI credentials for each row, and the<br/>";
+                msg += "credential(s) will be flagged as 'Incomplete'. Until the required credentials are defined, no report<br />";
                 msg += "retrieval will be performed by the CC-Plus automated harvesting system.<br />";
                 msg += "Note that any providers already connected will be skipped.";
             } else if (Action=='Disconnect') {
                 msg += "CAUTION!!<br />Disconnecting provider records cannot be reversed!! Providers with harvested data<br />";
                 msg += "will NOT be changed.<br />";
-                msg += " NOTE: ALL sushi definitions associated with the selected providers will also be deleted!";
+                msg += " NOTE: ALL SUSHI definitions associated with the selected providers will also be deleted!";
                 if (!this.is_admin) {
                     msg += "<br />Any providers providers restricted by the consortium admin will be skipped.";
                 }
@@ -482,11 +482,11 @@
             var consoIdx = this.mutable_providers.findIndex(p => p.id==provider.id && p.inst_id==1);
             let notice = "Disconnecting a provider cannot be reversed, only manually reconnected."+
                   " Because this provider has no harvested usage data, it can be safely"+
-                  " removed. NOTE: All Sushi settings connected to this provider"+
+                  " removed. NOTE: All SUSHI credentials connected to this provider"+
                   " will also be removed.";
             if ( provider.inst_id == 1) {
               notice += "<br /><font color='red'><strong>WARNING - This is a consortium-wide provider</strong>"+
-                        " Deleting it will remove ALL existing Sushi settings consortium-wide.</font>";
+                        " Deleting it will remove ALL existing SUSHI credentials consortium-wide.</font>";
             }
             Swal.fire({
               title: 'Are you sure?', html: notice, icon: 'warning', showCancelButton: true,

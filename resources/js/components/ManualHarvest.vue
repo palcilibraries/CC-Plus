@@ -148,7 +148,7 @@
                 this.form.prov = [preset_id];
                 this.onProvChange([preset_id]);
             } else {
-                this.failure = 'The preset provider is not available - verify sushi settings';
+                this.failure = 'The preset provider is not available - verify SUSHI credentials';
                 this.form.prov = [];
                 this.presets['prov_id'] = null;
             }

@@ -395,7 +395,7 @@
             } else if (this.bulkAction == 'Delete') {
                 msg += "CAUTION!!<br />Deleting these platform records is not reversible! Platforms with harvested";
                 msg += " data will NOT be deleted.<br />";
-                msg += " NOTE: ALL platform and sushi definitions associated with the selected platforms, across all";
+                msg += " NOTE: ALL platform and SUSHI definitions associated with the selected platforms, across all";
                 msg += " instances in this system will also be deleted!<br />";
             } else {
                 this.failure = "Unrecognized Bulk Action in processBulk!";
@@ -513,8 +513,8 @@
               if (this.warnConnectors) {
                 let warning_html = "One or more required connectors has been marked as no longer required. The current "+
                                    " values defined for these connectors will be cleared THROUGH ALL INSTANCES from the "+
-                                   " sushi settings when the platform is saved.<br />";
-                warning_html += "Having good exports of the sushi definitions for all instances could be valuable if you find"
+                                   " SUSHI credentials when the platform is saved.<br />";
+                warning_html += "Having good exports of the SUSHI credentials for all instances could be valuable if you find"
                 warning_html += " you need to re-enable the modified connector field.";
                 Swal.fire({
                   title: 'Continue to save?', html: warning_html, icon: 'warning', showCancelButton: true,
@@ -587,7 +587,7 @@
                                " Because this platform has no harvested usage data, it can be safely"+
                                " deleted.<br />";
             warning_html += "<strong>NOTE:</strong><br />ALL Platform entries defined across ALL instances will also";
-            warning_html += " be removed if they exist - INCLUDING all related sushi settings.";
+            warning_html += " be removed if they exist - INCLUDING all related SUSHI credentials.";
             Swal.fire({
               title: 'Are you sure?', html: warning_html, icon: 'warning', showCancelButton: true,
               confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, proceed'

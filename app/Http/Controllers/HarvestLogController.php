@@ -85,7 +85,13 @@ class HarvestLogController extends Controller
         // Get all groups regardless of JSON or not
         $groups = array();
         if ($show_all) {
-            $groups = InstitutionGroup::with('institutions')->orderBy('name', 'ASC')->get(['id','name']);
+            $data = InstitutionGroup::with('institutions:id,name')->orderBy('name', 'ASC')->get();
+            // Keep only groups that have members
+            foreach ($data as $group) {
+                if ( $group->institutions->count() > 0 ) {
+                    $groups[] = array('id' => $group->id, 'name' => $group->name, 'institutions' => $group->institutions);
+                }
+            }
         }
 
         // Build arrays for the filter-options. Skip if returning JSON
@@ -316,7 +322,11 @@ class HarvestLogController extends Controller
                                  ->orderBy('name', 'ASC')->get(['id','name']);
 
             // Copy available_providers into the groups (to simplify the vue component)
-            foreach ($inst_groups as $group) {
+            foreach ($inst_groups as $key => $group) {
+                // Remove groups with no members
+                if ( $group->institutions->count() == 0 ) {
+                    $inst_groups->forget($key);
+                }
                 $insts = $group->institutions->pluck('id')->toArray();
                 $available_providers = SushiSetting::whereIn('inst_id',$insts)->pluck('prov_id')->toArray();
                 $group->providers = $provider_data->whereIn('id',$available_providers)->toArray();

@@ -247,6 +247,7 @@
                 export_missing: false,
                 all_settings: [],
                 mutable_options: {},
+                mutable_groups: [],
                 filters: {inst: [], group: 0, global_prov: [], inst_prov: [], harv_stat: []},
                 statuses: ['Enabled','Disabled','Suspended','Incomplete'],
                 filter_options: {'inst': [], 'prov': [], 'group': [], 'harv_stat': []},
@@ -341,7 +342,7 @@
               } else if (this.filters['group'] > 0) {
                   filter = 'group';
                   this.limit_inst_ids = [];
-                  let group = this.inst_groups.find(g => g.id == this.filters['group']);
+                  let group = this.mutable_groups.find(g => g.id == this.filters['group']);
                   if (typeof(group) != 'undefined') {
                       group.institutions.forEach( (inst) => { this.limit_inst_ids.push(inst.id) } );
                   }
@@ -382,7 +383,7 @@
               if (this.filters['harv_stat'].length==0 && this.limit_inst_ids.length==0 && !filteringProv) {
                   this.filter_options['inst'] = [...this.institutions];
                   this.filter_options['prov'] = [...this.contextual_providers];
-                  this.filter_options['group'] = [...this.inst_groups];
+                  this.filter_options['group'] = [...this.mutable_groups];
                   this.filter_options['harv_stat'] = [...this.statuses];
                   return;
               }
@@ -398,12 +399,12 @@
                     this.filter_options['inst'] = this.institutions.filter(ii => (inst_ids.includes(ii.id) ||
                                                                                   this.filters['inst'].includes(ii.id)));
                     var group_ids = [];
-                    this.inst_groups.forEach( (gg) => {
+                    this.mutable_groups.forEach( (gg) => {
                       gg.institutions.forEach( (ii) => {
                         if ( inst_ids.includes(ii.id) && !group_ids.includes(gg.id)) group_ids.push(gg.id);
                       });
                     });
-                    this.filter_options['group'] = this.inst_groups.filter(g => (group_ids.includes(g.id) ||
+                    this.filter_options['group'] = this.mutable_groups.filter(g => (group_ids.includes(g.id) ||
                                                                                  this.filters['group'] == g.id));
                   }
               }
@@ -771,7 +772,11 @@
           this.filter_options.harv_stat = [...this.statuses];
           if (this.inst_context == 1) {
             this.filter_options.inst = [...this.institutions];
-            this.filter_options.group = [...this.inst_groups];
+            // Exclude groups with no members from filtering options
+            if (this.inst_groups.length>0) {
+                this.mutable_groups = this.inst_groups.filter(g => g.institutions.length>0);
+            }
+            this.filter_options.group = [...this.mutable_groups];
           } else {
             this.filter_options.inst = [this.institutions[0]];
             this.filter_options.group = [];

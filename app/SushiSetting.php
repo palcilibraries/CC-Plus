@@ -97,11 +97,15 @@ class SushiSetting extends Model
     }
 
     // Resets status and connection fields when updating or an institution or provider status is made Active
-    public function resetStatus()
+    public function resetStatus( $update_disabled=false )
     {
-        $new_status = ($this->institution->is_active && $this->provider->is_active) ? 'Enabled' : 'Disabled';
-        if ($this->isComplete() || $new_status == 'Disabled') {
-            // Inst+Prov active and settings complete sets to "Enabled", otherwise sets to "Disabled"
+        // if not authorized or setting is Disabled, bail out silently
+        if (!$this->canManage() || ($this->status == "Disabled" && !$update_disabled)) return;
+
+        // new status is Suspended if either provider or inst is INactive
+        $new_status = ($this->institution->is_active && $this->provider->is_active) ? 'Enabled' : 'Suspended';
+        if ($this->isComplete() || $new_status == 'Suspended') {
+            // Inst+Prov active and settings complete sets to "Enabled", otherwise sets to "Suspended"
             $this->status = $new_status;
         // Getting here means inst+prov are both Active but settings are incomplete. update the field values
         } else {

@@ -382,7 +382,11 @@
               // If no active filters, reset everything
               if (this.filters['harv_stat'].length==0 && this.limit_inst_ids.length==0 && !filteringProv) {
                   this.filter_options['inst'] = [...this.institutions];
-                  this.filter_options['prov'] = [...this.contextual_providers];
+                  if (this.limit_prov_ids.length>0) {
+                    this.filter_options['prov'] = this.all_providers.filter(p => this.limit_prov_ids.includes(p.conso_id));
+                  } else {
+                    this.filter_options['prov'] = [...this.contextual_providers];
+                  }
                   this.filter_options['group'] = [...this.mutable_groups];
                   this.filter_options['harv_stat'] = [...this.statuses];
                   return;
@@ -393,7 +397,7 @@
                                    ( (changed_filter == 'inst_prov' || changed_filter == 'global_prov') && !filteringProv) );
               // Update filter options (skip changed filter if it is not cleared)
               // Filter to what is found + what is set in the filter already, starting with the inst/group filters
-              if ( this.inst_context == 1 ) {
+              if ( this.inst_context == 1 ) { // inst filters only matter for conso-context
                   if ( just_cleared || (changed_filter != 'inst' && changed_filter != 'group') ) {
                     let inst_ids = this.filtered_settings.map(s => s.inst_id);
                     this.filter_options['inst'] = this.institutions.filter(ii => (inst_ids.includes(ii.id) ||
@@ -412,10 +416,8 @@
               // rebuild providers
               if (just_cleared || !changed_filter.includes('prov')) {
                 let _filt = (changed_filter == 'ALL') ? [] : this.filters[changed_filter];
-                let prov_ids = this.filtered_settings.map(s => s.prov_id);
-                this.filter_options['prov'] = (this.inst_context==1) ?
-                                               this.all_providers.filter(p => (prov_ids.includes(p.id) || _filt.includes(p.id))) :
-                                               this.all_providers.filter(p => (prov_ids.includes(p.conso_id) ||
+                const prov_ids = [...new Set(this.filtered_settings.map(s => s.prov_id))];
+                this.filter_options['prov'] = this.all_providers.filter(p => (prov_ids.includes(p.conso_id) ||
                                                                               _filt.includes(p.conso_id)));
               }
               // rebuild status
@@ -785,7 +787,7 @@
           this.filter_options['prov'] = [...this.contextual_providers];
 
           // Set initial context
-          this.updateConsoLimit();
+          this.updateConsoLimit('none');
 
           // Apply any existing filter values from the datastore and update the options arrays as-needed
           if (typeof(this.all_filters) != 'undefined') {

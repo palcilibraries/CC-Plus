@@ -327,7 +327,7 @@ class SushiSettingController extends Controller
             $setting->save();
         // Otherwise, update status (based on connectors and prov/inst is_active)( and save)
         } else {
-            $setting->resetStatus();
+            $setting->resetStatus(true);  // tell resetStatus to allow changes to disabled settings
         }
 
         // Finish setting up the return object
@@ -834,8 +834,9 @@ class SushiSettingController extends Controller
                 continue;
             }
 
-            // Put settings (except status) into an array for the update call
-            $_args = array('status' => $row[3], 'customer_id' => $row[4], 'requestor_id' => $row[5], 'api_key' => $row[6],
+            // Put settings into an array (default status to Enabled) for the update call.
+            $_status = (in_array($row[3], array('Enabled','Disabled','Suspended','Incomplete'))) ? $row[3] : "Enabled";
+            $_args = array('status' => $_status, 'customer_id' => $row[4], 'requestor_id' => $row[5], 'api_key' => $row[6],
                            'extra_args' => $row[7]);
 
             // Mark any missing connectors
@@ -845,22 +846,22 @@ class SushiSettingController extends Controller
             foreach ($required_connectors as $cnx) {
                 if ( is_null($_args[$cnx]) || trim($_args[$cnx]) == '' ) {
                     $_args[$cnx] = "-required-";
+                    $missing_count++;
                 }
-                if ($_args[$cnx] == "-required-") $missing_count++;
             }
 
-            // Figure out/assign status - default to Enabled
-            if ( !in_array($row[3], array('Enabled','Disabled','Suspended','Incomplete')) ||
-                 ($missing_count==0 && $current_inst->is_active && $current_prov->is_active) ) {
-                $_args['status'] = 'Enabled';
-            } else if (!$current_inst->is_active || !$current_prov->is_active) {
-              $_args['status'] = 'Suspended';
-            }
-
-            // Override status to Incomplete if a required connector is missing & it was about to be set to Enabled
-            if ($_args['status'] == 'Enabled' && $missing_count>0) {
-                $_args['status'] = 'Incomplete';
-                $incomplete++;
+            // Unless setting is being Disabled, review and/or update status before saving
+            if ($_status != "Disabled") {
+                if ($current_inst->is_active && $current_prov->is_active) {
+                    if ( $missing_count==0 ) {
+                        $_args['status'] = 'Enabled';
+                    } else {
+                        $_args['status'] = 'Incomplete';
+                        $incomplete++;
+                    }
+                } else {
+                  $_args['status'] = 'Suspended';
+                }
             }
 
             // Update or create the settings

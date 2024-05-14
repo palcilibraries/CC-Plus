@@ -109,8 +109,12 @@
         <span v-else>{{ item.provider.name }}</span>
       </template>
       <template v-slot:item.status="{ item }">
-        <span v-if="item.status=='Enabled'"><v-icon large color="green" title="Enabled">mdi-toggle-switch</v-icon></span>
-        <span v-if="item.status=='Disabled'"><v-icon large color="red" title="Disabled">mdi-toggle-switch-off</v-icon></span>
+        <span v-if="item.status=='Enabled'">
+          <v-icon large color="green" title="Enabled" @click="changeStatus(item.id,0)">mdi-toggle-switch</v-icon>
+        </span>
+        <span v-if="item.status=='Disabled'">
+          <v-icon large color="red" title="Disabled" @click="changeStatus(item.id,1)">mdi-toggle-switch-off</v-icon>
+        </span>
         <span v-if="item.status=='Incomplete'">
           <v-icon large color="orange" title="Incomplete">mdi-toggle-switch-off</v-icon>
         </span>
@@ -446,6 +450,17 @@
                  })
                  .catch(err => console.log(err));
             this.dtKey += 1;           // re-render of the datatable
+          },
+          changeStatus(_id, state) {
+            const new_status = (state == 1) ? "Enabled" : "Disabled";
+            axios.patch('/sushisettings/'+_id, { status: new_status })
+                 .then( (response) => {
+                   if (response.data.result) {
+                     var _idx = this.all_settings.findIndex( s => s.id == _id);
+                     this.all_settings[_idx].status = response.data.setting.status;
+                   }
+                 })
+                 .catch(error => {});
           },
           // Build/Re-build DataTable headers array based on the provider connectors
           updateHeaders() {

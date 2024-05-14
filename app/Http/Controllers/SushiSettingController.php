@@ -281,35 +281,37 @@ class SushiSettingController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      */
-    public function update(Request $request)
+    public function update(Request $request, $id)
     {
+        // Validate form inputs
         $thisUser = auth()->user();
-       // Validate form inputs
-        $this->validate($request, ['inst_id' => 'required', 'prov_id' => 'required']);
         $input = $request->all();
-        $fields = array_except($input,array('global_id'));
-
-       // Ensure user is allowed to change the settings
-        $provider = Provider::findOrFail($input['prov_id']);
-        $institution = Institution::findOrFail($input['inst_id']);
-        if (!$institution->canManage() || (!$thisUser->hasRole('Admin') && $provider->restricted)) {
-            return response()->json(['result' => false, 'msg' => 'Invalid request']);
-        }
 
         // Get the settings record
-        $setting = SushiSetting::with('institution','provider','provider.globalProv')
-                               ->where('inst_id',$input['inst_id'])->where('prov_id',$input['prov_id'])
-                               ->first();
+        $setting = SushiSetting::with('institution','provider','provider.globalProv')->where('id',$id)->first();
 
-        // Create a new setting?
-        if (!$setting) {
-            $setting = SushiSetting::create($fields);
-            $setting->load('institution','provider','provider.globalProv');
-        // Not creating, update $setting with user inputs
-        } else {
+        // If setting exists, confirm authorization for inst and provider
+        $fields = array_except($input,array('global_id'));
+        if ($setting) {
+            // Ensure user is allowed to change the settings
+            $provider = Provider::findOrFail($setting->prov_id);
+            $institution = Institution::findOrFail($setting->inst_id);
+            if (!$institution->canManage() || (!$thisUser->hasRole('Admin') && $provider->restricted)) {
+                return response()->json(['result' => false, 'msg' => 'Invalid request']);
+            }
+
+            // Update $setting with user inputs
             foreach ($fields as $fld => $val) {
                 $setting->$fld = $val;
             }
+
+        // if not found, try to create one
+        } else {
+            if (!isset($input["inst_id"]) || !isset($input["prov_id"])) {
+                return response()->json(['result' => false, 'msg' => 'Missing arguments for update settings request']);
+            }
+            $setting = SushiSetting::create($fields);
+            $setting->load('institution','provider','provider.globalProv');
         }
 
         // Get required connectors

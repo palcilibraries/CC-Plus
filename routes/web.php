@@ -57,8 +57,6 @@ Route::post('/bulk-harvest-delete', 'HarvestLogController@bulkDestroy')->name('h
 Route::post('/update-harvest-status', 'HarvestLogController@updateStatus')->name('harvests.changeStatus')
      ->middleware(['auth','role:Admin,Manager']);
 Route::resource('/sushisettings', 'SushiSettingController')->middleware(['auth','role:Admin,Manager','cache.headers:no_store']);
-Route::post('/sushisettings-update', 'SushiSettingController@update')->name('harvests.postupd')
-     ->middleware(['auth','role:Admin,Manager']);
 Route::get('/sushisettings-refresh', 'SushiSettingController@refresh')->name('harvests.refresh')->middleware(['auth']);
 Route::post('/sushisettings-test', 'SushiSettingController@test')->name('harvests.test')
      ->middleware(['auth','role:Admin,Manager']);

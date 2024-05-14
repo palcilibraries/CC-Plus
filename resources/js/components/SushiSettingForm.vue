@@ -130,7 +130,7 @@
         },
         methods: {
             formSubmit (event) {
-	            this.form.post('/sushisettings-update')
+              this.form.patch('/sushisettings/'+this.setting.id)
                     .then( (response) => {
 	                    this.warning = '';
 	                    this.confirm = 'Credentials successfully updated.';

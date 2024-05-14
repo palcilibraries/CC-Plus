@@ -51,6 +51,10 @@
     <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_institutions" show-select
                   item-key="id" :options="mutable_options" @update:options="updateOptions"
                   :footer-props="footer_props" :search="search" :key="'indt'+dtKey">
+      <template v-slot:item.name="{ item }">
+        <span v-if="item.is_active==0" class="isInactive">{{ item.name }}</span>
+        <span v-else>{{ item.name }}</span>
+      </template>
       <template v-slot:item.status="{ item }">
         <span v-if="item.is_active">
           <v-icon large color="green" title="Active" @click="changeStatus(item.id,0)">mdi-toggle-switch</v-icon>
@@ -582,3 +586,10 @@
     }
   }
 </script>
+<style scoped>
+.isInactive {
+  cursor: pointer;
+  color: #999999;
+  font-style: italic;
+}
+</style>

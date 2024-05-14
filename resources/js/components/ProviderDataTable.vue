@@ -66,12 +66,15 @@
           <v-icon v-if="item.inst_id==1" title="Consortium Provider">mdi-account-multiple</v-icon>
           <v-icon v-else-if="item.inst_id>1" title="Institutional Provider">mdi-home-outline</v-icon>
         </span>
-        {{ item.name }}
+        <span v-if="item.is_active==0" class="isInactive">
+          {{ item.name }}
+        </span>
+        <span v-else>{{ item.name }}</span>
       </template>
       <template v-slot:item.inst_name="{ item }">
         <span v-if="item.inst_id==1 || inst_context!=1">{{ item.inst_name }}</span>
         <span v-else-if="item.connected.length>1">{{ item.inst_name }} &nbsp;</span>
-        <span v-else>
+        <span v-else :class="item.inst_stat">
           <a :href="'/institutions/'+item.inst_id" title="View Institution in new tab" target="_blank">{{ item.inst_name }}</a>
         </span>
         <span v-if="item.connected.length>1 || (item.connected.length>0 && item.conso_id==null)">
@@ -627,6 +630,13 @@
     }
   }
 </script>
-<style>
-
+<style scoped>
+.isInactive {
+  cursor: pointer;
+  color: #999999;
+  font-style: italic;
+}
+.isActive {
+  font-style: normal;
+}
 </style>

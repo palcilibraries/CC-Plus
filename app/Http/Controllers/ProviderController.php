@@ -45,7 +45,7 @@ class ProviderController extends Controller
 
         // Get all (consortium) providers, extract array of global IDs
         $conso_providers = Provider::with('sushiSettings:id,prov_id,last_harvest','reports:id,name','globalProv',
-                                          'institution:id,name')->orderBy('name','ASC')->get();
+                                          'institution:id,name,is_active')->orderBy('name','ASC')->get();
 
         // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
         $global_providers = GlobalProvider::orderBy('name')->get()->sortBy('name', SORT_NATURAL|SORT_FLAG_CASE);
@@ -100,6 +100,7 @@ class ProviderController extends Controller
             foreach ($connected_providers as $prov_data) {
                 $rec->inst_id = $prov_data->inst_id;
                 $rec->inst_name = $prov_data->institution->name;
+                $rec->inst_stat = ($prov_data->institution->is_active) ? "isActive" : "isInactive";
                 // inst-specific providers show only one connection; consortium providers include all
                 if ($rec->inst_id==1) {
                   $rec->connected = $connected_insts;

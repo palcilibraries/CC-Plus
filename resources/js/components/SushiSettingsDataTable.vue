@@ -112,7 +112,7 @@
           <v-icon large color="orange" title="Incomplete">mdi-toggle-switch-off</v-icon>
         </span>
         <span v-if="item.status=='Suspended'">
-          <v-icon large color="gray" title="Suspended">mdi-toggle-switch-outline</v-icon>
+          <v-icon large color="gray" title="Suspended">mdi-toggle-switch-off</v-icon>
         </span>
       </template>
       <template v-slot:item.customer_id="{ item }">

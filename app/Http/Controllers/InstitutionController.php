@@ -421,7 +421,9 @@ class InstitutionController extends Controller
                 foreach ($settings as $setting) {
                     // Went from Active to Inactive
                     if ($was_active) {
-                        $setting->update(['status' => 'Suspended']);
+                        if ($setting->status != 'Disabled') {
+                            $setting->update(['status' => 'Suspended']);
+                        }
                     // Went from Inactive to Active
                     } else {
                         $setting->resetStatus();

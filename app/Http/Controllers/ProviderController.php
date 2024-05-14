@@ -269,7 +269,7 @@ class ProviderController extends Controller
 
         // Update the record and assign reports in master_reports
         $report_ids = [];
-        $provider->update($prov_input);
+        // $provider->update($prov_input);
         $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
         if (isset($input['report_state'])) {
             $provider->reports()->detach();
@@ -294,7 +294,7 @@ class ProviderController extends Controller
             foreach ($settings as $setting) {
                 // Went from Active to Inactive
                 if ($was_active) {
-                    $setting->update(['status' => 'Disabled']);
+                    $setting->update(['status' => 'Suspended']);
                 // Went from Inactive to Active
                 } else {
                     $setting->resetStatus();

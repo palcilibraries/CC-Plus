@@ -92,6 +92,9 @@
     <v-data-table v-model="selectedRows" :headers="headers" :items="filtered_settings" :loading="loading" show-select
                   item-key="id" :options="mutable_options" @update:options="updateOptions"
                   :footer-props="footer_props" :search="search" :key="'setdt_'+dtKey">
+      <template v-slot:loading>
+        <v-skeleton-loader type="table-row@10"></v-skeleton-loader>
+      </template>
       <template v-slot:item.institution.name="{ item }">
         <span v-if="item.institution.is_active==0" class="isInactive">{{ item.institution.name }}</span>
         <span v-else>{{ item.institution.name }}</span>
@@ -254,7 +257,7 @@
                 limit_inst_ids: [],
                 limit_prov_ids: [],
                 mutable_unset: [...this.unset ],
-                loading: true,
+                loading: false,
                 connectors: [],
                 sushi_insts: [],
                 sushi_provs: [],
@@ -429,6 +432,7 @@
               }
           },
           getSettings() {
+            this.loading = true;
             let _filters = JSON.stringify(this.filters);
             let url = "/sushisettings?json=1&filters="+_filters;
             if (this.inst_context > 1) url+="&context="+this.inst_context;
@@ -438,9 +442,9 @@
                    this.all_settings = [ ...response.data.settings ];
                    this.updateHeaders();
                    this.updateFilterOptions('ALL');
+                   this.loading = false;
                  })
                  .catch(err => console.log(err));
-            this.loading = false;
             this.dtKey += 1;           // re-render of the datatable
           },
           // Build/Re-build DataTable headers array based on the provider connectors

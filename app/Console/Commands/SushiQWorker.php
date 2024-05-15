@@ -150,8 +150,9 @@ class SushiQWorker extends Command
                 $job->load('harvest','harvest.sushiSetting','harvest.sushiSetting.provider',
                            'harvest.sushiSetting.provider.globalProv');
 
-               // Skip the job if the harvest is Active (another QueueWorker may have picked it up already)
-                if ($job->harvest->status == "Active") {
+               // Skip the job if the harvest is not set for processing
+               // (status of Success, Fail, Active, Stopped  need to skipped)
+                if (!in_array($job->harvest->status, array("New", "Queued", "ReQueued", "Pending"))) {
                     continue;
                 }
                // Skip any "ReQueued" harvest that's been updated today

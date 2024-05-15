@@ -136,12 +136,7 @@ class SushiQWorker extends Command
        // ($job_ids is updated @ bottom of loop)
         while (sizeof($job_ids) > 0) {
            // Get the current jobs
-            $jobs = SushiQueueJob::with('harvest','harvest.sushiSetting','harvest.sushiSetting.provider',
-                                        'harvest.sushiSetting.provider.globalProv')
-                                 ->whereIn('id', $job_ids)
-                                 ->orderBy('priority', 'DESC')
-                                 ->orderBy('id', 'ASC')
-                                 ->get();
+            $jobs = SushiQueueJob::whereIn('id', $job_ids)->orderBy('priority', 'DESC')->orderBy('id', 'ASC')->get();
             if (empty($jobs)) {
                 return 0;
             }
@@ -150,6 +145,11 @@ class SushiQWorker extends Command
             $ten_ago = strtotime("-10 minutes");
             $job_found = false;
             foreach ($jobs as $job) {
+
+                // Load harvest data per-job (to be sure it is as current as possible)
+                $job->load('harvest','harvest.sushiSetting','harvest.sushiSetting.provider',
+                           'harvest.sushiSetting.provider.globalProv');
+
                // Skip the job if the harvest is Active (another QueueWorker may have picked it up already)
                 if ($job->harvest->status == "Active") {
                     continue;
@@ -194,7 +194,7 @@ class SushiQWorker extends Command
                 break;
             }
 
-           // If we found a job, mark it active to keep any parallel processes from hitting this same
+           // If we found a job, mark it active to keep other QueueWorkers from hitting this same
            // provider; otherwise, we exit quietly.
             if ($job_found) {
                 $job->harvest->status = 'Active';

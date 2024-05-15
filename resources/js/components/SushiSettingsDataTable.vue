@@ -419,13 +419,11 @@
                                                                                  this.filters['group'] == g.id));
                   }
               }
-
               // rebuild providers
               if (just_cleared || !changed_filter.includes('prov')) {
                 let _filt = (changed_filter == 'ALL') ? [] : this.filters[changed_filter];
                 const prov_ids = [...new Set(this.filtered_settings.map(s => s.prov_id))];
-                this.filter_options['prov'] = this.all_providers.filter(p => (prov_ids.includes(p.conso_id) ||
-                                                                              _filt.includes(p.conso_id)));
+                this.filter_options['prov'] = this.all_providers.filter(p => prov_ids.includes(p.conso_id));
               }
               // rebuild status
               if (just_cleared || changed_filter != 'harv_stat') {

@@ -150,6 +150,10 @@ class SushiQWorker extends Command
             $ten_ago = strtotime("-10 minutes");
             $job_found = false;
             foreach ($jobs as $job) {
+               // Skip the job if the harvest is Active (another QueueWorker may have picked it up already)
+                if ($job->harvest->status == "Active") {
+                    continue;
+                }
                // Skip any "ReQueued" harvest that's been updated today
                 if (
                     $job->harvest->status == 'ReQueued' &&

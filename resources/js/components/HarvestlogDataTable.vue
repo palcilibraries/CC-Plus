@@ -198,7 +198,6 @@
             errors: { type:Array, default: () => [] },
             bounds: { type:Array, default: () => [] },
             filters: { type:Object, default: () => {} },
-            codes: { type:Array, default: () => [] },
            },
     data () {
       return {
@@ -221,6 +220,7 @@
         mutable_updated: [],
         allConso: false,
         expanded: [],
+        codes: [],
         connectedBy: ['Consortium', 'Institution'],
         truncatedResult: false,
         statuses: ['Active', 'Fail', 'Queued', 'Stopped', 'Success'],
@@ -310,6 +310,7 @@
                      this.mutable_harvests = response.data.harvests;
                      this.mutable_updated = response.data.updated;
                      this.truncatedResult = response.data.truncated;
+                     this.codes = response.data.error_codes;
                      this.update_button = "Refresh Records";
                      this.loading = false;
                      this.dtKey++;

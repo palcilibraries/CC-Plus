@@ -202,11 +202,14 @@ class HarvestLogController extends Controller
             $settings_ids = $settings->pluck('id')->toArray();
             $harvest_data = HarvestLog::
                 with('report:id,name','sushiSetting','sushiSetting.institution:id,name','sushiSetting.provider:id,name,inst_id',
-                     'failedHarvests','failedHarvests.ccplusError')
+                     'lastError','failedHarvests','failedHarvests.ccplusError')
                 ->whereIn('sushisettings_id', $settings_ids)
                 ->orderBy('updated_at', 'DESC')
                 ->when(sizeof($filters['rept']) > 0, function ($qry) use ($filters) {
                     return $qry->whereIn('report_id', $filters['rept']);
+                })
+                ->when(sizeof($filters['codes']) > 0, function ($qry) use ($filters) {
+                    return $qry->whereIn('error_id', $filters['codes']);
                 })
                 ->when(sizeof($statuses) > 0, function ($qry) use ($statuses) {
                     return $qry->whereIn('status', $statuses);
@@ -226,6 +229,9 @@ class HarvestLogController extends Controller
                 })
                 ->get();
 
+            // Put error codes into an array
+            $codes = $harvest_data->whereNotNull('error_id')->unique('error_id')->sortBy('error_id')->pluck('error_id')->toArray();
+
             // Apply connectedBy filter (if given) and format records for display , limit to 500 output records
             $harvests = array();
             $updated_ym = array();
@@ -239,10 +245,6 @@ class HarvestLogController extends Controller
                     continue;
                 }
                 $formatted_harvest = $this->formatRecord($harvest);
-                if (count($filters['codes'])>0 && !in_array($formatted_harvest['error_code'],$filters['codes'])) {
-                    continue;
-                }
-
                 // bump counter and add the record to the output array
                 $count += 1;
                 if ($count > $max_records) {
@@ -255,7 +257,7 @@ class HarvestLogController extends Controller
                 }
             }
 
-            // sort error codes ascending and updated_ym options descending
+            // sort updated_ym options descending
             usort($updated_ym, function ($time1, $time2) {
                 if (strtotime($time1) < strtotime($time2)) {
                     return 1;
@@ -266,7 +268,8 @@ class HarvestLogController extends Controller
                 }
             });
             array_unshift($updated_ym , 'Last 24 hours');
-            return response()->json(['harvests' => $harvests, 'updated' => $updated_ym, 'truncated' => $truncated, 200]);
+            return response()->json(['harvests' => $harvests, 'updated' => $updated_ym, 'truncated' => $truncated, 200,
+                                     'error_codes' => $codes]);
 
         // Not returning JSON, the index/vue-component still needs these to setup the page
         } else {
@@ -278,8 +281,7 @@ class HarvestLogController extends Controller
                 'providers',
                 'reports',
                 'bounds',
-                'filters',
-                'codes'
+                'filters'
             ));
         }
     }
@@ -522,7 +524,7 @@ class HarvestLogController extends Controller
         if (count($created_ids) > 0) {
             $new_data = HarvestLog::whereIn('id', $created_ids)->with('report:id,name','sushiSetting',
                                 'sushiSetting.institution:id,name','sushiSetting.provider:id,name,inst_id',
-                                'failedHarvests','failedHarvests.ccplusError')->get();
+                                'lastError','failedHarvests','failedHarvests.ccplusError')->get();
             foreach ($new_data as $rec) {
                 $new[] = $this->formatRecord($rec);
             }
@@ -535,7 +537,7 @@ class HarvestLogController extends Controller
         if (count($updated_ids) > 0) {
             $upd_data = HarvestLog::whereIn('id', $updated_ids)->with('report:id,name','sushiSetting',
                                 'sushiSetting.institution:id,name','sushiSetting.provider:id,name,inst_id',
-                                'failedHarvests','failedHarvests.ccplusError')->get();
+                                'lastError','failedHarvests','failedHarvests.ccplusError')->get();
             foreach ($upd_data as $rec) {
                 $updated[] = $this->formatRecord($rec);
             }
@@ -933,18 +935,20 @@ class HarvestLogController extends Controller
     // Build a consistent output record using an input harvest record
     // input should include Report, SushiSetting with institution+provider and failedHarvests with ccplusError
     private function formatRecord($harvest) {
-        $rec = array('id' => $harvest->id, 'yearmon' => $harvest->yearmon, 'attempts' => $harvest->attempts);
+        $rec = array('id' => $harvest->id, 'yearmon' => $harvest->yearmon, 'attempts' => $harvest->attempts,
+                     'inst_name' => $harvest->sushiSetting->institution->name,
+                     'prov_name' => $harvest->sushiSetting->institution->name,
+                     'prov_inst_id' => $harvest->sushiSetting->provider->inst_id,
+                     'report_name' => $harvest->report->name,
+                     'status' => $harvest->status, 'error_code' => null, 'error' => []
+                    );
         $rec['updated'] = substr($harvest->updated_at,0,10);
-        $rec['inst_name'] = $harvest->sushiSetting->institution->name;
-        $rec['prov_name'] = $harvest->sushiSetting->provider->name;
-        $rec['prov_inst_id'] = $harvest->sushiSetting->provider->inst_id;
-        $rec['report_name'] = $harvest->report->name;
-        $rec['error'] = null;
-        $rec['error_code'] = null;
-        $rec['status'] = $harvest->status;
+        if ($harvest->lastError) {
+            $rec['error_code'] = $harvest->error_id;
+            $rec['error'] = $harvest->lastError->toArray();
+        }
         $rec['failed'] = [];
         if ($harvest->failedHarvests) {
-            $max_fail_id = $harvest->failedHarvests->max('id');
             foreach ($harvest->failedHarvests->sortByDesc('created_at') as $fh) {
                 $info = array("id" => $fh->id, "ts" => date("Y-m-d H:i:s", strtotime($fh->created_at)),
                               "code" => $fh->ccplusError->id, "message" => $fh->ccplusError->message);
@@ -952,11 +956,6 @@ class HarvestLogController extends Controller
                 $info['detail'] = ($fh->ccplusError->id < 1000 || $fh->ccplusError->id >= 9000) ? $fh->detail : "";
                 $info['help_url'] = (is_null($fh->help_url)) ? "" : $fh->help_url;
                 $rec['failed'][] = $info;
-            }
-            $last = $harvest->failedHarvests->where('id',$max_fail_id)->first();
-            if ($last && ($harvest->status != 'Success' || $last->ccplusError->id == 3030)) {
-                $rec['error_code'] = $last->ccplusError->id;
-                $rec['error'] = $last->ccplusError->toArray();
             }
         }
         return $rec;

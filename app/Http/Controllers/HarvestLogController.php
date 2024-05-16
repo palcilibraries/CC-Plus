@@ -281,7 +281,8 @@ class HarvestLogController extends Controller
                 'providers',
                 'reports',
                 'bounds',
-                'filters'
+                'filters',
+                'codes'
             ));
         }
     }

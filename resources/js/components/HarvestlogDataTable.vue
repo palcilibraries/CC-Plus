@@ -97,11 +97,11 @@
                     label="Connected By"
           ></v-select>
         </v-col>
-        <v-col v-if="codes.length>0" class="d-flex px-2 align-center" cols="2">
+        <v-col v-if="mutable_codes.length>0" class="d-flex px-2 align-center" cols="2">
           <div v-if="mutable_filters['codes'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('codes')"/>&nbsp;
           </div>
-          <v-select :items="codes" v-model="mutable_filters['codes']" @change="updateFilters('codes')" multiple
+          <v-select :items="mutable_codes" v-model="mutable_filters['codes']" @change="updateFilters('codes')" multiple
                     label="Error Code"
           ></v-select>
         </v-col>
@@ -198,6 +198,7 @@
             errors: { type:Array, default: () => [] },
             bounds: { type:Array, default: () => [] },
             filters: { type:Object, default: () => {} },
+            codes: { type:Array, default: () => [] },
            },
     data () {
       return {
@@ -220,7 +221,7 @@
         mutable_updated: [],
         allConso: false,
         expanded: [],
-        codes: [],
+        mutable_codes: [],
         connectedBy: ['Consortium', 'Institution'],
         truncatedResult: false,
         statuses: ['Active', 'Fail', 'Queued', 'Stopped', 'Success'],
@@ -280,6 +281,8 @@
               }
             });
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            // Reset error code options to inbound property
+            this.mutable_codes = [...this.codes];
             this.inst_filter = null;
             this.rangeKey += 1;           // force re-render of the date-range component
         },
@@ -293,6 +296,9 @@
             } else {
                 this.mutable_filters[filter] = [];
                 if (filter=='inst' || filter=='group') this.inst_filter = null;
+                if (filter=='codes') {
+                  this.mutable_codes = [...this.codes];
+                }
             }
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             this.selectedRows = [];
@@ -310,7 +316,7 @@
                      this.mutable_harvests = response.data.harvests;
                      this.mutable_updated = response.data.updated;
                      this.truncatedResult = response.data.truncated;
-                     this.codes = response.data.error_codes;
+                     this.mutable_codes = response.data.error_codes;
                      this.update_button = "Refresh Records";
                      this.loading = false;
                      this.dtKey++;
@@ -471,6 +477,9 @@
       } else if (this.mutable_filters['group'].length>0) {
           this.inst_filter = 'G';
       }
+
+      // Set initial error code options with inbound property
+      this.mutable_codes = [...this.codes];
 
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);

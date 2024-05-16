@@ -53,9 +53,9 @@
         <div v-if="mutable_filters['group'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('group')"/>&nbsp;
         </div>
-        <v-select :items="groups" v-model="mutable_filters['group']" @change="updateFilters('group')" multiple
-                  label="Institution Group(s)"  item-text="name" item-value="id"
-        ></v-select>
+        <v-autocomplete :items="groups" v-model="mutable_filters['group']" @change="updateFilters('group')" multiple
+                        label="Institution Group(s)"  item-text="name" item-value="id"
+        ></v-autocomplete>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
         <div v-if="mutable_filters['rept'].length>0" class="x-box">

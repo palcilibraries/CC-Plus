@@ -85,9 +85,9 @@ class HarvestLogController extends Controller
         // Get all groups regardless of JSON or not
         $groups = array();
         if ($show_all) {
-            $data = InstitutionGroup::with('institutions:id,name')->orderBy('name', 'ASC')->get();
+            $all_groups = InstitutionGroup::with('institutions:id,name')->orderBy('name', 'ASC')->get();
             // Keep only groups that have members
-            foreach ($data as $group) {
+            foreach ($all_groups as $group) {
                 if ( $group->institutions->count() > 0 ) {
                     $groups[] = array('id' => $group->id, 'name' => $group->name, 'institutions' => $group->institutions);
                 }
@@ -155,7 +155,7 @@ class HarvestLogController extends Controller
                 }
                 if (sizeof($filters['group']) > 0) {
                     foreach ($filters['group'] as $group_id) {
-                        $group = $groups->where('id',$group_id)->first();
+                        $group = $all_groups->where('id',$group_id)->first();
                         if ($group) {
                             $_insts = $group->institutions->pluck('id')->toArray();
                             $limit_to_insts =  array_merge(

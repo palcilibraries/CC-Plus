@@ -18,7 +18,7 @@ class HarvestLog extends Model
    * @var array
    */
     protected $fillable = [
-        'status', 'sushisettings_id', 'report_id', 'yearmon', 'attempts', 'rawfile'
+        'status', 'sushisettings_id', 'report_id', 'yearmon', 'attempts', 'error_id', 'rawfile'
     ];
 
     public function failedHarvests()
@@ -48,5 +48,10 @@ class HarvestLog extends Model
         }
       // Otherwise, return false
         return false;
+    }
+
+    public function lastError()
+    {
+        return $this->belongsTo('App\CcplusError', 'error_id');
     }
 }

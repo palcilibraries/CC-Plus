@@ -244,6 +244,7 @@ class SushiBatch extends Command
                                                   'error_id' => $sushi->error_code, 'detail' => $sushi->detail,
                                                   'created_at' => $ts]);
                             $this->line($sushi->message . $sushi->detail);
+                            $harvest->error_id = $sushi->error_code;
                             $harvest->status = 'Fail';
                             $harvest->update();
                             continue 2;
@@ -264,6 +265,7 @@ class SushiBatch extends Command
                                                'error_id' => 9100, 'detail' => 'Validation error: ' . $e->getMessage(),
                                                'created_at' => $ts]);
                         $this->line("COUNTER report failed validation : " . $e->getMessage());
+                        $harvest->error_id = 9100;
                         $harvest->status = 'Fail';
                         $harvest->update();
                         continue;

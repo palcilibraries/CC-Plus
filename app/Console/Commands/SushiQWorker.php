@@ -177,6 +177,7 @@ class SushiQWorker extends Command
                                                'error_id' => 9050, 'detail' => $error->explanation . $error->suggestion,
                                                'created_at' => $ts]);
                      }
+                     $job->harvest->error_id = 9050;
                      $job->harvest->status = 'Stopped';
                      $job->harvest->save();
                      $job->delete();
@@ -244,6 +245,7 @@ class SushiQWorker extends Command
                                 ' is INACTIVE , queue entry removed and harvest status set to Stopped.');
                 }
                 $job->delete();
+                $job->harvest->error_id = 9060;
                 $job->harvest->status = 'Stopped';
                 $job->harvest->save();
                 continue;
@@ -259,6 +261,7 @@ class SushiQWorker extends Command
                                 ' is INACTIVE , queue entry removed and harvest status set to Stopped.');
                 }
                 $job->delete();
+                $job->harvest->error_id = 9070;
                 $job->harvest->status = 'Stopped';
                 $job->harvest->save();
                 continue;
@@ -313,6 +316,7 @@ class SushiQWorker extends Command
                   FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'SUSHI',
                                         'error_id' => 3030, 'detail' => $sushi->message . $sushi->detail,
                                         'help_url' => $sushi->help_url, 'created_at' => $ts]);
+                  $job->harvest->error_id = null;
                 } else {
                     try {
                         $valid_report = $sushi->validateJson();
@@ -321,6 +325,7 @@ class SushiQWorker extends Command
                                               'error_id' => 9100, 'detail' => 'Validation error: ' . $e->getMessage(),
                                               'help_url' => $sushi->help_url, 'created_at' => $ts]);
                         $this->line($ts . " " . $ident . "Report failed COUNTER validation : " . $e->getMessage());
+                        $job->harvest->error_id = 9100;
                     }
                 }
 
@@ -354,7 +359,8 @@ class SushiQWorker extends Command
                     $sushi->detail .= " (URL: " . $request_uri . ")";
                 }
                 $this->line($ts . " " . $ident . "SUSHI Exception (" . $sushi->error_code . ") : " .
-                            "(" . $job->harvest->id . ")" . $sushi->message . $sushi->detail);
+                            " (Harvest: " . $job->harvest->id . ")" . $sushi->message . ", " . $sushi->detail);
+                $job->harvest->error_id = $error->id;
             }
 
            // If we have a validated report, processs and save it
@@ -369,6 +375,7 @@ class SushiQWorker extends Command
                         $setting->last_harvest = $yearmon;
                         $setting->update();
                     }
+                    $job->harvest->error_id = null;
                 }
                 $job->harvest->attempts++;
                 $job->harvest->status = $_status;

@@ -938,7 +938,7 @@ class HarvestLogController extends Controller
     private function formatRecord($harvest) {
         $rec = array('id' => $harvest->id, 'yearmon' => $harvest->yearmon, 'attempts' => $harvest->attempts,
                      'inst_name' => $harvest->sushiSetting->institution->name,
-                     'prov_name' => $harvest->sushiSetting->institution->name,
+                     'prov_name' => $harvest->sushiSetting->provider->name,
                      'prov_inst_id' => $harvest->sushiSetting->provider->inst_id,
                      'report_name' => $harvest->report->name,
                      'status' => $harvest->status, 'error_code' => null, 'error' => []

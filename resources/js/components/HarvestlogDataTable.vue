@@ -478,8 +478,9 @@
           this.inst_filter = 'G';
       }
 
-      // Set initial error code options with inbound property
+      // Set initial error code and "updated" options
       this.mutable_codes = [...this.codes];
+      this.mutable_updated = ["Last 24 hours"];
 
       // Set datatable options with store-values
       Object.assign(this.mutable_options, this.datatable_options);

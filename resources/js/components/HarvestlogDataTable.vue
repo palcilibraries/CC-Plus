@@ -9,7 +9,7 @@
       <v-col class="d-flex px-4 align-center" cols="2" sm="2">
         <v-btn class='btn' small color="primary" @click="updateLogRecords()">{{ update_button }}</v-btn>
       </v-col>
-      <v-col class="d-flex px-2 align-center" cols="2" sm="2">
+      <v-col class="d-flex px-4 align-center" cols="2" sm="2">
         <v-btn class='btn' small type="button" @click="clearAllFilters()">Clear Filters</v-btn>
       </v-col>
       <v-col v-if="truncatedResult" class="d-flex px-2 align-center" cols="4">
@@ -102,8 +102,15 @@
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('codes')"/>&nbsp;
           </div>
           <v-select :items="mutable_codes" v-model="mutable_filters['codes']" @change="updateFilters('codes')" multiple
-                    label="Error Code"
-          ></v-select>
+                    label="Error Code">
+            <template v-slot:prepend-item>
+              <v-list-item @click="filterAllCodes">
+                 <span v-if="allCodes">Disable All</span>
+                 <span v-else>Enable All</span>
+              </v-list-item>
+              <v-divider class="mt-1"></v-divider>
+            </template>
+          </v-select>
         </v-col>
       </v-row>
       <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_harvests" :loading="loading" show-select
@@ -220,6 +227,7 @@
         mutable_options: {},
         mutable_updated: [],
         allConso: false,
+        allCodes: false,
         expanded: [],
         mutable_codes: [],
         connectedBy: ['Consortium', 'Institution'],
@@ -270,6 +278,12 @@
             } else if (this.mutable_filters['group'].length>0) {
                 this.inst_filter = "G";
                 this.mutable_filters['inst'] = [];
+            }
+            if (filt == 'codes') {
+              // if all the codes just got turned on, update the allCodes flag
+              if (!this.allCodes && this.mutable_filters['codes'].length == this.mutable_codes.length) {
+                this.allCodes = true;
+              }
             }
         },
         clearAllFilters() {
@@ -435,6 +449,16 @@
               var idx = this.mutable_filters['prov'].findIndex( p => p == cp.id)
               if (idx >= 0) this.mutable_filters['prov'].splice(idx,1);
             });
+          }
+        },
+        // @change function for filtering/clearing all error codes
+        filterAllCodes() {
+          if (this.allCodes) {
+            this.mutable_filters['codes'] = [];
+            this.allCodes = false;
+          } else {
+            this.mutable_filters['codes'] = [ ...this.mutable_codes ];
+            this.allCodes = true;
           }
         },
     },

@@ -237,8 +237,14 @@ class HarvestLogController extends Controller
                })
                ->get();
 
-           // Put error codes into an array
+           // Make arrays for updating the filter options in the U/I
            $codes = $harvest_data->whereNotNull('error_id')->unique('error_id')->sortBy('error_id')->pluck('error_id')->toArray();
+           $statuses = $harvest_data->unique('status')->sortBy('status')->pluck('status')->toArray();
+           $rept_ids = $harvest_data->unique('report_id')->sortBy('report_id')->pluck('report_id')->toArray();
+           $prov_ids = $harvest_data->unique('sushiSetting.provider')->sortBy('sushiSetting.provider.name')
+                                    ->pluck('sushiSetting.prov_id')->toArray();
+           $inst_ids = $harvest_data->unique('sushiSetting.institution')->sortBy('sushiSetting.institution.name')
+                                    ->pluck('sushiSetting.inst_id')->toArray();
 
            // Apply connectedBy filter (if given) and format records for display , limit to 500 output records
            $harvests = array();
@@ -277,7 +283,8 @@ class HarvestLogController extends Controller
            });
            array_unshift($updated_ym , 'Last 24 hours');
            return response()->json(['harvests' => $harvests, 'updated' => $updated_ym, 'truncated' => $truncated, 200,
-                                    'error_codes' => $codes]);
+                                    'code_opts' => $codes, 'stat_opts' => $statuses, 'rept_opts' => $rept_ids,
+                                    'prov_opts' => $prov_ids, 'inst_opts' => $inst_ids]);
 
        // Not returning JSON, the index/vue-component still needs these to setup the page
        } else {

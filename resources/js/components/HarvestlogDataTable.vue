@@ -29,8 +29,8 @@
         <div v-if="mutable_filters['prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
-        <v-autocomplete :items="providers" v-model="mutable_filters['prov']" @change="updateFilters('prov')" multiple
-                        label="Provider(s)" item-text="name" item-value="id">
+        <v-autocomplete :items="mutable_options['providers']" v-model="mutable_filters['prov']" @change="updateFilters('prov')"
+                        multiple label="Provider(s)" item-text="name" item-value="id">
           <template v-slot:prepend-item>
             <v-list-item>
               <v-checkbox v-model="allConso" label="All Consortium Providers" @change="filterConsoProv"></v-checkbox>
@@ -44,8 +44,8 @@
         <div v-if="mutable_filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
-        <v-autocomplete :items="institutions" v-model="mutable_filters['inst']" @change="updateFilters('inst')" multiple
-                        label="Institution(s)"  item-text="name" item-value="id"
+        <v-autocomplete :items="mutable_options['institutions']" v-model="mutable_filters['inst']" @change="updateFilters('inst')"
+                        multiple label="Institution(s)"  item-text="name" item-value="id"
         ></v-autocomplete>
       </v-col>
       <v-col v-if="groups.length>1 && (inst_filter==null || inst_filter=='G') && (is_admin || is_viewer)"
@@ -61,7 +61,7 @@
         <div v-if="mutable_filters['rept'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('rept')"/>&nbsp;
         </div>
-        <v-select :items="reports" v-model="mutable_filters['rept']" @change="updateFilters('rept')" multiple
+        <v-select :items="mutable_options['reports']" v-model="mutable_filters['rept']" @change="updateFilters('rept')" multiple
                   label="Report(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
@@ -69,7 +69,7 @@
         <div v-if="mutable_filters['harv_stat'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('harv_stat')"/>&nbsp;
         </div>
-        <v-select :items="statuses" v-model="mutable_filters['harv_stat']" @change="updateFilters('harv_stat')"
+        <v-select :items="mutable_options['statuses']" v-model="mutable_filters['harv_stat']" @change="updateFilters('harv_stat')"
                   multiple label="Status(es)" item-text="name" item-value="name"
         ></v-select>
       </v-col>
@@ -97,11 +97,11 @@
                     label="Connected By"
           ></v-select>
         </v-col>
-        <v-col v-if="mutable_codes.length>0" class="d-flex px-2 align-center" cols="2">
+        <v-col v-if="mutable_options['codes'].length>0" class="d-flex px-2 align-center" cols="2">
           <div v-if="mutable_filters['codes'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('codes')"/>&nbsp;
           </div>
-          <v-select :items="mutable_codes" v-model="mutable_filters['codes']" @change="updateFilters('codes')" multiple
+          <v-select :items="mutable_options['codes']" v-model="mutable_filters['codes']" @change="updateFilters('codes')" multiple
                     label="Error Code">
             <template v-slot:prepend-item>
               <v-list-item @click="filterAllCodes">
@@ -114,7 +114,7 @@
         </v-col>
       </v-row>
       <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_harvests" :loading="loading" show-select
-                    item-key="id" :options="mutable_options" @update:options="updateOptions" :footer-props="footer_props"
+                    item-key="id" :options="mutable_dt_options" @update:options="updateOptions" :footer-props="footer_props"
                     :expanded="expanded" @click:row="expandRow" show-expand :key="dtKey">
         <template v-slot:item.prov_name="{ item }">
           <span v-if="item.prov_inst_id==1">
@@ -180,7 +180,7 @@
     </div>
     <div v-else>
       <v-data-table :headers="headers" :items="mutable_harvests" :loading="loading" item-key="id"
-                    :options="mutable_options" @update:options="updateOptions" :footer-props="footer_props">
+                    :options="mutable_dt_options" @update:options="updateOptions" :footer-props="footer_props">
         <template v-slot:item.prov_name="{ item }">
           <span v-if="item.prov_inst_id==1">
             <v-icon title="Consortium Provider">mdi-account-multiple</v-icon>&nbsp;
@@ -224,12 +224,12 @@
         mutable_harvests: this.harvests,
         mutable_filters: this.filters,
         inst_filter: null,
-        mutable_options: {},
+        mutable_dt_options: {},
         mutable_updated: [],
         allConso: false,
         allCodes: false,
         expanded: [],
-        mutable_codes: [],
+        mutable_options: { 'codes': [], 'reports': [], 'statuses': [], 'providers': [], 'institutions': [] },
         connectedBy: ['Consortium', 'Institution'],
         truncatedResult: false,
         statuses: ['Active', 'Fail', 'Queued', 'Stopped', 'Success'],
@@ -281,7 +281,7 @@
             }
             if (filt == 'codes') {
               // if all the codes just got turned on, update the allCodes flag
-              if (!this.allCodes && this.mutable_filters['codes'].length == this.mutable_codes.length) {
+              if (!this.allCodes && this.mutable_filters['codes'].length == this.mutable_options['codes'].length) {
                 this.allCodes = true;
               }
             }
@@ -296,7 +296,9 @@
             });
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             // Reset error code options to inbound property
-            this.mutable_codes = [...this.codes];
+            Object.keys(this.mutable_options).forEach( (key) => {
+              this.mutable_options[key] = [...this[key]];
+            });
             this.inst_filter = null;
             this.rangeKey += 1;           // force re-render of the date-range component
         },
@@ -310,8 +312,8 @@
             } else {
                 this.mutable_filters[filter] = [];
                 if (filter=='inst' || filter=='group') this.inst_filter = null;
-                if (filter=='codes') {
-                  this.mutable_codes = [...this.codes];
+                if ( Object.keys(this.mutable_options).includes(filter) ) {
+                  this.mutable_options[filter] = [...this[filter]];
                 }
             }
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
@@ -330,7 +332,11 @@
                      this.mutable_harvests = response.data.harvests;
                      this.mutable_updated = response.data.updated;
                      this.truncatedResult = response.data.truncated;
-                     this.mutable_codes = response.data.error_codes;
+                     this.mutable_options['codes'] = response.data.code_opts;
+                     this.mutable_options['statuses'] = response.data.stat_opts;
+                     this.mutable_options['reports'] = this.reports.filter( r => response.data.rept_opts.includes(r.id));
+                     this.mutable_options['providers'] = this.providers.filter( p => response.data.prov_opts.includes(p.id));
+                     this.mutable_options['institutions'] = this.institutions.filter( i => response.data.inst_opts.includes(i.id));
                      this.update_button = "Refresh Records";
                      this.loading = false;
                      this.dtKey++;
@@ -338,13 +344,13 @@
                  .catch(err => console.log(err));
         },
         updateOptions(options) {
-            if (Object.keys(this.mutable_options).length === 0) return;
-            Object.keys(this.mutable_options).forEach( (key) =>  {
-                if (options[key] !== this.mutable_options[key]) {
-                    this.mutable_options[key] = options[key];
+            if (Object.keys(this.mutable_dt_options).length === 0) return;
+            Object.keys(this.mutable_dt_options).forEach( (key) =>  {
+                if (options[key] !== this.mutable_dt_options[key]) {
+                    this.mutable_dt_options[key] = options[key];
                 }
             });
-            this.$store.dispatch('updateDatatableOptions',this.mutable_options);
+            this.$store.dispatch('updateDatatableOptions',this.mutable_dt_options);
         },
         processBulk() {
             this.success = "";
@@ -457,7 +463,7 @@
             this.mutable_filters['codes'] = [];
             this.allCodes = false;
           } else {
-            this.mutable_filters['codes'] = [ ...this.mutable_codes ];
+            this.mutable_filters['codes'] = [...this.codes];
             this.allCodes = true;
           }
         },
@@ -502,12 +508,14 @@
           this.inst_filter = 'G';
       }
 
-      // Set initial error code and "updated" options
-      this.mutable_codes = [...this.codes];
+      // Set initial fitler options
+      Object.keys(this.mutable_options).forEach( (key) => {
+        this.mutable_options[key] = [...this[key]];
+      });
       this.mutable_updated = ["Last 24 hours"];
 
       // Set datatable options with store-values
-      Object.assign(this.mutable_options, this.datatable_options);
+      Object.assign(this.mutable_dt_options, this.datatable_options);
 
       // Setup date-bounds for the date-selector
       if (typeof(this.bounds[0]) != 'undefined') {

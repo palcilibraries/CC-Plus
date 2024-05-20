@@ -97,13 +97,12 @@ class HarvestLogController extends Controller
        // Setup for initial view - get queue count and build arrays for the filter-options.
        if (!$json) {
 
-           // Get current consortium_id
+           // Get the job-count for the current consortium
+           $job_count = 0;
            $con = Consortium::where("ccp_key", session("ccp_con_key"))->first();
-           if (!$con) {
-               return response()->json(["result" => false, "msg" => "Error: Corrupt session or consortium settings."]);
+           if ($con) {
+               $job_count = SushiQueueJob::where('consortium_id', $con->id)->count();
            }
-           // Get the job-count
-           $job_count = SushiQueueJob::where('consortium_id', $con->id)->count();
 
            // Get IDs of all possible providers from the sushisettings table
            $possible_providers = SushiSetting::distinct('prov_id')->pluck('prov_id')->toArray();
@@ -442,7 +441,7 @@ class HarvestLogController extends Controller
            $state = "Queued";
            $con = Consortium::where('ccp_key', '=', session('ccp_con_key'))->first();
            if (!$con) {
-               return response()->json(['result' => false, 'msg' => 'Error: Corrupt session or consortium settings.']);
+               return response()->json(['result' => false, 'msg' => 'Cannot create jobs with current consortium setting.']);
            }
        }
 
@@ -859,7 +858,7 @@ class HarvestLogController extends Controller
        // Get consortium_id
        $con = Consortium::where('ccp_key', session('ccp_con_key'))->first();
        if (!$con) {
-           return response()->json(['result' => false, 'msg' => 'Error: Corrupt session or consortium settings.']);
+           return response()->json(['result'=>false, 'msg'=>'Error: Cannot delete harvests with current consortium settings.']);
        }
 
        // Delete any related jobs from the global queue before deleting the harvests
@@ -884,14 +883,14 @@ class HarvestLogController extends Controller
    {
        abort_unless(auth()->user()->hasAnyRole(["Admin","Manager"]), 403);
 
-       // Get current consortium_id
+       // Get job count for current consortium
+       $count = 0;
        $con = Consortium::where("ccp_key", session("ccp_con_key"))->first();
-       if (!$con) {
-           return response()->json(["result" => false, "msg" => "Error: Corrupt session or consortium settings."]);
+       if ($con) {
+          $count = SushiQueueJob::where('consortium_id', $con->id)->count();
        }
 
        // Get the job-count
-       $count = SushiQueueJob::where('consortium_id', $con->id)->count();
        return response()->json(['count' => $count]);
    }
 
@@ -926,7 +925,7 @@ class HarvestLogController extends Controller
        // Get consortium_id
        $con = Consortium::where("ccp_key", session("ccp_con_key"))->first();
        if (!$con) {
-           return response()->json(["result" => false, "msg" => "Error: Corrupt session or consortium settings."]);
+           return response()->json(["result" => true, "jobs" => [], "prov_ids" => [], "inst_ids" => [], "rept_ids" => [] ]);
        }
 
        // Get jobs from the global queue

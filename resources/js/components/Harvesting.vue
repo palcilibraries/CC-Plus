@@ -3,6 +3,16 @@
     <h1>Usage Report Harvesting</h1>
     <v-expansion-panels multiple focusable v-model="panels">
       <!-- Manual Harvest -->
+      <v-expansion-panel v-if="job_count>0 && is_admin">
+        <v-expansion-panel-header>
+          <h2>System Job Queue</h2>
+        </v-expansion-panel-header>
+        <v-expansion-panel-content>
+          <harvestjobs-data-table :institutions="institutions" :providers="providers" :reports="reports" :filters="job_filters"
+          ></harvestjobs-data-table>
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+      <!-- Manual Harvest -->
       <v-expansion-panel>
         <v-expansion-panel-header>
           <h2>Manual Harvesting</h2>
@@ -54,16 +64,18 @@
             bounds: { type:Array, default: () => [] },
             filters: { type:Object, default: () => {} },
             codes: { type:Array, default: () => [] },
+            job_count: { type:Number, default: 0 },
            },
     data () {
         return {
             failure: '',
             success: '',
-            panels: [1],     // default to Logs open and manual closed
+            panels: [],
             harvest_provs: [],
             harvest_insts: [],
             mutable_harvests: [...this.harvests],
             mutable_bounds: [...this.bounds],
+            job_filters: { 'inst': [], 'prov': [], 'rept':[] },
             harvKey: 1,
         }
     },

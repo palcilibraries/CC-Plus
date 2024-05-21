@@ -313,6 +313,9 @@ class SushiQWorker extends Command
                 if ($sushi->error_code == 3030) {
                   // Get 3030 error data from sushi_errors table
                   $error = CcplusError::where('id',3030)->first();
+                  // technially, 3030 is success, so we're clearing any failed records
+                  $deleted = FailedHarvest::where('harvest_id', $job->harvest->id)->delete();
+                  // practically, we want ONE failed record to record the "no records received" exception
                   FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'SUSHI',
                                         'error_id' => 3030, 'detail' => $sushi->message . $sushi->detail,
                                         'help_url' => $sushi->help_url, 'created_at' => $ts]);
@@ -379,6 +382,9 @@ class SushiQWorker extends Command
                 }
                 $job->harvest->attempts++;
                 $job->harvest->status = $_status;
+
+                // Successfully processed the report - clear out any existing "failed" records
+                $deleted = FailedHarvest::where('harvest_id', $job->harvest->id)->delete();
 
            // No valid report data saved. If we failed, update harvest record
             } else {

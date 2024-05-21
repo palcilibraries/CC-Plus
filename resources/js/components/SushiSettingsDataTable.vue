@@ -140,7 +140,7 @@
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
-          <v-icon title="Manual Harvest in new tab" @click="goHarvest(item)">mdi-open-in-new</v-icon>
+          <v-icon title="Manual Harvest in new tab" @click="goHarvest(item)">mdi-barley</v-icon>
           &nbsp; &nbsp;
           <v-icon v-if="item.can_edit" title="Edit SUSHI Credentials" @click="editSetting(item)">mdi-cog-outline</v-icon>
           <v-icon v-else color="#c9c9c9">mdi-cog-outline</v-icon>
@@ -654,7 +654,7 @@
               window.location.assign('/providers/'+provId);
           },
           goHarvest(setting) {
-              window.open("/harvests/create?inst="+setting.inst_id+"&prov="+setting.prov_id, "_blank");
+              window.open("/harvests?inst_ps="+setting.inst_id+"&prov_ps="+setting.prov_id, "_blank");
           },
           sushiDialogDone ({ result, msg, setting }) {
               this.success = '';

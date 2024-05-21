@@ -33,7 +33,7 @@
              </ul>
           </p>
           <manual-harvest :institutions="harvest_insts" :inst_groups="groups" :providers="harvest_provs" :all_reports="reports"
-                          :presets="{}" @new-harvests="addHarvests" @updated-harvests="updateHarvests"
+                          :presets="presets" @new-harvests="addHarvests" @updated-harvests="updateHarvests"
           ></manual-harvest>
         </v-expansion-panel-content>
       </v-expansion-panel>
@@ -65,6 +65,7 @@
             filters: { type:Object, default: () => {} },
             codes: { type:Array, default: () => [] },
             job_count: { type:Number, default: 0 },
+            presets: { type:Object, default: () => {} },
            },
     data () {
         return {

@@ -160,13 +160,6 @@
                 import_types: ['Add or Update', 'Full Replacement']
             }
         },
-        watch: {
-          current_panels: {
-             handler () {
-                 this.$store.dispatch('updatePanels',this.panels);
-             },
-           }
-        },
         methods: {
             instFormSubmit (event) {
                 this.success = '';
@@ -286,22 +279,14 @@
             },
         },
         computed: {
-          ...mapGetters(['is_admin', 'panel_data']),
-          current_panels() { return this.panels; }
+          ...mapGetters(['is_admin']),
         },
         beforeCreate() {
           // Load existing store data
           this.$store.commit('initialiseStore');
       	},
-        beforeMount() {
-          // Set page name in the store
-          this.$store.dispatch('updateDashboard','showinstitution');
-      	},
         mounted() {
             this.status=this.statusvals[this.institution.is_active];
-
-            // Set datatable options with store-values
-            Object.assign(this.panels, this.panel_data);
 
             // Subscribe to store updates
             this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });

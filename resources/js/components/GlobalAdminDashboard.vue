@@ -50,31 +50,11 @@
         panels: [],     // default to all panels closed
       }
     },
-    watch: {
-      current_panels: {
-         handler () {
-             this.$store.dispatch('updatePanels',this.panels);
-         },
-       }
-    },
-    methods: {
-    },
-    computed: {
-      ...mapGetters(['panel_data']),
-      current_panels() { return this.panels; }
-    },
     beforeCreate() {
       // Load existing store data
       this.$store.commit('initialiseStore');
   	},
-    beforeMount() {
-      // Set page name in the store
-      this.$store.dispatch('updateDashboard','globaladminhome');
-  	},
     mounted() {
-      // Set datatable options with store-values
-      Object.assign(this.panels, this.panel_data);
-
       // Subscribe to store updates
       this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
 

@@ -80,13 +80,6 @@
             harvKey: 1,
         }
     },
-    watch: {
-      current_panels: {
-         handler () {
-             this.$store.dispatch('updatePanels',this.panels);
-         },
-       }
-    },
     methods: {
       updateHarvests (harvests) {
         var updated=0;
@@ -112,17 +105,12 @@
       },
     },
     computed: {
-        ...mapGetters(['is_manager', 'is_admin', 'panel_data']),
-        current_panels() { return this.panels; }
+        ...mapGetters(['is_manager', 'is_admin']),
     },
     beforeCreate() {
         // Load existing store data
         this.$store.commit('initialiseStore');
 	  },
-    beforeMount() {
-        // Set page name in the store
-        this.$store.dispatch('updateDashboard','harvesting');
-    },
     mounted() {
         this.harvest_provs = this.providers.filter(p => p.sushi_enabled);
         if (this.harvest_provs.length > 1) {
@@ -130,9 +118,6 @@
           this.harvest_provs.unshift({'id':-1, 'name':'All Providers'});
         }
         this.harvest_insts = [ ...this.institutions];
-
-        // Set datatable options with store-values
-        Object.assign(this.panels, this.panel_data);
 
         // Subscribe to store updates
         this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });

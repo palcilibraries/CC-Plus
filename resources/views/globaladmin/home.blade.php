@@ -1,4 +1,7 @@
 @extends('layouts.app')
+@section('page_title')
+    {{ "Server Admin -- CC-Plus" }}
+@endsection
 @section('content')
 <globaladmin-dashboard :consortia="{{ json_encode($consortia) }}"
                        :settings="{{ json_encode($settings) }}"

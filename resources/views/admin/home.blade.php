@@ -1,4 +1,7 @@
 @extends('layouts.app')
+@section('page_title')
+    {{ "Consortium Admin -- " . $conso_name . " -- CC-Plus" }}
+@endsection
 @section('content')
 <div class="d-flex pl-2">
   <h1>{{ $conso_name }} Administration Dashboard</h1>

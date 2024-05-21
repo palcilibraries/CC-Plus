@@ -1,4 +1,7 @@
 @extends('layouts.app')
+@section('page_title')
+    {{ "Create Report -- CC-Plus" }}
+@endsection
 @section('content')
 <h1>Create a Report</h1>
 <create-report :institutions="{{ json_encode($institutions) }}"

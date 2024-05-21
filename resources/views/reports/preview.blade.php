@@ -1,4 +1,7 @@
 @extends('layouts.app')
+@section('page_title')
+    {{ "Report Preview -- CC-Plus" }}
+@endsection
 @section('content')
 <h1>Usage Report : Preview</h1>
 @if ($title != "")

@@ -1,4 +1,7 @@
 @extends('layouts.app')
+@section('page_title')
+    {{ "Harvesting -- CC-Plus" }}
+@endsection
 @section('content')
 <harvesting :harvests="{{ json_encode($harvests) }}"
             :institutions="{{ json_encode($institutions) }}"

@@ -321,26 +321,26 @@ class HarvestLogController extends Controller
        }
 
        // Get IDs of all possible prov_ids from the sushisettings table
+       $inst_groups = array();
        $possible_providers = SushiSetting::distinct('prov_id')->pluck('prov_id')->toArray();
        if ($is_admin) {     // Admin view
            $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
                                       ->where('id', '<>', 1)->where('is_active', true)
                                       ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
            array_unshift($institutions, ['id' => 0, 'name' => 'Entire Consortium']);
-           $inst_groups = InstitutionGroup::with('institutions')->orderBy('name', 'ASC')->get(['id','name']);
+           $group_data = InstitutionGroup::with('institutions')->orderBy('name', 'ASC')->get(['id','name']);
            $provider_data = Provider::with('reports')
                                 ->whereIn('id', $possible_providers)->where('is_active', true)
                                 ->orderBy('name', 'ASC')->get(['id','name']);
 
            // Copy available_providers into the groups (to simplify the vue component)
-           foreach ($inst_groups as $key => $group) {
+           foreach ($group_data as $key => $group) {
                // Remove groups with no members
-               if ( $group->institutions->count() == 0 ) {
-                   $inst_groups->forget($key);
-               }
+               if ( $group->institutions->count() == 0 ) continue;
                $insts = $group->institutions->pluck('id')->toArray();
                $available_providers = SushiSetting::whereIn('inst_id',$insts)->pluck('prov_id')->toArray();
                $group->providers = $provider_data->whereIn('id',$available_providers)->toArray();
+               $inst_groups[] = $group;
            }
            $providers = $provider_data->toArray();
        } else {    // manager view
@@ -353,7 +353,6 @@ class HarvestLogController extends Controller
                                     $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
                                 })
                                 ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
-           $inst_groups = array();
        }
        array_unshift($providers, ['id' =>  0, 'name' => 'All Consortium Providers', 'inst_id' => 1, 'sushi_enabled' => 1]);
        array_unshift($providers, ['id' => -1, 'name' => 'All Providers', 'inst_id' => 1, 'sushi_enabled' => 1]);

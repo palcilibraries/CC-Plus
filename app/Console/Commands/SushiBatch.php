@@ -274,7 +274,7 @@ class SushiBatch extends Command
                    // Process the report and save in the database
                     if ($valid_report) {
                         $_status = $C5processor->{$report->name}($sushi->json);
-                        if ($_status = 'Saved') {
+                        if ($_status = 'Success') {
                             $this->line($report->name . " report data saved for " . $setting->institution->name);
                             $harvest->status = 'Success';
                             $harvest->rawfile = $raw_filename;
@@ -285,6 +285,9 @@ class SushiBatch extends Command
                                 $setting->last_harvest = $yearmon;
                                 $setting->update();
                             }
+
+                            // Successfully processed the report - clear out any existing "failed" records
+                            $deleted = FailedHarvest::where('harvest_id', $job->harvest->id)->delete();
                         }
                     }
                     unset($sushi);

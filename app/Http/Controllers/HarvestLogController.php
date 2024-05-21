@@ -59,6 +59,11 @@ class HarvestLogController extends Controller
            }
        }
 
+       // Allow for inbound provider and institution arguments
+       $presets = array();
+       $presets['prov_id'] = ($request->input('prov_ps')) ? $request->input('prov_ps') : null;
+       $presets['inst_id'] = ($request->input('inst_ps')) ? $request->input('inst_ps') : null;
+
        // Setup connectedBy flag for the query
        $connectedBy = (!is_null($filters['connected_by'])) ? $filters['connected_by'] : null;
        if ($connectedBy && $connectedBy!="Consortium" && $connectedBy!="Institution") {
@@ -289,8 +294,8 @@ class HarvestLogController extends Controller
        // Not returning JSON, the index/vue-component still needs these to setup the page
        } else {
            $harvests = array();
-           return view('harvests.index',
-                       compact('harvests','institutions','groups','providers','reports','bounds','filters','codes','job_count')
+           return view('harvests.index', compact('harvests','institutions','groups','providers','reports','bounds','filters',
+                                                 'codes','job_count','presets')
                       );
        }
    }

@@ -281,10 +281,6 @@
         computed: {
           ...mapGetters(['is_admin']),
         },
-        beforeCreate() {
-          // Load existing store data
-          this.$store.commit('initialiseStore');
-      	},
         mounted() {
             this.status=this.statusvals[this.institution.is_active];
 

@@ -101,6 +101,12 @@
     computed: {
       ...mapGetters(['is_admin','is_viewer'])
     },
+    beforeCreate() {
+      // Initialize local datastore if it is not there
+      if (!localStorage.getItem('store')) {
+          this.$store.commit('initialiseStore');
+      }
+	  },
     mounted() {
       console.log('HomeSavedReports Component mounted.');
     }

@@ -51,9 +51,11 @@
       }
     },
     beforeCreate() {
-      // Load existing store data
-      this.$store.commit('initialiseStore');
-  	},
+      // Initialize local datastore if it is not there
+      if (!localStorage.getItem('store')) {
+          this.$store.commit('initialiseStore');
+      }
+	  },
     mounted() {
       // Subscribe to store updates
       this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });

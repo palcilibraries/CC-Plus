@@ -552,10 +552,6 @@
         return this.mutable_cols.filter(h => h.active)
       },
     },
-    beforeCreate() {
-        // Load existing store data
-		this.$store.commit('initialiseStore');
-  	},
     beforeMount() {
         // Set page name in the store
         this.$store.dispatch('updatePageName','preview');

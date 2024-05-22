@@ -62,17 +62,9 @@ export const store = new Vuex.Store({
       report_data: [],
   },
   mutations: {
+    // Create the store object in local storage
     initialiseStore(state) {
-      // Check if the store exists in local storage
-      if (localStorage.getItem('store')) {
-          // Replace the state object with the stored item
-          this.replaceState(
-              Object.assign(state, JSON.parse(localStorage.getItem('store')))
-          );
-      } else {
-          // Create the store object in local storage
-          localStorage.setItem("store", JSON.stringify(state));
-      }
+      localStorage.setItem("store", JSON.stringify(state));
     },
     SET_ACCESS(state, access) {
       if (access=='ServerAdmin' || access=='SuperUser') {

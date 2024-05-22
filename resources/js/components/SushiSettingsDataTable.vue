@@ -777,8 +777,6 @@
           }
         },
         beforeCreate() {
-          // Load existing store data
-          this.$store.commit('initialiseStore');
           // Subscribe to store updates
           this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
         },

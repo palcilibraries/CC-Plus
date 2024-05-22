@@ -352,10 +352,6 @@
         return this.filter_by_fromYM+'|'+this.filter_by_toYM;
       },
     },
-    beforeCreate() {
-      // Load existing store data
-      this.$store.commit('initialiseStore');
-    },
     beforeMount() {
         // Set page name in the store
         this.$store.dispatch('updatePageName','alerts');

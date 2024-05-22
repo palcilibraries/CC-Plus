@@ -364,10 +364,6 @@
           return count>0;
       },
     },
-    beforeCreate() {
-      // Load existing store data
-	    this.$store.commit('initialiseStore');
-  	},
     beforeMount() {
       // Set page name in the store
       this.$store.dispatch('updatePageName','preview');

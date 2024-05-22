@@ -626,10 +626,6 @@
     computed: {
       ...mapGetters(['datatable_options'])
     },
-    beforeCreate() {
-        // Load existing store data
-	    	this.$store.commit('initialiseStore');
-  	},
     beforeMount() {
         // Set page name in the store
         this.$store.dispatch('updatePageName','globalproviders');

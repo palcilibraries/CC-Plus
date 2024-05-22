@@ -107,10 +107,6 @@
     computed: {
         ...mapGetters(['is_manager', 'is_admin']),
     },
-    beforeCreate() {
-        // Load existing store data
-        this.$store.commit('initialiseStore');
-	  },
     mounted() {
         this.harvest_provs = this.providers.filter(p => p.sushi_enabled);
         if (this.harvest_provs.length > 1) {

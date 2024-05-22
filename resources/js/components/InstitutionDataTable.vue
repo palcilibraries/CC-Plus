@@ -542,10 +542,6 @@
     computed: {
       ...mapGetters(['all_filters','page_name','datatable_options'])
     },
-    beforeCreate() {
-      // Load existing store data
-      this.$store.commit('initialiseStore');
-    },
     beforeMount() {
       // Set page name in the store
       this.$store.dispatch('updatePageName','institutions');

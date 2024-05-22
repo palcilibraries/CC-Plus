@@ -478,10 +478,6 @@
         return this.providers.filter(p => p.inst_id==1);
       },
     },
-    beforeCreate() {
-      // Load existing store data
-      this.$store.commit('initialiseStore');
-    },
     beforeMount() {
       // Set page name in the store
       this.$store.dispatch('updatePageName','harvestlogs');

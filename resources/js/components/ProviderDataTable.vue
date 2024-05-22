@@ -591,10 +591,6 @@
         return this.mutable_providers.filter(p => p.inst_id == 1).map(p2 => p2.id);
       },
     },
-    beforeCreate() {
-      // Load existing store data
-      this.$store.commit('initialiseStore');
-	  },
     beforeMount() {
       // Set page name in the store
       this.$store.dispatch('updatePageName','providers');

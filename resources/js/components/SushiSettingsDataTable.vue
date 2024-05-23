@@ -572,14 +572,10 @@
                   } else {
                       var new_status = this.bulkAction+'d';
                       this.selectedRows.forEach( (setting) => {
-                          axios.post('/sushisettings-update', {
-                            inst_id: setting.inst_id,
-                            prov_id: setting.prov_id,
-                            status: new_status
-                          })
+                          axios.patch('/sushisettings/'+setting.id, { status: new_status })
                           .then( (response) => {
                               if (response.data.result) {
-                                  var _idx = this.all_settings.findIndex(h=>h.id == setting.id);
+                                  var _idx = this.all_settings.findIndex( s => s.id == setting.id);
                                   this.all_settings[_idx].status = response.data.setting.status;
                               } else {
                                   this.success = '';

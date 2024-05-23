@@ -152,7 +152,7 @@ class HarvestLogController extends Controller
            $bounds = $this->harvestBounds();
 
            // make a list of error codes - for now just return everthing that exists in failedHarvests
-           $codes = FailedHarvest::distinct('error_id')->pluck('error_id')->toArray();
+           $codes = HarvestLog::whereNotNull('error_id')->distinct('error_id')->orderBy('error_id')->pluck('error_id')->toArray();
        }
 
        // Skip querying for records unless we're returning json

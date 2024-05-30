@@ -130,12 +130,12 @@ class Sushi extends Model
 
             // Override JSON severity with value from CC+ Error table if the code is found there.
             // If code unrecognized and severity is non-Fatal, return Success and let caller handle it.
-            $known_error = CcplusError::with('severity')->where('id',$this->error_code)->first();
+            $known_error = CcplusError::where('id',$this->error_code)->first();
             if ($known_error) {
-                $this->severity = strtoupper($known_error->severity->name);
-            }
-            if ($this->severity == 'ERROR' || $this->severity == 'FATAL') {
-                return "Fail";
+                // ANY known exceptions in the JSON (except 1011 and 3030 above, INFO and DEBUG) returns Fail
+                if ($known_error->severity_id != 0 && $known_error->severity_id != 10) {
+                    return "Fail";
+                }
             }
         }
         return "Success";
@@ -173,8 +173,8 @@ class Sushi extends Model
         }
 
         // If a platform value is set, add it
-        if (!is_null($setting->provider->globalProv->platform_name)) {
-            $uri_auth .= "&platform=" . $setting->provider->globalProv->platform_name;
+        if (!is_null($setting->provider->globalProv->platform_parm)) {
+            $uri_auth .= "&platform=" . $setting->provider->globalProv->platform_parm;
         }
 
         // Return the URI if we're not building a report request

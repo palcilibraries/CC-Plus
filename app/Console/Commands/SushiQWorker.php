@@ -308,11 +308,12 @@ class SushiQWorker extends Command
                 if ($sushi->message != "") {
                     $this->line($ts . " " . $ident . "Non-Fatal SUSHI Exception: (" . $sushi->error_code . ") : " .
                                 $sushi->message . $sushi->detail);
+                    $error = CcplusError::where('id',$sushi->error_code)->first();
                 }
+
                 // If no data (3030) don't try to validate JSON, just add failedHarvest record
                 if ($sushi->error_code == 3030) {
                   // Get 3030 error data from sushi_errors table
-                  $error = CcplusError::where('id',3030)->first();
                   // technially, 3030 is success, so we're clearing any failed records
                   $deleted = FailedHarvest::where('harvest_id', $job->harvest->id)->delete();
                   // practically, we want ONE failed record to record the "no records received" exception
@@ -324,11 +325,20 @@ class SushiQWorker extends Command
                     try {
                         $valid_report = $sushi->validateJson();
                     } catch (\Exception $e) {
-                        FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'COUNTER',
-                                              'error_id' => 9100, 'detail' => 'Validation error: ' . $e->getMessage(),
-                                              'help_url' => $sushi->help_url, 'created_at' => $ts]);
-                        $this->line($ts . " " . $ident . "Report failed COUNTER validation : " . $e->getMessage());
-                        $job->harvest->error_id = 9100;
+                        // If request was successful, but an error (other than 3030) came back, signal THAT error
+                        if ($error) {
+                            FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'SUSHI',
+                                                  'error_id' => $sushi->error_code, 'detail' => $sushi->message . $sushi->detail,
+                                                  'help_url' => $sushi->help_url, 'created_at' => $ts]);
+                            $job->harvest->error_id = $sushi->error_code;
+                        // Otherwise, signal 9100 - failed COUNTER validation
+                        } else {
+                            FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'COUNTER',
+                                                  'error_id' => 9100, 'detail' => 'Validation error: ' . $e->getMessage(),
+                                                  'help_url' => $sushi->help_url, 'created_at' => $ts]);
+                            $this->line($ts . " " . $ident . "Report failed COUNTER validation : " . $e->getMessage());
+                            $job->harvest->error_id = 9100;
+                        }
                     }
                 }
 
@@ -401,11 +411,11 @@ class SushiQWorker extends Command
                     } else {
                         $job->harvest->status = 'ReQueued'; // ReQueue by default
                     }
-                    // Force harvest status to the value from any Error
-                    if ($error) {
-                        $job->harvest->status = $error->new_status;
-                    }
                 }
+            }
+            // Force harvest status to the value from any Error
+            if ($error) {
+                $job->harvest->status = $error->new_status;
             }
 
            // Sleep 2 seconds *before* saving the harvest record (keeping it technically "Active"),

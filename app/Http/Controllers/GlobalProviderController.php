@@ -202,7 +202,9 @@ class GlobalProviderController extends Controller
       $input = $request->all();
       $isActive = ($input['is_active']) ? 1 : 0;
       $provider->is_active = $isActive;
-      $provider->refreshable = ($input['refreshable']) ? 1 : 0;
+      if (isset($input['report_state'])) {
+          $provider->refreshable = ($input['refreshable']) ? 1 : 0;
+      }
 
       // Pull all connection fields and master reports
       $all_connectors = ConnectionField::get();

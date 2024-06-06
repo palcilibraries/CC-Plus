@@ -460,6 +460,7 @@
                      this.form.connector_state = response.data.prov.connector_state;
                      this.form.report_state = response.data.prov.report_state;
                      this.form.notifications_url = response.data.prov.notifications_url;
+                     this.form.content_provider = response.data.prov.content_provider;
                      var _idx = this.mutable_providers.findIndex(ii=>ii.id == gpId);
                      if (_idx > -1) {
                        this.mutable_providers[_idx].name = response.data.prov.name;

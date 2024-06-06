@@ -308,7 +308,7 @@
             this.form.is_active = this.new_provider.is_active;
             this.form.refreshable = this.new_provider.refreshable;
             this.form.server_url_r5 = this.new_provider.server_url_r5;
-            this.form.connector_state = Object.assign({},_this.new_provider.connector_state);
+            this.form.connector_state = Object.assign({}, this.new_provider.connector_state);
             this.form.report_state = this.new_provider.report_state;
             this.form.platform_parm = this.new_provider.platform_parm;
             this.form.notifications_url = this.new_provider.notifications_url;

@@ -5,8 +5,13 @@
         <v-btn small color="primary" @click="createForm()">Add a Platform</v-btn>
       </v-col>
       <v-col class="d-flex px-2" cols="3">
+        <v-btn small color="primary" @click="refreshAll()">FULL Registry Refresh</v-btn>
+      </v-col>
+<!--
+      <v-col class="d-flex px-2" cols="3">
         <v-btn small color="primary" @click="enableImportForm">Import Platforms</v-btn>
       </v-col>
+-->
       <v-col class="d-flex px-2" cols="3">
         <a @click="doExport">
           <v-icon title="Export to Excel">mdi-microsoft-excel</v-icon>&nbsp; Export platforms to Excel
@@ -29,13 +34,19 @@
       <v-col v-else class="d-flex" cols="2">&nbsp;</v-col>
       <v-col class="d-flex px-2 align-center" cols="2">
         <v-select :items="status_options" v-model="mutable_filters['stat']" @change="updateFilters('stat')"
-                  label="Limit by Status"
+                  label="Filter Status"
+        ></v-select> &nbsp;
+      </v-col>
+      <v-col class="d-flex px-2 align-center" cols="2">
+        <v-select :items="result_options" v-model="mutable_filters['refresh']" @change="updateFilters('refresh')"
+                  label="Filter Refresh Result"
         ></v-select> &nbsp;
       </v-col>
     </v-row>
-    <div class="status-message" v-if="success || failure">
+    <div v-if="success || failure || working" class="status-message">
       <span v-if="success" class="good" role="alert" v-text="success"></span>
       <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
+      <span v-if="working" class="good" role="alert" v-text="working"></span>
     </div>
     <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_providers" :loading="loading" show-select
                   item-key="id" :options="mutable_options" @update:options="updateOptions" :search="search" :key="dtKey"
@@ -56,8 +67,14 @@
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
-          <v-btn icon @click="goURL('https://registry.projectcounter.org/platform/'+item.registry_id)">
-            <v-icon title="Open Registry Details">mdi-open-in-new</v-icon>
+          <v-btn v-if="item.refresh_result=='success' || item.refresh_result=='failed' || item.refresh_result=='new'" icon
+                 @click="goURL('https://registry.projectcounter.org/platform/'+item.registry_id)">
+            <v-icon v-if="item.refresh_result=='success'" title="Open Registry Details" color="blue">mdi-web-check</v-icon>
+            <v-icon v-if="item.refresh_result=='failed'" title="Last Update Attempt Failed" color="red">mdi-web-remove</v-icon>
+            <v-icon v-if="item.refresh_result=='new'" title="New Platform Entry" color="green">mdi-web-plus</v-icon>
+          </v-btn>
+          <v-btn v-else icon>
+            <v-icon title="Registry Connection Disabled">mdi-web-cancel</v-icon>
           </v-btn>
           <v-btn icon @click="editForm(item.id)">
             <v-icon title="Edit Platform">mdi-cog-outline</v-icon>
@@ -74,6 +91,7 @@
         Your search for "{{ search }}" found no results.
       </v-alert>
     </v-data-table>
+<!--
     <v-dialog v-model="providerImportDialog" max-width="1200px">
       <v-card>
         <v-card-title>Import Platforms</v-card-title>
@@ -115,6 +133,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+-->
     <v-dialog v-model="provDialog" content-class="ccplus-dialog">
         <v-container grid-list-sm>
           <v-form v-model="formValid">
@@ -217,6 +236,7 @@
       return {
         success: '',
         failure: '',
+        working: '',
         providerImportDialog: false,
         settingsImportDialog: false,
         provDialog: false,
@@ -229,7 +249,8 @@
         import_type: '',
         import_types: ['Add or Update', 'Full Replacement'],
         mutable_filters: this.filters,
-        status_options: ['ALL', 'Active', 'Inactive', 'Refresh Disabled'],
+        status_options: ['ALL', 'Active', 'Inactive'],
+        result_options: ['ALL', 'Success', 'Failed', 'New', 'Disabled'],
         bulk_actions: [ 'Enable', 'Disable', 'Refresh Registry', 'Delete' ],
         bulkAction: null,
         selectedRows: [],
@@ -242,6 +263,7 @@
           { text: 'Platform Name', value: 'name', align: 'start' },
           { text: 'Content Provider', value: 'content_provider', align: 'start' },
           { text: 'Connection Count', value: 'connection_count', align: 'center' },
+          { text: 'Last Updated', value: 'updated', align: 'start' },
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],
@@ -318,39 +340,53 @@
             this.settingsImportDialog = false;
             this.provDialog = true;
         },
-        enableImportForm () {
-            this.csv_upload = null;
-            this.providerImportDialog = true;
-            this.settingsImportDialog = false;
-            this.provDialog = false;
-        },
-        providerImportSubmit (event) {
-            this.success = '';
-            if (this.csv_upload==null) {
-                this.failure = 'A CSV import file is required';
-                return;
+        refreshAll() {
+          let msg = "You are about to reset ALL Platforms to match the COUNTER registry. This includes provider name(s),";
+          msg += " URLs, available reports and required authentication connection fields."
+          Swal.fire({
+            title: 'Are you sure?', html: msg, icon: 'warning', showCancelButton: true,
+            confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, Proceed!'
+          })
+          .then( (result) => {
+            if (result.value) {
+                this.registryRefresh("ALL");
             }
-            this.failure = '';
-            let formData = new FormData();
-            formData.append('csvfile', this.csv_upload);
-            axios.post('/global/providers/import', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                  })
-                 .then( (response) => {
-                     if (response.data.result) {
-                         this.failure = '';
-                         this.success = response.data.msg;
-                         // Replace mutable array with response providers
-                         this.mutable_providers = response.data.providers;
-                     } else {
-                         this.success = '';
-                         this.failure = response.data.msg;
-                     }
-                 });
-             this.providerImportDialog = false;
+          })
+          .catch({});
         },
+        // enableImportForm () {
+        //     this.csv_upload = null;
+        //     this.providerImportDialog = true;
+        //     this.settingsImportDialog = false;
+        //     this.provDialog = false;
+        // },
+        // providerImportSubmit (event) {
+        //     this.success = '';
+        //     if (this.csv_upload==null) {
+        //         this.failure = 'A CSV import file is required';
+        //         return;
+        //     }
+        //     this.failure = '';
+        //     let formData = new FormData();
+        //     formData.append('csvfile', this.csv_upload);
+        //     axios.post('/global/providers/import', formData, {
+        //             headers: {
+        //                 'Content-Type': 'multipart/form-data'
+        //             }
+        //           })
+        //          .then( (response) => {
+        //              if (response.data.result) {
+        //                  this.failure = '';
+        //                  this.success = response.data.msg;
+        //                  // Replace mutable array with response providers
+        //                  this.mutable_providers = response.data.providers;
+        //              } else {
+        //                  this.success = '';
+        //                  this.failure = response.data.msg;
+        //              }
+        //          });
+        //      this.providerImportDialog = false;
+        // },
         changeStatus(gpId, state) {
             axios.patch('/global/providers/'+gpId, { is_active: state })
                .then( (response) => {
@@ -379,7 +415,8 @@
         processBulk() {
             this.success = "";
             this.failure = "";
-            let msg = "Bulk processing will process each requested platform sequentially.<br><br>";
+            let msg = (this.bulkAction == 'Refresh Registry') ? "" :
+                      "Bulk processing will process each requested platform sequentially.<br><br>";
             if (this.bulkAction == 'Enable') {
                 msg += "Enabling these platforms will make them conifgurable by instance administrators.<br/>";
                 msg += "Until the required credentials are defined, however, no report retrieval will be performed<br />";
@@ -389,9 +426,9 @@
                 msg += "This means that no automated report harvesting will happen for these platforms, and the<br />";
                 msg += "instance administrators will not be able to set or manage the status as long as they are disabled.";
             } else if (this.bulkAction == 'Refresh Registry') {
-                msg += "You are about to refresh the definitions for the selected platforms to the what is kept in the<br/>";
-                msg += "online COUNTER registry. This has the potential to affect harvesting, which reports are supported,<br />";
-                msg += "and the credentials required to harvest the reports.";
+                msg += "You are about to refresh the definitions for the selected platforms to match the online<br/>";
+                msg += "COUNTER registry. This has the potential to affect harvesting, which reports are supported,<br />";
+                msg += "and the credentials required for harvesting reports from updated platforms.";
             } else if (this.bulkAction == 'Delete') {
                 msg += "CAUTION!!<br />Deleting these platform records is not reversible! Platforms with harvested";
                 msg += " data will NOT be deleted.<br />";
@@ -407,7 +444,9 @@
             })
             .then( (result) => {
               if (result.value) {
-                  this.success = "Working...";
+                  if (this.selectedRows.length>1) {
+                      this.working = "...Working... Updating multiple platforms ...Please Wait...";
+                  }
                   if (this.bulkAction == 'Delete') {
                       this.selectedRows.forEach( (provider) => {
                           if (provider.can_delete) {
@@ -420,12 +459,11 @@
                                  .catch({});
                           }
                       });
+                      this.working = '';
                       this.success = "Selected platforms successfully deleted.";
                   } else if (this.bulkAction == 'Refresh Registry') {
-                      this.selectedRows.forEach( (provider) => {
-                          this.registryRefresh(provider.id);
-                      });
-                      this.success = "Selected platforms successfully updated.";
+                      let selectedIDs = this.selectedRows.map( p => p.id );
+                      this.registryRefresh(selectedIDs);
                   } else {
                     let state = (this.bulkAction == 'Enable') ? 1 : 0;
                     this.selectedRows.forEach( (provider) => {
@@ -440,6 +478,7 @@
                          })
                          .catch(error => {});
                       });
+                      this.working = '';
                       this.success = "Selected platforms successfully updated.";
                   }
               }
@@ -450,43 +489,76 @@
           .catch({});
         },
         registryRefresh(gpId) {
-            let provider_id = (gpId == null) ? this.current_provider_id : gpId;
-            axios.post('/global/providers/registry-refresh', { id: provider_id })
+            // default refresh_arg to input. If it's ALL , or an array of ints, no changes needed
+            let refresh_arg = gpId;
+            if (gpId == null) {
+              refresh_arg = [this.current_provider_id];
+            } else if (Number.isInteger(gpId)) {
+              refresh_arg = [gpId];
+            }
+            let _providers = (gpId=="ALL") ? "ALL" : JSON.stringify(refresh_arg);
+            if (refresh_arg.length>1 || gpId == "ALL") {
+                this.working = "...Working... Updating multiple platforms ...Please Wait...";
+            }
+            axios.post('/global/providers/registry-refresh', {id: _providers })
                  .then( (response) => {
-                   if (response.data.result) {
-                     this.form.name = response.data.prov.name;
-                     this.form.abbrev = response.data.prov.abbrev;
-                     this.form.server_url_r5 = response.data.prov.server_url_r5;
-                     this.form.connector_state = response.data.prov.connector_state;
-                     this.form.report_state = response.data.prov.report_state;
-                     this.form.notifications_url = response.data.prov.notifications_url;
-                     this.form.content_provider = response.data.prov.content_provider;
-                     var _idx = this.mutable_providers.findIndex(ii=>ii.id == gpId);
-                     if (_idx > -1) {
-                       this.mutable_providers[_idx].name = response.data.prov.name;
-                       this.mutable_providers[_idx].content_provider = response.data.prov.content_provider;
-                       this.mutable_providers[_idx].abbrev = response.data.prov.abbrev;
-                       this.mutable_providers[_idx].server_url_r5 = response.data.prov.server_url_r5;
-                       this.mutable_providers[_idx].connectors = response.data.prov.connectors;
-                       this.mutable_providers[_idx].connector_state = response.data.prov.connector_state;
-                       this.mutable_providers[_idx].report_state = response.data.prov.report_state;
-                       this.mutable_providers[_idx].master_reports = response.data.prov.master_reports;
-                       this.mutable_providers[_idx].notifications_url = response.data.prov.notifications_url;
-                       this.$emit('change-prov', gpId);
-                       this.dtKey += 1;           // update the datatable
+                     if (response.data.result) {
+                       if ( gpId!="ALL" && refresh_arg.length==1) {
+                           let prov = {...response.data.providers[0]};
+                           this.form.name = prov.name;
+                           this.form.abbrev = prov.abbrev;
+                           this.form.server_url_r5 = prov.server_url_r5;
+                           this.form.connector_state = prov.connector_state;
+                           this.form.report_state = prov.report_state;
+                           this.form.notifications_url = prov.notifications_url;
+                           this.form.content_provider = prov.content_provider;
+                           this.success = "Selected platform successfully updated.";
+                           var _idx = this.mutable_providers.findIndex(ii=>ii.id == gpId);
+                           this.$emit('change-prov', prov.id);
+                       } else {
+                           let newly_added = false;
+                           response.data.providers.forEach( prov => {
+                               let _idx = this.mutable_providers.findIndex(p => p.id == prov.id);
+                               if ( _idx < 0) {  // did the refresh send back something new?
+                                   this.mutable_providers.push(prov);
+                                   newly_added = true;
+                               } else {
+                                   Object.keys(prov).forEach( (key) =>  { this.mutable_providers[_idx][key] = prov[key]; });
+                                   this.$emit('change-prov', prov.id);
+                               }
+                           });
+                           if (response.data.summary != "") {
+                               Swal.fire({
+                                 title: 'Refresh Results', html: response.data.summary, icon: 'info', showCancelButton: false,
+                                 confirmButtonColor: '#3085d6', confirmButtonText: 'Close'
+                               });
+                           }
+                           // Resort mutable_providers if we just added to them
+                           if (newly_added) {
+                             this.mutable_providers.sort((a,b) => {
+                               if ( a.name < b.name ) return -1;
+                               if ( a.name > b.name ) return 1;
+                               return 0;
+                             });
+                           }
+                       }
+                       this.working = "";
+                       this.success = "Platform Refresh completed successfully";
+                     } else {
+                       this.success = '';
+                       this.failure = response.data.msg;
+                       if ( gpId!="ALL" && refresh_arg.length==1) {
+                           var _idx = this.mutable_providers.findIndex(ii=>ii.id == gpId);
+                           if (_idx > -1) {
+                              this.mutable_providers[_idx].refresh_result = 'failed';
+                           }
+                       }
                      }
-                   } else {
-                     this.success = '';
-                     this.failure = response.data.msg;
-                   }
-           });
+                     this.dtKey += 1;           // notify the datatable
+           })
+           .catch({});
         },
         updateFilters() {
-            this.$store.dispatch('updateAllFilters',this.mutable_filters);
-            this.updateRecords();
-        },
-        clearFilter(filter) {
-            this.mutable_filters[filter] = [];
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             this.updateRecords();
         },

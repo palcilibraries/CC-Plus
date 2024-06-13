@@ -81,6 +81,9 @@ class GlobalProviderUpdate extends Command
             $api_connectors[$key]['id'] = $fld->id;
         }
 
+        // We're going to keep track of the provider records updated
+        $updated_ids = array();
+
         // Walk the array by-platform
         foreach ($json as $platform) {
 
@@ -89,7 +92,7 @@ class GlobalProviderUpdate extends Command
             // Get reports available
             $reportIds = $master_reports->whereIn('name',array_column($platform->reports,'report_id'))->pluck('id')->toArray();
 
-            // Pull the Sushi Servies page from the API
+            // Pull the Sushi Services page from the API
             $services = "";
             foreach ($platform->sushi_services as $svc) {
                 if ($services != "") continue;
@@ -126,8 +129,10 @@ class GlobalProviderUpdate extends Command
                     $this->error("Registry refresh is disallowed for " . $global_provider->name . " .. skipping ..");
                     continue;
                 }
+                $global_provider->refresh_result = 'success';
             } else {
                 $global_provider = new GlobalProvider;
+                $global_provider->refresh_result = 'new';
             }
             $global_provider->registry_id = $platform->id;
             $global_provider->name = $platform->name;
@@ -138,7 +143,13 @@ class GlobalProviderUpdate extends Command
             $global_provider->server_url_r5 = $server_url_r5;
             $global_provider->notifications_url = $notifications_url;
             $global_provider->save();
+            $updated_ids[] = $global_provider->id;
         }
+
+        // Update any existing providers that are marked "refreshable", but are missing from the updated set
+        // These need to be set to refresh_result='failed' since they are missing from the current COUNTER set
+        // (Admins can reset the provider as "no refresh", and this won't happen again).
+        GlobalProvider::where('refreshable',1)->whereNotIn('id',$updated_ids)->update(['refresh_result' => 'failed']);
     }
 
     private function requestURI($uri)

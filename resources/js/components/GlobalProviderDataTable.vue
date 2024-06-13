@@ -561,6 +561,8 @@
         updateFilters() {
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             this.updateRecords();
+            // clear these since selections may persist and otherwise be invisible
+            this.selectedRows = [];
         },
         updateRecords() {
             this.success = "";

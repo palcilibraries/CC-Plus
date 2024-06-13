@@ -37,21 +37,20 @@ class GlobalProviderController extends Controller
         $json = ($request->input('json')) ? true : false;
 
         // Assign optional inputs to $filters array
-        $filters = array('stat' => 'ALL');
+        $filters = array('stat' => 'ALL', 'refresh' => 'ALL');
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
-                if ($key == 'stat' && (is_null($val) || $val == '')) continue;
+                if (is_null($val) || $val == '') continue;
                 $filters[$key] = $val;
             }
         } else {
             $keys = array_keys($filters);
             foreach ($keys as $key) {
                 if ($request->input($key)) {
-                    if ($key == 'stat') {
-                        if (is_null($request->input('stat')) || $request->input('stat') == '') continue;
+                    if (!is_null($request->input($key)) && $request->input($key) == '') {
+                        $filters[$key] = $request->input($key);
                     }
-                    $filters[$key] = $request->input($key);
                 }
             }
         }
@@ -67,18 +66,24 @@ class GlobalProviderController extends Controller
         if ($json) {
 
             // Prep variables for use in querying
-            $filter_norefresh = null;
             $filter_stat = null;
-            if ($filters['stat'] == 'Refresh Disabled') {
-                $filter_norefresh = true;
-            } else if ($filters['stat'] != 'ALL') {
+            if ($filters['stat'] != 'ALL') {
                 $filter_stat = ($filters['stat'] == 'Active') ? 1 : 0;
             }
+            $filter_refresh = null;
+            $filter_not_refreshable = ($filters['refresh'] == 'Disabled') ? true : null;
+            if ($filters['refresh'] != 'ALL' && $filters['refresh'] != 'Disabled') {
+                $filter_refresh = strtolower($filters['refresh']);
+            }
 
+            // Get provider records and filter as-needed
             $gp_data = GlobalProvider::when(!is_null($filter_stat), function ($qry) use ($filter_stat) {
                                           return $qry->where('is_active', $filter_stat);
                                        })
-                                       ->when($filter_norefresh, function ($qry) {
+                                       ->when($filter_refresh, function ($qry) use ($filter_refresh) {
+                                          return $qry->where('refresh_result',$filter_refresh);
+                                       })
+                                       ->when($filter_not_refreshable, function ($qry) {
                                           return $qry->where('refreshable',0);
                                        })
                                        ->orderBy('name', 'ASC')->get();
@@ -110,6 +115,7 @@ class GlobalProviderController extends Controller
                     $provider['connection_count'] += $details['connections'];
                 }
                 $provider['updated_at'] = (is_null($gp->updated_at)) ? null : date("Y-m-d h:ia", strtotime($gp->updated_at));
+                $provider['updated'] = (is_null($gp->updated_at)) ? "" : substr($gp->updated_at,0,10);
                 $providers[] = $provider;
             }
 

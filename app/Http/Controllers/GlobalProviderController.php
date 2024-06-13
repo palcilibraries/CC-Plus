@@ -592,15 +592,14 @@ class GlobalProviderController extends Controller
             $global_provider->connectors = $connectors;
             $global_provider->server_url_r5 = $details->url;
             $global_provider->notifications_url = $details->notifications_url;
+            $global_provider->save();
+            $return_rec = $global_provider->toArray();
+            // Add last fields for return record and append it to the return array
             if ($global_provider->refresh_result=="new") {
                 $global_provider->status = ($global_provider->is_active) ? "Active" : "Inactive";
             } else {
                 $global_provider->refresh_result = "success";
             }
-            $global_provider->save();
-            $return_rec = $global_provider->toArray();
-
-            // Add last fields for return record and append it to the return array
             $return_rec['report_state'] = $this->reportState($reportIds);
             $return_rec['connection_count'] = count($connectors);
             $return_rec['connector_state'] = $this->connectorState($connectors);

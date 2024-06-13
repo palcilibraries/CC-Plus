@@ -542,6 +542,7 @@ class GlobalProviderController extends Controller
             }
             if (is_null($services) || $services == "") {
                 $global_provider->refresh_result = "failed";
+                $global_provider->updated_at = now();
                 $global_provider->save();
                 if ($gpCount == 1) {
                     return response()->json(['result' => false, 'msg' => $errorData[1]['msg']]);
@@ -557,6 +558,7 @@ class GlobalProviderController extends Controller
             $details = self::requestURI($services);
             if (!is_object($details)) {
                 $global_provider->refresh_result = "failed";
+                $global_provider->updated_at = now();
                 $global_provider->save();
                 if ($gpCount == 1) {
                     return response()->json(['result' => false, 'msg' => $errorData[2]['msg']]);
@@ -592,13 +594,15 @@ class GlobalProviderController extends Controller
             $global_provider->connectors = $connectors;
             $global_provider->server_url_r5 = $details->url;
             $global_provider->notifications_url = $details->notifications_url;
+            $global_provider->updated_at = now();
             $global_provider->save();
+
+            // Setup return data
             $return_rec = $global_provider->toArray();
-            // Add last fields for return record and append it to the return array
             if ($global_provider->refresh_result=="new") {
-                $global_provider->status = ($global_provider->is_active) ? "Active" : "Inactive";
+                $return_rec['status'] = ($global_provider->is_active) ? "Active" : "Inactive";
             } else {
-                $global_provider->refresh_result = "success";
+                $return_rec['status'] = "success";
             }
             $return_rec['report_state'] = $this->reportState($reportIds);
             $return_rec['connection_count'] = count($connectors);
@@ -616,11 +620,12 @@ class GlobalProviderController extends Controller
         foreach ($orphans as $gp) {
             if (is_null($gp->registry_id) || $gp->registry_id == '') {
                 $no_registryID[] = $gp->name;
+                $gp->refresh_result = null;
             } else {
                 $return_data[] = array('error' => 3, 'id' => $gp->id, 'name' => $gp->name);
                 $gp->refresh_result = 'failed';
-                $gp->save();
             }
+            $gp->save();
         }
 
         // Build a summary HTML blob if we handled more than one provider ID

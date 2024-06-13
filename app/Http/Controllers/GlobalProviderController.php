@@ -19,6 +19,8 @@ class GlobalProviderController extends Controller
     private $masterReports;
     private $allConnectors;
     private $instanceData;
+    private $client;
+    private $options;
 
     public function __construct()
     {
@@ -417,104 +419,250 @@ class GlobalProviderController extends Controller
      */
     public function registryRefresh(Request $request)
     {
-      global $masterReports, $allConnectors;
+        global $masterReports, $allConnectors;
+        global $client, $options;
 
-      // Validate form inputs
-      $this->validate($request, [ 'id' => 'required' ]);
-      $input = $request->all();
-      $provider = GlobalProvider::where('id', $input['id'])->first();
-      if (!$provider) {
-          return response()->json(['result' => false, 'msg' => "Global Provider Not Found!"]);
-      }
-      if (is_null($provider->registry_id) || $provider->registry_id == '') {
-          return response()->json(['result' => false, 'msg' => "COUNTER Registry ID undefined!"]);
-      }
-      if (!$provider->refreshable) {
-          return response()->json(['result' => false, 'msg' => "Registry refresh is disallowed for " . $provider->name . " !"]);
-      }
+        // Set Globals
+        $client = new Client();   //GuzzleHttp\Client
+        $options = [
+            'headers' => ['User-Agent' => "Mozilla/5.0 (CC-Plus custom) Firefox/80.0"]
+        ];
 
-      // Get master reports and connection_fields
-      $this->getMasterReports();
-      $this->getConnectionFields();
+        // Validate form inputs
+        $this->validate($request, [ 'id' => 'required' ]);
+        $input = $request->all();
 
-      // Map a static array to conect what the COUNTER API sends back to conbnection_fields
-      $api_connectors = array('customer_id_info'      => array('field' => 'customer_id', 'id' => null, 'label' => ''),
-                              'requestor_id_required' => array('field' => 'requestor_id', 'id' => null, 'label' => ''),
-                              'api_key_required'      => array('field' => 'api_key', 'id' => null, 'label' => '')
-                             );
-      foreach ($api_connectors as $key => $cnx) {
-          $fld = $allConnectors->where('name', $cnx['field'])->first();
-          if (!$fld) continue;
-          $api_connectors[$key]['id'] = $fld->id;
-          $api_connectors[$key]['label'] = $fld->label;
-      }
+        if ($input['id'] == "ALL") {
+            $global_providers = GlobalProvider::get();
+        } else {
+            $global_provider_ids = json_decode($request->input('id'));
+            if (!is_array($global_provider_ids)) {
+                return response()->json(['result' => false, 'msg' => "Refresh Request Failed - Invalid Input!"]);
+            }
+            $global_providers = GlobalProvider::whereIn('id', $global_provider_ids)->get();
+        }
+        $gpCount = count($global_providers);
 
-      // Setup the client request for the registry JSON
-      $client = new Client();   //GuzzleHttp\Client
-      $options = [
-          'headers' => ['User-Agent' => "Mozilla/5.0 (CC-Plus custom) Firefox/80.0"]
-      ];
-      $registry_url = "https://registry.projectcounter.org/api/v1/platform/" . $provider->registry_id . "/?format=json";
-      // Make the request
-      try {
-          $result = $client->request('GET', $registry_url, $options);
-      } catch (\Exception $e) {
-          return response()->json(['result' => false, 'msg' => "API request Failed: " . $e->getMessage()]);
-      }
-      // Get JSON from the response and do basic error checks
-      $json = json_decode($result->getBody());
-      if (json_last_error() !== JSON_ERROR_NONE) {
-          return response()->json(['result' => false, 'msg' => "Error decoding JSON returned by registry!"]);
-      }
-      if (!is_object($json)) {
-          return response()->json(['result' => false, 'msg' => "Error getting registry details - invalid datatype received!"]);
-      }
-      // Setup provider data to be updated and returned
-      $return_data = array();
-      $return_data['registry_id'] = $json->id;
-      $return_data['name'] = $json->name;
-      $return_data['content_provider'] = $json->content_provider_name;
-      $return_data['abbrev'] = $json->abbrev;
-      $return_data['platform'] = $provider->platform; // preserve unchanged
+        // Set URL - either just one platform, or all of them
+        if (count($global_providers) == 1) {
+            $_url = "https://registry.projectcounter.org/api/v1/platform/" . $global_providers[0]->registry_id . "/?format=json";
+        } else {
+            $_url = "https://registry.projectcounter.org/api/v1/platform/?format=json";
+        }
+        // Make the request and validate as JSON
+        $json = $this->requestURI($_url);
+        if ($json == "Request Failed") {
+            return response()->json(['result'=>false, 'msg'=>"Unable to retrieve COUNTER registry details: ".$e->getMessage()]);
+        }
+        if ($json == "JSON Failed") {
+            return response()->json(['result'=>false, 'msg'=>"Error decoding JSON returned by registry!"]);
+        }
 
-      // Get reports available
-      $available = $masterReports->whereIn('name',array_column($json->reports,'report_id'));
-      $reportIds = $available->pluck('id')->toArray();
-      $return_data['master_reports'] = $reportIds;
+        // Deal with JSON as a single Object for one entry, or as an array for multiple platforms
+        $platform_records = null;
+        if (is_array($json)) {
+            $platform_records = $json;
+            if (count($platform_records) == 0) {
+                return response()->json(['result'=>false, 'msg'=>"No Platform data returned from Registry Platform request!"]);
+            }
+        } else if (is_object($json)) {
+            $platform_records = [$json];
+        } else {
+            return response()->json(['result'=>false, 'msg'=>"Error getting registry details - invalid datatype received!"]);
+        }
 
-      // Get connection fields from JSON sushi_services (for now, assumes customer_id is always required)
-      $services = $json->sushi_services[0];
-      $field_labels = array();
-      foreach ($api_connectors as $key => $cnx) {
-          if ($key == 'customer_id_info' || $services->{$key}) {
-              $connectors[] = $cnx['id'];
-              // $field_labels[] = $cnx['label'];
-          }
-      }
-      // The registry API doesn't know about CC+ extra_args. If set in the original Global, preserve it
-      foreach ($provider->connectionFields() as $cf) {
-          if ($cf['name'] == 'extra_args') {
-              $connectors[] = $cf['id'];
-              // $field_labels[] = $cf['label'];
-              break;
-          }
-      }
+        // Pull master reports and connection fields regardless of JSON flag
+        $this->getMasterReports();
+        $this->getConnectionFields();
 
-      $return_data['connectors'] = $connectors;
-      // $return_data['connection_fields'] = $field_labels;
-      $return_data['server_url_r5'] = $services->url;
-      $return_data['notifications_url'] = $services->notifications_url;
+        // Setup a static array to conect what the COUNTER API sends back to conbnection_fields
+        $api_connectors = array('customer_id_info'      => array('field' => 'customer_id', 'id' => null, 'label' => ''),
+                                'requestor_id_required' => array('field' => 'requestor_id', 'id' => null, 'label' => ''),
+                                'api_key_required'      => array('field' => 'api_key', 'id' => null, 'label' => '')
+                               );
+        foreach ($api_connectors as $key => $cnx) {
+            $fld = $allConnectors->where('name', $cnx['field'])->first();
+            if (!$fld) continue;
+            $api_connectors[$key]['id'] = $fld->id;
+            $api_connectors[$key]['label'] = $fld->label;
+        }
 
-      // Update the global provider record
-      $provider->update($return_data);
+        // Setup a static array for error handling and reporting
+        $errorData = array( array('result' => 'success', 'msg' => "Platform successfully refreshed"),
+                            array('result' => 'failed', 'msg' => "Registry Error - sushi services URL undefined"),
+                            array('result' => 'failed', 'msg' => "Registry Error - SUSHI connection details invalid"),
+                            array('result' => 'failed', 'msg' => "No match for CC+ Registry_ID in Registry")
+                          );
 
-      // Add more return data for the U/I
-      $return_data['report_state'] = $this->reportState($reportIds);
-      $reportNames = $available->pluck('name')->toArray();
-      $return_data['connection_count'] = count($connectors);
-      $return_data['connector_state'] = $this->connectorState($connectors);
+        // Loop across the platforms in the JSON and build an array of output to return
+        $success_count = 0;
+        $return_data = array();
+        $updated_ids = array();   // track global_providers actually updated
+        $no_refresh = array();    // track names of platforms with refresh disabled (skipped)
+        $no_registryID = array(); // track names of platforms with no registry_id (skipped)
+        $new_platforms = array(); // track names of newly created platforms for summary
+        foreach ($platform_records as $platform) {
 
-      return response()->json(['result' => true, 'prov' => $return_data]);
+            // Look for a matching provider
+            $global_provider = $global_providers->where('registry_id',$platform->id)->first();
+            if (!$global_provider) {
+                // See if the name matches before trying to create new entry
+                $global_provider = $global_providers->where('name',$platform->name)->first();
+                if (!$global_provider) {
+                    // If doing ALL, add a new GlobalProvider
+                    if ($input['id'] == "ALL") {
+                        $global_provider = new GlobalProvider;
+                        $global_provider->refresh_result = 'new';
+                        $new_platforms[] = $platform->name;
+                    // If not found, and we're doing more than one, skip this entry and continue
+                    // (this is not an error - we pulled everything when count>1)
+                    } else if ($gpCount>1) {
+                        continue;
+                    // this should not happen since the JSON was requested using the global_provider registryID value
+                    } else {
+                        return response()->json(['result'=>false, 'msg'=>"Error matching provider to registry!"]);
+                    }
+                }
+            }
+
+            // Setup a basic return rec for this provider and do initial error checks
+            $return_rec = array('error'=>0, 'id' => $global_provider->id, 'name' => $platform->name);
+
+            // if global_provider is not refreshable, skip it
+            if (!$global_provider->refreshable) {
+                $no_refresh[] = $global_provider->name;
+                continue;
+            }
+
+            // Get the Sushi Services data
+            $services = "";
+            foreach ($platform->sushi_services as $svc) {
+                if ($services != "") break;
+                $services = $svc->url;
+            }
+            if (is_null($services) || $services == "") {
+                $global_provider->refresh_result = "failed";
+                $global_provider->save();
+                if ($gpCount == 1) {
+                    return response()->json(['result' => false, 'msg' => $errorData[1]['msg']]);
+                } else {
+                    $return_rec['error'] = 1;
+                    $return_data[] = $return_rec;
+                    continue;
+                }
+            }
+
+            // Get the sushi details
+            $connectors = array();
+            $details = self::requestURI($services);
+            if (!is_object($details)) {
+                $global_provider->refresh_result = "failed";
+                $global_provider->save();
+                if ($gpCount == 1) {
+                    return response()->json(['result' => false, 'msg' => $errorData[2]['msg']]);
+                } else {
+                    $return_rec['error'] = 2;
+                    $return_data[] = $return_rec;
+                    continue;
+                }
+            }
+            // Get connection fields (for now, assumes customer_id is always required)
+            foreach ($api_connectors as $key => $cnx) {
+                if ($key == 'customer_id_info' || $details->{$key}) {
+                    $connectors[] = $cnx['id'];
+                }
+            }
+            // The registry API doesn't know about CC+ extra_args. If set in the original Global, preserve it
+            foreach ($global_provider->connectionFields() as $cf) {
+                if ($cf['name'] == 'extra_args') {
+                    $connectors[] = $cf['id'];
+                    break;
+                }
+            }
+
+            // Get platform reports available
+            $reportIds = $masterReports->whereIn('name',array_column($platform->reports,'report_id'))->pluck('id')->toArray();
+
+            // Update  global provider fields with returned registry values
+            $global_provider->registry_id = $platform->id;
+            $global_provider->name = $platform->name;
+            $global_provider->content_provider = $platform->content_provider_name;
+            $global_provider->abbrev = $platform->abbrev;
+            $global_provider->master_reports = $reportIds;
+            $global_provider->connectors = $connectors;
+            $global_provider->server_url_r5 = $details->url;
+            $global_provider->notifications_url = $details->notifications_url;
+            if ($global_provider->refresh_result=="new") {
+                $global_provider->status = ($global_provider->is_active) ? "Active" : "Inactive";
+            } else {
+                $global_provider->refresh_result = "success";
+            }
+            $global_provider->save();
+            $return_rec = $global_provider->toArray();
+
+            // Add last fields for return record and append it to the return array
+            $return_rec['report_state'] = $this->reportState($reportIds);
+            $return_rec['connection_count'] = count($connectors);
+            $return_rec['connector_state'] = $this->connectorState($connectors);
+            $return_rec['updated'] = substr($gp->updated_at,0,10);
+            $updated_ids[] = $global_provider->id;
+            $success_count++;
+            $return_rec['error'] = 0;
+            $return_data[] = $return_rec;
+        }
+
+        // Check updated_ids against $global_providers to find any that are/were missing (orphaned by COUNTER?).
+        // Mark missing providers' refresh_result as "failed"
+        $orphans = $global_providers->whereNotIn('id',$updated_ids)->all();
+        foreach ($orphans as $gp) {
+            if (is_null($gp->registry_id) || $gp->registry_id == '') {
+                $no_registryID[] = $gp->name;
+            } else {
+                $return_data[] = array('error' => 3, 'id' => $gp->id, 'name' => $gp->name);
+                $gp->refresh_result = 'failed';
+                $gp->save();
+            }
+        }
+
+        // Build a summary HTML blob if we handled more than one provider ID
+        $summary_html = "";
+        if ($gpCount > 1) {
+            $summary_html = ($success_count>0) ? $success_count . " Platforms successfully refreshed" : "";
+            if (count($new_platforms) > 0) {
+                $summary_html .= ($summary_html == "") ? "" : "<br /><hr>";
+                $summary_html .= "<center><strong><u>New Platforms Added:</u></strong></center><br />";
+                foreach ($new_platforms as $name) {
+                    $summary_html .= $name . "<br />";
+                }
+            }
+            if (count($no_refresh) > 0) {
+              $summary_html .= ($summary_html == "") ? "" : "<br /><hr>";
+              $summary_html .= "<center><strong><u>Platforms Skipped (Refresh Disabled) :</u></strong></center><br />";
+              foreach ($no_refresh as $name) {
+                  $summary_html .= $name . "<br />";
+              }
+            }
+            if (count($no_registryID) > 0) {
+              $summary_html .= ($summary_html == "") ? "" : "<br /><hr>";
+              $summary_html .= "<center><strong><u>Platforms Skipped (No Registry ID):</u></strong></center><br />";
+              foreach ($no_registryID as $name) {
+                  $summary_html .= $name . "<br />";
+              }
+            }
+            for ($eid=1; $eid<count($errorData); $eid++) {
+                $error = $errorData[$eid];
+                $matches = array_filter($return_data, function( $rec) use($eid) {
+                    return $rec['error'] == $eid;
+                });
+                if (count($matches) > 0) {
+                    $summary_html .= "<br /><hr><center><strong><u>" . $error['msg'] . "</u>:</strong></center><br />";
+                    foreach ($matches as $rec) {
+                        $summary_html .= $rec['name'] . "<br />";
+                    }
+                }
+            }
+        }
+        return response()->json(['result' => true, 'providers' => $return_data, 'summary' => $summary_html]);
     }
 
     /**
@@ -1022,5 +1170,23 @@ class GlobalProviderController extends Controller
             $details['connections'] += $con_prov->sushiSettings->count();
         }
         return $details;
+    }
+
+    private function requestURI($uri)
+    {
+      global $client, $options;
+
+      // Get specifc section from the API
+      try {
+          $result = $client->request('GET', $uri, $options);
+      } catch (\Exception $e) {
+          return "Request Failed";
+      }
+      // Get JSON from the response and do basic error checks
+      $json = json_decode($result->getBody());
+      if (json_last_error() !== JSON_ERROR_NONE) {
+          return "JSON Failed";
+      }
+      return $json;
     }
 }

@@ -538,7 +538,7 @@ class GlobalProviderController extends Controller
             $services = "";
             foreach ($platform->sushi_services as $svc) {
                 if ($services != "") break;
-                $services = $svc->url;
+                $services = $svc;
             }
             if (is_null($services) || $services == "") {
                 $global_provider->refresh_result = "failed";
@@ -554,8 +554,14 @@ class GlobalProviderController extends Controller
             }
 
             // Get the sushi details
+            // If we pulled the whole registry, we need to get details using the URL in sushi_services
+            if ($gpCount > 1) {
+                $details = $this->requestURI($services->url);
+            // If we we're just working on one platform, the details are in $services already
+            } else {
+                $details = $services;
+            }
             $connectors = array();
-            $details = self::requestURI($services);
             if (!is_object($details)) {
                 $global_provider->refresh_result = "failed";
                 $global_provider->updated_at = now();
@@ -595,15 +601,14 @@ class GlobalProviderController extends Controller
             $global_provider->server_url_r5 = $details->url;
             $global_provider->notifications_url = $details->notifications_url;
             $global_provider->updated_at = now();
+            if ($global_provider->refresh_result!="new") {
+                $global_provider->refresh_result = "success";
+            }
             $global_provider->save();
 
             // Setup return data
             $return_rec = $global_provider->toArray();
-            if ($global_provider->refresh_result=="new") {
-                $return_rec['status'] = ($global_provider->is_active) ? "Active" : "Inactive";
-            } else {
-                $return_rec['status'] = "success";
-            }
+            $return_rec['status'] = ($global_provider->is_active) ? "Active" : "Inactive";
             $return_rec['report_state'] = $this->reportState($reportIds);
             $return_rec['connection_count'] = count($connectors);
             $return_rec['connector_state'] = $this->connectorState($connectors);

@@ -43,10 +43,9 @@
         ></v-select> &nbsp;
       </v-col>
     </v-row>
-    <div v-if="success || failure || working" class="status-message">
+    <div v-if="success || failure" class="status-message">
       <span v-if="success" class="good" role="alert" v-text="success"></span>
-      <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
-      <span v-if="working" class="good" role="alert" v-text="working"></span>
+      <span v-else-if="failure" class="fail" role="alert" v-text="failure"></span>
     </div>
     <v-data-table v-model="selectedRows" :headers="headers" :items="mutable_providers" :loading="loading" show-select
                   item-key="id" :options="mutable_options" @update:options="updateOptions" :search="search" :key="dtKey"
@@ -60,21 +59,19 @@
         </span>
       </template>
       <template v-slot:item.name="{ item }">
-        <span v-if="item.refreshable==0">
+        <span v-if="item.refreshable==0 && item.registry_id!=null">
           <v-icon title="COUNTER API Updates Disabled">mdi-sync-off</v-icon>&nbsp;
         </span>
         {{ item.name }}
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
-          <v-btn v-if="item.refresh_result=='success' || item.refresh_result=='failed' || item.refresh_result=='new'" icon
+          <v-btn v-if="item.registry_id!=null" icon
                  @click="goURL('https://registry.projectcounter.org/platform/'+item.registry_id)">
-            <v-icon v-if="item.refresh_result=='success'" title="Open Registry Details" color="blue">mdi-web-check</v-icon>
             <v-icon v-if="item.refresh_result=='failed'" title="Last Update Attempt Failed" color="red">mdi-web-remove</v-icon>
-            <v-icon v-if="item.refresh_result=='new'" title="New Platform Entry" color="green">mdi-web-plus</v-icon>
-          </v-btn>
-          <v-btn v-else icon>
-            <v-icon title="Registry Connection Disabled">mdi-web-cancel</v-icon>
+            <v-icon v-else-if="item.refresh_result=='success'" title="Open Registry Details" color="blue">mdi-web-check</v-icon>
+            <v-icon v-else-if="item.refresh_result=='new'" title="New Platform Entry" color="green">mdi-web-plus</v-icon>
+            <v-icon v-else title="Registry Refresh Disabled">mdi-web-cancel</v-icon>
           </v-btn>
           <v-btn icon @click="editForm(item.id)">
             <v-icon title="Edit Platform">mdi-cog-outline</v-icon>
@@ -236,7 +233,6 @@
       return {
         success: '',
         failure: '',
-        working: '',
         providerImportDialog: false,
         settingsImportDialog: false,
         provDialog: false,
@@ -250,7 +246,7 @@
         import_types: ['Add or Update', 'Full Replacement'],
         mutable_filters: this.filters,
         status_options: ['ALL', 'Active', 'Inactive'],
-        result_options: ['ALL', 'Success', 'Failed', 'New', 'Disabled'],
+        result_options: ['ALL', 'Success', 'Failed', 'New', 'Refresh Disabled', 'No Registry ID'],
         bulk_actions: [ 'Enable', 'Disable', 'Refresh Registry', 'Delete' ],
         bulkAction: null,
         selectedRows: [],
@@ -445,7 +441,7 @@
             .then( (result) => {
               if (result.value) {
                   if (this.selectedRows.length>1) {
-                      this.working = "...Working... Updating multiple platforms ...Please Wait...";
+                      this.loading = true;
                   }
                   if (this.bulkAction == 'Delete') {
                       this.selectedRows.forEach( (provider) => {
@@ -459,7 +455,7 @@
                                  .catch({});
                           }
                       });
-                      this.working = '';
+                      this.loading = false;
                       this.success = "Selected platforms successfully deleted.";
                   } else if (this.bulkAction == 'Refresh Registry') {
                       let selectedIDs = this.selectedRows.map( p => p.id );
@@ -478,7 +474,7 @@
                          })
                          .catch(error => {});
                       });
-                      this.working = '';
+                      this.loading = false;
                       this.success = "Selected platforms successfully updated.";
                   }
               }
@@ -498,7 +494,7 @@
             }
             let _providers = (gpId=="ALL") ? "ALL" : JSON.stringify(refresh_arg);
             if (refresh_arg.length>1 || gpId == "ALL") {
-                this.working = "...Working... Updating multiple platforms ...Please Wait...";
+                this.loading = true;
             }
             axios.post('/global/providers/registry-refresh', {id: _providers })
                  .then( (response) => {
@@ -535,14 +531,12 @@
                            }
                            // Resort mutable_providers if we just added to them
                            if (newly_added) {
-                             this.mutable_providers.sort((a,b) => {
-                               if ( a.name < b.name ) return -1;
-                               if ( a.name > b.name ) return 1;
-                               return 0;
+                             this.mutable_providers.sort( (a,b) => {
+                                 return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
                              });
                            }
                        }
-                       this.working = "";
+                       this.loading = false;
                        this.success = "Platform Refresh completed successfully";
                      } else {
                        this.success = '';

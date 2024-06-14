@@ -86,7 +86,7 @@ class GlobalProviderController extends Controller
                                           return $qry->where('refresh_result',$filter_refresh);
                                        })
                                        ->when($filter_not_refreshable, function ($qry) {
-                                          return $qry->where('refreshable',0);
+                                          return $qry->where('refreshable',0)->orWhereNull('refresh_result');
                                        })
                                        ->orderBy('name', 'ASC')->get();
 

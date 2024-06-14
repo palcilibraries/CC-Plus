@@ -73,8 +73,13 @@ class GlobalProviderController extends Controller
                 $filter_stat = ($filters['stat'] == 'Active') ? 1 : 0;
             }
             $filter_refresh = null;
-            $filter_not_refreshable = ($filters['refresh'] == 'Disabled') ? true : null;
-            if ($filters['refresh'] != 'ALL' && $filters['refresh'] != 'Disabled') {
+            $filter_no_registryID = null;
+            $filter_not_refreshable = null;
+            if ($filters['refresh'] == 'Refresh Disabled') {
+                $filter_not_refreshable = true;
+            } else if ($filters['refresh'] == 'No Registry ID') {
+                $filter_no_registryID = true;
+            } else if ($filters['refresh'] != 'ALL') {
                 $filter_refresh = strtolower($filters['refresh']);
             }
 
@@ -86,7 +91,10 @@ class GlobalProviderController extends Controller
                                           return $qry->where('refresh_result',$filter_refresh);
                                        })
                                        ->when($filter_not_refreshable, function ($qry) {
-                                          return $qry->where('refreshable',0)->orWhereNull('refresh_result');
+                                          return $qry->where('refreshable',0);
+                                       })
+                                       ->when($filter_no_registryID, function ($qry) {
+                                          return $qry->whereNull('registry_id')->orWhere('registry_id',"");
                                        })
                                        ->orderBy('name', 'ASC')->get();
 
@@ -99,6 +107,7 @@ class GlobalProviderController extends Controller
             foreach ($gp_data as $gp) {
                 $provider = $gp->toArray();
                 $provider['status'] = ($gp->is_active) ? "Active" : "Inactive";
+                $provider['registry_id'] = (is_null($gp->registry_id) || $gp->registry_id=="") ? null : $gp->registry_id;
 
                 // Build arrays of booleans for connection fields and reports for the U/I chackboxes
                 $provider['connector_state'] = $this->connectorState($gp->connectors);
@@ -504,6 +513,7 @@ class GlobalProviderController extends Controller
         foreach ($platform_records as $platform) {
 
             // Look for a matching provider
+            $newProvider = false;
             $global_provider = $global_providers->where('registry_id',$platform->id)->first();
             if (!$global_provider) {
                 // See if the name matches before trying to create new entry
@@ -514,6 +524,7 @@ class GlobalProviderController extends Controller
                         $global_provider = new GlobalProvider;
                         $global_provider->refresh_result = 'new';
                         $new_platforms[] = $platform->name;
+                        $newProvider = true;
                     // If not found, and we're doing more than one, skip this entry and continue
                     // (this is not an error - we pulled everything when count>1)
                     } else if ($gpCount>1) {
@@ -601,7 +612,7 @@ class GlobalProviderController extends Controller
             $global_provider->server_url_r5 = $details->url;
             $global_provider->notifications_url = $details->notifications_url;
             $global_provider->updated_at = now();
-            if ($global_provider->refresh_result!="new") {
+            if (!$newProvider) {
                 $global_provider->refresh_result = "success";
             }
             $global_provider->save();

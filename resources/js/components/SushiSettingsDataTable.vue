@@ -34,7 +34,7 @@
         <v-switch v-model="conso_switch" dense label="Limit to Consortium" @change="updateConsoLimit()"></v-switch>
       </v-col>
       <v-col v-if="showInstFilter" class="d-flex px-2 align-center" cols="2">
-        <div class="x-box">
+        <div v-if="filters['inst'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
         <v-autocomplete :items="filter_options['inst']" v-model="filters['inst']" @change="updateInstFilter()" multiple

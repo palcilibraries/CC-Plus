@@ -34,7 +34,7 @@
         <v-switch v-model="conso_switch" dense label="Limit to Consortium" @change="updateConsoLimit()"></v-switch>
       </v-col>
       <v-col v-if="showInstFilter" class="d-flex px-2 align-center" cols="2">
-        <div v-if="filters['inst'].length>0" class="x-box">
+        <div class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
         <v-autocomplete :items="filter_options['inst']" v-model="filters['inst']" @change="updateInstFilter()" multiple
@@ -49,7 +49,7 @@
                   label="Institution Group"  item-text="name" item-value="id" hint="Limit the display to an institution group"
         ></v-autocomplete>
       </v-col>
-      <v-col v-if="is_admin && inst_context>1 && filter_options['prov'].length>0" class="d-flex px-2 align-center" cols="2">
+      <v-col v-if="is_admin && inst_context>1" class="d-flex px-2 align-center" cols="2">
         <div v-if="filters['inst_prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst_prov')"/>&nbsp;
         </div>
@@ -57,7 +57,7 @@
                         item-value="conso_id" @change="updateFilters('inst_prov')" multiple
         ></v-autocomplete>
       </v-col>
-      <v-col v-if="is_admin && inst_context<=1 && filter_options['prov'].length>0" class="d-flex px-2 align-center" cols="2">
+      <v-col v-if="is_admin && inst_context<=1" class="d-flex px-2 align-center" cols="2">
         <div v-if="filters['global_prov'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('global_prov')"/>&nbsp;
         </div>

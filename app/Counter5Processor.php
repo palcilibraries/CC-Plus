@@ -14,6 +14,11 @@ class Counter5Processor extends Model
     private static $yearmon;
     private static $now;
     private static $replace;
+    private static $all_platforms;
+    private static $all_publishers;
+    private static $all_accessmethods;
+    private static $all_datatypes;
+    private static $all_databases;
 
   /**
    * Class Constructor and setting methods
@@ -141,6 +146,13 @@ class Counter5Processor extends Model
    */
     public static function DR($json_report)
     {
+        // Pull related date for use in processing records
+        self::$all_platforms = Platform::get(['id','name']);
+        self::$all_publishers = Publisher::get(['id','name']);
+        self::$all_accessmethods = AccessMethod::get(['id','name']);
+        self::$all_datatypes = DataType::get(['id','name']);
+        self::$all_databases = DataBase::get(['id','name','PropID']);
+
         // If $replace flag is ON, clear out existing records first
         if (self::$replace) {
             DatabaseReport::where([['prov_id','=',self::$prov],
@@ -168,28 +180,19 @@ class Counter5Processor extends Model
             if ($_name == "") {
                 continue;
             }
-           // UTF8 Encode name if it isnt already UTF-8
-            $cur_encoding = mb_detect_encoding($_name);
-            if ($cur_encoding == "UTF-8" && mb_check_encoding($_name, "UTF-8")) {
-                $_database = $_name;
-            } else {
-                $_database = utf8_encode($_name);    // force to utf-8
-            }
-            $database = DataBase::firstOrCreate(['name' => $_database]);
+
+           // Get PropID for this item
+            $_item_id = (isset($reportitem->Item_ID)) ? $reportitem->Item_ID : array();
+            $Item_ID = self::itemIDValues($_item_id);
+
+            // Get or create the DataBase record (and update PropID if needed)
+            $database = self::getDataBase($_name, $Item_ID['PropID']);
 
            // Get Publisher
             $publisher_id = (isset($reportitem->Publisher)) ? self::getPublisher($reportitem->Publisher) : 1;
 
            // Get Platform
             $platform_id = (isset($reportitem->Platform)) ? self::getPlatform($reportitem->Platform) : 1;
-
-           // Get PropID for this item, and update model if necessary
-            $_item_id = (isset($reportitem->Item_ID)) ? $reportitem->Item_ID : array();
-            $Item_ID = self::itemIDValues($_item_id);
-            if ($Item_ID['PropID'] != $database->PropID) {
-                $database->PropID = $Item_ID['PropID'];
-                $database->save();
-            }
 
            // Pick up the optional attributes
             $accessmethod_id = (isset($reportitem->Access_Method)) ? self::getAccessMethod($reportitem->Access_Method)
@@ -495,7 +498,13 @@ class Counter5Processor extends Model
             } else {        // force to utf-8
                 $_plat_name = mb_substr(utf8_encode($input_platform), 0, intval(config('ccplus.max_name_length')));
             }
-            $platform = Platform::firstOrCreate(['name' => $_plat_name]);
+            // If platform is known, return it's ID. If not, create a new entry
+            $platform = self::$all_platforms->where('name',$_plat_name)->first();
+            if (!$platform) {
+                $platform = new Platform(['name' => $_plat_name]);
+                $platform->save();
+                self::$all_platforms->push($platform);
+            }
             $platform_id = $platform->id;
         }
         return $platform_id;
@@ -520,7 +529,13 @@ class Counter5Processor extends Model
             } else {        // force to utf-8
                 $_pub_name = mb_substr(utf8_encode($input_publisher), 0, intval(config('ccplus.max_name_length')));
             }
-            $publisher = Publisher::firstOrCreate(['name' => $_pub_name]);
+            // If publisher is known, return it's ID. If not, create a new entry
+            $publisher = self::$all_publishers->where('name',$_pub_name)->first();
+            if (!$publisher) {
+                $publisher = new Publisher(['name' => $_pub_name]);
+                $publisher->save();
+                self::$all_publishers->push($publisher);
+            }
             $publisher_id = $publisher->id;
         }
         return $publisher_id;
@@ -570,7 +585,12 @@ class Counter5Processor extends Model
             } else {        // force to utf-8
                 $_method_name = mb_substr(utf8_encode($input_method), 0, intval(config('ccplus.max_name_length')));
             }
-            $accessmethod = AccessMethod::firstOrCreate(['name' => $_method_name]);
+            $accessmethod = self::$all_accessmethods->where('name',$_method_name)->first();
+            if (!$accessmethod) {
+                $accessmethod = new AccessMethod(['name' => $_method_name]);
+                $accessmethod->save();
+                self::$all_accessmethods->push($accessmethod);
+            }
             $accessmethod_id = $accessmethod->id;
         }
         return $accessmethod_id;
@@ -596,7 +616,12 @@ class Counter5Processor extends Model
         } else {        // force to utf-8
             $_type_name = mb_substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
         }
-        $datatype = DataType::firstOrCreate(['name' => $_type_name]);
+        $datatype = self::$all_datatypes->where('name',$_type_name)->first();
+        if (!$datatype) {
+            $datatype = new DataType(['name' => $_type_name]);
+            $datatype->save();
+            self::$all_datatypes->push($datatype);
+        }
         return $datatype;
     }
 
@@ -624,6 +649,39 @@ class Counter5Processor extends Model
         }
         return $sectiontype_id;
     }
+
+    /**
+     * Function accepts a database name and propID as strings. If no match on name, create new entry.
+     * If PropID is different for a matched name, update existing data. Return full database object
+     *
+     * @param String $dbname
+     * @param String $propID
+     * @return DataBase
+     *
+     */
+    private static function getDataBase($dbname, $propID)
+    {
+        // UTF8 Encode name if it isnt already UTF-8
+         $cur_encoding = mb_detect_encoding($dbname);
+         if ($cur_encoding == "UTF-8" && mb_check_encoding($dbname, "UTF-8")) {
+             $_name = $dbname;
+         } else {
+             $_name = utf8_encode($dbname);    // force to utf-8
+         }
+         $database = self::$all_databases->where('name',$_name)->first();
+         if ($database) {
+             // DataBase record exists, but propID is different... update propID
+             if ($propID != $database->PropID) {
+                 $database->update(['PropID' => $propID]);
+                 self::$all_databases->where('id',$database->id)->update(['PropID' => $propID]);
+             }
+         } else {
+             $database = new DataBase(['name' => $_name, 'PropID' => $propID]);
+             $database->save();
+             self::$all_databases->push($database);
+         }
+         return $database;
+     }
 
     /**
      * Function accepts a JSON Item_ID object and returns an array of values for what

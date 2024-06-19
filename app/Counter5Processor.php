@@ -805,13 +805,13 @@ class Counter5Processor extends Model
             $conditions[] = array('URI', '=', $ident['URI']);
         }
 
-        // Find existing matches
-        $matches = self::$all_titles->where('type', $ident['type'])
-                                    ->where(function ($query) use ($conditions, $input_title) {
-                                        $query->where('Title', '=', $input_title)->orWhere($conditions);
-                                    })->all();
+        // Find existing matches; don't search for more if there is an exact name match
+        $matches = self::$all_titles->where('type', $ident['type'])->where('Title', '=', $input_title)->all();
+        if (count($matches) == 0) {
+            $matches = self::$all_titles->where('type', $ident['type'])->where($conditions)->all();
+        }
 
-        // Loop through all the possibles
+        // Loop through the matches
         $save_it = false;
         foreach ($matches as $match) {
             $matched = false;

@@ -16,8 +16,11 @@ class Counter5Processor extends Model
     private static $replace;
     private static $all_platforms;
     private static $all_publishers;
+    private static $all_accesstypes;
     private static $all_accessmethods;
     private static $all_datatypes;
+    private static $all_sectiontypes;
+    private static $all_titles;
     private static $all_databases;
 
   /**
@@ -44,6 +47,15 @@ class Counter5Processor extends Model
    */
     public static function TR($json_report)
     {
+        // Pull related date for use in processing records
+        self::$all_platforms = Platform::get(['id','name']);
+        self::$all_publishers = Publisher::get(['id','name']);
+        self::$all_accesstypes = AccessType::get(['id','name']);
+        self::$all_accessmethods = AccessMethod::get(['id','name']);
+        self::$all_datatypes = DataType::get(['id','name']);
+        self::$all_sectiontypes = SectionType::get(['id','name']);
+        self::$all_titles = Title::get();
+
         // If $replace flag is ON, clear out existing records first
         if (self::$replace) {
             TitleReport::where([['prov_id','=',self::$prov],
@@ -560,7 +572,12 @@ class Counter5Processor extends Model
             } else {        // force to utf-8
                 $_type_name = mb_substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
             }
-            $accesstype = AccessType::firstOrCreate(['name' => $_type_name]);
+            $accesstype = self::$all_accesstypes->where('name',$_type_name)->first();
+            if (!$accesstype) {
+                $accesstype = new AccessType(['name' => $_type_name]);
+                $accesstype->save();
+                self::$all_accesstypes->push($accesstype);
+            }
             $accesstype_id = $accesstype->id;
         }
         return $accesstype_id;
@@ -644,7 +661,12 @@ class Counter5Processor extends Model
             } else {        // force to utf-8
                 $_type_name = mb_substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
             }
-            $sectiontype = SectionType::firstOrCreate(['name' => $_type_name]);
+            $sectiontype = self::$all_sectiontypes->where('name',$_type_name)->first();
+            if (!$sectiontype) {
+                $sectiontype = new SectionType(['name' => $_type_name]);
+                $sectiontype->save();
+                self::$all_sectiontypes->push($sectiontype);
+            }
             $sectiontype_id = $sectiontype->id;
         }
         return $sectiontype_id;
@@ -783,13 +805,13 @@ class Counter5Processor extends Model
             $conditions[] = array('URI', '=', $ident['URI']);
         }
 
-       // Run the query
-        $matches = Title::where('type', '=', $ident['type'])->where(function ($query) use ($conditions, $input_title) {
-                              $query->where('Title', '=', $input_title)
-                                    ->orWhere($conditions);
-        })->get();
+        // Find existing matches
+        $matches = self::$all_titles->where('type', $ident['type'])
+                                    ->where(function ($query) use ($conditions, $input_title) {
+                                        $query->where('Title', '=', $input_title)->orWhere($conditions);
+                                    })->all();
 
-       // Loop through all the possibles
+        // Loop through all the possibles
         $save_it = false;
         foreach ($matches as $match) {
             $matched = false;

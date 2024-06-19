@@ -20,7 +20,6 @@ class Counter5Processor extends Model
     private static $all_accessmethods;
     private static $all_datatypes;
     private static $all_sectiontypes;
-    private static $all_titles;
     private static $all_databases;
 
   /**
@@ -805,13 +804,13 @@ class Counter5Processor extends Model
             $conditions[] = array('URI', '=', $ident['URI']);
         }
 
-        // Find existing matches; don't search for more if there is an exact name match
-        $matches = self::$all_titles->where('type', $ident['type'])->where('Title', '=', $input_title)->all();
-        if (count($matches) == 0) {
-            $matches = self::$all_titles->where('type', $ident['type'])->where($conditions)->all();
-        }
+       // Run the query
+        $matches = Title::where('type', '=', $ident['type'])->where(function ($query) use ($conditions, $input_title) {
+                              $query->where('Title', '=', $input_title)
+                                    ->orWhere($conditions);
+        })->get();
 
-        // Loop through the matches
+       // Loop through all the possibles
         $save_it = false;
         foreach ($matches as $match) {
             $matched = false;

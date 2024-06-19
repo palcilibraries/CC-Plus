@@ -53,7 +53,6 @@ class Counter5Processor extends Model
         self::$all_accessmethods = AccessMethod::get(['id','name']);
         self::$all_datatypes = DataType::get(['id','name']);
         self::$all_sectiontypes = SectionType::get(['id','name']);
-        self::$all_titles = Title::get();
 
         // If $replace flag is ON, clear out existing records first
         if (self::$replace) {

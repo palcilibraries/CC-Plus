@@ -255,6 +255,11 @@ class Counter5Processor extends Model
    */
     public static function PR($json_report)
     {
+        // Pull related date for use in processing records
+        self::$all_platforms = Platform::get(['id','name']);
+        self::$all_accessmethods = AccessMethod::get(['id','name']);
+        self::$all_datatypes = DataType::get(['id','name']);
+
         // If $replace flag is ON, clear out existing records first
         if (self::$replace) {
             PlatformReport::where([['prov_id','=',self::$prov],
@@ -335,6 +340,12 @@ class Counter5Processor extends Model
    */
     public static function IR($json_report)
     {
+        self::$all_platforms = Platform::get(['id','name']);
+        self::$all_publishers = Publisher::get(['id','name']);
+        self::$all_accesstypes = AccessType::get(['id','name']);
+        self::$all_accessmethods = AccessMethod::get(['id','name']);
+        self::$all_datatypes = DataType::get(['id','name']);
+
         // If $replace flag is ON, clear out existing records first
         if (self::$replace) {
             ItemReport::where([['prov_id','=',self::$prov],

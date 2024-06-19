@@ -287,7 +287,7 @@ class SushiBatch extends Command
                             }
 
                             // Successfully processed the report - clear out any existing "failed" records
-                            $deleted = FailedHarvest::where('harvest_id', $job->harvest->id)->delete();
+                            $deleted = FailedHarvest::where('harvest_id', $harvest->id)->delete();
                         }
                     }
                     unset($sushi);

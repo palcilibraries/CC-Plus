@@ -115,8 +115,7 @@ class HarvestLogController extends Controller
 
            // Setup arrays for institutions and providers
            if ($show_all) {
-               $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
-                                          ->where('id', '<>', 1)->where('is_active', true)
+               $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')->where('is_active', true)
                                           ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
                array_unshift($institutions, ['id' => 0, 'name' => 'Entire Consortium']);
                $provider_data = Provider::with('reports')

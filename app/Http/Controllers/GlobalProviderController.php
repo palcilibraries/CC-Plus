@@ -218,8 +218,13 @@ class GlobalProviderController extends Controller
       // Validate form inputs
       $this->validate($request, [ 'is_active' => 'required' ]);
       $input = $request->all();
+
+      // Going INactive or making the platform NO-Refresh means we also clear the refresh_result
       $isActive = ($input['is_active']) ? 1 : 0;
       $provider->is_active = $isActive;
+      if (!$isActive) {
+          $provider->refresh_result = null;
+      }
       if (isset($input['refreshable'])) {
           $provider->refreshable = ($input['refreshable']) ? 1 : 0;
           if ($provider->refreshable == 0) {

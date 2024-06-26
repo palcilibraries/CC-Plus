@@ -126,7 +126,6 @@ class GlobalProviderController extends Controller
                     $provider['connection_count'] += $details['connections'];
                 }
                 $provider['updated_at'] = (is_null($gp->updated_at)) ? null : date("Y-m-d h:ia", strtotime($gp->updated_at));
-                $provider['updated'] = (is_null($gp->updated_at)) ? "" : substr($gp->updated_at,0,10);
                 $providers[] = $provider;
             }
 
@@ -277,6 +276,11 @@ class GlobalProviderController extends Controller
       }
       $provider->platform_parm = (isset($input['platform_parm'])) ? $input['platform_parm'] : null;
       $provider->content_provider = (isset($input['content_provider'])) ? $input['content_provider'] : null;
+      if (isset($input['registry_id'])) {
+          if (!is_null($input['registry_id'])) {
+              $provider->registry_id = $input['registry_id'];
+          }
+      }
 
       // Turn array of report checkboxes into an array of IDs
       if (isset($input['report_state'])) {
@@ -300,6 +304,7 @@ class GlobalProviderController extends Controller
       if (isset($input['connector_state'])) {
           $provider['connector_state'] = $input['connector_state'];
       }
+      $provider['updated_at'] = (is_null($provider->updated_at)) ? null : date("Y-m-d h:ia", strtotime($provider->updated_at));
 
       // Get connector fields
       $fields = $all_connectors->whereIn('id',$provider->connectors)->pluck('name')->toArray();

@@ -84,6 +84,9 @@
           </v-btn>
         </span>
       </template>
+      <template v-slot:item.updated_at="{ item }">
+        <span>{{ item.updated_at.substr(0,10) }}</span>
+      </template>
       <v-alert slot="no-results" :value="true" color="error" icon="warning">
         Your search for "{{ search }}" found no results.
       </v-alert>
@@ -259,7 +262,7 @@
           { text: 'Platform Name', value: 'name', align: 'start' },
           { text: 'Content Provider', value: 'content_provider', align: 'start' },
           { text: 'Connection Count', value: 'connection_count', align: 'center' },
-          { text: 'Last Updated', value: 'updated', align: 'start' },
+          { text: 'Last Updated', value: 'updated_at', align: 'start' },
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],

@@ -274,12 +274,11 @@ class GlobalProviderController extends Controller
           $connectors_changed = ($provider->connectors != $new_connectors);
           $provider->connectors = $new_connectors;
       }
-      $provider->platform_parm = (isset($input['platform_parm'])) ? $input['platform_parm'] : null;
-      $provider->content_provider = (isset($input['content_provider'])) ? $input['content_provider'] : null;
-      if (isset($input['registry_id'])) {
-          if (!is_null($input['registry_id'])) {
-              $provider->registry_id = $input['registry_id'];
-          }
+
+      // Handle other text values
+      $args = array('platform_parm','content_provider','registry_id');
+      foreach ($args as $key) {
+          $provider->{$key} = (isset($input[$key])) ? null : trim($input[$key]);
       }
 
       // Turn array of report checkboxes into an array of IDs

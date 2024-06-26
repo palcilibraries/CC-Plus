@@ -630,9 +630,9 @@ class GlobalProviderController extends Controller
             $return_data[] = $return_rec;
         }
 
-        // Check updated_ids against $global_providers to find any that are/were missing (orphaned by COUNTER?).
+        // Check updated_ids against (refreshable) $global_providers to find any that are/were missing (orphaned by COUNTER?).
         // Mark missing providers' refresh_result as "failed"
-        $orphans = $global_providers->whereNotIn('id',$updated_ids)->all();
+        $orphans = $global_providers->where('refreshable',1)->whereNotIn('id',$updated_ids)->all();
         foreach ($orphans as $gp) {
             if (is_null($gp->registry_id) || $gp->registry_id == '') {
                 $no_registryID[] = $gp->name;

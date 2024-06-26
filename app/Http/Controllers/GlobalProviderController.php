@@ -125,7 +125,7 @@ class GlobalProviderController extends Controller
                     }
                     $provider['connection_count'] += $details['connections'];
                 }
-                $provider['updated_at'] = (is_null($gp->updated_at)) ? null : date("Y-m-d h:ia", strtotime($gp->updated_at));
+                $provider['updated'] = (is_null($gp->updated_at)) ? null : date("Y-m-d h:ia", strtotime($gp->updated_at));
                 $providers[] = $provider;
             }
 
@@ -278,7 +278,7 @@ class GlobalProviderController extends Controller
       // Handle other text values
       $args = array('platform_parm','content_provider','registry_id');
       foreach ($args as $key) {
-          $provider->{$key} = (isset($input[$key])) ? null : trim($input[$key]);
+          $provider->{$key} = (isset($input[$key])) ? trim($input[$key]) : null;
       }
 
       // Turn array of report checkboxes into an array of IDs
@@ -303,7 +303,7 @@ class GlobalProviderController extends Controller
       if (isset($input['connector_state'])) {
           $provider['connector_state'] = $input['connector_state'];
       }
-      $provider['updated_at'] = (is_null($provider->updated_at)) ? null : date("Y-m-d h:ia", strtotime($provider->updated_at));
+      $provider['updated'] = (is_null($provider->updated_at)) ? null : date("Y-m-d h:ia", strtotime($provider->updated_at));
 
       // Get connector fields
       $fields = $all_connectors->whereIn('id',$provider->connectors)->pluck('name')->toArray();
@@ -632,7 +632,7 @@ class GlobalProviderController extends Controller
             $return_rec['report_state'] = $this->reportState($reportIds);
             $return_rec['connection_count'] = count($connectors);
             $return_rec['connector_state'] = $this->connectorState($connectors);
-            $return_rec['updated'] = substr($global_provider->updated_at,0,10);
+            $return_rec['updated'] = date("Y-m-d h:ia", strtotime($gp->updated_at));
             $updated_ids[] = $global_provider->id;
             $success_count++;
             $return_rec['error'] = 0;

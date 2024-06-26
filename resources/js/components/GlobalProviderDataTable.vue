@@ -84,8 +84,8 @@
           </v-btn>
         </span>
       </template>
-      <template v-slot:item.updated_at="{ item }">
-        <span>{{ item.updated_at.substr(0,10) }}</span>
+      <template v-slot:item.updated="{ item }">
+        <span>{{ item.updated.substr(0,10) }}</span>
       </template>
       <v-alert slot="no-results" :value="true" color="error" icon="warning">
         Your search for "{{ search }}" found no results.
@@ -262,7 +262,7 @@
           { text: 'Platform Name', value: 'name', align: 'start' },
           { text: 'Content Provider', value: 'content_provider', align: 'start' },
           { text: 'Connection Count', value: 'connection_count', align: 'center' },
-          { text: 'Last Updated', value: 'updated_at', align: 'start' },
+          { text: 'Last Updated', value: 'updated', align: 'start' },
           { text: '', value: 'action', sortable: false },
         ],
         mutable_providers: [ ...this.providers],
@@ -312,7 +312,7 @@
             this.form.report_state = _prov.report_state;
             this.form.notifications_url = _prov.notifications_url;
             this.form.platform_parm = _prov.platform_parm;
-            this.updated_at = _prov.updated_at;
+            this.updated_at = _prov.updated;
             this.showRefresh = _prov.refreshable; // button only displays when refreshable in form AND saved provider are true
             this.providerImportDialog = false;
             this.settingsImportDialog = false;

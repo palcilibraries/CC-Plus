@@ -191,6 +191,7 @@ class InstitutionController extends Controller
         if (!$thisUser->hasRole("Admin")) {
             abort_unless($thisUser->inst_id == $id, 403);
         }
+        $localAdmin = (!$thisUser->hasRole('Admin'));
 
         // Get the institution and sushi settings
         $institution = Institution::with('users', 'users.roles','institutionGroups','institutionGroups.institutions:id,name')
@@ -225,109 +226,102 @@ class InstitutionController extends Controller
         $inst_prov_ids  = $raw_providers->where('inst_id',$id)->pluck('id')->toArray();
         $conso_prov_ids = $raw_providers->where('inst_id',1)->pluck('id')->toArray();
         $combined_ids = array_unique(array_merge($inst_prov_ids, $conso_prov_ids));
-        $inst_providers = Provider::with('institution:id,name','sushiSettings:id,prov_id,last_harvest','reports:id,name',
+        $inst_providers = Provider::with('institution:id,name,is_active','sushiSettings:id,prov_id,last_harvest','reports:id,name',
                                          'globalProv')->whereIn('id',$combined_ids)->orderBy('name', 'ASC')->get();
         // Get master report definitions
         $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
 
         // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
-        $global_providers = GlobalProvider::orderBy('name', 'ASC')->get();
+        $global_providers = GlobalProvider::where('is_active', true)->orderBy('name', 'ASC')->get();
 
-        $item_key = 0;
         $output_providers = [];
         foreach ($global_providers as $rec) {
             $rec->global_prov = $rec->toArray();
             $rec->connectors = $rec->connectionFields();
 
-            // Set master reports to only the globally available ones and add names
-            $_reports = [];
-            foreach ($master_reports as $rpt) {
-                if (in_array($rpt->id, $rec->master_reports)) {
-                    $_reports[] = array('id' => $rpt->id, 'name' => $rpt->name);
-                }
+            // Setup connected institution data
+            $connected_providers = $inst_providers->where('global_id',$rec->id);
+            $inst_connection = $connected_providers->where('global_id',$rec->id)->where('inst_id',$id)->first();
+            $inst_reports = ($inst_connection) ? $inst_connection->reports->pluck('id')->toArray() : [];
+            $rec->inst_id = ($inst_connection) ? $id : null;
+            $conso_connection = $connected_providers->where('inst_id',1)->first();
+            $conso_reports = ($conso_connection) ? $conso_connection->reports->pluck('id')->toArray() : [];
+            // setup reports string to account for conso and inst-specific assignments.
+            $report_ids = array_unique(array_merge($conso_reports, $inst_reports));
+            $rec->reports_string = $this->makeReportString($report_ids, $master_reports);
+            // $rec->master_reports holds what the master has available
+            $master_ids = $rec->master_reports;
+            $rec->master_reports = $master_reports->whereIn('id', $master_ids)->values()->toArray();
+            $rec->is_conso = ($conso_connection) ? true : false;
+            $rec->allow_inst_specific = ($conso_connection) ? $conso_connection->allow_inst_specific : 0;
+            // Day of month is Conso-day, unless it's this inst-only; set can_connect flag
+            if ($conso_connection) {
+                $rec->inst_id = ($inst_connection) ? $id : 1;
+                $rec->day_of_month = $conso_connection->day_of_month;
+                $rec->can_connect = ($conso_connection->allow_inst_specific && !$inst_connection) ? true : false;
+            } else {
+                $rec->day_of_month = ($inst_connection) ? $inst_connection->day_of_month : null;
+                $rec->can_connect = (!$inst_connection) ? true : false;
             }
-            $rec->master_reports = $_reports;
+            // active defaults to global value, and is overriden by inst-specific value, if set.
+            // Local admin can set inactive, but this only affects the inst-specific reports, not the conso-defined ones
+            $rec->is_active = ($inst_connection) ? $inst_connection->is_active : $rec->is_active;
+            $rec->active = ($rec->is_active) ? 'Active' : 'Inactive';
+            $rec->last_harvest = null;
 
-            // Set connected to hold both conso and inst if they're enabled
-            $inst_connected = false;
-            $conso_connected = false;
-            $connected = array();
+            // Global is Not connected
+            if (count($connected_providers) == 0) {
+                $rec->can_edit = false;
+                $rec->can_delete = false; // unconnected globals only deletable by serverAdmin
+                $rec->connected = [];
+                $rec->connection_count = 0;
+                $rec->report_state = $this->reportState($master_reports, $conso_reports, []);
+                $output_providers[] = $rec->toArray();
+                continue;
+            }
+
+            // Global is connected, the array of "connected insts" will be, at most, consortium and current inst
+            $all_inactive = true;
+            $is_editable = false;
+            $is_deleteable = false;
+            $connected_data = array();
             for ($i=0; $i<2; $i++) {
-                $_inst = ($i==0) ? $id : $i;
-                $prov_data = $inst_providers->where('global_id',$rec->id)->where('inst_id',$_inst)->first();
-                if ($prov_data) {
-                    if ($_inst == 1) $conso_connected = true;
-                    if ($_inst == $id) $inst_connected = true;
-                    $_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
-                    $connected[] = array('id' => $prov_data->inst_id, 'name' => $_name);
+                $prov_data = ($i==0) ? $inst_connection : $conso_connection;
+                if (!$prov_data) continue;
+                $_rec = $prov_data->toArray();
+                $_rec['inst_name'] = ($prov_data->inst_id == 1) ? 'Consortium' : $prov_data->institution->name;
+                $_rec['inst_stat'] = ($prov_data->institution->is_active) ? "isActive" : "isInactive";
+                $_inst_reports = $prov_data->reports->pluck('id')->toArray();
+                $combined_ids = array_unique(array_merge($conso_reports, $_inst_reports));
+                $_rec['master_reports'] = $rec->master_reports;
+                $_rec['report_state'] = $this->reportState($master_reports, $conso_reports, $combined_ids);
+                $_rec['last_harvest'] = $prov_data->sushiSettings->max('last_harvest');
+                $rec->last_harvest = max($rec->last_harvest,$_rec['last_harvest']);
+                $_rec['allow_inst_specific'] = ($prov_data->inst_id == 1) ? $prov_data->allow_inst_specific : 0;
+                // is_editable and is_deleteable both go true if caller can manage either INST or CONSO provider setting
+                // U/I will determine which one is/is-not allowed
+                if ($prov_data->canManage()) {
+                    $_rec['can_edit'] = true;
+                    $is_editable = true;
+                    $_rec['can_delete'] = (is_null($_rec['last_harvest'])) ? true : false;
+                    if ($_rec['can_delete']) $is_deleteable = true;
+                } else {
+                    $_rec['can_edit'] = false;
+                    $_rec['can_delete'] = false;
                 }
+                $connected_data[] = $_rec;
             }
-            $rec->connected = $connected;
-
-            // Set a record for both an inst-specific and consortium-wide provider definition
-            // (the U/I will have to hide/set-precedence)
-            for ($i=0; $i<2; $i++) {
-                $_inst = ($i==0) ? $id : $i;
-                // Setup default values for the columns in the U/I
-                $rec->conso_id = null;
-                $rec->inst_id = null;
-                $rec->inst_name = null;
-                $rec->day_of_month = null;
-                $rec->can_delete = false;
-                $rec->can_connect = true;   // default is true if global is not connected
-                $reports_string = ($rec->master_reports) ?
-                                   $this->makeReportString($rec->master_reports, $master_reports) : '';
-                $report_state = $this->reportState($rec->master_reports, $master_reports);
-
-                // Add global definition if not conso-connected.
-                if ($_inst==1 & !$conso_connected) {
-                    $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;
-                    $rec->report_state = $report_state;
-                    $rec->item_key = $item_key;
-                    $output_providers[] = $rec->toArray();
-                    $item_key++;
-                    if (count($connected) == 0) { // go get next global, we're done
-                        continue;
-                    }
-                }
-                $rec->connection_count = ($_inst==1) ? count($connected) : 1;
-
-                // Get the provider data
-                $prov_data = $inst_providers->where('global_id',$rec->id)->where('inst_id',$_inst)->first();
-                if ($prov_data) {
-                    // For a conso-provider, set can_connect true if inst_specific is aloowed and not already inst-connected
-                    $rec->can_connect = ($prov_data->inst_id==1 && $prov_data->allow_inst_specific && !$inst_connected) ?
-                                         true : false;
-                    $rec->conso_id = $prov_data->id;
-                    $rec->name = $prov_data->name;
-                    $rec->inst_id = $prov_data->inst_id;
-                    $rec->inst_name = ($prov_data->inst_id == 1) ? 'Entire Consortium' : $prov_data->institution->name;
-                    $rec->is_active = $prov_data->is_active;
-                    $rec->active = ($prov_data->is_active) ? 'Active' : 'Inactive';
-                    $rec->day_of_month = $prov_data->day_of_month;
-                    $rec->last_harvest = $prov_data->sushiSettings->max('last_harvest');
-                    $rec->restricted = $prov_data->restricted;
-                    $rec->allow_inst_specific = $prov_data->allow_inst_specific;
-                    $rec->can_edit = $prov_data->canManage();
-                    $rec->can_delete = (is_null($rec->last_harvest) && $prov_data->canManage());
-                    if ($prov_data->reports) {
-                        $report_ids = $prov_data->reports->pluck('id')->toArray();
-                        $reports_string = $this->makeReportString($report_ids, $master_reports);
-                        $report_state = $this->reportState($report_ids, $master_reports);
-                    }
-                    $rec->reports_string = ($reports_string == '') ? "None" : $reports_string;
-                    $rec->report_state = $report_state;
-                    $rec->item_key = $item_key;
-                    $output_providers[] = $rec->toArray();
-                    $item_key++;
-                }
-            }
+            $rec->connected = $connected_data;
+            $rec->connection_count = count($connected_data);
+            $rec->can_delete = ($is_deleteable) ? true : false;
+            $rec->can_edit = ($is_editable && $rec->connection_count>0) ? true : false;
+            $output_providers[] = $rec->toArray();
         }
         $all_providers = array_values($output_providers);
 
         // Pull an array for unset global providers
         $existingIds = $inst_providers->pluck('global_id')->toArray();
-        $unset_global = GlobalProvider::whereNotIn('id',$existingIds)->orderBy('name', 'ASC')->get();
+        $unset_global = GlobalProvider::where('is_active', true)->whereNotIn('id',$existingIds)->orderBy('name', 'ASC')->get();
 
         // Get 10 most recent harvests
         $harvests = HarvestLog::with('report:id,name', 'sushiSetting', 'sushiSetting.institution:id,name',
@@ -838,6 +832,7 @@ class InstitutionController extends Controller
      * @return String
      */
     private function makeReportString($reports, $master_reports) {
+        if (count($reports) == 0) return 'None';
         $report_string = '';
         foreach ($master_reports as $mr) {
             if (in_array($mr->id,$reports)) {
@@ -851,14 +846,17 @@ class InstitutionController extends Controller
     /**
      * Return an array of booleans for report-state from provider reports columns
      *
-     * @param  Array  $reports
-     * @param  Collection  $master_reports
+     * @param  Collection master_reports
+     * @param  Array  $conso_enabled  (ID's)
+     * @param  Array  $prov_enabled  (ID's)
      * @return Array  $report-state
      */
-    private function reportState($reports, $master_reports) {
+    private function reportState($master_reports, $conso_enabled, $prov_enabled) {
         $rpt_state = array();
         foreach ($master_reports as $rpt) {
-            $rpt_state[$rpt->name] = (in_array($rpt->id, $reports)) ? true : false;
+            $rpt_state[$rpt->name] = array();
+            $rpt_state[$rpt->name]['prov_enabled'] = (in_array($rpt->id, $prov_enabled)) ? true : false;
+            $rpt_state[$rpt->name]['conso_enabled'] = (in_array($rpt->id, $conso_enabled)) ? true : false;
         }
         return $rpt_state;
     }

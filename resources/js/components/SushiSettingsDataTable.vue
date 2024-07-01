@@ -719,7 +719,7 @@
               return (this.inst_context == 1) ? this.providers.filter(p => p.inst_id==null ||
                                                     this.all_settings.filter(s => s.prov_id==p.conso_id)
                                                                      .map(s2 => s2.inst_id).length<this.institutions.length)
-                                              : this.providers.filter(p => ( (this.is_admin || !p.restricted) &&
+                                              : this.providers.filter(p => ( this.is_admin &&
                                                                              (p.inst_id==1 || p.inst_id==this.inst_context) ) &&
                                                     this.all_settings.filter(s => s.prov_id == p.conso_id)
                                                                      .map(s2 => s2.inst_id).length<this.institutions.length);

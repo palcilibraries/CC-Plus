@@ -85,12 +85,11 @@ class SushiSetting extends Model
         if (auth()->user()->hasRole("Admin")) {
             return true;
         }
-      // Managers can manage settings for their own inst where the provider
-      // is a local-instance provider or a consortium provider set UN-restricted
+      // Managers can manage settings for their own inst where
+      // the provider is inst-specific or consortial
         if (auth()->user()->hasRole("Manager")) {
             return (auth()->user()->inst_id == $this->inst_id &&
-                    ( ($this->provider->inst_id==1 && !$this->provider->restricted) ||
-                      ($this->provider->inst_id==auth()->user()->inst_id) )
+                    ( $this->provider->inst_id==1 || ($this->provider->inst_id==auth()->user()->inst_id) )
                    );
         }
         return false;

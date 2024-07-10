@@ -632,7 +632,7 @@ class GlobalProviderController extends Controller
             $return_rec['report_state'] = $this->reportState($reportIds);
             $return_rec['connection_count'] = count($connectors);
             $return_rec['connector_state'] = $this->connectorState($connectors);
-            $return_rec['updated'] = date("Y-m-d h:ia", strtotime($gp->updated_at));
+            $return_rec['updated'] = date("Y-m-d h:ia", strtotime($global_provider->updated_at));
             $updated_ids[] = $global_provider->id;
             $success_count++;
             $return_rec['error'] = 0;

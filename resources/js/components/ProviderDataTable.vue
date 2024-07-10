@@ -510,13 +510,12 @@
             if (typeof(_prov) != 'undefined') {
               cnxIdx = _prov.connected.findIndex( p => p.inst_id == this.inst_context );
             }
-            if (cnxIdx<0) {
-              if (this.is_admin && _prov.connected.length==1) {
-                 cnxIdx = 0;
-              } else {
+            if (this.is_admin && _prov.connected.length==1) {
+               cnxIdx = 0;
+            }
+            if (cnxIdx<0 && !this.is_admin) {
                 this.failure = 'Error accessing provider data, a full page refresh is worth trying. May be a code problem.';
                 return;
-              }
             }
             // set provider to the target connected provider
             var provider = Object.assign({},_prov.connected[cnxIdx]);
@@ -525,10 +524,12 @@
                          " Because this provider has no harvested usage data, it can be removed.";
             let _notes = "<br /><font color='red'><strong>NOTE:</strong>";
             let _title = "Are you sure?";
-            if ( this.is_admin && provider.inst_id==1 ) {
-              _notes += "<br /><strong>This is a consortium-wide provider</strong>"+
-                        " Deleting it will remove ALL related SUSHI credentials consortium-wide.";
-              if ( _prov.connection_count > 1 || this.inst_context!=1) {
+            if ( this.is_admin) {
+              if (provider.inst_id==1) {
+                  _notes += "<br /><strong>This is a consortium-wide provider</strong>"+
+                            " Deleting it will remove ALL related SUSHI credentials consortium-wide.";
+              }
+              if ( _prov.connection_count > 1) {
                 var _count = (this.inst_context==1) ? _prov.connection_count : "ALL";
                 _title = "You are about to delete "+_count+" provider definitions related to this provider!";
                 _notes += "<br /><strong>All related institution-specific definitions for this provider"+

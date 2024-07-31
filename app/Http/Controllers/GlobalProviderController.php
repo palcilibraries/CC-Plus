@@ -625,6 +625,8 @@ class GlobalProviderController extends Controller
                         break;
                     }
                 }
+                $global_provider->server_url_r5 = $details->url;
+                $global_provider->notifications_url = $details->notifications_url;
             }
 
             // Get platform reports available
@@ -633,8 +635,6 @@ class GlobalProviderController extends Controller
             // Update  global provider fields with returned registry values
             $global_provider->master_reports = $reportIds;
             $global_provider->connectors = $connectors;
-            $global_provider->server_url_r5 = $details->url;
-            $global_provider->notifications_url = $details->notifications_url;
             $global_provider->updated_at = now();
             if (!$newProvider) {
                 $global_provider->refresh_result = "success";

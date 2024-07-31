@@ -81,6 +81,7 @@ class ProviderController extends Controller
                 $rec->connection_count = 0;
                 $output_providers[] = $rec->toArray();
             }
+            $rec->conso_id = ($conso_connection) ? $conso_connection->id : null;
 
             // Reset master reports to the globally available reports
             $master_ids = $rec->master_reports;
@@ -412,6 +413,7 @@ class ProviderController extends Controller
                                            ->get();
         }
         $conso_connection = $connected_providers->where('inst_id',1)->first();
+        $return_provider->conso_id = ($conso_connection) ? $conso_connection->id : null;
 
         $return_provider->global_prov = $global_provider->toArray();
         if ($conso_connection) {
@@ -574,6 +576,7 @@ class ProviderController extends Controller
         // Reset master reports (from an array of IDs) to the globally available reports (array of objects)
         $returnProv->master_reports = $master_reports->whereIn('id', $master_ids)->values()->toArray();
         $returnProv->is_conso = ($provider->inst_id==1) ? true : false;
+        $returnProv->conso_id = ($conso_connection) ? $conso_connection->id : null;
         $returnProv->allow_inst_specific = ($conso_connection) ? $conso_connection->allow_inst_specific : 0; // default
         $returnProv->day_of_month = $dayOfMonth;
 

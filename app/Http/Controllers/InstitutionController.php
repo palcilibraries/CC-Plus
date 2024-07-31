@@ -246,6 +246,7 @@ class InstitutionController extends Controller
             $rec->inst_id = ($inst_connection) ? $id : null;
             $conso_connection = $connected_providers->where('inst_id',1)->first();
             $conso_reports = ($conso_connection) ? $conso_connection->reports->pluck('id')->toArray() : [];
+            $rec->conso_id = ($conso_connection) ? $conso_connection->id : null;
             // setup reports string to account for conso and inst-specific assignments.
             $report_ids = array_unique(array_merge($conso_reports, $inst_reports));
             $rec->reports_string = $this->makeReportString($report_ids, $master_reports);

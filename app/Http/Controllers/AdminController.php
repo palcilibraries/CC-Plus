@@ -78,6 +78,7 @@ class AdminController extends Controller
             $conso_connection = $connected_providers->where('inst_id',1)->first();
             $rec->can_connect = ($conso_connection) ? false : true;
             $conso_reports = ($conso_connection) ? $conso_connection->reports->pluck('id')->toArray() : [];
+            $rec->conso_id = ($conso_connection) ? $conso_connection->id : null;
             // Reset master reports (from an array of IDs) to the globally available reports (array of objects)
             $master_ids = $rec->master_reports;
             $rec->master_reports = $master_reports->whereIn('id', $master_ids)->values()->toArray();

@@ -42,6 +42,7 @@ Route::get('/institutions-export', 'InstitutionController@export')->name('instit
 Route::post('extend-institution-group', 'InstitutionGroupController@extend')->name('groups.extend')
      ->middleware(['auth','role:Admin,Manager']);
 // Providers
+Route::delete('providers/customDestroy/{globalProvID}/{instProvID}', 'ProviderController@customDestroy');
 Route::resource('/providers', 'ProviderController')->middleware(['auth','cache.headers:no_store']);
 Route::post('/providers/connect', 'ProviderController@connect')->name('providers.connect')
      ->middleware(['auth','role:Admin,Manager']);

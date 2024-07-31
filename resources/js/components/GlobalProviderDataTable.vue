@@ -196,7 +196,7 @@
               <v-col class="d-flex pl-4" cols="9">
                 <v-text-field v-model="form.registry_id" label="COUNTER Registry ID" outlined dense></v-text-field>
               </v-col>
-              <v-col v-if="showRefresh" class="d-flex px-2" cols="3">
+              <v-col v-if="form.refreshable && form.registry_id!=''" class="d-flex px-2" cols="3">
                 <v-btn x-small color="primary" type="button" @click="registryRefresh(null)">Registry Refresh</v-btn>
               </v-col>
             </v-row>
@@ -213,8 +213,9 @@
                 <v-btn x-small color="primary" type="button" @click="provDialog=false">Cancel</v-btn>
               </v-col>
             </v-row>
-            <div v-if="dialog_error" class="status-message">
-              <span class="fail" role="alert" v-text="dialog_error"></span>
+            <div v-if="dialog_error || dialog_success" class="status-message">
+              <span v-if="dialog_success" class="good" role="alert" v-text="dialog_success"></span>
+              <span v-if="dialog_error" class="fail" role="alert" v-text="dialog_error"></span>
             </div>
             <v-row v-if="updated_at!=null" class="d-flex ma-0" no-gutters>
               <v-col class="d-flex justify-center"><em>Last Updated: {{ updated_at }}</em></v-col>
@@ -240,10 +241,10 @@
         success: '',
         failure: '',
         dialog_error: '',
+        dialog_success: '',
         providerImportDialog: false,
         settingsImportDialog: false,
         provDialog: false,
-        showRefresh: false,
         dialog_title: '',
         current_provider_id: null,
         current_connector_state: {},
@@ -302,6 +303,7 @@
             this.failure = '';
             this.success = '';
             this.dialog_error = '';
+            this.dialog_success = '';
             this.dialog_title = "Edit Platform Settings";
             let _prov = this.mutable_providers.find(p => p.id == gp_id);
             this.current_provider_id = gp_id;
@@ -318,8 +320,6 @@
             this.form.notifications_url = _prov.notifications_url;
             this.form.platform_parm = _prov.platform_parm;
             this.updated_at = _prov.updated;
-            // button only visible if SAVED provider is ACTIVE and refreshable)
-            this.showRefresh = (_prov.refreshable && _prov.is_active);
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
             this.provDialog = true;
@@ -328,6 +328,7 @@
             this.failure = '';
             this.success = '';
             this.dialog_error = '';
+            this.dialog_success = '';
             this.dialog_title = "Add Platform Definition";
             this.form.registry_id = this.new_provider.registry_id;
             this.form.name = this.new_provider.name;
@@ -341,7 +342,6 @@
             this.form.platform_parm = this.new_provider.platform_parm;
             this.form.notifications_url = this.new_provider.notifications_url;
             this.updated_at = null;
-            this.showRefresh = false;
             this.providerImportDialog = false;
             this.settingsImportDialog = false;
             this.provDialog = true;
@@ -422,6 +422,7 @@
             this.success = "";
             this.failure = "";
             this.dialog_error = '';
+            this.dialog_success = '';
             let msg = (this.bulkAction == 'Refresh Registry') ? "" :
                       "Bulk processing will process each requested platform sequentially.<br><br>";
             if (this.bulkAction == 'Enable') {
@@ -498,8 +499,10 @@
         registryRefresh(gpId) {
             // default refresh_arg to input. If it's ALL , or an array of ints, no changes needed
             let refresh_arg = gpId;
+            let is_dialog = 0;      // refresh from dialog does not SAVE, just returns registry fields
             if (gpId == null) {
               refresh_arg = [this.current_provider_id];
+              is_dialog = 1;
             } else if (Number.isInteger(gpId)) {
               refresh_arg = [gpId];
             }
@@ -507,7 +510,7 @@
             if (refresh_arg.length>1 || gpId == "ALL") {
                 this.loading = true;
             }
-            axios.post('/global/providers/registry-refresh', {id: _providers })
+            axios.post('/global/providers/registry-refresh', {id: _providers, dialog: is_dialog })
                  .then( (response) => {
                      if (response.data.result) {
                        if ( gpId!="ALL" && refresh_arg.length==1) {
@@ -519,7 +522,11 @@
                            this.form.report_state = prov.report_state;
                            this.form.notifications_url = prov.notifications_url;
                            this.form.content_provider = prov.content_provider;
-                           this.success = "Selected platform successfully updated.";
+                           if (is_dialog) {
+                             this.dialog_success = "Selected platform successfully retrieved.";
+                           } else {
+                             this.success = "Selected platform successfully updated.";
+                           }
                            var _idx = this.mutable_providers.findIndex(ii=>ii.id == gpId);
                            this.$emit('change-prov', prov.id);
                        } else {
@@ -546,11 +553,12 @@
                                  return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
                              });
                            }
+                           this.success = "Platform Refresh completed successfully";
                        }
                        this.loading = false;
-                       this.success = "Platform Refresh completed successfully";
                      } else {
                        this.success = '';
+                       this.dialog_success = '';
                        this.dialog_error = response.data.msg;
                        if ( gpId!="ALL" && refresh_arg.length==1) {
                            var _idx = this.mutable_providers.findIndex(ii=>ii.id == gpId);
@@ -573,6 +581,7 @@
             this.success = "";
             this.failure = "";
             this.dialog_error = '';
+            this.dialog_success = '';
             this.loading = true;
             let _filters = JSON.stringify(this.mutable_filters);
             axios.get("/global/providers?json=1&filters="+_filters)
@@ -586,6 +595,7 @@
             this.success = '';
             this.failure = '';
             this.dialog_error = '';
+            this.dialog_success = '';
             // Update existing global provider
             if (this.dialog_title == "Edit Platform Settings") {
               let idx = this.mutable_providers.findIndex(p => p.id == this.current_provider_id);

@@ -720,7 +720,7 @@
                      this.providers.filter(p => p.connection_count==0 || this.all_settings.filter(s => s.prov_id==p.conso_id)
                                                                          .map(s2 => s2.inst_id).length<this.institutions.length) :
                      this.providers.filter(p => (this.is_admin || p.inst_id==1 || p.inst_id==this.inst_context) &&
-                                                !this.all_settings.some(s => s.prov_id == p.conso_id) );
+                                                !this.all_settings.some(s => s.provider.global_id == p.id) );
             } else {
               return this.contextual_providers.filter(p => this.all_settings.filter(s => s.prov_id == p.conso_id)
                                                                             .map(s2 => s2.inst_id).length<this.institutions.length

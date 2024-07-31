@@ -550,9 +550,18 @@ class GlobalProviderController extends Controller
 
             // if global_provider is not refreshable, skip it
             if (!$global_provider->refreshable || !$global_provider->is_active) {
+                if ($gpCount == 1) {
+                    return response()->json(['result'=>false, 'msg'=>"Provider not refreshable or is not active"]);
+                }
                 $no_refresh[] = $global_provider->name;
                 continue;
             }
+
+            // Set initial provider elements
+            $global_provider->registry_id = $platform->id;
+            $global_provider->name = $platform->name;
+            $global_provider->content_provider = $platform->content_provider_name;
+            $global_provider->abbrev = $platform->abbrev;
 
             // Get the Sushi Services data
             $services = "";
@@ -562,6 +571,7 @@ class GlobalProviderController extends Controller
             }
             if (is_null($services) || $services == "") {
                 $global_provider->refresh_result = "failed";
+                $global_provider->is_active = 0;
                 $global_provider->updated_at = now();
                 $global_provider->save();
                 if ($gpCount == 1) {
@@ -612,10 +622,6 @@ class GlobalProviderController extends Controller
             $reportIds = $masterReports->whereIn('name',array_column($platform->reports,'report_id'))->pluck('id')->toArray();
 
             // Update  global provider fields with returned registry values
-            $global_provider->registry_id = $platform->id;
-            $global_provider->name = $platform->name;
-            $global_provider->content_provider = $platform->content_provider_name;
-            $global_provider->abbrev = $platform->abbrev;
             $global_provider->master_reports = $reportIds;
             $global_provider->connectors = $connectors;
             $global_provider->server_url_r5 = $details->url;
@@ -639,6 +645,10 @@ class GlobalProviderController extends Controller
             $return_data[] = $return_rec;
         }
 
+        if (count($updated_ids) == 0) {
+            $_msg = ($gpCount>1) ? "No Records updated" : "Refresh failed";
+            return response()->json(['result' => false, 'msg' => $_msg]);
+        }
         // Check updated_ids against (refreshable) $global_providers to find any that are/were missing (orphaned by COUNTER?).
         // Mark missing providers' refresh_result as "failed"
         $orphans = $global_providers->where('is_active',1)->where('refreshable',1)->whereNotIn('id',$updated_ids)->all();

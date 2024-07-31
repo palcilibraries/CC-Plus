@@ -278,7 +278,9 @@ class GlobalProviderController extends Controller
       // Handle other text values
       $args = array('platform_parm','content_provider','registry_id');
       foreach ($args as $key) {
-          $provider->{$key} = (isset($input[$key])) ? trim($input[$key]) : null;
+          if (isset($input[$key])) {
+              $provider->{$key} = trim($input[$key]);
+          }
       }
 
       // Turn array of report checkboxes into an array of IDs
@@ -452,7 +454,9 @@ class GlobalProviderController extends Controller
 
         if ($input['id'] == "ALL") {
             $global_providers = GlobalProvider::get();
+            $is_dialog = 0;
         } else {
+            $is_dialog = json_decode($request->input('dialog'));
             $global_provider_ids = json_decode($request->input('id'));
             if (!is_array($global_provider_ids)) {
                 return response()->json(['result' => false, 'msg' => "Refresh Request Failed - Invalid Input!"]);
@@ -549,7 +553,7 @@ class GlobalProviderController extends Controller
             $return_rec = array('error'=>0, 'id' => $global_provider->id, 'name' => $platform->name);
 
             // if global_provider is not refreshable, skip it
-            if (!$global_provider->refreshable || !$global_provider->is_active) {
+            if (!$global_provider->refreshable && !$is_dialog) {
                 if ($gpCount == 1) {
                     return response()->json(['result'=>false, 'msg'=>"Provider not refreshable or is not active"]);
                 }
@@ -569,7 +573,7 @@ class GlobalProviderController extends Controller
                 if ($services != "") break;
                 $services = $svc;
             }
-            if (is_null($services) || $services == "") {
+            if (!$is_dialog && (is_null($services) || $services == "")) {
                 $global_provider->refresh_result = "failed";
                 $global_provider->is_active = 0;
                 $global_provider->updated_at = now();
@@ -585,14 +589,17 @@ class GlobalProviderController extends Controller
 
             // Get the sushi details
             // If we pulled the whole registry, we need to get details using the URL in sushi_services
-            if ($gpCount > 1) {
-                $details = $this->requestURI($services->url);
-            // If we we're just working on one platform, the details are in $services already
-            } else {
-                $details = $services;
+            $details = null;
+            if (!is_null($services) && $services != ""){
+                if ($gpCount > 1) {
+                    $details = $this->requestURI($services->url);
+                // If we we're just working on one platform, the details are in $services already
+                } else {
+                    $details = $services;
+                }
             }
             $connectors = array();
-            if (!is_object($details)) {
+            if (!$is_dialog && !is_object($details)) {
                 $global_provider->refresh_result = "failed";
                 $global_provider->updated_at = now();
                 $global_provider->save();
@@ -605,16 +612,18 @@ class GlobalProviderController extends Controller
                 }
             }
             // Get connection fields (for now, assumes customer_id is always required)
-            foreach ($api_connectors as $key => $cnx) {
-                if ($key == 'customer_id_info' || $details->{$key}) {
-                    $connectors[] = $cnx['id'];
+            if (is_object($details)) {
+                foreach ($api_connectors as $key => $cnx) {
+                    if ($key == 'customer_id_info' || $details->{$key}) {
+                        $connectors[] = $cnx['id'];
+                    }
                 }
-            }
-            // The registry API doesn't know about CC+ extra_args. If set in the original Global, preserve it
-            foreach ($global_provider->connectionFields() as $cf) {
-                if ($cf['name'] == 'extra_args') {
-                    $connectors[] = $cf['id'];
-                    break;
+                // The registry API doesn't know about CC+ extra_args. If set in the original Global, preserve it
+                foreach ($global_provider->connectionFields() as $cf) {
+                    if ($cf['name'] == 'extra_args') {
+                        $connectors[] = $cf['id'];
+                        break;
+                    }
                 }
             }
 
@@ -630,7 +639,9 @@ class GlobalProviderController extends Controller
             if (!$newProvider) {
                 $global_provider->refresh_result = "success";
             }
-            $global_provider->save();
+            if (!$is_dialog) {
+                $global_provider->save();
+            }
 
             // Setup return data
             $return_rec = $global_provider->toArray();
@@ -651,16 +662,18 @@ class GlobalProviderController extends Controller
         }
         // Check updated_ids against (refreshable) $global_providers to find any that are/were missing (orphaned by COUNTER?).
         // Mark missing providers' refresh_result as "failed"
-        $orphans = $global_providers->where('is_active',1)->where('refreshable',1)->whereNotIn('id',$updated_ids)->all();
-        foreach ($orphans as $gp) {
-            if (is_null($gp->registry_id) || $gp->registry_id == '') {
-                $no_registryID[] = $gp->name;
-                $gp->refresh_result = null;
-            } else {
-                $return_data[] = array('error' => 3, 'id' => $gp->id, 'name' => $gp->name);
-                $gp->refresh_result = 'failed';
+        if (count($updated_ids) > 0 && !$is_dialog) {
+            $orphans = $global_providers->where('is_active',1)->where('refreshable',1)->whereNotIn('id',$updated_ids)->all();
+            foreach ($orphans as $gp) {
+                if (is_null($gp->registry_id) || $gp->registry_id == '') {
+                    $no_registryID[] = $gp->name;
+                    $gp->refresh_result = null;
+                } else {
+                    $return_data[] = array('error' => 3, 'id' => $gp->id, 'name' => $gp->name);
+                    $gp->refresh_result = 'failed';
+                }
+                $gp->save();
             }
-            $gp->save();
         }
 
         // Build a summary HTML blob if we handled more than one provider ID

@@ -64,6 +64,14 @@
         </span>
         {{ item.name }}
       </template>
+      <template v-slot:item.connection_count="{ item }">
+        <span v-if="(typeof(item.connections)=='undefined')">0</span>
+        <span v-else-if="item.connections.length==0">0</span>
+        <span v-else>
+          {{ item.connection_count }}
+          <v-icon title="Show Instances" @click="showConnections(item.id)">mdi-open-in-app</v-icon>
+        </span>
+      </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
           <v-btn v-if="item.registry_id!=null" icon
@@ -223,6 +231,18 @@
           </v-form>
         </v-container>
     </v-dialog>
+    <v-dialog v-model="connectionsDialog" content-class="ccplus-dialog">
+      <h1 align="center">Instances connected to<br />{{ cur_provider.name }}</h1>
+      <hr>
+      <div v-for="instance in cur_provider.connections">
+        <v-row class="d-flex mx-2" no-gutters>
+          <v-col class="d-flex px-2">
+            {{ instance.name }} &nbsp; has {{ instance.num }} instutitions connected
+            <v-icon title="Open instance Administration in new tab" @click="goInst(instance.key)">mdi-open-in-new</v-icon>
+          </v-col>
+        </v-row>
+      </div>
+    </v-dialog>
   </div>
 </template>
 
@@ -247,6 +267,8 @@
         provDialog: false,
         dialog_title: '',
         current_provider_id: null,
+        cur_provider: {},
+        connectionsDialog: false,
         current_connector_state: {},
         warnConnectors: false,
         updated_at: null,
@@ -590,6 +612,24 @@
                  })
                  .catch(err => console.log(err));
             this.loading = false;
+        },
+        showConnections(id) {
+            this.cur_provider = this.mutable_providers.find(p => p.id == id);
+            this.connectionsDialog = true;
+        },
+        goInst(key) {
+            var _args = {'ccp_key' : key};
+            axios.post('/change-instance', _args)
+                 .then((response) => {
+                    if (response.data.result == 'success') {
+                        console.log("Consortium instance changed to: "+this.cur_key);
+                        // Reload whatever page we're on from the server
+                        window.open("/consoadmin", "_blank");
+                    } else {
+                        console.log("Change instance failed! : "+response.data.result);
+                    }
+                })
+               .catch(error => {});
         },
         formSubmit (event) {
             this.success = '';

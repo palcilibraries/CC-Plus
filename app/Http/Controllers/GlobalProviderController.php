@@ -117,14 +117,19 @@ class GlobalProviderController extends Controller
                 // If any are found, the can_delete flag will be set to false to disable deletion option in the U/I
                 $provider['can_delete'] = true;
                 $provider['connection_count'] = 0;
+                $connections = array();
                 foreach ($instances as $instance) {
                     // Collect details from the instance for this provider
                     $details = $this->instanceDetails($instance->ccp_key, $gp->id);
                     if ($details['harvest_count'] > 0) {
                         $provider['can_delete'] = false;
                     }
-                    $provider['connection_count'] += $details['connections'];
+                    if ($details['connections'] > 0) {
+                        $connections[] = array('key'=>$instance->ccp_key, 'name'=>$instance->name, 'num'=>$details['connections']);
+                        $provider['connection_count'] += 1;
+                    }
                 }
+                $provider['connections'] = $connections;
                 $provider['updated'] = (is_null($gp->updated_at)) ? null : date("Y-m-d h:ia", strtotime($gp->updated_at));
                 $providers[] = $provider;
             }

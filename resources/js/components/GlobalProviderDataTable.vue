@@ -288,7 +288,7 @@
           { text: 'Abbrev', value: 'abbrev', align: 'start' },
           { text: 'Platform Name', value: 'name', align: 'start' },
           { text: 'Content Provider', value: 'content_provider', align: 'start' },
-          { text: 'Connection Count', value: 'connection_count', align: 'center' },
+          { text: 'Connected Instances', value: 'connection_count', align: 'center' },
           { text: 'Last Updated', value: 'updated', align: 'start' },
           { text: '', value: 'action', sortable: false },
         ],

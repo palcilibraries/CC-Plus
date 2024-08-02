@@ -49,8 +49,6 @@ class GlobalAdminController extends Controller
         foreach ($gp_data as $gp) {
             $provider = $gp->toArray();
             $provider['status'] = ($gp->is_active) ? "Active" : "Inactive";
-            $provider['reports_string'] = ($gp->master_reports) ?
-                                          $this->makeReportString($gp->master_reports) : 'None';
 
             // Build arrays of booleans for connecion fields and reports for the U/I chackboxes
             $provider['connector_state'] = $this->connectorState($gp->connectors);
@@ -112,25 +110,6 @@ class GlobalAdminController extends Controller
             return response()->json(['result' => 'Error decoding input!']);
         }
         return response()->json(['result' => 'success']);
-    }
-
-    /**
-     * Build string representation of master_reports array
-     *
-     * @param  Array  $reports
-     * @return String
-     */
-    private function makeReportString($reports) {
-        global $masterReports;
-        $report_string = '';
-        foreach ($reports as $id) {
-            $rpt = $masterReports->where('id',$id)->first();
-            if ($rpt) {
-                $report_string .= ($report_string == '') ? '' : ', ';
-                $report_string .= $rpt->name;
-            }
-        }
-        return $report_string;
     }
 
     /**

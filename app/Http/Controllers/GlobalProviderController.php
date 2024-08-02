@@ -180,7 +180,6 @@ class GlobalProviderController extends Controller
 
       // Turn array of report checkboxes into an array of IDs
       $master_reports = array();
-      // $reports_string = "";
       if (isset($input['report_state'])) {
           $this->getMasterReports();
           foreach ($masterReports as $rpt) {
@@ -302,7 +301,6 @@ class GlobalProviderController extends Controller
       $provider->save();
       $provider['status'] = ($provider->is_active) ? "Active" : "Inactive";
       $provider['connector_state'] = (isset($input['connector_state'])) ? $input['connector_state'] : array();
-      // $provider['reports_string'] = ($reports_string == "") ? 'None' : $reports_string;
       $provider['report_state'] = (isset($input['report_state'])) ? $input['report_state'] : array();
 
       // Set connection field labels in an array for the datatable display
@@ -1105,8 +1103,6 @@ class GlobalProviderController extends Controller
         foreach ($gp_data as $gp) {
             $provider = $gp->toArray();
             $provider['status'] = ($gp->is_active) ? "Active" : "Inactive";
-            // $provider['reports_string'] = ($gp->master_reports) ?
-            //                               $this->makeReportString($gp->master_reports) : 'None';
             $provider['connector_state'] = $this->connectorState($gp->connectors);
             $provider['report_state'] = $this->reportState($gp->master_reports);
             $provider['can_delete'] = true;
@@ -1135,25 +1131,6 @@ class GlobalProviderController extends Controller
         $msg  = 'Import successful, Platforms : ' . $detail;
 
         return response()->json(['result' => true, 'msg' => $msg, 'platforms' => $updated_providers]);
-    }
-
-    /**
-     * Build string representation of master_reports array
-     *
-     * @param  Array  $reports
-     * @return String
-     */
-    private function makeReportString($reports) {
-        $report_string = '';
-        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
-        foreach ($reports as $id) {
-            $rpt = $master_reports->where('id',$id)->first();
-            if ($rpt) {
-                $report_string .= ($report_string == '') ? '' : ', ';
-                $report_string .= $rpt->name;
-            }
-        }
-        return $report_string;
     }
 
     /**

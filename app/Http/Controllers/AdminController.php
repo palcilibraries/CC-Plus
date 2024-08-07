@@ -58,7 +58,7 @@ class AdminController extends Controller
         }
 
         // Get master report definitions
-        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
+        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
 
         // Get all (consortium) providers, extract array of global IDs
         $conso_providers = Provider::with('sushiSettings:id,prov_id,last_harvest','reports:id,name','globalProv',
@@ -88,15 +88,18 @@ class AdminController extends Controller
             // Day of month is Conso-day, unless it's inst-specific
             if ($conso_connection) {
                 $rec->day_of_month = $conso_connection->day_of_month;
-                $rec->reports_string = $this->makeReportString($conso_reports, $master_reports);
             } else {
                 $rec->day_of_month = ($rec->connection_count == 1) ? $connected_providers->first()->day_of_month : null;
                 $report_ids = ($rec->connection_count == 1) ? $connected_providers->first()->reports->pluck('id')->toArray()
                                                             : $master_ids;
-                $rec->reports_string = $this->makeReportString($report_ids, $master_reports);
             }
             $rec->last_harvest = null;
 
+            // Setup flags to control per-report icons in the U/I
+            $report_flags = $this->setReportFlags($master_reports, $master_ids, $conso_reports);
+            foreach ($report_flags as $rpt) {
+                $rec->{$rpt['name'] . "_status"} = $rpt['status'];
+            }
             // If global provider is connected
             if ($rec->connection_count > 0) {
                 // Build an array of details for connected insts
@@ -147,22 +150,26 @@ class AdminController extends Controller
     }
 
     /**
-     * Build string representation of master_reports array
+     * Build array of flags by-report for the UI
      *
-     * @param  Array  $reports
-     * @param  Collection  $master_reports
-     * @return String
+     * @param  Collection master_reports
+     * @param  Array  $master_ids  (ID's available from the global platform)
+     * @param  Array  $conso_enabled  (ID's enabled for the consortium)
+     * @param  Array  $prov_enabled  (ID's enabled for the institution)
+     * @return Array  $flags
      */
-    private function makeReportString($reports, $master_reports) {
-        if (count($reports) == 0) return 'None';
-        $report_string = '';
+    private function setReportFlags($master_reports, $master_ids, $conso_enabled) {
+        $flags = array();
         foreach ($master_reports as $mr) {
-            if (in_array($mr->id,$reports)) {
-                $report_string .= ($report_string == '') ? '' : ', ';
-                $report_string .= $mr->name;
+            $rpt = array('name' => $mr->name, 'status' => 'NA');
+            if (in_array($mr->id, $conso_enabled)) {
+                $rpt['status'] = 'C';
+            } else if (in_array($mr->id, $master_ids)) {
+                $rpt['status'] = 'A';
             }
+            $flags[] = $rpt;
         }
-        return $report_string;
+        return $flags;
     }
 
     /**

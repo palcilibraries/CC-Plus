@@ -17,14 +17,14 @@ class AlertSettingController extends Controller
         if (auth()->user()->hasRole("Admin")) { // show them all
             $data = AlertSetting::orderBy('id', 'ASC')->get();
             $institutions = Institution::orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-            $institutions[1] = "Entire Consortium";
+            $institutions[1] = "Consortium";
         } else {                                // limit to user's inst
             $data = AlertSetting::orderBy('id', 'ASC')
                    ->where('inst_id', '=', auth()->user()->inst_id)->get();
         }
 
        // Get reports known to the system (to populate the dropdown)
-        $master_reports = Report::where('parent_id', '=', 0)->orderBy('id', 'ASC')->get();
+        $master_reports = Report::where('parent_id', '=', 0)->orderBy('dorder', 'ASC')->get();
         $reports = array();
         $reports_json = "";
         foreach ($master_reports as $_report) {
@@ -33,7 +33,6 @@ class AlertSettingController extends Controller
         }
         $reports_json = preg_replace("/,$/", "", $reports_json);
         array_unshift($reports, "Choose a Report");
-// dd($data);
 
         return view('alertsettings.dashboard', compact('data', 'reports_json', 'reports', 'institutions'));
     }

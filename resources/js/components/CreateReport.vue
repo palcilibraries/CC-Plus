@@ -53,15 +53,15 @@
         <div v-else>
         <v-radio-group v-model="selectedReport" :mandatory="false" @change="onReportChange">
           <v-expansion-panels multiple focusable>
-            <v-expansion-panel v-if="report_data['TR'].count>0">
+            <v-expansion-panel v-if="report_data['PR'].count>0">
               <v-expansion-panel-header>
-                <h4>Title</h4>
+                <h4>Platform</h4>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
-                <p>Available Views</p>
-                <v-radio :label="reports[0].legend+' ('+reports[0].name+')'" :value='reports[0]'></v-radio>
-                <v-radio v-for="(value, idx) in tr_reports" :key="idx" :value="value"
-                         :label="value.name+' : '+value.legend"></v-radio>
+                  <p>Available Views</p>
+                  <v-radio :label="reports[2].legend+' ('+reports[2].name+')'" :value='reports[2]'></v-radio>
+                  <v-radio v-for="(value, idx) in pr_reports" :key="idx" :value="value"
+                           :label="value.name+' : '+value.legend"></v-radio>
               </v-expansion-panel-content>
             </v-expansion-panel>
 
@@ -77,15 +77,15 @@
               </v-expansion-panel-content>
             </v-expansion-panel>
 
-            <v-expansion-panel v-if="report_data['PR'].count>0">
+            <v-expansion-panel v-if="report_data['TR'].count>0">
               <v-expansion-panel-header>
-                <h4>Platform</h4>
+                <h4>Title</h4>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
-                  <p>Available Views</p>
-                  <v-radio :label="reports[2].legend+' ('+reports[2].name+')'" :value='reports[2]'></v-radio>
-                  <v-radio v-for="(value, idx) in pr_reports" :key="idx" :value="value"
-                           :label="value.name+' : '+value.legend"></v-radio>
+                <p>Available Views</p>
+                <v-radio :label="reports[0].legend+' ('+reports[0].name+')'" :value='reports[0]'></v-radio>
+                <v-radio v-for="(value, idx) in tr_reports" :key="idx" :value="value"
+                         :label="value.name+' : '+value.legend"></v-radio>
               </v-expansion-panel-content>
             </v-expansion-panel>
 

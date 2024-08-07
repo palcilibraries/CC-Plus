@@ -19,6 +19,7 @@ class CreateReportsTable extends Migration
             $table->string('legend');
             $table->unsignedInteger('revision')->default(5);
             $table->unsignedInteger('parent_id')->default(0);
+            $table->unsignedInteger('dorder')->nullable();  // display order
             $table->string('inherited_fields')->nullable();
         });
     }

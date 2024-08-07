@@ -21,10 +21,10 @@ class ReportsTableSeeder extends Seeder
 
        // Make sure table is empty
         if (DB::table($table)->get()->count() == 0) {
-            DB::table($table)->insert(['id' => 1,'name' => 'TR','legend' => 'Title Master Report']);
-            DB::table($table)->insert(['id' => 2,'name' => 'DR','legend' => 'Database Master Report']);
-            DB::table($table)->insert(['id' => 3,'name' => 'PR','legend' => 'Platform Master Report']);
-            DB::table($table)->insert(['id' => 4,'name' => 'IR','legend' => 'Item Master Report']);
+            DB::table($table)->insert(['id' => 1,'name' => 'TR','legend' => 'Title Master Report', 'dorder' => 3]);
+            DB::table($table)->insert(['id' => 2,'name' => 'DR','legend' => 'Database Master Report', 'dorder' => 2]);
+            DB::table($table)->insert(['id' => 3,'name' => 'PR','legend' => 'Platform Master Report', 'dorder' => 1]);
+            DB::table($table)->insert(['id' => 4,'name' => 'IR','legend' => 'Item Master Report', 'dorder' => 4]);
             DB::table($table)->insert(['id' => 5,'name' => 'TR_B1',
                 'legend' => 'Book Requests (Excluding OA_Gold)','parent_id' => 1,
                 'inherited_fields' => '1,6:[2],8:[1],9:[1],18,20']);

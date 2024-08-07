@@ -41,7 +41,7 @@ class ProviderController extends Controller
         }
 
         // Get master report definitions
-        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
+        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
 
         // Get all (consortium) providers, extract array of global IDs
         $conso_providers = Provider::with('sushiSettings:id,prov_id,last_harvest','reports:id,name','globalProv',
@@ -86,7 +86,6 @@ class ProviderController extends Controller
             // Reset master reports to the globally available reports
             $master_ids = $rec->master_reports;
             $rec->master_reports = $master_reports->whereIn('id', $master_ids)->values()->toArray();
-            $rec->reports_string = $this->makeReportString($master_ids, $master_reports);
             $rec->report_state = $this->reportState($master_reports, $conso_reports, []);
 
             // Include all providers connected to the global in the array
@@ -116,7 +115,6 @@ class ProviderController extends Controller
                 $rec->can_delete = (is_null($rec->last_harvest)) ? true : false;
                 if ($prov_data->reports) {
                     $report_ids = $prov_data->reports->pluck('id')->toArray();
-                    $rec->reports_string = $this->makeReportString($report_ids, $master_reports);
                     $combined_ids = array_unique(array_merge($conso_reports, $report_ids));
                     $rec->report_state = $this->reportState($master_reports, $conso_reports, $combined_ids);
                 }
@@ -176,7 +174,7 @@ class ProviderController extends Controller
         $provider['sushiSettings'] = $sushi_settings->toArray();
 
         // Master reports limited to whet is defined for the related global provider
-        $master_reports = Report::whereIn('id', $con_prov->globalProv->master_reports)->orderBy('name','ASC')->get(['id','name']);
+        $master_reports = Report::whereIn('id',$con_prov->globalProv->master_reports)->orderBy('dorder','ASC')->get(['id','name']);
 
         // setup reprts_state structure to mkae checkboxres with
         $rpt_state = [];
@@ -304,7 +302,7 @@ class ProviderController extends Controller
         $removed = array();
         $input_ids = array();
         $report_ids = array();
-        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
+        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
         if (isset($input['report_state'])) {
             $current_ids = $provider->reports->pluck('id')->toArray();
             $global_master_list = $global_provider->master_reports;
@@ -413,9 +411,11 @@ class ProviderController extends Controller
                                            ->get();
         }
         $conso_connection = $connected_providers->where('inst_id',1)->first();
+        $inst_connection = $connected_providers->where('inst_id',$provider->inst_id)->first();
         $return_provider->conso_id = ($conso_connection) ? $conso_connection->id : null;
 
         $return_provider->global_prov = $global_provider->toArray();
+        $return_provider->content_provider = $global_provider->content_provider;
         if ($conso_connection) {
             $return_provider->is_conso = true;
             $return_provider->inst_id = $conso_connection->inst_id;
@@ -427,7 +427,6 @@ class ProviderController extends Controller
             $return_provider->inst_name = $provider->institution->name;
             $conso_reports = [];
         }
-        $return_provider->reports_string = $this->makeReportString($input_ids, $master_reports);
         $return_provider->report_state = $this->reportState($master_reports, $conso_reports, $input_ids);
         $return_provider->can_connect = (!$conso_connection && $is_admin) ? true : false;
         $return_provider->connectors = $global_provider->connectionFields();
@@ -442,6 +441,14 @@ class ProviderController extends Controller
         // Set master reports to the globally available reports
         $master_ids = $global_provider->master_reports;
         $return_provider->master_reports = $master_reports->whereIn('id', $master_ids)->values()->toArray();
+
+        // Setup flags to control per-report icons in the U/I
+        $inst_reports = ($inst_connection) ? $inst_connection->reports->pluck('id')->toArray() : [];
+        $report_flags = $this->setReportFlags($master_reports, $master_ids, $conso_reports, $inst_reports);
+        foreach ($report_flags as $rpt) {
+            $return_provider->{$rpt['name'] . "_status"} = $rpt['status'];
+        }
+
         // Build an array of connected details
         $connected_data = array();
         $all_inactive = true;
@@ -517,8 +524,13 @@ class ProviderController extends Controller
         $provider->day_of_month = $dayOfMonth;
         $provider->save();
 
+        // Update $conso_connection if we just created it...
+        if ($provider->inst_id == 1) {
+            $conso_connection = $provider;
+        }
+
         //Attach report definitions to new provider
-        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
+        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
         $master_ids = $global_provider->master_reports;
         foreach ($master_reports as $rpt) {
             if (in_array($rpt->id, $master_ids) && !in_array($rpt->id,$conso_reports)) {
@@ -548,11 +560,14 @@ class ProviderController extends Controller
         // connected providers that we just enabled in the consortium-wide definition. updateReports
         // will also delete any inst-specific definitions with zero reports, so this needs doing now,
         // before we try to build an array of inst-specific connected providers.
+        $conso_report_ids = ($conso_connection) ? $conso_connection->reports->pluck('id')->toArray() : [];
+        $inst_report_ids = [];
         if ($provider->inst_id==1) {
-            $report_ids = $provider->reports->pluck('id')->toArray();
-            $this->updateReports($global_provider->id, $report_ids, "detach");
+            $this->updateReports($global_provider->id, $conso_report_ids, "detach");
             // Assert day_of_month to all other settings for this global
             Provider::where('global_id',$global_provider->id)->update(['day_of_month' => $dayOfMonth]);
+        } else {
+            $inst_report_ids = $provider->reports->pluck('id')->toArray();
         }
 
         // Setup return object - essentially the global provider updated to reflect the new connection
@@ -575,10 +590,17 @@ class ProviderController extends Controller
 
         // Reset master reports (from an array of IDs) to the globally available reports (array of objects)
         $returnProv->master_reports = $master_reports->whereIn('id', $master_ids)->values()->toArray();
-        $returnProv->is_conso = ($provider->inst_id==1) ? true : false;
+        $returnProv->is_conso = ($conso_connection) ? true : false;
+        $returnProv->inst_id = ($conso_connection) ? 1 : $provider->inst_id;
         $returnProv->conso_id = ($conso_connection) ? $conso_connection->id : null;
-        $returnProv->allow_inst_specific = ($conso_connection) ? $conso_connection->allow_inst_specific : 0; // default
+        $returnProv->allow_inst_specific = ($conso_connection) ? $conso_connection->allow_inst_specific : 0;
         $returnProv->day_of_month = $dayOfMonth;
+
+        // Setup flags to control per-report icons in the U/I
+        $report_flags = $this->setReportFlags($master_reports, $master_ids, $conso_report_ids, $inst_report_ids);
+        foreach ($report_flags as $rpt) {
+            $returnProv->{$rpt['name'] . "_status"} = $rpt['status'];
+        }
 
         // If global provider is connected
         $connected_data = array();
@@ -603,7 +625,6 @@ class ProviderController extends Controller
 
         $prov_reports = $provider->reports->pluck('id')->toArray();
         $report_ids = array_unique(array_merge($conso_reports, $prov_reports));
-        $returnProv->reports_string = $this->makeReportString($report_ids, $master_reports);
         $returnProv->connected = $connected_data;
         $returnProv->connection_count = $connected_providers->count();
         $returnProv->last_harvest = null;
@@ -663,25 +684,6 @@ class ProviderController extends Controller
         // Return result
         $msg = ($deleted) ? 'Provider definition(s) successfully deleted' : 'No providers deleted - authorization failed';
         return response()->json(['result' => $deleted, 'msg' => $msg]);
-    }
-
-    /**
-     * Build string representation of master_reports array
-     *
-     * @param  Array  $reports
-     * @param  Collection  $master_reports
-     * @return String
-     */
-    private function makeReportString($reports, $master_reports) {
-        if (count($reports) == 0) return 'None';
-        $report_string = '';
-        foreach ($master_reports as $mr) {
-            if (in_array($mr->id,$reports)) {
-                $report_string .= ($report_string == '') ? '' : ', ';
-                $report_string .= $mr->name;
-            }
-        }
-        return $report_string;
     }
 
     /**
@@ -900,7 +902,7 @@ class ProviderController extends Controller
         $global_providers = GlobalProvider::where('is_active', true)->get();
         $providers = Provider::with('reports','institution')->get();
         $institutions = Institution::get();
-        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
+        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
 
         // Process the input rows
         $cur_prov_id = 0;
@@ -1001,6 +1003,31 @@ class ProviderController extends Controller
 
         // return response()->json(['result' => true, 'msg' => $msg, 'providers' => $providers]);
         return response()->json(['result' => true, 'msg' => $msg]);
+    }
+
+    /**
+     * Build array of flags by-report for the UI
+     *
+     * @param  Collection master_reports
+     * @param  Array  $master_ids  (ID's available from the global platform)
+     * @param  Array  $conso_enabled  (ID's enabled for the consortium)
+     * @param  Array  $inst_enabled  (ID's enabled for the institution)
+     * @return Array  $flags
+     */
+    private function setReportFlags($master_reports, $master_ids, $conso_enabled, $inst_enabled) {
+        $flags = array();
+        foreach ($master_reports as $mr) {
+            $rpt = array('name' => $mr->name, 'status' => 'NA');
+            if (in_array($mr->id, $conso_enabled)) {
+                $rpt['status'] = 'C';
+            } else if (in_array($mr->id, $inst_enabled)) {
+                $rpt['status'] = 'I';
+            } else if (in_array($mr->id, $master_ids)) {
+                $rpt['status'] = 'A';
+            }
+            $flags[] = $rpt;
+        }
+        return $flags;
     }
 
     /**

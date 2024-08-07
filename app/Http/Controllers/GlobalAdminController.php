@@ -117,7 +117,7 @@ class GlobalAdminController extends Controller
      */
     private function getMasterReports() {
         global $masterReports;
-        $masterReports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
+        $masterReports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
     }
 
     /**

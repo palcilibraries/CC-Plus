@@ -408,3 +408,11 @@ button.v-expansion-panel-header:not(.v-expansion-panel-header--active) {
 .v-data-table__wrapper {
   padding-top: 20px;
 }
+.v-data-table > .v-data-table__wrapper > table > tbody > tr > td,
+.v-data-table > .v-data-table__wrapper > table > tbody > tr > th,
+.v-data-table > .v-data-table__wrapper > table > thead > tr > td,
+.v-data-table > .v-data-table__wrapper > table > thead > tr > th,
+.v-data-table > .v-data-table__wrapper > table > tfoot > tr > td,
+.v-data-table > .v-data-table__wrapper > table > tfoot > tr > th {
+  padding: 0 8px !important;
+}

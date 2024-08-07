@@ -39,7 +39,7 @@
     </v-row>
     <v-data-table v-model="selectedRows" :headers="headers" :items="filtered_providers" show-select :options="mutable_options"
                   :search="search" @update:options="updateOptions" :footer-props="footer_props"
-                  :key="'mp'+dtKey" item-key="id">
+                  :key="dtKey" item-key="id">
       <template v-slot:item.status="{ item }">
         <div v-if="item.is_conso">
           <span v-if="item.can_edit && item.is_active">
@@ -78,24 +78,56 @@
         </span>
         <span v-else>{{ item.name }}</span>
       </template>
-      <template v-slot:item.inst_name="{ item }">
-        <span v-if="item.connected.length==1 && item.is_conso">{{ item.connected[0].inst_name }}</span>
-        <span v-if="item.connected.length==1 && !item.is_conso" :class="item.connected[0].inst_stat">
-          <a :href="'/institutions/'+item.connected[0].inst_id" title="View Institution in new tab" target="_blank">
-            {{ item.connected[0].inst_name }}
-          </a>
+      <template v-slot:item.PR_status="{ item }">
+        <v-icon v-if="item.PR_status=='C'" title="PR is enabled for the consortium">
+                mdi-checkbox-multiple-marked-circle-outline</v-icon>
+        <v-icon v-else-if="item.PR_status=='I'" title="PR is enabled for this institution" color="green">
+                mdi-checkbox-marked-circle-outline</v-icon>
+        <v-icon v-else-if="item.PR_status=='A'" title="PR is available but not enabled" color="blue">
+                mdi-shape-circle-plus</v-icon>
+        <v-icon v-else="item.PR_status=='NA'" title="PR is not available" color="#c9c9c9">mdi-minus-circle-outline</v-icon>
+      </template>
+      <template v-slot:item.DR_status="{ item }">
+        <v-icon v-if="item.DR_status=='C'" title="DR is enabled for the consortium">
+                mdi-checkbox-multiple-marked-circle-outline</v-icon>
+        <v-icon v-else-if="item.DR_status=='I'" title="DR is enabled for this institution" color="green">
+                mdi-checkbox-marked-circle-outline</v-icon>
+        <v-icon v-else-if="item.DR_status=='A'" title="DR is available but not enabled" color="blue">
+                mdi-shape-circle-plus</v-icon>
+        <v-icon v-else="item.DR_status=='NA'" title="DR is not available" color="#c9c9c9">mdi-minus-circle-outline</v-icon>
+      </template>
+      <template v-slot:item.TR_status="{ item }">
+        <v-icon v-if="item.TR_status=='C'" title="TR is enabled for the consortium">
+                mdi-checkbox-multiple-marked-circle-outline</v-icon>
+        <v-icon v-else-if="item.TR_status=='I'" title="TR is enabled for this institution" color="green">
+                mdi-checkbox-marked-circle-outline</v-icon>
+        <v-icon v-else-if="item.TR_status=='A'" title="TR is available but not enabled" color="blue">
+                mdi-shape-circle-plus</v-icon>
+        <v-icon v-else="item.TR_status=='NA'" title="TR is not available" color="#c9c9c9">mdi-minus-circle-outline</v-icon>
+      </template>
+      <template v-slot:item.IR_status="{ item }">
+        <v-icon v-if="item.IR_status=='C'" title="IR is enabled for the consortium">
+                mdi-checkbox-multiple-marked-circle-outline</v-icon>
+        <v-icon v-else-if="item.IR_status=='I'" title="IR is enabled for this institution" color="green">
+                mdi-checkbox-marked-circle-outline</v-icon>
+        <v-icon v-else-if="item.IR_status=='A'" title="IR is available but not enabled" color="blue">
+                mdi-shape-circle-plus</v-icon>
+        <v-icon v-else="item.IR_status=='NA'" title="IR is not available" color="#c9c9c9">mdi-minus-circle-outline</v-icon>
+      </template>
+      <template v-slot:item.connection_count="{ item }">
+        <span v-if="(typeof(item.connected)=='undefined')">0</span>
+        <span v-else-if="item.connected.length==0">0</span>
+        <span v-else>
+          {{ item.connection_count }}
+          <v-icon title="Show Institutions" @click="showConnected(item.id)">mdi-open-in-app</v-icon>
         </span>
-        <span v-if="inst_context==1 && item.connected.length>1" :class="item.inst_stat">
-          Multiple Institutions <v-icon title="Show Institutions" @click="showConnected(item.id)">mdi-open-in-app</v-icon>
-        </span>
-        <span v-if="inst_context!=1 && item.connected.length>1" :class="item.inst_stat">Consortium + Institution</span>
       </template>
       <template v-slot:item.action="{ item }">
         <span class="dt_action">
           <v-btn v-if="item.can_connect" icon @click="connectProvider(item.id)">
             <v-icon title="Connect Provider">mdi-connection</v-icon>
           </v-btn>
-          <v-btn v-if="item.can_edit || (is_manager && item.connected.length>0)" icon @click="editProvider(item.id)">
+          <v-btn v-if="item.can_edit || (is_manager && item.connected.length>1)" icon @click="editProvider(item.id)">
             <v-icon title="Edit Provider">mdi-cog-outline</v-icon>
           </v-btn>
           <v-btn v-else icon><v-icon color="#c9c9c9">mdi-cog-outline</v-icon></v-btn>
@@ -196,9 +228,13 @@
         inst_name: '',
         headers: [
           { text: 'Status', value: 'status' },
+          { text: 'Abbrev ', value: 'abbrev', align: 'start' },
           { text: 'Provider ', value: 'name', align: 'start' },
-          { text: 'Enabled Reports', value: 'reports_string' },
-          { text: 'Connected To', value: 'inst_name' },
+          { text: 'Content Provider', value: 'content_provider', align: 'start' },
+          { text: 'PR', value: 'PR_status', width: '16px', align: 'center' },
+          { text: 'DR', value: 'DR_status', width: '16px', align: 'center' },
+          { text: 'TR', value: 'TR_status', width: '16px', align: 'center' },
+          { text: 'IR', value: 'IR_status', width: '16px', align: 'center' },
           { text: 'Harvest Day', value: 'day_of_month', align: 'center' },
         ],
         mutable_providers: [ ...this.providers ],
@@ -222,9 +258,9 @@
         connect_filter: 'Connected',
         sushi_insts: [],
         sushi_provs: [],
-        empty_report_state: {'TR': {'conso_enabled':false, 'prov_enabled':false},
+        empty_report_state: {'PR': {'conso_enabled':false, 'prov_enabled':false},
                              'DR': {'conso_enabled':false, 'prov_enabled':false},
-                             'PR': {'conso_enabled':false, 'prov_enabled':false},
+                             'TR': {'conso_enabled':false, 'prov_enabled':false},
                              'IR': {'conso_enabled':false, 'prov_enabled':false}},
       }
     },
@@ -321,7 +357,9 @@
                 // Find and replace the provider
                 let _idx = this.mutable_providers.findIndex(p => p.id == prov.id);
                 this.mutable_providers.splice(_idx,1,prov);
-                this.$emit('change-prov', this.mutable_providers[_idx]);
+                // this.$emit('change-prov', this.mutable_providers[_idx]);
+                let emit_action = (this.dialog_type == 'connect') ? 'connect-prov' : 'change-prov';
+                this.$emit(emit_action, prov);
                 this.success = msg;
                 this.dtKey += 1;
             } else if (result == 'Fail') {
@@ -670,9 +708,9 @@
 
       // Tack on last 2 columns in the table headers
       if (this.is_admin) {
-        this.headers.push({ text: 'Connection Count', value: 'connection_count', align: 'center'} )
+        this.headers.push({ text: 'Connections', value: 'connection_count', align: 'center'} )
       }
-      this.headers.push({ text: '', value: 'action', sortable: false });
+      this.headers.push({ text: 'Actions', value: 'action', align: 'center', sortable: false });
     },
     mounted() {
       // Set connection-filter options based on context

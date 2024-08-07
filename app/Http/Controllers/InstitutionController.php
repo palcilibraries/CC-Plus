@@ -229,7 +229,7 @@ class InstitutionController extends Controller
         $inst_providers = Provider::with('institution:id,name,is_active','sushiSettings:id,prov_id,last_harvest','reports:id,name',
                                          'globalProv')->whereIn('id',$combined_ids)->orderBy('name', 'ASC')->get();
         // Get master report definitions
-        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('name','ASC')->get(['id','name']);
+        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
 
         // Build list of providers, based on globals, that includes extra mapped in consorium-specific data
         $global_providers = GlobalProvider::where('is_active', true)->orderBy('name', 'ASC')->get();
@@ -247,9 +247,7 @@ class InstitutionController extends Controller
             $conso_connection = $connected_providers->where('inst_id',1)->first();
             $conso_reports = ($conso_connection) ? $conso_connection->reports->pluck('id')->toArray() : [];
             $rec->conso_id = ($conso_connection) ? $conso_connection->id : null;
-            // setup reports string to account for conso and inst-specific assignments.
-            $report_ids = array_unique(array_merge($conso_reports, $inst_reports));
-            $rec->reports_string = $this->makeReportString($report_ids, $master_reports);
+
             // $rec->master_reports holds what the master has available
             $master_ids = $rec->master_reports;
             $rec->master_reports = $master_reports->whereIn('id', $master_ids)->values()->toArray();
@@ -269,6 +267,12 @@ class InstitutionController extends Controller
             $rec->is_active = ($inst_connection) ? $inst_connection->is_active : $rec->is_active;
             $rec->active = ($rec->is_active) ? 'Active' : 'Inactive';
             $rec->last_harvest = null;
+
+            // Setup flags to control per-report icons in the U/I
+            $report_flags = $this->setReportFlags($master_reports, $master_ids, $conso_reports, $inst_reports);
+            foreach ($report_flags as $rpt) {
+                $rec->{$rpt['name'] . "_status"} = $rpt['status'];
+            }
 
             // Global is Not connected
             if (count($connected_providers) == 0) {
@@ -315,7 +319,8 @@ class InstitutionController extends Controller
             $rec->connected = $connected_data;
             $rec->connection_count = count($connected_data);
             $rec->can_delete = ($is_deleteable) ? true : false;
-            $rec->can_edit = ($is_editable && $rec->connection_count>0) ? true : false;
+            $rec->can_edit = ($is_editable || ($localAdmin && $rec->allow_inst_specifc) ) ? true : false;
+            // $rec->can_edit = ($is_editable && $rec->connection_count>0) ? true : false;
             $output_providers[] = $rec->toArray();
         }
         $all_providers = array_values($output_providers);
@@ -842,6 +847,31 @@ class InstitutionController extends Controller
             }
         }
         return $report_string;
+    }
+
+    /**
+     * Build array of flags by-report for the UI
+     *
+     * @param  Collection master_reports
+     * @param  Array  $master_ids  (ID's available from the global platform)
+     * @param  Array  $conso_enabled  (ID's enabled for the consortium)
+     * @param  Array  $prov_enabled  (ID's enabled for the institution)
+     * @return Array  $flags
+     */
+    private function setReportFlags($master_reports, $master_ids, $conso_enabled, $prov_enabled) {
+        $flags = array();
+        foreach ($master_reports as $mr) {
+            $rpt = array('name' => $mr->name, 'status' => 'NA');
+            if (in_array($mr->id, $conso_enabled)) {
+                $rpt['status'] = 'C';
+            } else if (in_array($mr->id, $prov_enabled)) {
+                $rpt['status'] = 'I';
+            } else if (in_array($mr->id, $master_ids)) {
+                $rpt['status'] = 'A';
+            }
+            $flags[] = $rpt;
+        }
+        return $flags;
     }
 
     /**

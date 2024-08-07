@@ -141,8 +141,8 @@
             is_active: 1,
             allow_inst_specific: 0,
             sushi_stub: 1,
-            report_state: {'TR':{'conso_enabled':false, 'prov_enabled':false}, 'DR':{'conso_enabled':false, 'prov_enabled':false},
-                           'PR':{'conso_enabled':false, 'prov_enabled':false}, 'IR':{'conso_enabled':false, 'prov_enabled':false}},
+            report_state: {'PR':{'conso_enabled':false, 'prov_enabled':false}, 'DR':{'conso_enabled':false, 'prov_enabled':false},
+                           'TR':{'conso_enabled':false, 'prov_enabled':false}, 'IR':{'conso_enabled':false, 'prov_enabled':false}},
         }),
       }
     },

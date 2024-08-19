@@ -26,7 +26,7 @@ class ReportFieldsTableSeeder extends Seeder
              DB::table($table)->insert(['id' => 1, 'report_id' => 1, 'legend' => 'Title', 'group_it' => 1,
                  'qry' => 'TI.Title', 'qry_as' => 'Title', 'active' => 1]);
              DB::table($table)->insert(['id' => 2, 'report_id' => 1, 'legend' => 'Provider', 'group_it' => 1,
-                 'joins' => '_conso_.providers as PROV', 'qry' => 'PROV.name', 'qry_as' => 'provider',
+                 'joins' => '_global_.global_providers as PROV', 'qry' => 'PROV.name', 'qry_as' => 'provider',
                  'report_filter_id' => 1]);
              DB::table($table)->insert(['id' => 3, 'report_id' => 1, 'legend' => 'Publisher', 'group_it' => 1,
                  'joins' => '_global_.publishers as PUBL', 'qry' => 'PUBL.name', 'qry_as' => 'publisher']);
@@ -103,7 +103,7 @@ class ReportFieldsTableSeeder extends Seeder
             DB::table($table)->insert(['id' => 26, 'report_id' => 2, 'legend' => 'Database',
                 'qry' => 'DB.name', 'qry_as' => 'Dbase', 'group_it' => 1, 'report_filter_id' => 10, 'active' => 1]);
             DB::table($table)->insert(['id' => 27, 'report_id' => 2, 'legend' => 'Provider', 'group_it' => 1,
-                'joins' => '_conso_.providers as PROV', 'qry' => 'PROV.name', 'qry_as' => 'provider',
+                'joins' => '_global_.global_providers as PROV', 'qry' => 'PROV.name', 'qry_as' => 'provider',
                 'report_filter_id' => 1]);
             DB::table($table)->insert(['id' => 28, 'report_id' => 2, 'legend' => 'Publisher', 'group_it' => 1,
                 'joins' => '_global_.publishers as PUBL', 'qry' => 'PUBL.name', 'qry_as' => 'publisher']);
@@ -175,7 +175,7 @@ class ReportFieldsTableSeeder extends Seeder
                 'joins' => '_global_.platforms as PLAT', 'qry' => 'PLAT.name', 'qry_as' => 'platform',
                 'active' => 1]);
             DB::table($table)->insert(['id' => 47,'report_id' => 3, 'legend' => 'Provider', 'group_it' => 1,
-                'joins' => '_conso_.providers as PROV', 'qry' => 'PROV.name', 'qry_as' => 'provider',
+                'joins' => '_global_.global_providers as PROV', 'qry' => 'PROV.name', 'qry_as' => 'provider',
                 'report_filter_id' => 1]);
             DB::table($table)->insert(['id' => 48,'report_id' => 3, 'legend' => 'Institution', 'group_it' => 1,
                 'joins' => '_conso_.institutions as INST', 'qry' => 'INST.name', 'qry_as' => 'institution',
@@ -223,7 +223,7 @@ class ReportFieldsTableSeeder extends Seeder
             DB::table($table)->insert(['id' => 59, 'report_id' => 4, 'legend' => 'Item', 'group_it' => 1,
                 'joins' => '_global_.titles as TI', 'qry' => 'TI.Title', 'qry_as' => 'Item', 'active' => 1]);
             DB::table($table)->insert(['id' => 60, 'report_id' => 4, 'legend' => 'Provider', 'group_it' => 1,
-                'joins' => '_conso_.providers as PROV', 'qry' => 'PROV.name', 'qry_as' => 'provider',
+                'joins' => '_global_.global_providers as PROV', 'qry' => 'PROV.name', 'qry_as' => 'provider',
                 'report_filter_id' => 1]);
             DB::table($table)->insert(['id' => 61, 'report_id' => 4, 'legend' => 'Publisher', 'group_it' => 1,
                 'joins' => '_global_.publishers as PUBL', 'qry' => 'PUBL.name', 'qry_as' => 'publisher']);

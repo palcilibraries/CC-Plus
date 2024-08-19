@@ -34,7 +34,7 @@ class DatabaseReport extends Model
 
     public function provider()
     {
-        return $this->belongsTo('App\Provider', 'prov_id');
+        return $this->belongsTo('App\GlobalProvider', 'prov_id');
     }
 
     public function publisher()

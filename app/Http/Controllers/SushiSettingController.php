@@ -36,7 +36,7 @@ class SushiSettingController extends Controller
         $json = ($request->input('json')) ? true : false;
 
         // Assign optional inputs to $filters array
-        $filters = array('inst' => [], 'group' => 0, 'global_prov' => [], 'inst_prov' => [], 'harv_stat' => []);
+        $filters = array('inst' => [], 'group' => 0, 'prov' => [], 'harv_stat' => []);
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
@@ -65,17 +65,19 @@ class SushiSettingController extends Controller
         if ($json) {
             // Apply context (if given) to institution and provider filters
             $context = 1;
-            $limit_prov_ids = [];
             if ($request->input('context')) {
                 $context = ($request->input('context') > 0) ? $request->input('context') : 1;
             }
+            $limit_prov_ids = (count($filters['prov']) > 0) ? $filters['prov'] : [];
             if ($context > 1) {
                   $filters['inst'] = array($context);
-                  $limit_prov_ids = Provider::whereIn('inst_id',[1,$context])->pluck('id')->toArray();
+                  $context_prov_ids = Provider::whereIn('inst_id',[1,$context])->pluck('global_id')->toArray();
+                  $limit_prov_ids = (count($limit_prov_ids) == 0) ? $context_prov_ids
+                                                                  : array_intersect($context_prov_ids, $limit_prov_ids);
             }
 
             // Get sushi settings
-            $data = SushiSetting::with('institution:id,name,is_active','provider','provider.globalProv')
+            $data = SushiSetting::with('institution:id,name,is_active','provider')
                                   ->when(count($filters['inst']) > 0, function ($qry) use ($filters) {
                                       return $qry->whereIn('inst_id', $filters['inst']);
                                   })
@@ -90,35 +92,20 @@ class SushiSettingController extends Controller
                                   })
                                   ->get();
 
-            // Apply provider filter to returned data - it is dependent on context
-            if ($context==1 && count($filters['global_prov']) > 0) {
-                foreach ($data as $key => $rec) {
-                    if ( !in_array($rec->provider->global_id,$filters['global_prov']) ) $data->forget($key);
-                }
-            } else if ($context>1 && count($filters['inst_prov']) > 0) {
-                foreach ($data as $key => $rec) {
-                    if ( !in_array($rec->prov_id,$filters['inst_prov']) ) $data->forget($key);
-                }
-            }
-
             // Build an array of connection_fields used across all providers (whether connected or not)
             $all_connectors = array();
             $seen_connectors = array();
             $global_connectors = ConnectionField::get();
             $providerIds = $data->unique('prov_id')->pluck('prov_id')->toArray();
-            if ( ($context==1 && count($filters['global_prov']) > 0) ||
-                 ($context>1 && count($filters['inst_prov']) > 0) ) {
-                $includeIds = ($context==1) ? $filters['global_prov'] : $filters['inst_prov'];
-                $providerIds = array_unique(array_merge($providerIds,$includeIds));
+            if ( count($filters['prov']) > 0 ) {
+                $providerIds = array_unique(array_merge($providerIds,$filters['prov']));
             }
+            $providers = GlobalProvider::whereIn('id',$providerIds)->orderBy('name', 'ASC')->get();
 
-            $providers = Provider::with('globalProv')->whereIn('id',$providerIds)->orWhere('inst_id', $context)
-                                 ->orderBy('name', 'ASC')->get();
             foreach ($providers as $prov) {
-                $prov->conso_id = $prov->id;
                 // There are only 4... if they're all set, skip checking
                 if (sizeof($seen_connectors) < 4) {
-                    $connectors = $global_connectors->whereIn('id',$prov->globalProv->connectors);
+                    $connectors = $global_connectors->whereIn('id',$prov->connectors);
                     foreach($connectors as $cnx) {
                         if (!in_array($cnx->name,$seen_connectors)) {
                             $all_connectors[] = array('name' => $cnx->name, 'label' => $cnx->label);
@@ -128,14 +115,14 @@ class SushiSettingController extends Controller
                 }
             }
 
-            // Add global connectors and can_edit flag to the provider records
-            $settings = $data->map( function ($rec) {
-                $rec->can_edit = $rec->canManage();
-                if ($rec->provider->globalProv) {
-                    $rec->provider->connectors = $rec->provider->globalProv->connectionFields();
-                }
-                return $rec;
-            })->values();
+            // Add provider global connectors and can_edit flag to the settings
+            $settings = array();
+            foreach ($data as $rec) {
+                $setting = $rec->toArray();
+                $setting['can_edit'] = $rec->canManage();
+                $setting['provider']['connectors'] = $rec->provider->connectionFields();
+                $settings[] = $setting;
+            }
             return response()->json(['settings' => $settings, 'connectors' => $all_connectors], 200);
 
         // Not returning JSON, the index/vue-component still needs these to setup the page
@@ -144,10 +131,11 @@ class SushiSettingController extends Controller
             $institutions = Institution::where('id', '<>', 1)->orderBy('name', 'ASC')
                                        ->get(['id', 'name', 'is_active']);
 
-            // Get all providers, regardless of is_active
-            $providers = Provider::with('globalProv')->orderBy('name', 'ASC')->get();
+            // Get all global providers, and add connection fields and a count of #-of-connections
+            $provider_data = GlobalProvider::orderBy('name', 'ASC')->get();
             $providers = $provider_data->map( function ($rec) {
-                $rec->connectors = $rec->globalProv->connectionFields();
+                $rec->connectors = $rec->connectionFields();
+                $rec->connections = $rec->sushiSettings->count();
                 return $rec;
             });
             // Get InstitutionGroups
@@ -169,11 +157,11 @@ class SushiSettingController extends Controller
     public function edit($id)
     {
         // User must be able to manage the settings
-        $setting = SushiSetting::with(['institution', 'provider', 'provider.globalProv'])->findOrFail($id);
+        $setting = SushiSetting::with(['institution', 'provider'])->findOrFail($id);
         abort_unless($setting->institution->canManage(), 403);
 
         // Map in the connector details
-        $setting->provider->connectors = ConnectionField::whereIn('id',$setting->provider->globalProv->connectors)->get();
+        $setting->provider->connectors = ConnectionField::whereIn('id',$setting->provider->connectors)->get();
 
         // Set next_harvest date
         if (!$setting->provider->is_active || !$setting->institution->is_active || $setting->status != 'Enabled') {
@@ -205,24 +193,27 @@ class SushiSettingController extends Controller
      */
     public function refresh(Request $request)
     {
+        $thisUser = auth()->user();
+
        // Validate form inputs
         $this->validate($request, ['inst_id' => 'required', 'prov_id' => 'required']);
 
         // User must be an admin or member-of inst to get the settings
-        if (!(auth()->user()->hasRole("Admin") || auth()->user()->inst_id == $request->inst_id)) {
-            return response()->json(array('error' => 'Invalid request'));
+        if (!$thisUser->hasRole("Admin")) {
+            if (!auth()->user()->hasRole("Manager") || auth()->user()->inst_id != $request->inst_id) {
+                return response()->json(array('error' => 'Invalid request'));
+            }
         }
 
        // Get sushi URL from provider record
-        $provider = Provider::with('globalProv')->where('id', $request->prov_id)->get();
+        $provider = GlobalProvider::where('id', $request->prov_id)->get();
 
        // Get the settings
-        $_where = ['inst_id' => $request->inst_id, 'prov_id' => $request->prov_id];
-        $data = SushiSetting::where($_where)->first();
-        $settings = (is_null($data)) ? array('count' => 0) : $data->toArray();
+        $data = SushiSetting::where(['inst_id' => $request->inst_id, 'prov_id' => $request->prov_id])->first();
+        $settings = ($data) ? $data->toArray() : array('count' => 0);
 
        // Return settings and url as json
-        $return = array('settings' => $settings, 'url' => $provider->globalProv->server_url_r5);
+        $return = array('settings' => $settings, 'url' => $provider->server_url_r5);
         return response()->json($return);
     }
 
@@ -254,7 +245,7 @@ class SushiSettingController extends Controller
                     $provider_data = array('name' => $gp->name, 'global_id' => $gp->id, 'is_active' => $gp->is_active,
                                            'inst_id' => $fields['inst_id'], 'allow_inst_specific' => 0);
                     $new_provider = Provider::create($provider_data);
-                    $fields['prov_id'] = $new_provider->id;
+                    $fields['prov_id'] = $gp->id;
                 } else {
                     return response()->json(['result' => false, 'msg' => 'Database error! Cannot find global provider record!']);
                 }
@@ -264,8 +255,8 @@ class SushiSettingController extends Controller
         }
         // create the new sushi setting record (get existing if already defined)
         $setting = SushiSetting::firstOrCreate($fields);
-        $setting->load('institution', 'provider', 'provider.globalProv');
-        $setting->provider->connectors = $setting->provider->globalProv->connectionFields();
+        $setting->load('institution', 'provider');
+        $setting->provider->connectors = ConnectionField::whereIn('id',$setting->provider->connectors)->get();
         // Set string for next_harvest
         if (!$setting->provider->is_active || !$setting->institution->is_active || $setting->status != 'Enabled') {
             $setting['next_harvest'] = null;
@@ -288,16 +279,17 @@ class SushiSettingController extends Controller
         $input = $request->all();
 
         // Get the settings record
-        $setting = SushiSetting::with('institution','provider','provider.globalProv')->where('id',$id)->first();
+        $setting = SushiSetting::with('institution','provider')->where('id',$id)->first();
 
         // If setting exists, confirm authorization for inst and provider
         $fields = array_except($input,array('global_id'));
         if ($setting) {
+            // Confirm global provider exists
+            $provider = GlobalProvider::findOrFail($setting->prov_id);
             // Ensure user is allowed to change the settings
-            $provider = Provider::findOrFail($setting->prov_id);
             $institution = Institution::findOrFail($setting->inst_id);
-            if (!$institution->canManage() || !$thisUser->hasRole('Admin')) {
-                return response()->json(['result' => false, 'msg' => 'Invalid request']);
+            if (!$institution->canManage()) {
+                return response()->json(['result' => false, 'msg' => 'Not Authorized to update setting']);
             }
 
             // Update $setting with user inputs
@@ -311,16 +303,16 @@ class SushiSettingController extends Controller
                 return response()->json(['result' => false, 'msg' => 'Missing arguments for update settings request']);
             }
             $setting = SushiSetting::create($fields);
-            $setting->load('institution','provider','provider.globalProv');
+            $setting->load('institution','provider');
         }
 
         // Get required connectors
-        $connectors = ConnectionField::whereIn('id',$setting->provider->globalProv->connectors)->pluck('name')->toArray();
+        $connectors = ConnectionField::whereIn('id',$setting->provider->connectors)->get();
 
         // Check/update connection fields; any null/blank required connectors get updated
         foreach ($connectors as $cnx) {
-            if (is_null($setting->$cnx) || $setting->$cnx == '') {
-                $setting->$cnx = '-required-';
+            if (is_null($setting->{$cnx->name}) || $setting->{$cnx->name} == '') {
+                $setting->{$cnx->name} = '-required-';
             }
         }
 
@@ -333,14 +325,7 @@ class SushiSettingController extends Controller
         }
 
         // Finish setting up the return object
-        $setting->provider->connectors = $setting->provider->globalProv->connectionFields();
-        // Set string for next_harvest
-        if (!$setting->provider->is_active || !$setting->institution->is_active || $setting->status != 'Enabled') {
-            $setting['next_harvest'] = null;
-        } else {
-            $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
-            $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->day_of_month,date("Y")));
-        }
+        $setting->provider->connectors = $connectors;
 
         return response()->json(['result' => true, 'msg' => 'Credentials updated successfully', 'setting' => $setting]);
     }
@@ -360,7 +345,7 @@ class SushiSettingController extends Controller
         } catch (\Exception $e) {
             return response()->json(['result' => false, 'msg' => 'Error decoding input!']);
         }
-        $provider = Provider::with('globalProv')->findOrFail($input['prov_id']);
+        $provider = GlobalProvider::findOrFail($input['prov_id']);
 
         // ASME (there may be others) checks the Agent and returns 403 if it doesn't like what it sees
         $options = [
@@ -368,7 +353,7 @@ class SushiSettingController extends Controller
         ];
 
        // Begin setting up the URI by cleaning/standardizing the server_url_r5 string in the setting
-        $_url = rtrim($provider->globalProv->server_url_r5);    // remove trailing whitespace
+        $_url = rtrim($provider->server_url_r5);    // remove trailing whitespace
         $_url = preg_replace('/\/reports\/?$/i', '', $_url);  // take off any methods with any leading slashes
         $_url = preg_replace('/\/status\/?$/i', '', $_url);  //   "   "   "     "      "   "     "        "
         $_url = preg_replace('/\/members\/?$/i', '', $_url); //   "   "   "     "      "   "     "        "
@@ -385,8 +370,8 @@ class SushiSettingController extends Controller
         $uri_auth = "";
 
         // If a platform value is set, start with it
-        if (!is_null($provider->globalProv->platform_parm)) {
-            $uri_auth = "platform=" . $provider->globalProv->platform_parm;
+        if (!is_null($provider->platform_parm)) {
+            $uri_auth = "platform=" . $provider->platform_parm;
         }
 
         $fields = array('customer_id', 'requestor_id', 'api_key', 'extra_args');
@@ -454,7 +439,7 @@ class SushiSettingController extends Controller
         if ($request->filters) {
             $filters = json_decode($request->filters, true);
         } else {
-            $filters = array('inst' => [], 'global_prov' => [], 'inst_prov' => [], 'harv_stat' => [], 'group' => 0);
+            $filters = array('inst' => [], 'prov' => [], 'harv_stat' => [], 'group' => 0);
         }
         $export_missing = ($request->export_missing) ? json_decode($request->export_missing, true) : false;
 
@@ -491,16 +476,12 @@ class SushiSettingController extends Controller
 
         // Get provider record(s)
         $prov_filters = null;
-        if (sizeof($filters['global_prov']) == 0 && sizeof($filters['inst_prov']) == 0) {
-            $providers = Provider::with('globalProv')->whereIn('inst_id', $provider_insts)->get();
-        } else if (sizeof($filters['global_prov']) > 0) {
-            $providers = Provider::with('globalProv')->whereIn('global_id', $filters['global_prov'])
-                                 ->whereIn('inst_id', $provider_insts)->get();
+        $global_ids = Provider::whereIn('inst_id', $provider_insts)->pluck('global_id')->toArray();
+        if (sizeof($filters['prov']) == 0) {
+            $providers = GlobalProvider::whereIn('id',$global_ids)->get();
+        } else if (sizeof($filters['prov']) > 0) {
+            $providers = GlobalProvider::whereIn('id', $filters['prov'])->whereIn('id', $global_ids)->get();
             $prov_filters = $providers->pluck('id')->toArray();
-        } else if (sizeof($filters['inst_prov']) > 0) {
-            $providers = Provider::with('globalProv')->whereIn('id', $filters['inst_prov'])
-                                 ->whereIn('inst_id', $provider_insts)->get();
-            $prov_filters = $filters['inst_prov'];
         }
         if (!$providers) {
             $msg = "Export failed : could not find requested provider(s).";
@@ -661,11 +642,11 @@ class SushiSettingController extends Controller
                 if (!$inst->is_active) continue;
                 foreach ($providers as $prov) {
                     // If prov is inactive or not connected to a globalProv, skip it
-                    if (!$prov->is_active || is_null($prov->globalProv)) continue;
+                    if (!$prov->is_active) continue;
                     // If setting exists, skip it
                     if (in_array(array($inst->id, $prov->id), $existing_sushi_pairs)) continue;
                     // Okay, adding the data; get/set connector values
-                    $required_connectors = $all_connectors->whereIn('id',$prov->globalProv->connectors)
+                    $required_connectors = $all_connectors->whereIn('id',$prov->connectors)
                                                           ->pluck('name')->toArray();
                     $custID = (in_array('customer_id',$required_connectors)) ? '-required-' : '';
                     $reqID  = (in_array('requestor_id',$required_connectors)) ? '-required-' : '';
@@ -780,12 +761,13 @@ class SushiSettingController extends Controller
         $institutions = Institution::get();
         if ($is_admin) {
             $inst_ids = $institutions->pluck('id')->toArray();
-            $providers = Provider::with('globalProv')->get();
+            $global_providers = GlobalProvider::get();
         } else {
             $inst_ids = array($usersInst);
-            $providers = Provider::with('globalProv')->whereIn('inst_id', [ 1, $usersInst ])->get();
+            $_ids = Provider::whereIn('inst_id',[1,$usersInst])->pluck('global_id')->toArray();
+            $global_providers = GlobalProvider::whereIn('id',$_ids)->get();
         }
-        $prov_ids = $providers->pluck('id')->toArray();
+        $prov_ids = $global_providers->pluck('id')->toArray();
 
         // Get all connection fields
         $all_connectors = ConnectionField::get();
@@ -810,7 +792,7 @@ class SushiSettingController extends Controller
             }
 
             // Get the settings' provider
-            $current_prov = $providers->where('id',$row[2])->first();
+            $current_prov = $global_providers->where('id',$row[2])->first();
             if (!$current_prov) {
                 $skipped++;
                 continue;
@@ -843,7 +825,7 @@ class SushiSettingController extends Controller
 
             // Mark any missing connectors
             $missing_count = 0;
-            $required_connectors = $all_connectors->whereIn('id',$current_prov->globalProv->connectors)
+            $required_connectors = $all_connectors->whereIn('id',$current_prov->connectors)
                                                   ->pluck('name')->toArray();
             foreach ($required_connectors as $cnx) {
                 if ( is_null($_args[$cnx]) || trim($_args[$cnx]) == '' ) {

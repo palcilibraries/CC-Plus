@@ -16,3 +16,8 @@ So , long story short:
   Three cheers for Bernd!
   This folder will disappear once c5tools is fully released and integrated
   into CC-Plus.
+
+Note :: Updated (8/14/2024) :: SR ::
+   Upgrading to PHP8.2 or above breaks src/Checks.php where it calls
+   getLastErrors() on DateTime objects. This method returns FALSE (for no
+   errors) in PHP8.2+ instead of an array.

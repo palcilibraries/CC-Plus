@@ -54,7 +54,10 @@ trait Checks
         }
         if ($datetime !== false) {
             $errors = $datetime->getLastErrors();
-            $messages = implode('. ', $errors['errors']) . implode('. ', $errors['warnings']);
+            $messages = '';
+            if (is_array($errors)) {
+                $messages = implode('. ', $errors['errors']) . implode('. ', $errors['warnings']);
+            }
             if ($messages !== '') {
                 $this->checkResult->addError("{$element} date is invalid",
                     "{$element} date '{$created}' is invalid: {$messages}", $position, $data);
@@ -575,7 +578,10 @@ trait Checks
             return false;
         }
         $errors = $datetime->getLastErrors();
-        $messages = implode('. ', $errors['errors']) . implode('. ', $errors['warnings']);
+        $messages = '';
+        if (is_array($errors)) {
+            $messages = implode('. ', $errors['errors']) . implode('. ', $errors['warnings']);
+        }
         if ($messages !== '') {
             $this->checkResult->addCriticalError("{$element} value is invalid",
                 "{$element} value '{$date}' is invalid: {$messages}", $position, $data);

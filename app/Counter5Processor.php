@@ -683,7 +683,6 @@ class Counter5Processor extends Model
 
     /**
      * Function accepts a database name and propID as strings. If no match on name, create new entry.
-     * If PropID is different for a matched name, update existing data. Return full database object
      *
      * @param String $dbname
      * @param String $propID
@@ -701,16 +700,11 @@ class Counter5Processor extends Model
          }
          $database = self::$all_databases->where('name',$_name)->first();
          if ($database) {
-             // DataBase record exists, but propID is different... update propID
-             if ($propID != $database->PropID) {
-                 $database->update(['PropID' => $propID]);
-                 self::$all_databases->where('id',$database->id)->update(['PropID' => $propID]);
-             }
-         } else {
-             $database = new DataBase(['name' => $_name, 'PropID' => $propID]);
-             $database->save();
-             self::$all_databases->push($database);
+             return $database;
          }
+         $database = new DataBase(['name' => $_name, 'PropID' => $propID]);
+         $database->save();
+         self::$all_databases->push($database);
          return $database;
      }
 

@@ -13,6 +13,7 @@ use App\ReportFilter;
 use App\SavedReport;
 use App\Institution;
 use App\InstitutionGroup;
+use App\GlobalProvider;
 use App\Provider;
 use App\Platform;
 use App\Publisher;
@@ -79,6 +80,7 @@ class ReportController extends Controller
 
         // Get an array of providers with successful harvests (to limit choices below)
         $provs_with_data = self::hasHarvests('prov_id');
+        $limit_by_inst = array();
 
         // Setup arrays for the report creator
         if ($thisUser->hasAnyRole(['Admin','Viewer'])) {
@@ -93,19 +95,29 @@ class ReportController extends Controller
                     $inst_groups[] = array('id' => $group->id, 'name' => $group->name, 'institutions' => $group->institutions);
                 }
             }
-            $providers = Provider::with('reports')->whereIn('id', $provs_with_data)->orderBy('name', 'ASC')
-                                 ->get(['id','name','inst_id'])->toArray();
         } else {    // limited view
             $user_inst = $thisUser->inst_id;
             $institutions = Institution::where('id', '=', $user_inst)->get(['id','name'])->toArray();
             $inst_groups = array();
-            $providers = Provider::with('reports')->whereIn('id', $provs_with_data)
-                                 ->where(function ($query) use ($user_inst) {
-                                     $query->where('inst_id', 1)->orWhere('inst_id', $user_inst);
-                                 })
-                                 ->orderBy('name', 'ASC')->get(['id','name','inst_id'])->toArray();
+            $limit_by_inst = array(1,$user_inst);
         }
+        $globals = GlobalProvider::with('consoProviders','consoProviders.reports')->whereIn('id',$provs_with_data)
+                                 ->orderBy('name','ASC')->get(['id','name']);
+
+        // Filter out limited providers and add report assignments and institution
+        $providers = array();
+        foreach ($globals as $global) {
+            $global_inst_ids = $global->connectedInstitutions();
+            if (count($limit_by_inst) == 0 || count(array_intersect($global_inst_ids, $limit_by_inst)) > 0) {
+                $global->reports = $global->enabledReports();
+                $global->institutions = $global_inst_ids;
+                $providers[] = $global;
+            }
+        }
+
+        // Vue Component wants reports ordered by ID (not dorder)
         $reports = Report::with('children')->orderBy('id', 'asc')->get()->toArray();
+
         $field_data = ReportField::orderBy('id', 'asc')->with('reportFilter')->get();
         $fields = array();
         foreach ($field_data as $rec) {
@@ -202,22 +214,30 @@ class ReportController extends Controller
         // Providers and insts inclusion as options depend on successful harvests
         $show_all = ($thisUser->hasAnyRole(['Admin','Viewer']));
         $provs_with_data = self::hasHarvests('prov_id');
+        $limit_by_inst = array();
         if ($show_all) {
             $insts_with_data = self::hasHarvests('inst_id');
             $filter_options['institution'] = Institution::whereIn('id', $insts_with_data)->where('id', '>', 1)
                                                         ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
-            $filter_options['provider'] = Provider::whereIn('id', $provs_with_data)->orderBy('name', 'ASC')
-                                                  ->get(['id','name'])->toArray();
         } else {  // Managers and Users are limited their own inst
             $filter_options['institution'] = Institution::where('id', '=', $thisUser->inst_id)
                                                         ->get(['id','name'])->toArray();
+            $limit_by_inst = array(1,$user_inst);
+        }
 
-            $filter_options['provider'] = Provider::with('reports')->whereIn('id', $provs_with_data)
-                                                  ->where(function ($query) use ($thisUser) {
-                                                      $query->where('inst_id', 1)
-                                                            ->orWhere('inst_id', $thisUser->inst_id);
-                                                  })
-                                                  ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
+        // Setup providers filter options
+        $globals = GlobalProvider::with('consoProviders','consoProviders.reports')->whereIn('id',$provs_with_data)
+                                 ->orderBy('name','ASC')->get(['id','name']);
+
+        // Filter out limited providers and add report assignments and institution
+        $filter_options['provider'] = array();
+        foreach ($globals as $global) {
+            $global_inst_ids = $global->connectedInstitutions();
+            if (count($limit_by_inst) == 0 || count(array_intersect($global_inst_ids, $limit_by_inst)) > 0) {
+                $global->reports = $global->enabledReports();
+                $global->institutions = $global_inst_ids;
+                $filter_options['provider'][] = $global;
+            }
         }
 
         // Set options for the other filters

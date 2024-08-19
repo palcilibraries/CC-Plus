@@ -4,11 +4,8 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-// use AustinHeap\Database\Encryption\Traits\HasEncryptedAttributes;
-
 class SushiSetting extends Model
 {
-   // use HasEncryptedAttributes;
    /**
    * Class Constructor
    */
@@ -51,12 +48,12 @@ class SushiSetting extends Model
 
     public function provider()
     {
-        return $this->belongsTo('App\Provider', 'prov_id');
+        return $this->belongsTo('App\GlobalProvider', 'prov_id');
     }
 
     public function isComplete()
     {
-        $required = $this->provider->globalProv->connectors;
+        $required = $this->provider->connectors;
         $connectors = $this->global_connectors->whereIn('id',$required)->pluck('name')->toArray();
         foreach ($connectors as $cnx) {
             if (is_null($this->$cnx) || trim($this->$cnx) == '' || $this->$cnx == '-required-') return false;
@@ -85,12 +82,9 @@ class SushiSetting extends Model
         if (auth()->user()->hasRole("Admin")) {
             return true;
         }
-      // Managers can manage settings for their own inst where
-      // the provider is inst-specific or consortial
+      // Managers can manage settings for their own inst
         if (auth()->user()->hasRole("Manager")) {
-            return (auth()->user()->inst_id == $this->inst_id &&
-                    ( $this->provider->inst_id==1 || ($this->provider->inst_id==auth()->user()->inst_id) )
-                   );
+            return (auth()->user()->inst_id == $this->inst_id);
         }
         return false;
     }
@@ -108,7 +102,7 @@ class SushiSetting extends Model
             $this->status = $new_status;
         // Getting here means inst+prov are both Active but settings are incomplete. update the field values
         } else {
-            $required = $this->provider->globalProv->connectors;
+            $required = $this->provider->connectors;
             $fields = $this->global_connectors->whereIn('id',$required);
             $this->status = 'Incomplete';
             foreach ($fields as $fld) {

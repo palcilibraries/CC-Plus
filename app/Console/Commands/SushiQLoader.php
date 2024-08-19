@@ -10,6 +10,7 @@ use GuzzleHttp\Client;
 use DB;
 use App\Consortium;
 use App\Provider;
+use App\SushiSetting;
 use App\HarvestLog;
 use App\Report;
 use App\SushiQueueJob;
@@ -23,7 +24,7 @@ class SushiQLoader extends Command
      */
     protected $signature = 'ccplus:sushiloader {consortium : Consortium ID or key-string}
                                                {--M|month= : YYYY-MM to override day_of_month [lastmonth]}
-                                               {--P|provider= : Provider ID to process [ALL]}
+                                               {--P|provider= : Global Provider ID to process [ALL]}
                                                {--I|institution= : Institution ID to process [ALL]}
                                                {--R|report= : Master report NAME to harvest [ALL]}
                                                {--K|keep : Preserve, and ADD TO, existing data [FALSE]}';
@@ -97,12 +98,11 @@ class SushiQLoader extends Command
         }
 
        // Get detail on (master) reports requested
+        $master_reports = Report::where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
         if (strtoupper($rept) == 'ALL') {
-            $requested_reports = Report::where('parent_id', '=', 0)->pluck('name')->toArray();
+            $requested_reports = $master_reports->pluck('name')->toArray();
         } else {
-            $requested_reports = Report::where('name', '=', $rept)
-                                       ->where('parent_id', '=', 0)
-                                       ->pluck('name')->toArray();
+            $requested_reports = $master_reports->where('name',$rept)->pluck('name')->toArray();
         }
         if (count($requested_reports) == 0) {
             $this->error("No matching reports found; only master reports allowed.");
@@ -111,54 +111,69 @@ class SushiQLoader extends Command
 
        // Get active provider data
         if ($prov_id == 0) {
-            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
-                                 ->where('is_active', '=', true)->get();
+            $conso_providers = Provider::with('reports')->where('is_active',true)->get();
         } else {
-            $providers = Provider::with('sushiSettings', 'sushiSettings.institution:id,is_active', 'reports')
-                                 ->where('is_active', '=', true)->where('id', '=', $prov_id)->get();
+            $conso_providers = Provider::with('reports')->where('is_active',true)->where('global_id',$prov_id)->get();
         }
+
+       // Get sushi settings for all the global_ids based on the
+        $global_ids = $conso_providers->unique('global_id')->pluck('global_id')->toArray();
+        $settings = SushiSetting::with('institution', 'provider')
+                                ->when($inst_id > 0, function ($qry) use ($inst_id) {
+                                    return $qry->where('inst_id', $inst_id);
+                                })
+                                ->whereIn('prov_id',$global_ids)
+                                ->where('status', 'Enabled')
+                                ->get();
 
        // Part I : Load any new harvests (based on today's date) into the HarvestLog table
        // ------------------------------------------------------------------------------
-       // Loop through the providers
-        foreach ($providers as $provider) {
-            // If not overriding day-of-month, and today is not the day, skip to next provider
-            if (!$override_dom && $provider->day_of_month != date('j')) {
+        foreach ($settings as $setting) {
+           // Skip this setting if we're just processing a single inst and the IDs don't match
+            if (!$setting->institution->is_active) {
                 continue;
             }
+           // Get (conso) provider(s) related to the setting (based on the global_id)
+            $providers = $conso_providers->where('global_id',$setting->prov_id);
+            $conso_connection = $providers->where('inst_id',1)->first();
+            $conso_reports = ($conso_connection) ? $conso_connection->reports->pluck('id')->toArray() : [];
 
-           // Loop through all (active) sushisettings for this provider
-            $settings = $provider->sushiSettings->where('status', 'Enabled');
-            foreach ($settings as $setting) {
-               // If institution is inactive, -or- only processing a single instituution and this isn't it,
-               // skip to next setting.
-                if (
-                    (!$setting->institution->is_active) ||
-                     ($inst_id != 0 &&
-                     $setting->inst_id != $inst_id)
-                ) {
+           // Loop through related (conso) providers
+            foreach ($providers as $provider) {
+
+               // If not overriding day-of-month, and today is not the day, skip to next provider
+                if (!$override_dom && $provider->day_of_month != date('j')) {
+                    continue;
+                }
+               // if the provider is inst-assigned, skip it on mismatch to sushi setting inst_id
+                if ($provider->inst_id>1 && $provider->inst_id != $setting->inst_id) {
                     continue;
                 }
 
-               // Loop through all reports defined as available for this provider
-                foreach ($provider->reports as $report) {
-                   // if this report isn't in the requested_reports array (defined above), skip it
-                    if (!in_array($report->name, $requested_reports)) {
-                        continue;
-                    }
+               // De-dupe provider reports against $conso_reports and skip this provider if no unique reports
+                $prov_report_ids = $provider->reports->pluck('id')->toArray();
+                if ($provider->inst_id>1 && $conso_connection) {
+                    $prov_report_ids = array_intersect( $prov_report_ids, array_diff($prov_report_ids, $conso_reports) );
+                }
+                if (count($prov_report_ids) == 0) continue;
+                $reports = $master_reports->whereIn('id',$prov_report_ids)->whereIn('name',$requested_reports);
+                $source = ($provider->inst_id == 1) ? "C" : "I";
 
-                   // Insert new HarvestLog record; catch and prevent duplicates
+               // Loop through all the reports
+                foreach ($reports as $report) {
+
+                   // Create new HarvestLog record; catch and prevent duplicates
                     try {
                         HarvestLog::insert(['status' => 'New', 'sushisettings_id' => $setting->id,
-                                           'report_id' => $report->id, 'yearmon' => $yearmon,
+                                           'report_id' => $report->id, 'yearmon' => $yearmon, 'source' => $source,
                                            'attempts' => 0, 'created_at' => $ts]);
                     } catch (QueryException $e) {
                         $errorCode = $e->errorInfo[1];
                         if ($errorCode == '1062') {
-                            $harvest = HarvestLog::where([['sushisettings_id', '=', $setting->id],
-                                                        ['report_id', '=', $report->id],
-                                                        ['yearmon', '=', $yearmon]
-                                                       ])->first();
+                            $harvest = HarvestLog::where([['sushisettings_id', $setting->id],
+                                                          ['report_id', $report->id],
+                                                          ['yearmon', $yearmon]
+                                                         ])->first();
                             if ($harvest->status == 'New') { // if existing harvest is "New", don't modify status
                                 continue;                    // since Part II will requeue it anyway
                             }
@@ -172,12 +187,12 @@ class SushiQLoader extends Command
                         }
                     }
                 } // for each report
-            } // for each sushisetting
-        } // for each provider
+            } // for each (conso) provider
+        } // for each sushisetting
 
        // Part II : Create queue jobs based on HarvestLogs
        // -----------------------------------------------
-        $harvests = HarvestLog::where('status', '=', 'New')->orWhere('status', '=', 'ReQueued')->get();
+        $harvests = HarvestLog::where('status','New')->orWhere('status','ReQueued')->get();
         foreach ($harvests as $harvest) {
             try {
                 $newjob = SushiQueueJob::create(['consortium_id' => $consortium->id,

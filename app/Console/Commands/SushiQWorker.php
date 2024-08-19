@@ -147,8 +147,7 @@ class SushiQWorker extends Command
             foreach ($jobs as $job) {
 
                 // Load harvest data per-job (to be sure it is as current as possible)
-                $job->load('harvest','harvest.sushiSetting','harvest.sushiSetting.provider',
-                           'harvest.sushiSetting.provider.globalProv');
+                $job->load('harvest','harvest.sushiSetting','harvest.sushiSetting.provider');
 
                // Skip the job if the harvest is not set for processing
                // (status of Success, Fail, Active, Stopped  need to skipped)
@@ -187,7 +186,7 @@ class SushiQWorker extends Command
                // Check the job url against all active urls and skip if there's a match
                // (this should also skip any job that gets grabbed by another worker between when
                // we built the $job_ids array and this point.)
-                if ($this->hasActiveHarvest($job->harvest->sushiSetting->provider->globalProv->server_url_r5)) {
+                if ($this->hasActiveHarvest($job->harvest->sushiSetting->provider->server_url_r5)) {
                     continue;
                 }
 
@@ -233,7 +232,7 @@ class SushiQWorker extends Command
             }
             $setting = $job->harvest->sushiSetting;
 
-           // If provider or institution is inactive, toss the job and move on
+           // If (global) provider or institution is inactive, toss the job and move on
             if (!$setting->provider->is_active) {
                 $error = CcplusError::where('id',9060)->first();
                 if ($error) {
@@ -289,10 +288,11 @@ class SushiQWorker extends Command
                 $raw_filename = $report->name . '_' . $begin . '_' . $end . '.json';
                 $sushi->raw_datafile = $full_path . $raw_filename;
                 $job->harvest->rawfile = $raw_filename;
+                $job->harvest->save();
             }
 
             // setup array of required connectors for buildUri
-            $connectors = $this->connection_fields->whereIn('id',$setting->provider->globalProv->connectors)
+            $connectors = $this->connection_fields->whereIn('id',$setting->provider->connectors)
                                                   ->pluck('name')->toArray();
            // Construct URI for the request
             $request_uri = $sushi->buildUri($setting, $connectors, 'reports', $report);
@@ -453,13 +453,12 @@ class SushiQWorker extends Command
         foreach ($this->all_consortia as $_con) {
             $_db = 'ccplus_' . $_con->ccp_key;
             $_globalIds = DB::table($_db . '.harvestlogs as harv')
-                         ->distinct()
-                         ->join($_db . '.sushisettings as sus', 'sus.id', '=', 'harv.sushisettings_id')
-                         ->join($_db . '.providers as prv', 'prv.id', '=', 'sus.prov_id')
-                         ->where($_db . '.harv.status', 'Active')
-                         ->select($_db . '.prv.global_id')
-                         ->pluck('global_id')
-                         ->toArray();
+                           ->distinct()
+                           ->join($_db . '.sushisettings as sus', 'sus.id', '=', 'harv.sushisettings_id')
+                           ->where($_db . '.harv.status', 'Active')
+                           ->select($_db . '.sus.prov_id')
+                           ->pluck('prov_id')
+                           ->toArray();
             $_urls = $this->global_providers->whereIn('id',$_globalIds)->pluck('server_url_r5')->toArray();
             foreach ($_urls as $_url) {
                 // Test HOST of url , since https://sushi.prov.com/R5  and https://sushi.prov.com/R5/reports

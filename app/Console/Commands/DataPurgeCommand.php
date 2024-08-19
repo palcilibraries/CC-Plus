@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use App\Consortium;
 use App\Report;
-use App\Provider;
+use App\GlobalProvider;
 use App\Institution;
 use App\HarvestLog;
 use App\FailedHarvest;
@@ -24,10 +24,10 @@ class DataPurgeCommand extends Command
                              {--Y|year= : YYYY to process; required if From/To not specified}
                              {--F|from= : Beginning month (YYYY-MM) of date-range to purge; ignored if Year specified}
                              {--T|to= : End month (YYYY-MM) of date-range to purge; ignored if Year specified}
-                             {--P|provider= : Provider ID# to purge [ALL]}
+                             {--P|provider= : Global Provider ID# to purge [ALL]}
                              {--I|institution= : Institution ID# to purge [ALL]}
                              {--R|report= : Master report NAME data records to purge [ALL]}
-                             {--A|all : Purge related provider, inst, settings and log records (if possible) [FALSE]}';
+                             {--A|all : Purge related institution, settings and log records (if possible) [FALSE]}';
 
     /**
      * The console command description.
@@ -90,7 +90,7 @@ class DataPurgeCommand extends Command
         $prov_ids = array();
         $prov_id = $this->option('provider');
         if ($prov_id) {
-            $provider = Provider::where('id',$prov_id)->first();
+            $provider = GlobalProvider::where('id',$prov_id)->first();
             if ($provider) {
                 $providerName = $provider->name;
             } else {
@@ -100,7 +100,7 @@ class DataPurgeCommand extends Command
             $prov_ids[] = $provider->id;
         } else {
             $providerName = "ALL";
-            $prov_ids = Provider::pluck('id')->toArray();
+            $prov_ids = GlobalProvider::pluck('id')->toArray();
         }
         $inst_ids = array();
         $inst_id = $this->option('institution');
@@ -193,42 +193,19 @@ class DataPurgeCommand extends Command
                 }
             }
 
-           // Loop through provider ids to find any providers with NO data records in any master data table
-            $zero_record_provs = array();
-            foreach ($prov_ids as $provID) {
-                $total = 0;
-                foreach ($data_tables as $table) {
-                    $num = DB::table($conso_db . "." . $table)->where('prov_id',$provID)
-                             ->selectRaw($raw_query)->value('count');
-                    if ($num >0) {
-                        $total += $num;
-                        break;
-                    }
-                }
-                if ($total == 0) {
-                    $zero_record_provs[] = $provID;
-                }
-            }
-
-            // Prompt for confirmastion before removing providers and/or institutions.
+            // Prompt for confirmation before removing institutions.
             $_msg  = 'There are currently ';
-            $_msg .= (sizeof($zero_record_provs)>0) ? sizeof($zero_record_provs) . " Providers " : "";
-            $_msg .= (sizeof($zero_record_provs)>0 && sizeof($zero_record_insts)>0) ? "and " : "";
             $_msg .= (sizeof($zero_record_insts)>0) ? sizeof($zero_record_insts) . " Institutions " : "";
             $_msg .= "with NO stored usage data.";
             $this->comment($_msg);
-            $this->comment("Purging these will also remove the associated SUSHI settings.");
-            if (!$this->confirm('ARE YOU SURE you want to proceed with this operation?')) {
-                $this->info('Providers and Institutions not changed.');
-                return 0;
-            }
-
-            // Toss all the providers and insts with no data (sushisettings should cascasde)
-            if (sizeof($zero_record_provs) > 0) {
-                DB::table($conso_db . ".providers")->whereIn('id', $zero_record_provs)->delete();
-                $this->info(sizeof($zero_record_provs) . ' Providers removed');
-            }
             if (sizeof($zero_record_insts) > 0) {
+                $this->comment("Purging these will also remove the associated SUSHI settings.");
+                if (!$this->confirm('ARE YOU SURE you want to proceed with this operation?')) {
+                    $this->info('Institutions not changed.');
+                    return 0;
+                }
+
+                // Toss institutions with no data (sushisettings should cascasde)
                 DB::table($conso_db . ".institutions")->whereIn('id', $zero_record_insts)->delete();
                 $this->info(sizeof($zero_record_insts) . ' Institutions removed');
             }

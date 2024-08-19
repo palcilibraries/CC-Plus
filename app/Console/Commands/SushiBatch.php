@@ -11,6 +11,7 @@ use App\Report;
 use App\Consortium;
 use App\Provider;
 use App\Institution;
+use App\SushiSetting;
 use App\Counter5Processor;
 use App\FailedHarvest;
 use App\HarvestLog;
@@ -33,7 +34,7 @@ class SushiBatch extends Command
     protected $signature = 'ccplus:sushibatch {consortium : The Consortium ID or key-string}
                              {--A|auto : Limit harvest to provider day_of_month [FALSE]}
                              {--M|month= : YYYY-MM to process [lastmonth]}
-                             {--P|provider= : Provider ID to process [ALL]}
+                             {--P|provider= : Global Provider ID to process [ALL]}
                              {--I|institution= : Institution ID to process [ALL]}
                              {--R|report= : Master report NAME to harvest [ALL]}
                              {--K|keep : Preserve, and ADD TO, existing data [FALSE]}';
@@ -105,12 +106,11 @@ class SushiBatch extends Command
         $end = $yearmon . '-' . date('t', strtotime($begin));
 
        // Get detail on (master) reports requested
+        $master_reports = Report::where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
         if (strtoupper($rept) == 'ALL') {
-            $requested_reports = Report::where('parent_id', '=', 0)->pluck('name')->toArray();
+            $requested_reports = $master_reports->pluck('name')->toArray();
         } else {
-            $requested_reports = Report::where('name', '=', $rept)
-                                       ->where('parent_id', '=', 0)
-                                       ->pluck('name')->toArray();
+            $requested_reports = $master_reports->where('name',$rept)->pluck('name')->toArray();
         }
         if (count($requested_reports) == 0) {
             $this->error("No matching reports found; only master reports allowed.");
@@ -120,61 +120,65 @@ class SushiBatch extends Command
         // Get connection fields
         $all_connection_fields = ConnectionField::get();
 
-       // Get Provider data as a collection regardless of whether we just need one
+       // Get all active records from the consortium providers table
         if ($prov_id == 0) {
-            $providers = Provider::with('SushiSettings', 'SushiSettings.institution', 'SushiSettings.provider',
-                                        'SushiSettings.provider.globalProv', 'reports')
-                                 ->where('is_active', '=', true)->get();
+            $conso_providers = Provider::with('reports')->where('is_active', true)->get();
         } else {
-            $providers = Provider::with('SushiSettings','SushiSettings.institution', 'SushiSettings.provider',
-                                        'SushiSettings.provider.globalProv', 'reports')
-                                 ->where('is_active', '=', true)->where('id', '=', $prov_id)->get();
+            $conso_providers = Provider::with('reports')->where('is_active', true)->where('global_id',$prov_id)->get();
         }
 
-       // Loop through providers
+       // Get sushi settings for all the global_ids based on the
+        $global_ids = $conso_providers->pluck('global_id')->toArray();
+        $settings = SushiSetting::with('institution', 'provider')->where('status', 'Enabled')
+                                ->whereIn('prov_id',$global_ids)->get();
+
+       // Loop through global providers
         $this->line("Harvest begins for " . $consortium->ccp_key . " at " . date("Y-m-d H:i:s"));
-        foreach ($providers as $provider) {
-           // If running as "Auto" and today is not the day to run, skip silently to next provider
-            if ($this->option('auto') && $provider->day_of_month != date('j')) {
+
+       // Loop through all sushiSettings for this provider
+        foreach ($settings as $setting) {
+           // Skip this setting if we're just processing a single inst and the IDs don't match
+            if ( (!$setting->institution->is_active) || ($inst_id!=0 && $setting->inst_id!=$inst_id)) {
                 continue;
             }
 
-           // Skip this provider if there are no reports defined for it
-            if (count($provider->reports) == 0) {
-                $this->line($provider->name . " has no reports defined; skipping...");
-                continue;
-            }
+           // setup array of required connectors for buildUri
+            $connectors = $all_connection_fields->whereIn('id',$setting->provider->connectors)->pluck('name')->toArray();
 
-           // Skip this provider if there are no sushi settings for it
-            if (count($provider->sushiSettings) == 0) {
-                $this->line($provider->name . " has no sushi credentials defined; skipping...");
-                continue;
-            }
+           // Create a new processor object
+            $C5processor = new Counter5Processor($setting->prov_id, $setting->inst_id, $begin, $end, $replace);
 
-           // Loop through all sushiSettings for this provider
-            $this->line("Processing: " . $provider->name);
-            $settings = $provider->sushiSettings->where('status', 'Enabled');
-            foreach ($settings as $setting) {
-               // Skip this setting if we're just processing a single inst and the IDs don't match
-                if (
-                    (!$setting->institution->is_active) ||
-                     ($inst_id != 0 &&
-                     $setting->inst_id != $inst_id)
-                ) {
+           // Get (conso) provider(s) for the global provider
+            $providers = $conso_providers->where('global_id',$setting->prov_id);
+            $conso_connection = $providers->where('inst_id',1)->first();
+            $conso_reports = ($conso_connection) ? $conso_connection->reports->pluck('id')->toArray() : [];
+
+           // Loop through matching (conso) providers
+            $this->line("Processing: " . $setting->provider->name);
+            foreach ($providers as $provider) {
+               // If running as "Auto" and today is not the day to run, skip silently to next provider
+                if ($this->option('auto') && $provider->day_of_month != date('j')) {
                     continue;
                 }
 
-                // setup array of required connectors for buildUri
-                $connectors = $all_connection_fields->whereIn('id',$setting->provider->globalProv->connectors)
-                                                    ->pluck('name')->toArray();
+               // if the provider is inst-assigned, skip it on mismatch to sushi setting inst_id
+                if ($provider->inst_id>1 && $provider->inst_id != $setting->inst_id) {
+                    continue;
+                }
 
-               // Create a new processor object
-                $C5processor = new Counter5Processor($provider->id, $setting->inst_id, $begin, $end, $replace);
+                // De-dupe provider reports against $conso_reports and skip this provider if no unique reports
+                $prov_report_ids = $provider->reports->pluck('id')->toArray();
+                if ($provider->inst_id>1 && $conso_connection) {
+                    $prov_report_ids = array_intersect( $prov_report_ids, array_diff($prov_report_ids, $conso_reports) );
+                }
+                if (count($prov_report_ids) == 0) continue;
+                $reports = $master_reports->whereIn('id',$prov_report_ids)->whereIn('name',$requested_reports);
 
-               // Loop through all reports defined as available for this provider
-                foreach ($provider->reports as $report) {
-                   // if this report hasn't been requested (cmd-line argument above), then skip it
-                    if (!in_array($report->name, $requested_reports)) {
+               // Loop through all the reports
+                foreach ($reports as $report) {
+
+                    // if the provider is inst-assigned, and the conso-copy is already getting it, skip it
+                    if ($provider->inst_id>1 && in_array($report->id,$conso_reports)) {
                         continue;
                     }
 
@@ -191,11 +195,12 @@ class SushiBatch extends Command
                         $raw_filename = $report->name . '_' . $begin . '_' . $end . '.json';
                         $sushi->raw_datafile = $full_path . $raw_filename;
                     }
+                    $source = ($provider->inst_id == 1) ? "C" : "I";
 
                    // Create new HarvestLog record; if one already exists, use it instead
                     try {
                         $harvest = HarvestLog::create(['status' => 'Active', 'sushisettings_id' => $setting->id,
-                                           'report_id' => $report->id, 'yearmon' => $yearmon,
+                                           'report_id' => $report->id, 'yearmon' => $yearmon, 'source' => $source,
                                            'attempts' => 0]);
                     } catch (QueryException $e) {
                         $errorCode = $e->errorInfo[1];
@@ -292,11 +297,11 @@ class SushiBatch extends Command
                     }
                     unset($sushi);
                     unset($harvest);
-                }  // foreach reports
+                } // foreach reports
+            }     // foreach (conso-reports)
 
-                unset($C5processor);
-            }  // foreach sushisettings
-        }  // foreach providers
+            unset($C5processor);
+        }  // foreach sushisettings
 
         $this->line("Harvest ends at : " . date("Y-m-d H:i:s"));
         return 1;

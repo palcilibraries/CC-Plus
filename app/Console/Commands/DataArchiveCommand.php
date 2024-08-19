@@ -10,6 +10,7 @@ use DB;
 use Hash;
 use App\Consortium;
 use App\Provider;
+use App\GlobalProvider;
 use App\Institution;
 use App\SushiSetting;
 use App\Report;
@@ -28,11 +29,11 @@ class DataArchiveCommand extends Command
                      {--Y|year= : YYYY to process; required if From/To not specified}
                      {--F|from= : Beginning month (YYYY-MM) of date-range to process; ignored if Year specified}
                      {--T|to= : End month (YYYY-MM) of date-range to process; ignored if Year specified}
-                     {--P|provider= : Provider ID# to process [ALL]}
+                     {--P|Provider= : Global Provider ID# to process [ALL]}
                      {--I|institution= : Institution ID# to process [ALL]}
                      {--R|report= : Master report NAME to archive [ALL]}
                      {--X|exclude : Exclude title, provider, inst, settings and associated log data [FALSE]}
-                     {--G|global : Include global Titles, Items, Databases, Platforms, and Publishers [FALSE]}';
+                     {--G|global : Include global Providers, Titles, Items, Databases, Platforms, and Publishers [FALSE]}';
     /**
      * The console command description.
      *
@@ -105,7 +106,8 @@ class DataArchiveCommand extends Command
        // Provider, Inst and Report options
         $prov_id = $this->option('provider');
         if ($prov_id) {
-            $providers = Provider::where('id',$prov_id)->get();
+            $conso_providers = Provider::where('global_id',$prov_id)->get();
+            $providers = GlobalProvider::where('id',$prov_id)->get();
             if ($providers) {
                 $providerName = $providers[0]->name;
             } else {
@@ -114,7 +116,8 @@ class DataArchiveCommand extends Command
             }
         } else {
             $providerName = "ALL";
-            $providers = Provider::get();
+            $conso_providers = Provider::get();
+            $providers = GlobalProvider::get();
         }
         $inst_id = $this->option('institution');
         if ($inst_id) {
@@ -244,17 +247,17 @@ class DataArchiveCommand extends Command
        // import if the records still exist.
         if ($saveRelated) {
            // Set arrays with the provider an institution ids just archived
-            $provider_ids = $providers->pluck('id')->toArray();
+            $conso_prov_ids = $conso_providers->pluck('id')->toArray();
             $institution_ids = $institutions->pluck('id')->toArray();
 
            // Save providers to the output file
-            $_res = self::relatedData('providers', 'Providers', 'id', $provider_ids);
+            $_res = self::relatedData('providers', 'Consortium Providers', 'id', $conso_prov_ids);
 
            // Save institutions to the output file
             $_res = self::relatedData('institutions', 'Institutions', 'id', $institution_ids);
 
            // Get sushi settings IDs
-            $settingsIDs = SushiSetting::whereIn('prov_id',$provider_ids)->whereIn('inst_id',$institution_ids)
+            $settingsIDs = SushiSetting::whereIn('prov_id',$conso_prov_ids)->whereIn('inst_id',$institution_ids)
                                        ->pluck('id')->toArray();
 
            // Save sushi_settings to the output file
@@ -297,6 +300,7 @@ class DataArchiveCommand extends Command
              self::globalData('databases', 'Databases');
              self::globalData('platforms', 'Platforms');
              self::globalData('publishers', 'Publishers');
+             self::globalData('global_providers', 'Global Providers');
         }
 
        // All done...

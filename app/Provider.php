@@ -52,11 +52,6 @@ class Provider extends Model
         return $this->belongsTo('App\Institution', 'inst_id');
     }
 
-    public function sushiSettings()
-    {
-        return $this->hasMany('App\SushiSetting', 'prov_id');
-    }
-
     public function alerts()
     {
         return $this->hasMany('App\Alert', 'prov_id');
@@ -83,25 +78,5 @@ class Provider extends Model
         } else {
             return $this->toArray();
         }
-    }
-
-    public function titleReports()
-    {
-        return $this->hasMany('App\TitleReport');
-    }
-
-    public function databaseReports()
-    {
-        return $this->hasMany('App\DatabaseReport');
-    }
-
-    public function platformReports()
-    {
-        return $this->hasMany('App\PlatformReport');
-    }
-
-    public function itemReports()
-    {
-        return $this->hasMany('App\ItemReport');
     }
 }

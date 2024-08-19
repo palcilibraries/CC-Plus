@@ -233,7 +233,7 @@ class ProviderController extends Controller
         $thisUser = auth()->user();
         $is_admin = $thisUser->hasRole('Admin');
         $is_manager = $thisUser->hasRole('Manager');
-        $provider = Provider::with('globalProv','reports','institution')->findOrFail($id);
+        $provider = Provider::with('globalProv','globalProv.sushiSettings','reports','institution')->findOrFail($id);
         if (!$provider->globalProv) {
             return response()->json(['result' => false, 'msg' => 'Update failed (403) - Global Provider Undefined']);
         }
@@ -331,8 +331,8 @@ class ProviderController extends Controller
 
         // Create or find the inst-specific provider
         if ($newInstSpecific) {
-            $inst_prov = Provider::with('globalProv','reports','institution')->where('inst_id',$thisUser->inst_id)
-                                 ->where('global_id',$provider->global_id)->first();
+            $inst_prov = Provider::with('globalProv','globalProv.sushiSettings','reports','institution')
+                                 ->where('inst_id',$thisUser->inst_id)->where('global_id',$provider->global_id)->first();
             if (!$inst_prov) {
                 // Create the provider
                 $inst_prov = new Provider;
@@ -401,7 +401,6 @@ class ProviderController extends Controller
         }
 
         // Build return provider data Object that matches what indexx() sends
-        $provider->load('sushiSettings');
         $return_provider = $provider;
         if ($is_admin) {
             $connected_providers = Provider::with('institution:id,name')->where('global_id', $global_provider->id)->get();
@@ -434,7 +433,7 @@ class ProviderController extends Controller
         $return_provider->can_edit = true;
         $return_provider->can_delete = true;
         $return_provider->day_of_month = $provider->day_of_month;
-        $return_provider->last_harvest = ($newInstSpecific) ? null : $provider->sushiSettings->max('last_harvest');
+        $return_provider->last_harvest = ($newInstSpecific) ? null : $global_provider->sushiSettings->max('last_harvest');
         $return_provider->can_delete = (is_null($provider->last_harvest)) ? true : false;
         $return_provider->allow_inst_specific = $provider->allow_inst_specific;
 
@@ -461,7 +460,7 @@ class ProviderController extends Controller
             $combined_ids = array_unique(array_merge($conso_reports, $_inst_reports));
             $_rec['report_state'] = $this->reportState($master_reports, $conso_reports, $combined_ids);
             $_rec['master_reports'] = $return_provider->master_reports;
-            $_rec['last_harvest'] = $prov_data->sushiSettings->max('last_harvest');
+            $_rec['last_harvest'] = $global_provider->sushiSettings->max('last_harvest');
             $_rec['can_edit'] = true;
             $_rec['can_delete'] = (is_null($_rec['last_harvest'])) ? true : false;
             $_rec['allow_inst_specific'] = ($prov_data->inst_id == 1) ? $prov_data->allow_inst_specific : 0;
@@ -504,7 +503,7 @@ class ProviderController extends Controller
             $localInst = $thisUser->inst_id;
         }
         // Get global provider record
-        $global_provider = GlobalProvider::findOrFail($input['global_id']);
+        $global_provider = GlobalProvider::with('sushiSettings')->findOrFail($input['global_id']);
 
         // Check for a consortium-wide setting and set conso_reports so we can ignore conso-reports when
         // attaching the new provider reports)
@@ -543,11 +542,11 @@ class ProviderController extends Controller
         }
 
         // If requested, create a sushi-setting to give a "starting point" for connecting it later
-        $stub = (isset($input['sushi_stub'])) ? $input['sushi_stub'] : 0;
+        $stub = (isset($input['sushi_stub']) && $global_provider->sushiSettings->count()==0) ? $input['sushi_stub'] : 0;
         if ($stub) {
             $sushi_setting = new SushiSetting;
             $sushi_setting->inst_id = $input['inst_id'];
-            $sushi_setting->prov_id = $provider->id;
+            $sushi_setting->prov_id = $input['global_id'];
             // Add required conenction fields to sushi args
             foreach ($global_provider->connectionFields() as $cnx) {
                 $sushi_setting->{$cnx['name']} = "-required-";
@@ -576,14 +575,12 @@ class ProviderController extends Controller
         $returnProv->connectors = $global_provider->connectionFields();
         // Ignore connections to other institutions for a localAdmin (manager)
         if ($localAdmin) {
-            $connected_providers = Provider::with('institution:id,name,is_active','sushiSettings:id,prov_id,last_harvest',
-                                                  'reports:id,name','globalProv')
+            $connected_providers = Provider::with('institution:id,name,is_active','reports:id,name','globalProv')
                                            ->where('global_id', $global_provider->id)
                                            ->whereIn('inst_id',[1,$thisUser->inst_id])
                                            ->get();
         } else {
-            $connected_providers = Provider::with('institution:id,name,is_active','sushiSettings:id,prov_id,last_harvest',
-                                                  'reports:id,name','globalProv')
+            $connected_providers = Provider::with('institution:id,name,is_active','reports:id,name','globalProv')
                                            ->where('global_id', $global_provider->id)
                                            ->get();
         }
@@ -595,6 +592,7 @@ class ProviderController extends Controller
         $returnProv->conso_id = ($conso_connection) ? $conso_connection->id : null;
         $returnProv->allow_inst_specific = ($conso_connection) ? $conso_connection->allow_inst_specific : 0;
         $returnProv->day_of_month = $dayOfMonth;
+        $returnProv->last_harvest = $global_provider->sushiSettings->max('last_harvest');
 
         // Setup flags to control per-report icons in the U/I
         $report_flags = $this->setReportFlags($master_reports, $master_ids, $conso_report_ids, $inst_report_ids);
@@ -615,7 +613,7 @@ class ProviderController extends Controller
                 $combined_ids = array_unique(array_merge($conso_reports, $_inst_reports));
                 $_rec['report_state'] = $this->reportState($master_reports, $conso_reports, $combined_ids);
                 $_rec['master_reports'] = $returnProv->master_reports;
-                $_rec['last_harvest'] = $prov_data->sushiSettings->max('last_harvest');
+                $_rec['last_harvest'] = $returnProv->last_harvest;
                 $_rec['can_edit'] = true;
                 $_rec['can_delete'] = (is_null($_rec['last_harvest'])) ? true : false;
                 $_rec['allow_inst_specific'] = ($prov_data->inst_id == 1) ? $prov_data->allow_inst_specific : 0;
@@ -627,7 +625,6 @@ class ProviderController extends Controller
         $report_ids = array_unique(array_merge($conso_reports, $prov_reports));
         $returnProv->connected = $connected_data;
         $returnProv->connection_count = $connected_providers->count();
-        $returnProv->last_harvest = null;
         $returnProv->can_edit = $provider->canManage();
         $returnProv->can_delete = $provider->canManage();
         $returnProv->can_connect = (!$conso_connection && !$localAdmin) ? true : false;

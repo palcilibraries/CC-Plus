@@ -9,7 +9,6 @@ use App\Institution;
 use App\InstitutionGroup;
 use App\Provider;
 use App\GlobalProvider;
-use App\SushiSettings;
 use App\ConnectionField;
 use App\Report;
 use Illuminate\Http\Request;
@@ -61,11 +60,11 @@ class AdminController extends Controller
         $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
 
         // Get all (consortium) providers, extract array of global IDs
-        $conso_providers = Provider::with('sushiSettings:id,prov_id,last_harvest','reports:id,name','globalProv',
-                                          'institution:id,name,is_active')->orderBy('name','ASC')->get();
+        $conso_providers = Provider::with('reports:id,name','institution:id,name,is_active')->orderBy('name','ASC')->get();
 
         // Build list of providers, based on globals, that includes extra institution-specific providers
-        $global_providers = GlobalProvider::where('is_active', true)->orderBy('name', 'ASC')->get();
+        $global_providers = GlobalProvider::with('sushiSettings:id,prov_id,last_harvest')->where('is_active', true)
+                                          ->orderBy('name', 'ASC')->get();
 
         $output_providers = [];
         foreach ($global_providers as $rec) {
@@ -84,6 +83,7 @@ class AdminController extends Controller
             $rec->master_reports = $master_reports->whereIn('id', $master_ids)->values()->toArray();
             $rec->is_conso = ($conso_connection) ? true : false;
             $rec->allow_inst_specific = ($conso_connection) ? $conso_connection->allow_inst_specific : 0; // default
+            $rec->last_harvest = $rec->sushiSettings->max('last_harvest');
 
             // Day of month is Conso-day, unless it's inst-specific
             if ($conso_connection) {
@@ -93,7 +93,6 @@ class AdminController extends Controller
                 $report_ids = ($rec->connection_count == 1) ? $connected_providers->first()->reports->pluck('id')->toArray()
                                                             : $master_ids;
             }
-            $rec->last_harvest = null;
 
             // Setup flags to control per-report icons in the U/I
             $report_flags = $this->setReportFlags($master_reports, $master_ids, $conso_reports);
@@ -114,8 +113,7 @@ class AdminController extends Controller
                     $combined_ids = array_unique(array_merge($conso_reports, $_inst_reports));
                     $_rec['master_reports'] = $rec->master_reports;
                     $_rec['report_state'] = $this->reportState($master_reports, $conso_reports, $combined_ids);
-                    $_rec['last_harvest'] = $prov_data->sushiSettings->max('last_harvest');
-                    $rec->last_harvest = max($rec->last_harvest,$_rec['last_harvest']);
+                    $_rec['last_harvest'] = $rec->last_harvest;
                     $_rec['can_edit'] = true;
                     $_rec['can_delete'] = (is_null($_rec['last_harvest'])) ? true : false;
                     $_rec['allow_inst_specific'] = ($prov_data->inst_id == 1) ? $prov_data->allow_inst_specific : 0;

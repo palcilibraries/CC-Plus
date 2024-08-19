@@ -22,6 +22,7 @@ class CreateHarvestLogsTable extends Migration
             $table->unsignedInteger('sushisettings_id');
             $table->unsignedInteger('report_id');
             $table->string('yearmon', 7);
+            $table->string('source', 1)->nullable();    // source = "C" for consortium, "I" for institution
             $table->unsignedInteger('attempts')->default(0);
             $table->unsignedInteger('error_id')->nullable();
             $table->string('rawfile')->nullable();

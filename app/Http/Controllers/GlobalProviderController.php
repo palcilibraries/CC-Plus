@@ -120,7 +120,7 @@ class GlobalProviderController extends Controller
                 $connections = array();
                 foreach ($instances as $instance) {
                     // Collect details from the instance for this provider
-                    $details = $this->instanceDetails($instance->ccp_key, $gp->id);
+                    $details = $this->instanceDetails($instance->ccp_key, $gp);
                     if ($details['harvest_count'] > 0) {
                         $provider['can_delete'] = false;
                     }
@@ -1109,7 +1109,7 @@ class GlobalProviderController extends Controller
             $provider['connection_count'] = 0;
             // Collect details from the instance for this provider
             foreach ($instances as $instance) {
-                $details = $this->instanceDetails($instance->ccp_key, $gp->id);
+                $details = $this->instanceDetails($instance->ccp_key, $gp);
                 if ($details['harvest_count'] > 0) {
                     $provider['can_delete'] = false;
                 }
@@ -1182,28 +1182,25 @@ class GlobalProviderController extends Controller
     /**
      * Return an array of booleans for connector-state from provider connectors columns
      *
-     * @param  String  $instnceKey
-     * @param  Integer  $providerID
+     * @param  String  $instanceKey
+     * @param  GlobalProvider  $gp
      * @return Array  $details
      */
-    private function instanceDetails($instnceKey, $providerID) {
-
-        $details = array('harvest_count' => 0, 'connections' => 0);
+    private function instanceDetails($instanceKey, $gp) {
 
         // switch the database connection
-        config(['database.connections.consodb.database' => "ccplus_" . $instnceKey]);
+        config(['database.connections.consodb.database' => "ccplus_" . $instanceKey]);
         try {
             DB::reconnect('consodb');
         } catch (\Exception $e) {
-            return response()->json(['result' => 'Error connecting to database for instance with Key: ' . $instnceKey]);
+            return response()->json(['result' => 'Error connecting to database for instance with Key: ' . $instanceKey]);
         }
-        // Get the provider and the number of harvests
-        $con_prov = Provider::with('sushiSettings')->where('global_id', $providerID)->first();
-        if ($con_prov) {
-            $details['harvest_count'] += $con_prov->sushiSettings->whereNotNull('last_harvest')->count();
-            $details['connections'] += $con_prov->sushiSettings->count();
-        }
-        return $details;
+
+        // Return the provider and the number of harvests
+        $count = $gp->sushiSettings->whereNotNull('last_harvest')->count();
+        $connections = $gp->sushiSettings->count();
+
+        return array('harvest_count' => $count , 'connections' => $connections);
     }
 
     private function requestURI($uri)

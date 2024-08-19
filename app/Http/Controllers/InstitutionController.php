@@ -191,12 +191,13 @@ class InstitutionController extends Controller
         if (!$thisUser->hasRole("Admin")) {
             abort_unless($thisUser->inst_id == $id, 403);
         }
+        $isAdmin = ($thisUser->hasRole('Admin'));
         $localAdmin = (!$thisUser->hasRole('Admin'));
 
         // Get the institution and sushi settings
         $institution = Institution::with('users', 'users.roles','institutionGroups','institutionGroups.institutions:id,name')
                                   ->findOrFail($id);
-        $sushi_settings = SushiSetting::with('provider','provider.globalProv')->where('inst_id',$institution->id)->get();
+        $sushi_settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
 
         // Get most recent harvest and set can_delete flag
         $last_harvest = $sushi_settings->max('last_harvest');
@@ -221,13 +222,15 @@ class InstitutionController extends Controller
             if ($r['name'] == 'Viewer') $all_roles[$idx]['name'] = "Viewer";
         }
 
-        // Get all providers this inst might be connected to
-        $raw_providers = Provider::whereIn('inst_id', [1,$id])->get();
-        $inst_prov_ids  = $raw_providers->where('inst_id',$id)->pluck('id')->toArray();
-        $conso_prov_ids = $raw_providers->where('inst_id',1)->pluck('id')->toArray();
-        $combined_ids = array_unique(array_merge($inst_prov_ids, $conso_prov_ids));
-        $inst_providers = Provider::with('institution:id,name,is_active','sushiSettings:id,prov_id,last_harvest','reports:id,name',
-                                         'globalProv')->whereIn('id',$combined_ids)->orderBy('name', 'ASC')->get();
+        // Get consortium-providers providers; limit to conso+inst_specific if not Admin
+        $limit_insts = ($isAdmin) ? [] : [1,$id];
+        $inst_providers = Provider::with('institution:id,name,is_active', 'reports:id,name', 'globalProv',
+                                         'globalProv.sushiSettings:id,prov_id,last_harvest')
+                                  ->when(!$isAdmin, function ($query) use ($limit_insts) {
+                                      return $query->whereIn('inst_id',$limit_insts);
+                                  })
+                                  ->orderBy('name', 'ASC')->get();
+
         // Get master report definitions
         $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
 
@@ -257,7 +260,8 @@ class InstitutionController extends Controller
             if ($conso_connection) {
                 $rec->inst_id = ($inst_connection) ? $id : 1;
                 $rec->day_of_month = $conso_connection->day_of_month;
-                $rec->can_connect = ($conso_connection->allow_inst_specific && !$inst_connection) ? true : false;
+                $rec->can_connect = ($conso_connection->allow_inst_specific && !$inst_connection &&
+                                     count($master_ids) > $conso_connection->reports->count()) ? true : false;
             } else {
                 $rec->day_of_month = ($inst_connection) ? $inst_connection->day_of_month : null;
                 $rec->can_connect = (!$inst_connection) ? true : false;
@@ -285,14 +289,12 @@ class InstitutionController extends Controller
                 continue;
             }
 
-            // Global is connected, the array of "connected insts" will be, at most, consortium and current inst
+            // Global is connected, build the array of connected institutions
             $all_inactive = true;
             $is_editable = false;
             $is_deleteable = false;
             $connected_data = array();
-            for ($i=0; $i<2; $i++) {
-                $prov_data = ($i==0) ? $inst_connection : $conso_connection;
-                if (!$prov_data) continue;
+            foreach ($connected_providers as $prov_data) {
                 $_rec = $prov_data->toArray();
                 $_rec['inst_name'] = ($prov_data->inst_id == 1) ? 'Consortium' : $prov_data->institution->name;
                 $_rec['inst_stat'] = ($prov_data->institution->is_active) ? "isActive" : "isInactive";
@@ -300,12 +302,13 @@ class InstitutionController extends Controller
                 $combined_ids = array_unique(array_merge($conso_reports, $_inst_reports));
                 $_rec['master_reports'] = $rec->master_reports;
                 $_rec['report_state'] = $this->reportState($master_reports, $conso_reports, $combined_ids);
-                $_rec['last_harvest'] = $prov_data->sushiSettings->max('last_harvest');
+                $_rec['last_harvest'] = $prov_data->globalProv->sushiSettings->max('last_harvest');
                 $rec->last_harvest = max($rec->last_harvest,$_rec['last_harvest']);
                 $_rec['allow_inst_specific'] = ($prov_data->inst_id == 1) ? $prov_data->allow_inst_specific : 0;
-                // is_editable and is_deleteable both go true if caller can manage either INST or CONSO provider setting
-                // U/I will determine which one is/is-not allowed
-                if ($prov_data->canManage()) {
+                // The connected prov is editable if it is conso or specific to this inst
+                // If it is an inst-specific connection for a different inst, mark not editable
+                // (do this so that the INST-SHOW U/I view of providers makes sense)
+                if ($prov_data->canManage() && (in_array($prov_data->inst_id, [1,$id]))) {
                     $_rec['can_edit'] = true;
                     $is_editable = true;
                     $_rec['can_delete'] = (is_null($_rec['last_harvest'])) ? true : false;
@@ -320,7 +323,6 @@ class InstitutionController extends Controller
             $rec->connection_count = count($connected_data);
             $rec->can_delete = ($is_deleteable) ? true : false;
             $rec->can_edit = ($is_editable || ($localAdmin && $rec->allow_inst_specifc) ) ? true : false;
-            // $rec->can_edit = ($is_editable && $rec->connection_count>0) ? true : false;
             $output_providers[] = $rec->toArray();
         }
         $all_providers = array_values($output_providers);
@@ -416,7 +418,7 @@ class InstitutionController extends Controller
             $institution->load('institutionGroups');
 
             // If is_active is changing, check and update related sushi settings
-            $settings = SushiSetting::with('provider','provider.globalProv')->where('inst_id',$institution->id)->get();
+            $settings = SushiSetting::with('provider')->where('inst_id',$institution->id)->get();
             if ($was_active != $institution->is_active) {
                 foreach ($settings as $setting) {
                     // Went from Active to Inactive

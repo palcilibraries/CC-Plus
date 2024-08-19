@@ -35,7 +35,7 @@ class CreateIrReportDataTable extends Migration
 
             $table->index('yearmon');
             $table->foreign('item_id')->references('id')->on($global_db . '.items');
-            $table->foreign('prov_id')->references('id')->on('providers');
+            $table->foreign('prov_id')->references('id')->on($global_db . '.global_providers');
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');
             $table->foreign('inst_id')->references('id')->on('institutions');
             $table->foreign('accessmethod_id')->references('id')->on($global_db . '.accessmethods');

@@ -14,6 +14,9 @@ class CreateSushiSettingsTable extends Migration
     public function up()
     {
         Schema::create('sushisettings', function (Blueprint $table) {
+
+            $global_db = DB::connection('globaldb')->getDatabaseName();
+
             $table->Increments('id');
             $table->unsignedInteger('inst_id');
             $table->unsignedInteger('prov_id');
@@ -28,7 +31,7 @@ class CreateSushiSettingsTable extends Migration
             $table->timestamps();
 
             $table->foreign('inst_id')->references('id')->on('institutions')->onDelete('cascade');
-            $table->foreign('prov_id')->references('id')->on('providers')->onDelete('cascade');
+            $table->foreign('prov_id')->references('id')->on($global_db . '.global_providers')->onDelete('cascade');
         });
     }
 

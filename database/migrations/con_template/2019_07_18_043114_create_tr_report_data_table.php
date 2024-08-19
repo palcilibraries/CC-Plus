@@ -38,7 +38,7 @@ class CreateTrReportDataTable extends Migration
 
             $table->index(['yearmon']);
             $table->foreign('title_id')->references('id')->on($global_db . '.titles');
-            $table->foreign('prov_id')->references('id')->on('providers');
+            $table->foreign('prov_id')->references('id')->on($global_db . '.global_providers');
             $table->foreign('publisher_id')->references('id')->on($global_db . '.publishers');
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');
             $table->foreign('inst_id')->references('id')->on('institutions');

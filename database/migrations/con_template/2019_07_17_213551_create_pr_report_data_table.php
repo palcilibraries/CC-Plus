@@ -32,7 +32,7 @@ class CreatePrReportDataTable extends Migration
 
             $table->index('yearmon');
             $table->foreign('plat_id')->references('id')->on($global_db . '.platforms');
-            $table->foreign('prov_id')->references('id')->on('providers');
+            $table->foreign('prov_id')->references('id')->on($global_db . '.global_providers');
             $table->foreign('inst_id')->references('id')->on('institutions');
             $table->foreign('accessmethod_id')->references('id')->on($global_db . '.accessmethods');
             $table->foreign('datatype_id')->references('id')->on($global_db . '.datatypes');

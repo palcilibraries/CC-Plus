@@ -152,7 +152,7 @@ class Sushi extends Model
     public function buildUri($setting, $connectors, $method = "reports", $report = "")
     {
        // Begin setting up the URI by cleaning/standardizing the server_url_r5 string in the setting
-        $_url = rtrim($setting->provider->globalProv->server_url_r5);    // remove trailing whitespace
+        $_url = rtrim($setting->provider->server_url_r5);    // remove trailing whitespace
         $_url = preg_replace('/\/reports\/?$/i', '', $_url);  // take off any methods with any leading slashes
         $_url = preg_replace('/\/status\/?$/i', '', $_url);  //   "   "   "     "      "   "     "        "
         $_url = preg_replace('/\/members\/?$/i', '', $_url); //   "   "   "     "      "   "     "        "
@@ -173,8 +173,8 @@ class Sushi extends Model
         }
 
         // If a platform value is set, add it
-        if (!is_null($setting->provider->globalProv->platform_parm)) {
-            $uri_auth .= "&platform=" . $setting->provider->globalProv->platform_parm;
+        if (!is_null($setting->provider->platform_parm)) {
+            $uri_auth .= "&platform=" . $setting->provider->platform_parm;
         }
 
         // Return the URI if we're not building a report request

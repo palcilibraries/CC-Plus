@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Consortium;
 use App\Report;
-use App\Provider;
 use App\GlobalSetting;
 use App\GlobalProvider;
 use App\ConnectionField;
@@ -68,7 +67,7 @@ class GlobalAdminController extends Controller
             $provider['connection_count'] = 0;
             foreach ($consortia as $instance) {
                 // Collect details from the instance for this provider
-                $details = $this->instanceDetails($instance->ccp_key, $gp->id);
+                $details = $this->instanceDetails($instance->ccp_key, $gp);
                 if ($details['harvest_count'] > 0) {
                     $provider['can_delete'] = false;
                 }
@@ -162,12 +161,10 @@ class GlobalAdminController extends Controller
      * Return an array of booleans for connector-state from provider connectors columns
      *
      * @param  String  $instanceKey
-     * @param  Integer  $providerID
+     * @param  GlobalProvider  $gp
      * @return Array  $details
      */
-    private function instanceDetails($instanceKey, $providerID) {
-
-        $details = array('harvest_count' => 0, 'connections' => 0);
+    private function instanceDetails($instanceKey, $gp) {
 
         // switch the database connection
         config(['database.connections.consodb.database' => "ccplus_" . $instanceKey]);
@@ -176,12 +173,11 @@ class GlobalAdminController extends Controller
         } catch (\Exception $e) {
             return response()->json(['result' => 'Error connecting to database for instance with Key: ' . $instanceKey]);
         }
-        // Get the provider and the number of harvests
-        $con_prov = Provider::with('sushiSettings')->where('global_id', $providerID)->first();
-        if ($con_prov) {
-            $details['harvest_count'] += $con_prov->sushiSettings->whereNotNull('last_harvest')->count();
-            $details['connections'] += $con_prov->sushiSettings->count();
-        }
-        return $details;
+
+        // Return the provider and the number of harvests
+        $count = $gp->sushiSettings->whereNotNull('last_harvest')->count();
+        $connections = $gp->sushiSettings->count();
+
+        return array('harvest_count' => $count , 'connections' => $connections);
     }
 }

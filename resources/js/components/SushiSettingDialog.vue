@@ -240,8 +240,7 @@
         return (this.institutions.length == 1) ? { ...this.institutions[0] } : {id: null};
       },
       default_prov: function () {
-        return (this.providers.length == 1) ? { ...this.providers[0] }
-                                            : { id: null, global_id: null, global_prov: { id:null, connectors: []} };
+        return (this.providers.length == 1) ? { ...this.providers[0] } : { id: null, global_id: null };
       },
       connectable_providers() {
         if (this.mutable_dtype == 'edit' || this.form.inst_id == null) return this.providers;
@@ -281,7 +280,7 @@
           this.enable_switch = (this.setting.status == 'Enabled') ? 1 : 0;
           this.sushi_prov = { ...this.setting.provider};
           this.sushi_inst = { ...this.setting.institution};
-          this.service_url = this.setting.provider.global_prov.server_url_r5;
+          this.service_url = this.setting.provider.server_url_r5;
       } else {
           this.statusval = 'Enabled';
           this.sushi_inst = { ...this.default_inst};

@@ -286,8 +286,7 @@
             if (this.limit_inst_ids.length==0 && this.limit_prov_ids.length==0) {
                 this.filter_options.inst = (this.is_admin || this.is_viewer) ? [...this.institutions] : [this.institutions[0]];
                 this.filter_options.group = (this.is_admin || this.is_viewer) ? [...this.inst_groups] : [];
-                this.filter_options.prov = (this.is_admin || this.is_viewer) ? this.providers.filter(p => p.inst_id == 1) :
-                    this.providers.filter(p => (p.inst_id == 1 || p.inst_id == this.institutions[0].id));
+                this.filter_options.prov = [...this.providers];
                 return;
             }
             // Set flag if changed_filter was just reset (so we can reset the options)
@@ -297,16 +296,27 @@
             // Rebuild options for Providers
             if (just_cleared || changed_filter != 'prov') {
               if (this.is_admin || this.is_viewer) {
-                this.filter_options.prov = this.providers.filter(p => p.inst_id == 1 || this.limit_inst_ids.includes(p.inst_id));
+                this.filter_options.prov = this.providers.filter(p => p.institutions.includes(1) ||
+                                                                      this.intersects(p.institutions, this.limit_inst_ids));
               } else {
-                this.filter_options.prov = this.providers.filter(p => (p.inst_id == 1 || p.inst_id == this.institutions[0].id));
+                this.filter_options.prov = this.providers.filter(p => (p.institutions.includes(1) ||
+                                                                       p.institutions.includes(this.institutions[0].id)));
               }
             }
 
             // Rebuild options for Insts and Groups (from Insts)
             if ( just_cleared || (changed_filter == 'prov') ) {
               if (this.is_admin || this.is_viewer) {
-                  let provider_inst_ids = this.filter_options.prov.map(p => p.inst_id);
+                  let provider_inst_ids = [];
+                  // if a provider in the options includes a conso-wide provider, provider_insts is all insts
+                  if (this.filter_options.prov.filter(p => p.institutions.includes(1)).length > 0) {
+                      provider_inst_ids = this.institutions.map(ii => ii.id);
+                  // otherwise, set inst_ids to the union set of insts in the provider options
+                  } else {
+                      provider_inst_ids = [ ...this.filter_options.prov.reduce( (p, {institutions}) =>
+                                            { return institutions; }, new Map()).values()
+                                          ];
+                  }
                   this.filter_options['inst'] = this.institutions.filter( ii => (provider_inst_ids.includes(ii.id) ||
                                                                                 this.limit_inst_ids.includes(ii.id)));
                   var group_ids = [];
@@ -351,7 +361,12 @@
             return false;
         },
         providerIcon (prov) {
-            return (prov.inst_id == 1) ? 'mdi-account-multiple' : 'mdi-home-outline';
+            return (prov.institutions.includes(1)) ? 'mdi-account-multiple' : 'mdi-home-outline';
+        },
+        intersects (a, b) {
+          var setB = new Set(b);
+          var xSet = [...new Set(a)].filter(x => setB.has(x));
+          return (xSet.length>0);
         },
     },
     computed: {
@@ -376,13 +391,14 @@
         this.limit_inst_ids = [];
         this.filter_options.inst = [...this.institutions];
         this.filter_options.group = [...this.inst_groups];
-        this.filter_options.prov = this.providers.filter(p => p.inst_id == 1);
+        this.filter_options.prov = this.providers.filter(p => p.institutions.includes(1));
       } else {
         this.selected_insts = [this.institutions[0].id];
         this.limit_inst_ids = [this.institutions[0].id];
         this.filter_options.inst = [this.institutions[0]];
         this.filter_options.group = [];
-        this.filter_options.prov = this.providers.filter(p => (p.inst_id == 1 || p.inst_id == this.institutions[0].id));
+        this.filter_options.prov = this.providers.filter(p => p.institutions.includes(1) ||
+                                                              p.institutions.includes(this.institutions[0].id));
       }
 
       // Subscribe to store updates and intialize filters and options

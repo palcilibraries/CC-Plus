@@ -90,11 +90,11 @@
           <span v-else>&nbsp;</span>
         </v-col>
         <v-col class="d-flex px-2 align-center" cols="2">
-          <div v-if="mutable_filters['connected_by']!=null && mutable_filters['connected_by']!=''" class="x-box">
-            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('connected_by')"/>&nbsp;
+          <div v-if="mutable_filters['source']!=null && mutable_filters['source']!=''" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('source')"/>&nbsp;
           </div>
-          <v-select :items="connectedBy" v-model="mutable_filters['connected_by']" @change="updateFilters('connected_by')"
-                    label="Connected By"
+          <v-select :items="source" v-model="mutable_filters['source']" @change="updateFilters('source')"
+                    label="Harvested For"
           ></v-select>
         </v-col>
         <v-col v-if="mutable_options['codes'].length>0" class="d-flex px-2 align-center" cols="2">
@@ -230,7 +230,7 @@
         allCodes: false,
         expanded: [],
         mutable_options: { 'codes': [], 'reports': [], 'statuses': [], 'providers': [], 'institutions': [] },
-        connectedBy: ['Consortium', 'Institution'],
+        source: ['Consortium', 'Institution'],
         truncatedResult: false,
         statuses: ['Active', 'Fail', 'Queued', 'Stopped', 'Success'],
         status_changeable: ['Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
@@ -288,7 +288,7 @@
         },
         clearAllFilters() {
             Object.keys(this.mutable_filters).forEach( (key) =>  {
-              if (key == 'fromYM' || key == 'toYM' || key == 'updated' || key == 'connected_by') {
+              if (key == 'fromYM' || key == 'toYM' || key == 'updated' || key == 'source') {
                   this.mutable_filters[key] = '';
               } else {
                   this.mutable_filters[key] = [];
@@ -307,7 +307,7 @@
                 this.mutable_filters['toYM'] = '';
                 this.mutable_filters['fromYM'] = '';
                 this.rangeKey += 1;           // force re-render of the date-range component
-            } else if (filter == 'updated' || filter == 'connected_by') {
+            } else if (filter == 'updated' || filter == 'source') {
                 this.mutable_filters[filter] = '';
             } else {
                 this.mutable_filters[filter] = [];
@@ -485,7 +485,7 @@
     mounted() {
       // Update any null/empty filters w/ store-values
       Object.keys(this.all_filters).forEach( (key) =>  {
-        if (key == 'fromYM' || key == 'toYM' || key == 'updated' || key == 'connected_by') {
+        if (key == 'fromYM' || key == 'toYM' || key == 'updated' || key == 'source') {
             if (this.mutable_filters[key] == null || this.mutable_filters[key] == "")
                 this.mutable_filters[key] = this.all_filters[key];
         } else {

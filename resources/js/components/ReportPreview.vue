@@ -263,6 +263,7 @@
         mutable_fields: this.fields,
         mutable_cols: this.columns,
         mutable_rangetype: this.rangetype,
+        mutable_filter_options: {},
         mutable_options: {},
         cur_year: '',
         success: '',

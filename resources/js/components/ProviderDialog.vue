@@ -31,8 +31,8 @@
       <div v-if="is_admin">
         <v-row v-if="mutable_dtype=='edit' && mutable_provider.connected.length>0" class="d-flex mx-2 my-0" no-gutters>
           <v-col class="d-flex px-2" cols="8">
-            <v-autocomplete :items="mutable_provider.connected" v-model="form.inst_id" label="Connected Institutions"
-                            item-text="inst_name" item-value="inst_id" outlined dense hint="Choose a connected institution"
+            <v-autocomplete :items="mutable_provider.connected" v-model="form.inst_id" label="Existing Connections"
+                            item-text="inst_name" item-value="inst_id" outlined dense hint="Choose a connection target"
                             persistent-hint :rules="instRules" :readonly="!is_admin" @change="changeInst"
             ></v-autocomplete>
           </v-col>
@@ -40,7 +40,7 @@
         <v-row v-if="mutable_dtype=='connect' || show_unconnected" class="d-flex mx-2 my-0" no-gutters>
           <v-col class="d-flex px-2" cols="8">
             <v-autocomplete :items="unconnected_insts" v-model="form.inst_id" label="UnConnected Institutions"
-                            item-text="name" item-value="id" outlined dense hint="Connect a new institution"
+                            item-text="name" item-value="id" outlined dense hint="Establish a new connection"
                             persistent-hint :rules="instRules" :readonly="!is_admin" @change="changeInst"
             ></v-autocomplete>
           </v-col>
@@ -153,13 +153,6 @@
                 .then( (response) => {
                     var _prov   = (response.result) ? response.provider : null;
                     var _result = (response.result) ? 'Success' : 'Fail';
-                    // update the "connected" element for the provider also
-                    let prov_cnxIdx = _prov.connected.findIndex(p => p.id == _prov.id);
-                    if (prov_cnxIdx >= 0) {
-                        Object.keys(_prov).forEach( (key) =>  {
-                            _prov.connected[prov_cnxIdx][key] = _prov[key];
-                        });
-                    }
                     this.$emit('prov-complete', { result:_result, msg:response.msg, prov:_prov });
                 }).catch({});
           } else {
@@ -177,9 +170,6 @@
       changeInst() {
         if (this.form.inst_id == null || this.form.inst_id == '') return;
         this.warn_inst = '';
-        let _inst = this.institutions.find(ii => ii.id == this.form.inst_id);
-        this.current_inst_name = _inst.name;
-
         // Set a flag for whether or not the new-inst is already connected
         let cnxIdx = this.provider.connected.findIndex(p => p.inst_id == this.form.inst_id);
         var is_connected = (cnxIdx < 0) ? false : true;
@@ -187,10 +177,16 @@
         // if chosen inst is already connected to the provider
         if (is_connected) {
           this.mutable_provider = Object.assign({},this.provider.connected[cnxIdx]);
+          // Update form report_state to match the selected provider
+          Object.assign(this.form.report_state, this.provider.connected[cnxIdx]['report_state']);
+          this.current_inst_name = this.mutable_provider.inst_name;
           this.mutable_provider.connected = [...this.provider.connected];
           this.initializeForm();
         // Chosen inst is not yet connected
         } else {
+          let _inst = this.institutions.find(ii => ii.id == this.form.inst_id);
+          this.current_inst_name = _prov.inst_name;
+
           // Flip dtype to connect
           this.mutable_dtype = "connect";
           // Assigning conso-provider to a new inst_id?

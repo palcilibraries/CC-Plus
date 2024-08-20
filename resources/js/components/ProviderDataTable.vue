@@ -127,7 +127,7 @@
           <v-btn v-if="item.can_connect" icon @click="connectProvider(item.id)">
             <v-icon title="Connect Provider">mdi-connection</v-icon>
           </v-btn>
-          <v-btn v-if="item.can_edit || (is_manager && item.connected.length>1)" icon @click="editProvider(item.id)">
+          <v-btn v-if="item.can_edit" icon @click="editProvider(item.id)">
             <v-icon title="Edit Provider">mdi-cog-outline</v-icon>
           </v-btn>
           <v-btn v-else icon><v-icon color="#c9c9c9">mdi-cog-outline</v-icon></v-btn>

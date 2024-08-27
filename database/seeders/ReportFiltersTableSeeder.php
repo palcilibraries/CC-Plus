@@ -38,7 +38,7 @@ class ReportFiltersTableSeeder extends Seeder
           ['id' => 8, 'attrib' => 'Institution_Group', 'model' => '\App\InstitutionGroup',
                       'table_name' => 'institutiongroups', 'report_column' => 'institutiongroup_id'],
           ['id' => 9, 'attrib' => 'YOP', 'model' => null, 'table_name' => null, 'report_column' => 'yop'],
-          ['id' =>10, 'attrib' => 'Database', 'model' => '\App\Database', 'table_name' => 'databases', 'report_column' => 'db_id'],
+          ['id' =>10, 'attrib' => 'Database', 'model' => '\App\DataBase', 'table_name' => 'databases', 'report_column' => 'db_id'],
           ]);
       }
     }

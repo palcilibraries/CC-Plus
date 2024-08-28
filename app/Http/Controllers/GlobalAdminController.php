@@ -89,26 +89,24 @@ class GlobalAdminController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function changeInstance(Request $request)
+    public function changeInstance($key)
     {
-
         // Get input arguments from the request
-        try {
-            $input = json_decode($request->getContent(), true);
-        } catch (\Exception $e) {
-            return response()->json(['result' => 'Error decoding input!']);
+        $consortium = Consortium::where('ccp_key',$key)->first();
+        if (!$consortium) {
+            return response()->json(['result' => 'Instance not found!']);
         }
 
         // Update the active configuration and the sesttion to use the new key
-        $conso_db = "ccplus_" . $input['ccp_key'];
+        $conso_db = "ccplus_" . $key;
         config(['database.connections.consodb.database' => $conso_db]);
-        session(['ccp_con_key' => $input['ccp_key']]);
+        session(['ccp_con_key' => $key]);
         try {
             DB::reconnect('consodb');
         } catch (\Exception $e) {
             return response()->json(['result' => 'Error decoding input!']);
         }
-        return response()->json(['result' => 'success']);
+        return redirect()->route('admin.home');
     }
 
     /**

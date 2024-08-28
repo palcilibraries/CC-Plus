@@ -156,10 +156,10 @@
                   {{ attempt.message }}
                 </v-col>
                 <v-col class="d-flex px-2" cols="1">
-                  <span v-if="attempt.help_url.length>0">
+                  <span v-if="!attempt.help_url || attempt.help_url.trim().length === 0">&nbsp;</span>
+                  <span v-else>
                     <v-icon title="Provider Error Help" @click="goURL(attempt.help_url)">mdi-help-box-outline</v-icon>
                   </span>
-                  <span v-else>&nbsp;</span>
                 </v-col>
                 <v-col class="d-flex px-2" cols="1">
                   {{ attempt.code }}
@@ -300,6 +300,8 @@
               this.mutable_options[key] = [...this[key]];
             });
             this.inst_filter = null;
+            this.allConso = false;
+            this.allCodes = false;
             this.rangeKey += 1;           // force re-render of the date-range component
         },
         clearFilter(filter) {

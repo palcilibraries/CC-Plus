@@ -29,11 +29,6 @@
             </ul>
             <!-- Right Side Of Navbar -->
             <ul class="navbar-nav ml-auto">
-              <li v-if="is_serveradmin && ccp_key!=''" class="nav-item py-1">
-                <v-select :items="consortia" v-model="cur_key" label="Instance" item-text="name"
-                          item-value="ccp_key" @change="changeInstance" dense outlined hide-details
-                ></v-select>
-              </li>
                 <!-- Authentication Links -->
               <li v-if="this.user['id']==0" class="nav-item">
                 <a class="nav-link" href="/login">Login</a>
@@ -161,29 +156,36 @@ export default {
         this.$store.dispatch('updateUserInst', this.user["inst_id"]);
         this.profile_url = "/users/"+this.user["id"]+"/edit";
         if (this.is_serveradmin) {
-            this.consortia.push({'ccp_key': 'con_template', 'name': 'Template'});
             if (this.consortia.some(con => con.ccp_key == this.ccp_key)) this.cur_key = this.ccp_key;
         }
         // Set homeUrl based on role
         var _idx = null;
         if (this.is_serveradmin) {
             this.homeUrl = "/server/home";
+            if (this.consortia.length > 1) {
+              _idx = this.navList.findIndex(nav => nav.name == "Consortium Admin");
+              this.navList[_idx]["url"] = "#";
+              this.navList[_idx]["children"] = [];
+              this.consortia.forEach( con => {
+                this.navList[_idx].children.push({'url':"/change-instance/"+con.ccp_key, 'name':con.name, 'role':"ServerAdmin"});
+              });
+            }
+            // If current instance is not set, take Harvesting and Reports off the menu
+            if (this.cur_key.length == 0) {
+              for(var i=0; i < this.navList.length; i++) {
+                if(this.navList[i].name == "Harvesting") {
+                   this.navList.splice(i,2);
+                }
+              }
+            }
         } else if (this.is_admin) {
             this.homeUrl = "/consoadmin";
         } else if (this.is_manager) {
             this.homeUrl = "/institutions/"+this.user.inst_id;
             _idx = this.navList.findIndex(nav => nav.name == "My Institution");
             this.navList[_idx].url = this.homeUrl;
-        } else {  // Viewer abd un-priv users set to my-reports
+        } else {  // Viewer and un-priv users set to my-reports
             this.homeUrl = "/my-reports";
-        }
-
-        // Basic users see "Harvests" as a link, not a dropdown with children
-        if (!this.is_admin && !this.is_manager && !this.is_viewer) {
-        // } else if (!this.is_admin && !this.is_manager && !this.is_viewer) {
-            _idx = this.navList.findIndex(nav => nav.name == "Harvests");
-            this.navList[_idx].url = "/harvest/log";
-            this.navList[_idx].children = null;
         }
         console.log('Navbar Component mounted.');
     }

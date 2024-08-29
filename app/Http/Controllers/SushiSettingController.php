@@ -253,7 +253,8 @@ class SushiSettingController extends Controller
                 return response()->json(['result' => false, 'msg' => 'Global provider value is missing or undefined']);
             }
         }
-        // create the new sushi setting record (get existing if already defined)
+        // Create the new sushi setting record and relate to the GLOBAL ID (get existing if already defined)
+        $fields['prov_id'] = $form_data['global_id'];
         $setting = SushiSetting::firstOrCreate($fields);
         $setting->load('institution', 'provider');
         $setting->provider->connectors = ConnectionField::whereIn('id',$setting->provider->connectors)->get();

@@ -85,15 +85,6 @@ class AdminController extends Controller
             $rec->allow_inst_specific = ($conso_connection) ? $conso_connection->allow_inst_specific : 0; // default
             $rec->last_harvest = $rec->sushiSettings->max('last_harvest');
 
-            // Day of month is Conso-day, unless it's inst-specific
-            if ($conso_connection) {
-                $rec->day_of_month = $conso_connection->day_of_month;
-            } else {
-                $rec->day_of_month = ($rec->connection_count == 1) ? $connected_providers->first()->day_of_month : null;
-                $report_ids = ($rec->connection_count == 1) ? $connected_providers->first()->reports->pluck('id')->toArray()
-                                                            : $master_ids;
-            }
-
             // Setup flags to control per-report icons in the U/I
             $report_flags = $this->setReportFlags($master_reports, $master_ids, $conso_reports);
             foreach ($report_flags as $rpt) {
@@ -101,12 +92,16 @@ class AdminController extends Controller
             }
             // If global provider is connected
             if ($rec->connection_count > 0) {
+                $rec->inst_id = ($conso_connection) ? 1 : null;
                 // Build an array of details for connected insts
                 $all_inactive = true;
                 $all_deleteable = true;
                 $connected_data = array();
                 foreach ($connected_providers as $prov_data) {
                     $_rec = $prov_data->toArray();
+                    if ($rec->inst_id == null && $rec->connection_count == 1) {
+                        $rec->inst_id = $prov_data->inst_id;
+                    }
                     $_rec['inst_name'] = ($prov_data->inst_id == 1) ? 'Consortium' : $prov_data->institution->name;
                     $_rec['inst_stat'] = ($prov_data->institution->is_active) ? "isActive" : "isInactive";
                     $_inst_reports = $prov_data->reports->pluck('id')->toArray();

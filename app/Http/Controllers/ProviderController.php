@@ -61,7 +61,6 @@ class ProviderController extends Controller
             $rec->inst_id = null;
             $rec->inst_name = null;
             $rec->active = ($rec->is_active) ? 'Active' : 'Inactive';
-            $rec->day_of_month = null;
             $rec->can_delete = false;
             $rec->connected = array();
 
@@ -104,7 +103,6 @@ class ProviderController extends Controller
                 $rec->can_edit = true;
                 $rec->is_active = $prov_data->is_active;
                 $rec->active = ($prov_data->is_active) ? 'Active' : 'Inactive';
-                $rec->day_of_month = $prov_data->day_of_month;
                 $rec->last_harvest = $prov_data->sushiSettings->max('last_harvest');
                 $rec->allow_inst_specific = $prov_data->allow_inst_specific;
                 if ($conso_connection) {
@@ -233,35 +231,60 @@ class ProviderController extends Controller
         $thisUser = auth()->user();
         $is_admin = $thisUser->hasRole('Admin');
         $is_manager = $thisUser->hasRole('Manager');
-        $provider = Provider::with('globalProv','globalProv.sushiSettings','reports','institution')->findOrFail($id);
-        if (!$provider->globalProv) {
-            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Global Provider Undefined']);
-        }
-
-        // grab a few elements in case we need them later
-        $was_active = $provider->is_active;
-        $orig_inst_id = $provider->inst_id;
-        $orig_inst_name = $provider->institution->name;
-        $orig_report_ids = $provider->reports->pluck('id')->toArray();
+        abort_unless(($is_admin || $is_manager), 403);
 
         // Validate form inputs
-        $this->validate($request, ['is_active' => 'required']);
+        $global = GlobalProvider::with('sushiSettings')->findOrFail($id);
+        $this->validate($request, ['is_active' => 'required', 'inst_id' => 'required']);
         $input = $request->all();
 
-        // Get related sushisettings
-        if ($thisUser->hasRole("Admin")) {
-            $settings = SushiSetting::with('institution')->where('prov_id',$provider->id)->get();
-        } else {
-            $settings = SushiSetting::with('institution')
-                                    ->where('prov_id',$provider->id)->where('inst_id', $thisUser->inst_id)->get();
+        // Local admin can only interact with providers for their own inst_id
+        if (!$is_admin && $input['inst_id']!=$thisUser->inst_id) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
         }
 
-        // If we're just updating status, do it now and skip the rest
-        if (count($input) == 1) {
-            $new_is_active = ($input['is_active']==1) ? 1 : 0;
-            $provider->update(['is_active' => $new_is_active]);
-            // update related sushisettings is_active changed
+        // Get all consoDB Provider connections to the global and check for conso-wide setting for the global
+        // NOTE:: changing the Active/Inactive for a CONSORTIUM-wide provider will update the is_active
+        //        value of all added INST-specific provider copies
+        $connected = Provider::with('globalProv','globalProv.sushiSettings','reports','institution:id,name')
+                             ->where('global_id',$id)->get();
+
+        // Find the provider record to update
+        $provider = $connected->where('inst_id',$input['inst_id'])->first();
+        if (!$provider) {
+            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Not Found or Not Authorized']);
+        }
+        $connected_ids = $connected->pluck('id')->toArray();
+        $conso_connection = $connected->where('inst_id',1)->first();
+        $was_active = $provider->is_active;
+        $new_is_active = ($input['is_active']==1) ? 1 : 0;
+
+        // Setup arrays for report assignments/changes and get master reports
+        $added = array();
+        $removed = array();
+        $input_ids = array();
+        $report_ids = array();
+        $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
+
+        // Get related sushi settings
+        if ($input['inst_id'] == 1) {
+            $settings = $global->sushiSettings->where('prov_id',$id);
+        } else {
+            $settings = $global->sushiSettings->where('prov_id',$id)->where('inst_id',$input['inst_id']);
+        }
+
+        // If we're just updating status, do it now and skip the rest (U/I toggle-switch and bulk-status updates)
+        if (count($input) == 2) { // only is_active and inst_id given as input
+            // Did is_active change?
             if ($was_active != $new_is_active) {
+                if ($provider->inst_id==1) {  // conso-setting cascades to the copies
+                    $res = Provider::whereIn('id',$connected_ids)->update(['is_active' => $new_is_active]);
+                } else {                      // inst-specific ; just set/save is_active
+                    $provider->is_active = $new_is_active;
+                    $provider->save();
+                }
+
+                // Update related sushi setting(s)
                 foreach ($settings as $setting) {
                     // Went from Active to Inactive
                     if ($was_active) {
@@ -277,27 +300,7 @@ class ProviderController extends Controller
             return response()->json(['result' => true]);
         }
 
-        // non-admins not allowed to change inst_id on a provider
-        if (!$is_admin) {
-            $input['inst_id'] = $thisUser->inst_id;
-        } else if (!isset($input['inst_id'])) {
-            $input['inst_id'] = $provider->inst_id;
-        }
-        $prov_input = array_except($input,array('master_reports','allow_sushi','report_state'));
-
-        // Set inst-specific flag; Local Admin is allowed to continue for conso-provider that allows inst-specific copies.
-        // Admin can save a conso-provider with a new inst_id to create an inst-specific copy.
-        $newInstSpecific = ( ($is_manager && !$is_admin && $provider->inst_id==1 && $provider->allow_inst_specific) ||
-                             ($is_admin && $provider->inst_id==1 && $input['inst_id']!=1 && $input['allow_inst_specific']==1) );
-        if (!$provider->canManage() && !$newInstSpecific) {
-            return response()->json(['result' => false, 'msg' => 'Update failed (403) - Forbidden']);
-        }
-
-        // Get global provider details
-        $global_provider = $provider->globalProv;
-        $fields = ConnectionField::whereIn('id',$global_provider->connectors)->get()->values()->toArray();
-
-        // Setup arrays for report assignments
+        // Setup arrays for report assignments/changes
         $added = array();
         $removed = array();
         $input_ids = array();
@@ -305,15 +308,17 @@ class ProviderController extends Controller
         $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
         if (isset($input['report_state'])) {
             $current_ids = $provider->reports->pluck('id')->toArray();
-            $global_master_list = $global_provider->master_reports;
-            foreach ($global_master_list as $id) {
-                $master = $master_reports->where('id',$id)->first();
+            $global_master_list = $global->master_reports;
+            foreach ($global_master_list as $gid) {
+                $master = $master_reports->where('id',$gid)->first();
                 if (!$master) continue;
                 // If we're updating reports for a non-conso provider, ignore prov_enabled
-                // if the consortium has it enabled already
-                if ($provider->inst_id != 1 && $input['report_state'][$master->name]['conso_enabled']) continue;
+                // since the consortium has it enabled already
+                if ($provider->inst_id!=1 && $input['report_state'][$master->name]['conso_enabled']) {
+                    continue;
+                }
                 if ($input['report_state'][$master->name]['prov_enabled']) {
-                    $input_ids[] = $id;
+                    $input_ids[] = $gid;
                 }
             }
             // make arrays of IDs to remove or add
@@ -321,124 +326,108 @@ class ProviderController extends Controller
             $added = array_diff($input_ids, $current_ids);
         }
 
-        // If inst_id is changing, make sure the definition is not already there
-        if ($orig_inst_id != $input['inst_id']) {
-            $exists = Provider::where('inst_id',$input['inst_id'])->where('global_id',$input['global_id'])->first();
-            if ($exists) {
-                return response()->json(['result'=>false, 'msg'=>'Update Failed - Provider already assigned to the institution']);
-            }
-        }
-
-        // Create or find the inst-specific provider
-        if ($newInstSpecific) {
-            $inst_prov = Provider::with('globalProv','globalProv.sushiSettings','reports','institution')
-                                 ->where('inst_id',$thisUser->inst_id)->where('global_id',$provider->global_id)->first();
-            if (!$inst_prov) {
-                // Create the provider
-                $inst_prov = new Provider;
-                $inst_prov->inst_id = ($is_admin) ? $input['inst_id'] : $thisUser->inst_id;
-                $inst_prov->global_id = $provider->global_id;
-                $inst_prov->name = $global_provider->name;
-                $inst_prov->is_active = $input['is_active'];
-                $inst_prov->allow_inst_specific = 0;
-                $inst_prov->save();
-            }
-            $provider = $inst_prov;
-
-        // Update the provider
+        // Setup fields for update
+        // Updating an inst-specific copy of a conso-provider only updates is_active and report assignments
+        if ($conso_connection && $provider->inst_id!=1) {
+            $prov_input = array('is_active' => $input['is_active']);
         } else {
+            $prov_input = array_except($input,array('master_reports','allow_sushi','report_state'));
             if (isset($input['allow_inst_specific'])) {
                 $prov_input['allow_inst_specific'] = ($input['allow_inst_specific']) ? 1 : 0;
             }
+        }
 
-            // Update the record
-            $provider->update($prov_input);
+        // Update the provider record
+        $provider->update($prov_input);
 
-            // update related sushisettings if is_active changed
-            if ($was_active != $provider->is_active) {
-                foreach ($settings as $setting) {
-                    // Went from Active to Inactive
-                    if ($was_active) {
-                        if ($setting->status != 'Disabled') {
-                            $setting->update(['status' => 'Suspended']);
-                        }
-                    // Went from Inactive to Active
-                    } else {
-                        $setting->resetStatus();
-                    }
+        // Update is_active value for inst-specific copies if conso-provider status changed
+        if ($provider->inst_id==1 && $was_active!=$new_is_active) {
+            $res = Provider::whereIn('id',$connected_ids)->update(['is_active' => $new_is_active]);
+        }
+
+        // Update related sushi setting(s)
+        foreach ($settings as $setting) {
+            // Went from Active to Inactive
+            if ($was_active) {
+                if ($setting->status != 'Disabled') {
+                    $setting->update(['status' => 'Suspended']);
                 }
-            }
-
-            // Only remove reports for existing providers (as opposed to a newInstSpecific one)
-            foreach ($removed as $id) {
-                $provider->reports()->detach($id);
+            // Went from Inactive to Active
+            } else {
+                $setting->resetStatus();
             }
         }
 
-        // Attach any new reports
-        foreach ($added as $id) {
-            $provider->reports()->attach($id);
+        // Update report assignments - attach/detach based on $added and $removed
+        foreach ($removed as $dr) {
+            $provider->reports()->detach($dr);
+        }
+        foreach ($added as $ar) {
+            $provider->reports()->attach($ar);
         }
 
-        // If inst_id changed or we added reports to a consortium provider update report-definitions
-        if ($orig_inst_id==1 || $input['inst_id']==1) {
-            if ($orig_inst_id != $input['inst_id']) {
-                //    Changing FROM a CONSO to an inst-specific definition means other inst-specific definitions for this
-                //        global provider need to have the (former) CONSO reports ATTACHED to each of them..
-                //    Changing FROM an inst-specific to CONSO definition means that other existing inst-specific definitions
-                //        need to have reports DETACHED if they are now enabled in the CONSO definition
-                $type = ( $orig_inst_id == 1 ) ? "attach" : "detach";
-                $conso_ids = ( $orig_inst_id == 1 ) ? $orig_report_ids : $provider->reports->pluck('id')->toArray();
-                $this->updateReports($global_provider->id, $conso_ids, $type);
-                // If changing TO conso, assert day_of_month to all other settings for this global
-                if ($input['inst_id'] == 1) {
-                    Provider::where('global_id',$provider->global_id)->update(['day_of_month' => $provider->day_of_month]);
-                }
-            // Admin is attaching new reports to a consortium provider (do we detach all new ones from inst-specific providers)
-            } else if ($is_admin && count($added)>0 && $orig_inst_id==1) {
-                $this->updateReports($global_provider->id, $input_ids, "detach");
+        // If reports were added or removed
+        if (count($added) > 0 || count($removed) > 0) {
+            // Reload reports
+            $provider->load('reports');
+
+            // Call updateReports() in case we need to delete provider(s) that have no reports
+            // in additon to what the consortium is pulling
+            if ($provider->inst_id==1) {  // use newly-updated conso-report settings
+                $conso_ids = $provider->reports->pluck('id')->toArray();
+            } else {
+                $conso_ids = ($conso_connection) ? $conso_connection->reports->pluck('id')->toArray() : [];
+            }
+            $res = $this->updateReports($id, $conso_ids, "detach");
+
+            // Reset $connected if we deleted one or more providers
+            if ($res > 0) {
+                $connected = Provider::with('globalProv','globalProv.sushiSettings','reports','institution:id,name')
+                                     ->where('global_id',$id)->get();
+            }
+
+            // If we just updated a consortium provider (inst_id=1), reset $conso_connection
+            if ($provider->inst_id==1) {
+              $conso_connection = $connected->where('inst_id',1)->first();
             }
         }
+        $conso_reports = ($conso_connection) ? $conso_connection->reports->pluck('id')->toArray() : [];
 
-        // Build return provider data Object that matches what indexx() sends
-        $return_provider = $provider;
-        if ($is_admin) {
-            $connected_providers = Provider::with('institution:id,name')->where('global_id', $global_provider->id)->get();
-        } else {
-            $connected_providers = Provider::with('institution:id,name')->where('global_id', $global_provider->id)
-                                           ->whereIn('inst_id',[1,$thisUser->inst_id])
-                                           ->get();
-        }
-        $conso_connection = $connected_providers->where('inst_id',1)->first();
-        $inst_connection = $connected_providers->where('inst_id',$provider->inst_id)->first();
+        // Build return provider data Object that matches what index() sends
+        $return_provider = $global;
+        $inst_connection = $connected->where('inst_id',$provider->inst_id)->first();
         $return_provider->conso_id = ($conso_connection) ? $conso_connection->id : null;
-
-        $return_provider->global_prov = $global_provider->toArray();
-        $return_provider->content_provider = $global_provider->content_provider;
+        $return_provider->global_prov = $global->toArray();
+        $return_provider->content_provider = $global->content_provider;
         if ($conso_connection) {
             $return_provider->is_conso = true;
             $return_provider->inst_id = $conso_connection->inst_id;
             $return_provider->inst_name = $conso_connection->institution->name;
-            $conso_reports = $conso_connection->reports->pluck('id')->toArray();
         } else {
             $return_provider->is_conso = false;
             $return_provider->inst_id = $provider->inst_id;
             $return_provider->inst_name = $provider->institution->name;
-            $conso_reports = [];
+        }
+        $return_provider->is_active = ($conso_connection && $provider->inst_id==1) ? $conso_connection->is_active
+                                                                                   : $provider->is_active;
+        $return_provider->active = ($return_provider->is_active) ? "Active" : "Inactive";
+
+        // Admins see conso-reports for providers that have a conso-connection
+        if ($is_admin && $conso_connection) {
+            $input_ids = $conso_connection->reports->pluck('id')->toArray();
         }
         $return_provider->report_state = $this->reportState($master_reports, $conso_reports, $input_ids);
         $return_provider->can_connect = (!$conso_connection && $is_admin) ? true : false;
-        $return_provider->connectors = $global_provider->connectionFields();
-        $return_provider->active = 'Active';
+        $return_provider->connectors = $global->connectionFields();
         $return_provider->can_edit = true;
         $return_provider->can_delete = true;
-        $return_provider->day_of_month = $provider->day_of_month;
-        $return_provider->last_harvest = ($newInstSpecific) ? null : $global_provider->sushiSettings->max('last_harvest');
+        $return_provider->day_of_month = $global->day_of_month;
+        $return_provider->last_harvest = $global->sushiSettings->max('last_harvest');
         $return_provider->can_delete = (is_null($provider->last_harvest)) ? true : false;
         $return_provider->allow_inst_specific = $provider->allow_inst_specific;
 
         // Set master reports to the globally available reports
-        $master_ids = $global_provider->master_reports;
+        $master_ids = $global->master_reports;
         $return_provider->master_reports = $master_reports->whereIn('id', $master_ids)->values()->toArray();
 
         // Setup flags to control per-report icons in the U/I
@@ -450,30 +439,27 @@ class ProviderController extends Controller
 
         // Build an array of connected details
         $connected_data = array();
-        $all_inactive = true;
         $all_deleteable = true;
-        foreach ($connected_providers as $prov_data) {
+        foreach ($connected as $prov_data) {
             $_rec = $prov_data->toArray();
+            $_rec['active'] = ($prov_data->is_active) ? "Active" : "Inactive";
             $_rec['inst_name'] = ($prov_data->inst_id == 1) ? 'Consortium' : $prov_data->institution->name;
             $_rec['inst_stat'] = ($prov_data->institution->is_active) ? "isActive" : "isInactive";
             $_inst_reports = $prov_data->reports->pluck('id')->toArray();
             $combined_ids = array_unique(array_merge($conso_reports, $_inst_reports));
             $_rec['report_state'] = $this->reportState($master_reports, $conso_reports, $combined_ids);
             $_rec['master_reports'] = $return_provider->master_reports;
-            $_rec['last_harvest'] = $global_provider->sushiSettings->max('last_harvest');
+            $_rec['last_harvest'] = $global->sushiSettings->max('last_harvest');
             $_rec['can_edit'] = true;
             $_rec['can_delete'] = (is_null($_rec['last_harvest'])) ? true : false;
             $_rec['allow_inst_specific'] = ($prov_data->inst_id == 1) ? $prov_data->allow_inst_specific : 0;
-            if ($_rec['is_active']) $all_inactive = false;
             if (!$_rec['can_delete']) $all_deleteable = false;
             $connected_data[] = $_rec;
         }
+        // Set return value based on connected settings
         $return_provider->connected = $connected_data;
-        $return_provider->connection_count = $connected_providers->count();
-        // Update default global values based on connected settings
-        if ($all_inactive) $return_provider->active = 'Inactive';
+        $return_provider->connection_count = $connected->count();
         $return_provider->can_delete = ($all_deleteable);
-
         return response()->json(['result' => true, 'msg' => 'Provider settings successfully updated',
                                  'provider' => $return_provider]);
     }
@@ -510,9 +496,6 @@ class ProviderController extends Controller
         $conso_connection = Provider::where('inst_id',1)->where('global_id',$input['global_id'])->first();
         $conso_reports = ($conso_connection) ? $conso_connection->reports->pluck('id')->toArray() : [];
 
-        // Day of month is Conso-day, otherwise, use input value
-        $dayOfMonth = ($conso_connection) ? $conso_connection->day_of_month : $input['day_of_month'];
-
         // Create the provider
         $provider = new Provider;
         $provider->inst_id = $input['inst_id'];
@@ -520,13 +503,7 @@ class ProviderController extends Controller
         $provider->name = (isset($input['name'])) ? $input['name'] : $global_provider->name;
         $provider->is_active = (isset($input['is_active'])) ? $input['is_active'] : $global_provider->is_active;
         $provider->allow_inst_specific = (isset($input['allow_inst_specific'])) ? $input['allow_inst_specific'] : 0;
-        $provider->day_of_month = $dayOfMonth;
         $provider->save();
-
-        // Update $conso_connection if we just created it...
-        if ($provider->inst_id == 1) {
-            $conso_connection = $provider;
-        }
 
         //Attach report definitions to new provider
         $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
@@ -539,6 +516,12 @@ class ProviderController extends Controller
                     }
                 }
             }
+        }
+
+        // Update $conso_connection and $conso_reports if we just created a conso connection
+        if ($provider->inst_id == 1) {
+            $conso_connection = $provider;
+            $conso_reports = $conso_connection->reports->pluck('id')->toArray();
         }
 
         // If requested, create a sushi-setting to give a "starting point" for connecting it later
@@ -562,15 +545,14 @@ class ProviderController extends Controller
         $conso_report_ids = ($conso_connection) ? $conso_connection->reports->pluck('id')->toArray() : [];
         $inst_report_ids = [];
         if ($provider->inst_id==1) {
-            $this->updateReports($global_provider->id, $conso_report_ids, "detach");
-            // Assert day_of_month to all other settings for this global
-            Provider::where('global_id',$global_provider->id)->update(['day_of_month' => $dayOfMonth]);
+            $res = $this->updateReports($global_provider->id, $conso_report_ids, "detach");
         } else {
             $inst_report_ids = $provider->reports->pluck('id')->toArray();
         }
 
         // Setup return object - essentially the global provider updated to reflect the new connection
         $returnProv = $global_provider;
+        $returnProv->is_active = ($conso_connection) ? $conso_connection->is_active : $provider->is_active;
         $returnProv->global_prov = $global_provider->toArray();
         $returnProv->connectors = $global_provider->connectionFields();
         // Ignore connections to other institutions for a localAdmin (manager)
@@ -591,7 +573,6 @@ class ProviderController extends Controller
         $returnProv->inst_id = ($conso_connection) ? 1 : $provider->inst_id;
         $returnProv->conso_id = ($conso_connection) ? $conso_connection->id : null;
         $returnProv->allow_inst_specific = ($conso_connection) ? $conso_connection->allow_inst_specific : 0;
-        $returnProv->day_of_month = $dayOfMonth;
         $returnProv->last_harvest = $global_provider->sushiSettings->max('last_harvest');
 
         // Setup flags to control per-report icons in the U/I
@@ -621,8 +602,6 @@ class ProviderController extends Controller
             }
         }
 
-        $prov_reports = $provider->reports->pluck('id')->toArray();
-        $report_ids = array_unique(array_merge($conso_reports, $prov_reports));
         $returnProv->connected = $connected_data;
         $returnProv->connection_count = $connected_providers->count();
         $returnProv->can_edit = $provider->canManage();
@@ -696,29 +675,17 @@ class ProviderController extends Controller
 
         // Only admins and managers can export
         abort_unless($thisUser->hasAnyRole(['Admin','Manager']), 403);
-        $consodb = config('database.connections.consodb.database');
 
        // Admins get all providers
         if ($thisUser->hasRole("Admin")) {
-            $providers = DB::table($consodb . '.providers as prv')
-                      ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
-                      ->orderBy('prov_name', 'ASC')
-                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.global_id','prv.is_active','prv.inst_id',
-                             'prv.allow_inst_specific','inst.name as inst_name','day_of_month',]);
+            $providers = Provider::with('globalProv','reports','institution')->orderBy('name', 'ASC')->get();
+
        // Managers get all consortia-wide providers and those that match user's inst_id
        // (excludes providers assigned to institutions.)
         } else {
-            $providers = DB::table($consodb . '.providers as prv')
-                      ->join($consodb . '.institutions as inst', 'inst.id', '=', 'prv.inst_id')
-                      ->where('prv.inst_id', 1)
-                      ->orWhere('prv.inst_id', $thisUser->inst_id)
-                      ->orderBy('prov_name', 'ASC')
-                      ->get(['prv.id as prov_id','prv.name as prov_name','prv.global_id','prv.is_active','prv.inst_id',
-                             'prv.allow_inst_specific','inst.name as inst_name','day_of_month',]);
+            $providers = Provider::with('globalProv','reports','institution')->whereIn('inst_id', [1,$thisUser->inst_id])
+                                 ->orderBy('name', 'ASC')->get();
         }
-
-        // Get all providers, with reports
-        $all_providers = Provider::with('reports')->get();
 
         // Setup some styles arrays
         $leftbold_style = [
@@ -784,19 +751,14 @@ class ProviderController extends Controller
         $info_sheet->setCellValue('C17', 'Allow Institutional-Specific Definition (when InstID=1)');
         $info_sheet->setCellValue('D17', 'No');
         $info_sheet->setCellValue('E17', 'No');
-        $info_sheet->setCellValue('A18', 'Harvest Day');
+        $info_sheet->setCellValue('A18', 'Master Reports');
         $info_sheet->setCellValue('B18', 'Integer');
-        $info_sheet->setCellValue('C18', 'Day of the month to harvest provider reports (1-28)');
+        $info_sheet->setCellValue('C18', 'CSV list of Master Report IDs to Harvest (e.g. : 1,3)');
         $info_sheet->setCellValue('D18', 'No');
-        $info_sheet->setCellValue('E18', '15');
-        $info_sheet->setCellValue('A19', 'Master Reports');
-        $info_sheet->setCellValue('B19', 'Integer');
-        $info_sheet->setCellValue('C19', 'CSV list of Master Report IDs to Harvest (e.g. : 1,3)');
-        $info_sheet->setCellValue('D19', 'No');
-        $info_sheet->setCellValue('E19', 'None');
+        $info_sheet->setCellValue('E18', 'None');
         // Set row height and auto-width columns for the sheet
 
-        for ($r = 1; $r < 20; $r++) {
+        for ($r = 1; $r < 19; $r++) {
             $info_sheet->getRowDimension($r)->setRowHeight(15);
         }
         $info_columns = array('A','B','C','D','E');
@@ -812,48 +774,42 @@ class ProviderController extends Controller
         $providers_sheet->setCellValue('C1', 'Name');
         $providers_sheet->setCellValue('D1', 'Active');
         $providers_sheet->setCellValue('E1', 'Inst-Specific');
-        $providers_sheet->setCellValue('F1', 'Harvest Day');
-        $providers_sheet->setCellValue('G1', 'Master Reports');
-        $providers_sheet->setCellValue('I1', 'Institution Name');
-        $providers_sheet->setCellValue('J1', 'Report Names');
+        $providers_sheet->setCellValue('F1', 'Master Reports');
+        $providers_sheet->setCellValue('H1', 'Institution Name');
+        $providers_sheet->setCellValue('I1', 'Report Names');
         $row = 2;
         foreach ($providers as $provider) {
             $providers_sheet->getRowDimension($row)->setRowHeight(15);
             $providers_sheet->setCellValue('A' . $row, $provider->global_id);
             $providers_sheet->setCellValue('B' . $row, $provider->inst_id);
-            $providers_sheet->setCellValue('C' . $row, $provider->prov_name);
+            $providers_sheet->setCellValue('C' . $row, $provider->name);
             $_stat = ($provider->is_active) ? "Y" : "N";
             $providers_sheet->setCellValue('D' . $row, $_stat);
             $_ais = ($provider->allow_inst_specific) ? "Y" : "N";
             $providers_sheet->setCellValue('E' . $row, $_ais);
-            $providers_sheet->setCellValue('F' . $row, $provider->day_of_month);
-            $_name = ($provider->inst_id == 1) ? "Consortium" : $provider->inst_name;
-            $this_prov = $all_providers->where('id', '=', $provider->prov_id)->first();
-            if (isset($this_prov->reports)) {
-                $_report_ids = "";
-                $_report_names = "";
-                foreach ($this_prov->reports as $rpt) {
-                    $_report_ids .= $rpt->id . ", ";
-                    $_report_names .= $rpt->name . ", ";
-                }
-                $_report_ids = rtrim(trim($_report_ids), ',');
-                $_report_names = rtrim(trim($_report_names), ',');
-                $providers_sheet->setCellValue('G' . $row, $_report_ids);
-                $providers_sheet->setCellValue('J' . $row, $_report_names);
-            } else {
-                $providers_sheet->setCellValue('J' . $row, 'NULL');
+            $_name = ($provider->inst_id == 1) ? "Consortium" : $provider->institution->name;
+            $_report_ids = "";
+            $_report_names = "";
+            $providers_sheet->setCellValue('I' . $row, 'NULL');
+            foreach ($provider->reports as $rpt) {
+                $_report_ids .= $rpt->id . ", ";
+                $_report_names .= $rpt->name . ", ";
             }
-            $providers_sheet->setCellValue('I' . $row, $_name);
+            $_report_ids = rtrim(trim($_report_ids), ',');
+            $_report_names = rtrim(trim($_report_names), ',');
+            $providers_sheet->setCellValue('F' . $row, $_report_ids);
+            $providers_sheet->setCellValue('I' . $row, $_report_names);
+            $providers_sheet->setCellValue('H' . $row, $_name);
             $row++;
         }
 
         // Auto-size and style the output sheet
-        $columns = array('A','B','C','D','E','F','G','H','I','J');
+        $columns = array('A','B','C','D','E','F','G','H','I');
         foreach ($columns as $col) {
             $providers_sheet->getColumnDimension($col)->setAutoSize(true);
             $providers_sheet->getStyle($col)->applyFromArray($topleft_style);
         }
-        $providers_sheet->getStyle('A1:K1')->applyFromArray($leftbold_style);
+        $providers_sheet->getStyle('A1:J1')->applyFromArray($leftbold_style);
 
         // Give the file a meaningful filename
         if ($thisUser->hasRole('Admin')) {
@@ -913,7 +869,7 @@ class ProviderController extends Controller
             if (!isset($row[0])) {
                 continue;
             }
-            if ($row[0] == "" || !is_numeric($row[0]) || !is_numeric($row[1]) || sizeof($row) < 7) {
+            if ($row[0] == "" || !is_numeric($row[0]) || !is_numeric($row[1]) || sizeof($row) < 6) {
                 continue;
             }
 
@@ -951,14 +907,10 @@ class ProviderController extends Controller
             // Ok - we're gonna save something - Enforce defaults
             $_active = ($row[3] == 'N') ? 0 : 1;
             $_allow_inst = ($row[4] == 'Y' && $inst_id==1) ? 1 : 0;
-            $_day = ($row[5] == '') ? 15 : intval($row[5]);
-            if ($_day < 1 || $_day > 28) {
-                $_day = 15;
-            }
 
             // Put provider data columns into an array
             $_prov = array('id' => $cur_prov_id, 'global_id' => $global_id, 'inst_id' => $inst_id, 'name' => $_name,
-                           'is_active' => $_active, 'allow_inst_specific' => $_allow_inst, 'day_of_month' => $_day);
+                           'is_active' => $_active, 'allow_inst_specific' => $_allow_inst);
 
             // Update or create the Provider record
             if ($current_prov) {      // Update
@@ -972,7 +924,7 @@ class ProviderController extends Controller
 
             // Set reports
             $current_prov->reports()->detach();
-            $_report_ids = preg_split('/,/', $row[6]);
+            $_report_ids = preg_split('/,/', $row[5]);
             if (sizeof($_report_ids) > 0) {
                 foreach ($_report_ids as $r) {
                     $r_id = intval(trim($r));
@@ -1052,9 +1004,10 @@ class ProviderController extends Controller
      * @param  Integer global_id
      * @param  Array  $conso_ids  (consortium report ID's to match on)
      * @param  String  $type : operation to perform
-     * @return Array  nothing
+     * @return Integer  deleted : count of providers deleted
      */
     private function updateReports($global_id, $conso_ids, $type) {
+        $deleted = 0;
         // Loop through all (non-consortium) providers connected to the global
         $provider_list = Provider::with('reports')->where('global_id',$global_id)->where('inst_id','<>',1)->get();
         foreach ($provider_list as $prov) {
@@ -1074,8 +1027,10 @@ class ProviderController extends Controller
             // No reason to keep the provider definition if there are no reports attached now
             if ($type == "detach" && $prov->reports()->count() == 0) {
                 $prov->delete();
+                $deleted++;
             }
         }
+        return $deleted;
     }
 
     /**

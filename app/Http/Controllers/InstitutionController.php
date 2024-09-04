@@ -256,14 +256,11 @@ class InstitutionController extends Controller
             $rec->master_reports = $master_reports->whereIn('id', $master_ids)->values()->toArray();
             $rec->is_conso = ($conso_connection) ? true : false;
             $rec->allow_inst_specific = ($conso_connection) ? $conso_connection->allow_inst_specific : 0;
-            // Day of month is Conso-day, unless it's this inst-only; set can_connect flag
             if ($conso_connection) {
                 $rec->inst_id = ($inst_connection) ? $id : 1;
-                $rec->day_of_month = $conso_connection->day_of_month;
                 $rec->can_connect = ($conso_connection->allow_inst_specific && !$inst_connection &&
                                      count($master_ids) > $conso_connection->reports->count()) ? true : false;
             } else {
-                $rec->day_of_month = ($inst_connection) ? $inst_connection->day_of_month : null;
                 $rec->can_connect = (!$inst_connection) ? true : false;
             }
             // active defaults to global value, and is overriden by inst-specific value, if set.

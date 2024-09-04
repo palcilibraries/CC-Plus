@@ -165,6 +165,7 @@ class GlobalProviderController extends Controller
       $provider->refreshable = $input['refreshable'];
       $provider->refresh_result = null;
       $provider->server_url_r5 = $input['server_url_r5'];
+      $provider->day_of_month = (isset($input['day_of_month'])) ? $input['day_of_month'] : 15;
       $provider->platform_parm = $input['platform_parm'];
 
       // Turn array of connection checkboxes into an array of IDs
@@ -259,9 +260,8 @@ class GlobalProviderController extends Controller
       if (isset($input['name'])) {
           $provider->name = $input_name;
       }
-      if (isset($input['server_url_r5'])) {
-          $provider->server_url_r5 = (isset($input['server_url_r5'])) ? $input['server_url_r5'] : null;
-      }
+      $provider->server_url_r5 = (isset($input['server_url_r5'])) ? $input['server_url_r5'] : null;
+      $provider->day_of_month = (isset($input['day_of_month'])) ? $input['day_of_month'] : 15;
 
       // Turn array of connection checkboxes into an array of IDs
       $new_connectors = array();
@@ -810,7 +810,7 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('C15', 'Yes');
         $info_sheet->setCellValue('D15', 'Integer');
         $info_sheet->setCellValue('E15', '');
-        $info_sheet->setCellValue('F15', 'Unique CC-Plus Platform ID');
+        $info_sheet->setCellValue('F15', 'Unique CC-Plus Database ID');
         $info_sheet->setCellValue('G15', '');
         $info_sheet->setCellValue('H15', 'Increments if empty');
         $info_sheet->setCellValue('A16', 'B');
@@ -838,28 +838,28 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('G18', 'Y');
         $info_sheet->setCellValue('H18', '');
         $info_sheet->setCellValue('A19', 'E');
-        $info_sheet->setCellValue('B19', 'DR');
+        $info_sheet->setCellValue('B19', 'Harvest Day');
         $info_sheet->setCellValue('C19', '');
-        $info_sheet->setCellValue('D19', 'String');
-        $info_sheet->setCellValue('E19', 'Y or N');
-        $info_sheet->setCellValue('F19', 'Platform supplies DR reports?');
-        $info_sheet->setCellValue('G19', 'N');
+        $info_sheet->setCellValue('D19', 'Integer');
+        $info_sheet->setCellValue('E19', '1-28');
+        $info_sheet->setCellValue('F19', 'Day of the month to harvest reports ');
+        $info_sheet->setCellValue('G19', '15');
         $info_sheet->setCellValue('H19', '');
         $info_sheet->setCellValue('A20', 'F');
-        $info_sheet->setCellValue('B20', 'IR');
+        $info_sheet->setCellValue('B20', 'PR');
         $info_sheet->setCellValue('C20', '');
         $info_sheet->setCellValue('D20', 'String');
         $info_sheet->setCellValue('E20', 'Y or N');
-        $info_sheet->setCellValue('F20', 'Platform supplies IR reports?');
-        $info_sheet->setCellValue('G20', 'N');
+        $info_sheet->setCellValue('F20', 'Platform supplies PR reports?');
+        $info_sheet->setCellValue('G20', 'Y');
         $info_sheet->setCellValue('H20', '');
         $info_sheet->setCellValue('A21', 'G');
-        $info_sheet->setCellValue('B21', 'PR');
+        $info_sheet->setCellValue('B21', 'DR');
         $info_sheet->setCellValue('C21', '');
         $info_sheet->setCellValue('D21', 'String');
         $info_sheet->setCellValue('E21', 'Y or N');
-        $info_sheet->setCellValue('F21', 'Platform supplies PR reports?');
-        $info_sheet->setCellValue('G21', 'Y');
+        $info_sheet->setCellValue('F21', 'Platform supplies DR reports?');
+        $info_sheet->setCellValue('G21', 'N');
         $info_sheet->setCellValue('H21', '');
         $info_sheet->setCellValue('A22', 'H');
         $info_sheet->setCellValue('B22', 'TR');
@@ -870,45 +870,53 @@ class GlobalProviderController extends Controller
         $info_sheet->setCellValue('G22', 'N');
         $info_sheet->setCellValue('H22', '');
         $info_sheet->setCellValue('A23', 'I');
-        $info_sheet->setCellValue('B23', 'Customer ID');
+        $info_sheet->setCellValue('B23', 'IR');
         $info_sheet->setCellValue('C23', '');
         $info_sheet->setCellValue('D23', 'String');
         $info_sheet->setCellValue('E23', 'Y or N');
-        $info_sheet->setCellValue('F23', 'Customer ID is required for SUSHI connections');
-        $info_sheet->setCellValue('G23', 'Y');
+        $info_sheet->setCellValue('F23', 'Platform supplies IR reports?');
+        $info_sheet->setCellValue('G23', 'N');
         $info_sheet->setCellValue('H23', '');
         $info_sheet->setCellValue('A24', 'J');
-        $info_sheet->setCellValue('B24', 'Requestor ID');
+        $info_sheet->setCellValue('B24', 'Customer ID');
         $info_sheet->setCellValue('C24', '');
         $info_sheet->setCellValue('D24', 'String');
         $info_sheet->setCellValue('E24', 'Y or N');
-        $info_sheet->setCellValue('F24', 'Requestor ID is required for SUSHI connections');
-        $info_sheet->setCellValue('G24', 'N');
+        $info_sheet->setCellValue('F24', 'Customer ID is required for SUSHI connections');
+        $info_sheet->setCellValue('G24', 'Y');
         $info_sheet->setCellValue('H24', '');
         $info_sheet->setCellValue('A25', 'K');
-        $info_sheet->setCellValue('B25', 'API Key');
+        $info_sheet->setCellValue('B25', 'Requestor ID');
         $info_sheet->setCellValue('C25', '');
         $info_sheet->setCellValue('D25', 'String');
         $info_sheet->setCellValue('E25', 'Y or N');
-        $info_sheet->setCellValue('F25', 'API Key is required for SUSHI connections');
+        $info_sheet->setCellValue('F25', 'Requestor ID is required for SUSHI connections');
         $info_sheet->setCellValue('G25', 'N');
         $info_sheet->setCellValue('H25', '');
         $info_sheet->setCellValue('A26', 'L');
-        $info_sheet->setCellValue('B26', 'Extra Arguments');
+        $info_sheet->setCellValue('B26', 'API Key');
         $info_sheet->setCellValue('C26', '');
         $info_sheet->setCellValue('D26', 'String');
         $info_sheet->setCellValue('E26', 'Y or N');
-        $info_sheet->setCellValue('F26', 'Extra Arguments are required for SUSHI connections');
+        $info_sheet->setCellValue('F26', 'API Key is required for SUSHI connections');
         $info_sheet->setCellValue('G26', 'N');
         $info_sheet->setCellValue('H26', '');
         $info_sheet->setCellValue('A27', 'M');
-        $info_sheet->setCellValue('B27', 'Extra Args Pattern');
+        $info_sheet->setCellValue('B27', 'Extra Arguments');
         $info_sheet->setCellValue('C27', '');
         $info_sheet->setCellValue('D27', 'String');
-        $info_sheet->setCellValue('E27', '');
-        $info_sheet->setCellValue('F27', 'ExtraArgs Pattern (e.g. &extra_cred=value&some_parm=value)');
-        $info_sheet->setCellValue('G27', 'NULL');
-        $info_sheet->setCellValue('H27', 'ignored if Extra Args is "N"');
+        $info_sheet->setCellValue('E27', 'Y or N');
+        $info_sheet->setCellValue('F27', 'Extra Arguments are required for SUSHI connections');
+        $info_sheet->setCellValue('G27', 'N');
+        $info_sheet->setCellValue('H27', '');
+        $info_sheet->setCellValue('A28', 'N');
+        $info_sheet->setCellValue('B28', 'Extra Args Pattern');
+        $info_sheet->setCellValue('C28', '');
+        $info_sheet->setCellValue('D28', 'String');
+        $info_sheet->setCellValue('E28', '');
+        $info_sheet->setCellValue('F28', 'ExtraArgs Pattern (e.g. &extra_cred=value&some_parm=value)');
+        $info_sheet->setCellValue('G28', 'NULL');
+        $info_sheet->setCellValue('H28', 'ignored if Extra Args is "N"');
 
         // Set row height and auto-width columns for the sheet
         for ($r = 1; $r < 28; $r++) {
@@ -919,25 +927,25 @@ class GlobalProviderController extends Controller
             $info_sheet->getColumnDimension($col)->setAutoSize(true);
         }
         // setup arrays with the report and connectors mapped to their column ids
-        $rpt_col = array('DR' => 'E', 'IR' => 'F', 'PR' => 'G', 'TR' => 'H');
-        $cnx_col = array('customer_id' => 'I', 'requestor_id' => 'J', 'api_key' => 'K', 'extra_args' => 'L');
+        $rpt_col = array('PR' => 'F', 'DR' => 'G', 'TR' => 'H', 'IR' => 'I');
+        $cnx_col = array('customer_id' => 'J', 'requestor_id' => 'K', 'api_key' => 'L', 'extra_args' => 'M');
 
         // Load the provider data into a new sheet
         $providers_sheet = $spreadsheet->createSheet();
         $providers_sheet->setTitle('Platforms');
         $providers_sheet->setCellValue('A1', 'Id');
-        $providers_sheet->setCellValue('B1', 'Name');
+        $providers_sheet->setCellValue('B1', 'Platform Name');
         $providers_sheet->setCellValue('C1', 'Active');
         $providers_sheet->setCellValue('D1', 'Server URL');
-        $providers_sheet->setCellValue('E1', 'DR-Reports');
-        $providers_sheet->setCellValue('F1', 'IR-Reports');
-        $providers_sheet->setCellValue('G1', 'PR-Reports');
+        $providers_sheet->setCellValue('E1', 'Day-Of-Month');
+        $providers_sheet->setCellValue('F1', 'PR-Reports');
+        $providers_sheet->setCellValue('G1', 'DR-Reports');
         $providers_sheet->setCellValue('H1', 'TR-Reports');
-        $providers_sheet->setCellValue('I1', 'Customer-ID');
-        $providers_sheet->setCellValue('J1', 'Requestor-ID');
-        $providers_sheet->setCellValue('K1', 'API-Key');
-        $providers_sheet->setCellValue('L1', 'Extra-Args');
-        $providers_sheet->setCellValue('M1', 'Platform Name');
+        $providers_sheet->setCellValue('I1', 'IR-Reports');
+        $providers_sheet->setCellValue('J1', 'Customer-ID');
+        $providers_sheet->setCellValue('K1', 'Requestor-ID');
+        $providers_sheet->setCellValue('L1', 'API-Key');
+        $providers_sheet->setCellValue('M1', 'Extra-Args');
         $row = 2;
         foreach ($global_providers as $provider) {
             $providers_sheet->getRowDimension($row)->setRowHeight(15);
@@ -946,6 +954,7 @@ class GlobalProviderController extends Controller
             $_stat = ($provider->is_active) ? "Y" : "N";
             $providers_sheet->setCellValue('C' . $row, $_stat);
             $providers_sheet->setCellValue('D' . $row, $provider->server_url_r5);
+            $providers_sheet->setCellValue('E' . $row, $provider->day_of_month);
             foreach ($masterReports as $master) {
                 $value = (in_array($master->id, $provider->master_reports)) ? 'Y' : 'N';
                 $providers_sheet->setCellValue($rpt_col[$master->name] . $row, $value);
@@ -1003,8 +1012,8 @@ class GlobalProviderController extends Controller
         $this->getConnectionFields();
 
         // Setup Mapping for report-COLUMN indeces to master_report ID's (ID => COL)
-        $rpt_columns = array( 2 => 4, 4 => 5, 3 => 6, 1 => 7);
-        $col_defaults = array( 3 => 'N', 4 => 'N', 5 => 'N', 6 => 'Y', 7 => 'N', 8 => 'Y', 9 => 'N', 10 => 'N', 11 => 'N');
+        $rpt_columns = array( 3=>5, 2=>6, 1=>7, 4=>8);
+        $col_defaults = array( 3=>'N', 4=>15, 5=>'N', 6=>'N', 7=>'Y', 8=>'N', 9=>'Y', 10=>'N', 11=>'N', 12=>'N');
 
         // Process the input rows
         $cur_prov_id = 0;
@@ -1055,13 +1064,14 @@ class GlobalProviderController extends Controller
             $seen_provs[] = $cur_prov_id;
             foreach ($col_defaults as $_col => $_val) {
                 if (strlen(trim($row[$_col])) < 1) {
-                    $row[$_col]  = $_val;
+                    $row[$_col] = $_val;
                 }
             }
             $_active = ($row[3] == 'N') ? 0 : 1;
 
             // Setup provider data as an array
-            $_prov = array('id' => $cur_prov_id, 'name' => $_name, 'is_active' => $_active, 'server_url_r5' => $row[2]);
+            $_prov = array('id' => $cur_prov_id, 'name' => $_name, 'is_active' => $_active, 'server_url_r5' => $row[2],
+                            'day_of_month' => $row[4]);
 
             // Add reports to the array ($rpt_columns defined above)
             $reports = array();

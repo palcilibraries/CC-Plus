@@ -196,6 +196,14 @@
               </v-col>
             </v-row>
             <v-row class="d-flex ma-0 align-center" no-gutters>
+              <v-col class="d-flex px-6" cols="6"><strong>Run Harvests Monthly on Day : </strong></v-col>
+              <v-col class="d-flex px-4" cols="2">
+                <v-text-field v-model="form.day_of_month" label="Day-of-Month" single-line dense type="number" :rules="dayRules"
+                              class="centered-input"
+                ></v-text-field>
+              </v-col>
+            </v-row>
+            <v-row class="d-flex ma-0 align-center" no-gutters>
               <v-col class="d-flex px-4">
                 <v-switch v-model="form.refreshable" label="Enable COUNTER API Refresh" dense></v-switch>
               </v-col>
@@ -294,7 +302,7 @@
         ],
         mutable_providers: [ ...this.providers],
         new_provider: {'id': null, 'registry_id': '', 'name': '', 'content_provider': '', 'abbrev': '', 'is_active': 1,
-                       'refreshable': 0, 'report_state': {}, 'connector_state': {}, 'server_url_r5': '',
+                       'refreshable': 0, 'report_state': {}, 'connector_state': {}, 'server_url_r5': '', 'day_of_month': 15,
                        'platform_parm': null, 'notifications_url': ''},
         formValid: true,
         form: new window.Form({
@@ -305,6 +313,7 @@
             is_active: 1,
             refreshable: 1,
             server_url_r5: '',
+            day_of_month: 15,
             connector_state: [],
             report_state: [],
             notifications_url: '',
@@ -338,6 +347,7 @@
             this.form.is_active = _prov.is_active;
             this.form.refreshable = _prov.refreshable;
             this.form.server_url_r5 = _prov.server_url_r5;
+            this.form.day_of_month = _prov.day_of_month;
             this.form.report_state = _prov.report_state;
             this.form.notifications_url = _prov.notifications_url;
             this.form.platform_parm = _prov.platform_parm;
@@ -359,6 +369,7 @@
             this.form.is_active = this.new_provider.is_active;
             this.form.refreshable = this.new_provider.refreshable;
             this.form.server_url_r5 = this.new_provider.server_url_r5;
+            this.form.day_of_month = this.new_provider.day_of_month;
             this.form.connector_state = Object.assign({}, this.new_provider.connector_state);
             this.form.report_state = this.new_provider.report_state;
             this.form.platform_parm = this.new_provider.platform_parm;
@@ -540,6 +551,7 @@
                            this.form.name = prov.name;
                            this.form.abbrev = prov.abbrev;
                            this.form.server_url_r5 = prov.server_url_r5;
+                           this.form.day_of_month = prov.day_of_month;
                            this.form.connector_state = prov.connector_state;
                            this.form.report_state = prov.report_state;
                            this.form.notifications_url = prov.notifications_url;
@@ -640,7 +652,7 @@
             if (this.dialog_title == "Edit Platform Settings") {
               let idx = this.mutable_providers.findIndex(p => p.id == this.current_provider_id);
               var canDelete = this.mutable_providers[idx].can_delete;
-              var connectionCount = this.mutable_providers[idx].connection_count;
+              var connections = this.mutable_providers[idx].connections;
               // If a required connector was turned off, popup a warning
               if (this.warnConnectors) {
                 let warning_html = "One or more required connectors has been marked as no longer required. The current "+
@@ -661,7 +673,8 @@
                             // Update the provider entry in the mutable array
                             this.mutable_providers[idx] = Object.assign({}, response.provider);
                             this.mutable_providers[idx]['can_delete'] = canDelete;
-                            this.mutable_providers[idx]['connection_count'] = connectionCount;
+                            this.mutable_providers[idx]['connections'] = connections;
+                            this.mutable_providers[idx]['connection_count'] = connections.length;
                             this.mutable_providers.sort( (a,b) => {
                                 return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
                             });
@@ -683,7 +696,8 @@
                         // Update the provider entry in the mutable array
                         this.mutable_providers[idx] = Object.assign({}, response.provider);
                         this.mutable_providers[idx]['can_delete'] = canDelete;
-                        this.mutable_providers[idx]['connection_count'] = connectionCount;
+                        this.mutable_providers[idx]['connections'] = connections;
+                        this.mutable_providers[idx]['connection_count'] = connections.length;
                         this.mutable_providers.sort((a,b) => {
                             return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
                         });

@@ -111,9 +111,9 @@ class SushiQLoader extends Command
 
        // Get active provider data
         if ($prov_id == 0) {
-            $conso_providers = Provider::with('reports')->where('is_active',true)->get();
+            $conso_providers = Provider::with('globalProv','reports')->where('is_active',true)->get();
         } else {
-            $conso_providers = Provider::with('reports')->where('is_active',true)->where('global_id',$prov_id)->get();
+            $conso_providers = Provider::with('globalProv','reports')->where('is_active',true)->where('global_id',$prov_id)->get();
         }
 
        // Get sushi settings for all the global_ids based on the
@@ -142,7 +142,7 @@ class SushiQLoader extends Command
             foreach ($providers as $provider) {
 
                // If not overriding day-of-month, and today is not the day, skip to next provider
-                if (!$override_dom && $provider->day_of_month != date('j')) {
+                if (!$override_dom && $provider->globalProv->day_of_month != date('j')) {
                     continue;
                 }
                // if the provider is inst-assigned, skip it on mismatch to sushi setting inst_id

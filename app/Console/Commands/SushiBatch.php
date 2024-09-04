@@ -122,9 +122,9 @@ class SushiBatch extends Command
 
        // Get all active records from the consortium providers table
         if ($prov_id == 0) {
-            $conso_providers = Provider::with('reports')->where('is_active', true)->get();
+            $conso_providers = Provider::with('globalProv','reports')->where('is_active',true)->get();
         } else {
-            $conso_providers = Provider::with('reports')->where('is_active', true)->where('global_id',$prov_id)->get();
+            $conso_providers = Provider::with('globalProv','reports')->where('is_active',true)->where('global_id',$prov_id)->get();
         }
 
        // Get sushi settings for all the global_ids based on the
@@ -157,7 +157,7 @@ class SushiBatch extends Command
             $this->line("Processing: " . $setting->provider->name);
             foreach ($providers as $provider) {
                // If running as "Auto" and today is not the day to run, skip silently to next provider
-                if ($this->option('auto') && $provider->day_of_month != date('j')) {
+                if ($this->option('auto') && $provider->GlobalProv->day_of_month != date('j')) {
                     continue;
                 }
 

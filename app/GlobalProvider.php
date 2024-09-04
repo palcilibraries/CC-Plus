@@ -31,11 +31,11 @@ class GlobalProvider extends Model
    */
     protected $attributes = ['registry_id' => null, 'name' => '', 'abbrev' => null, 'is_active' => 1, 'refreshable' => 1,
                              'refresh_result' => null, 'master_reports' => '{}', 'connectors' => '{}', 'server_url_r5' => '',
-                             'notifications_url' => null, 'platform_parm' => null];
+                             'day_of_month' => 15, 'notifications_url' => null, 'platform_parm' => null];
     protected $fillable = ['id', 'registry_id', 'name', 'abbrev', 'is_active', 'refreshable', 'refresh_result', 'master_reports',
-                           'connectors', 'server_url_r5', 'notifications_url', 'platform_parm'];
+                           'connectors', 'server_url_r5', 'day_of_month', 'notifications_url', 'platform_parm'];
     protected $casts = ['id'=>'integer', 'is_active'=>'integer', 'refreshable'=>'integer', 'master_reports' => 'array',
-                        'connectors' => 'array'];
+                        'connectors' => 'array', 'day_of_month' => 'integer'];
 
     // Return the ConnectionField detail based on connectors array
     public function connectionFields()

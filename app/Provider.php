@@ -23,11 +23,10 @@ class Provider extends Model
    *
    * @var array
    */
-    protected $attributes = ['name' => '', 'is_active' => 1, 'inst_id' => 1, 'day_of_month' => 15, 'global_id' => null,
-                             'allow_inst_specific' => 0];
-    protected $fillable = [ 'name', 'is_active', 'inst_id', 'day_of_month', 'global_id', 'allow_inst_specific' ];
-    protected $casts = ['id'=>'integer', 'is_active'=>'integer', 'inst_id'=>'integer', 'day_of_month' => 'integer',
-                        'global_id' => 'integer', 'allow_inst_specific' => 'integer'];
+    protected $attributes = ['name' => '', 'is_active' => 1, 'inst_id' => 1, 'global_id' => null, 'allow_inst_specific' => 0];
+    protected $fillable = [ 'name', 'is_active', 'inst_id', 'global_id', 'allow_inst_specific' ];
+    protected $casts = ['id'=>'integer', 'is_active'=>'integer', 'inst_id'=>'integer', 'global_id' => 'integer',
+                        'allow_inst_specific' => 'integer'];
 
   /**
    * The attributes that should be encrypted on save (password is already hashed)

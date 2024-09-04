@@ -55,7 +55,7 @@
             <<v-icon large color="red" title="Inactive Consortium Provider">mdi-toggle-switch</v-icon>
           </span>
         </div>
-        <div v-else-if="item.can_edit && item.inst_id!=1 && item.inst_id!=null">
+        <div v-else-if="item.can_edit && item.inst_id!=null">
           <span v-if="item.is_active">
             <v-icon large color="green" title="Active" @click="changeStatus(item.id,0)">mdi-toggle-switch</v-icon>
           </span>
@@ -273,13 +273,18 @@
         changeStatus(Id, state) {
           var _idx = this.mutable_providers.findIndex(p => p.id == Id);
           if (_idx < 0) return;
-          var provider = this.mutable_providers[_idx].connected.find(p => p.inst_id == this.inst_context);
+          let p_inst = (this.mutable_providers[_idx].inst_id == null) ? this.inst_context : this.mutable_providers[_idx].inst_id;
+          var provider = this.mutable_providers[_idx].connected.find(p => p.inst_id == p_inst);
           if (typeof(provider) == 'undefined') return;
-          axios.patch('/providers/'+provider.id, { is_active: state })
+          axios.patch('/providers/'+provider.global_id, { is_active: state, inst_id: provider.inst_id })
                .then( (response) => {
                  if (response.data.result) {
                    this.mutable_providers[_idx].is_active = state;
                    this.mutable_providers[_idx].active = (state == 1) ? "Active" : "Inactive";
+                   // If _idx points at a conso-wide provider, admins also updated the connected providers
+                   if (this.is_admin && this.mutable_providers[_idx].is_conso) {
+                     this.mutable_providers[_idx].connected.forEach( (p) => { p.is_active = state; });
+                   }
                    this.$emit('change-prov', this.mutable_providers[_idx]);
                  }
                })
@@ -327,7 +332,6 @@
             let context_inst = this.institutions.find( ii => ii.id == this.inst_context );
             this.cur_provider['inst_id'] = context_inst.id;
             this.cur_provider['inst_name'] = context_inst.name;
-            this.cur_provider['day_of_month'] = 15;
             this.cur_provider['last_harvest'] = null;
             // if (re-)connecting a conso provider, use the report_state from the consortium definition
             if (this.cur_provider.is_conso) {
@@ -469,10 +473,14 @@
                     if (_prov.id==null || (!this.is_admin && _prov.inst_id==1) || !_prov.global_prov.is_active) {
                       skip_count+=1;
                     } else {
-                      axios.patch('/providers/'+_prov.id, { is_active: state })
+                      axios.patch('/providers/'+_prov.global_id, { is_active: state, inst_id: _prov.inst_id })
                            .then( (response) => {
                              if (response.data.result) {
                                this.mutable_providers[_idx].is_active = state;
+                               // If _idx points at a conso-wide provider, admins also updated the connected providers
+                               if (this.is_admin && this.mutable_providers[_idx].is_conso) {
+                                 this.mutable_providers[_idx].connected.forEach( (p) => { p.is_active = state; });
+                               }
                                this.mutable_providers[_idx].active = (state == 1) ? "Active" : "Inactive";
                                this.$emit('change-prov', this.mutable_providers[_idx]);
                              }

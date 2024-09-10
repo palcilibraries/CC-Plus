@@ -90,8 +90,9 @@ class SavedReportController extends Controller
       }
 
       // Get formatted array of saved user reports
+      $myname = auth()->user()->name;
       $report_data = $this->savedUserReports(auth()->id());
-      return view('savedreports.my-saved', compact('report_data','counter_reports'));
+      return view('savedreports.my-saved', compact('report_data','counter_reports','myname'));
     }
 
     /**

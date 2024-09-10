@@ -1,5 +1,13 @@
 <template>
   <v-form ref="wizardForm">
+    <v-row class="d-flex mb-1 align-end" no-gutters>
+      <v-col v-if="conso.length>0" class="d-flex px-1">
+        <h1>Create a Report : {{ conso }}</h1>
+      </v-col>
+      <v-col v-else class="d-flex px-1">
+        <h1>Create a Report</h1>
+      </v-col>
+    </v-row>
     <div v-if="selections_made">
       <v-btn color="gray" small @click="resetForm('all')">Reset Selections</v-btn>
     </div>
@@ -139,6 +147,7 @@
             fields: { type:Array, default: () => [] },
             reports: { type:Array, default: () => [] },
             fy_month: { type: Number, default: 1 },
+            conso: { type:String, default: '' },
     },
     data() {
         return {

@@ -93,15 +93,18 @@ class HarvestLogController extends Controller
                }
            }
        }
+       $harvests = array();
 
        // Setup for initial view - get queue count and build arrays for the filter-options.
        if (!$json) {
 
            // Get the job-count for the current consortium
+           $conso = null;
            $job_count = 0;
            $con = Consortium::where("ccp_key", session("ccp_con_key"))->first();
            if ($con) {
                $job_count = SushiQueueJob::where('consortium_id', $con->id)->count();
+               $conso = $con->name;
            }
 
            // Get IDs of all possible providers from the sushisettings table
@@ -142,6 +145,10 @@ class HarvestLogController extends Controller
 
            // make a list of error codes - for now just return everthing that exists in failedHarvests
            $codes = HarvestLog::whereNotNull('error_id')->distinct('error_id')->orderBy('error_id')->pluck('error_id')->toArray();
+
+           // Setup the initial page view
+           return view('harvests.index', compact('harvests','institutions','groups','providers','reports','bounds','filters',
+                                                 'codes','job_count','presets','conso'));
        }
 
        // Skip querying for records unless we're returning json
@@ -244,7 +251,6 @@ class HarvestLogController extends Controller
                                     ->pluck('sushiSetting.inst_id')->toArray();
 
            // Format records for display , limit to 500 output records
-           $harvests = array();
            $updated_ym = array();
            $count = 0;
            $truncated = false;
@@ -277,13 +283,6 @@ class HarvestLogController extends Controller
            return response()->json(['harvests' => $harvests, 'updated' => $updated_ym, 'truncated' => $truncated, 200,
                                     'code_opts' => $codes, 'stat_opts' => $statuses, 'rept_opts' => $rept_ids,
                                     'prov_opts' => $prov_ids, 'inst_opts' => $inst_ids]);
-
-       // Not returning JSON, the index/vue-component still needs these to setup the page
-       } else {
-           $harvests = array();
-           return view('harvests.index', compact('harvests','institutions','groups','providers','reports','bounds','filters',
-                                                 'codes','job_count','presets')
-                      );
        }
    }
 

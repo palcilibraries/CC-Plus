@@ -1,6 +1,8 @@
 <template>
   <div>
-    <h1>Usage Report Harvesting</h1>
+    <h1>Usage Report Harvesting
+      <span v-if="conso.length>0"> : {{ conso }}</span>
+    </h1>
     <v-expansion-panels multiple focusable v-model="panels">
       <!-- Manual Harvest -->
       <v-expansion-panel v-if="job_count>0 && is_admin">
@@ -66,6 +68,7 @@
             codes: { type:Array, default: () => [] },
             job_count: { type:Number, default: 0 },
             presets: { type:Object, default: () => {} },
+            conso: { type:String, default: '' },
            },
     data () {
         return {

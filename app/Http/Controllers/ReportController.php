@@ -132,7 +132,10 @@ class ReportController extends Controller
             $date = date_parse($userFY);
             $fy_month = $date['month'];
         }
-        return view('reports.create', compact('institutions', 'inst_groups', 'providers', 'reports', 'fields', 'fy_month'));
+
+        $con = Consortium::where("ccp_key", session("ccp_con_key"))->first();
+        $conso = ($con) ? $con->name : '';
+        return view('reports.create', compact('institutions','inst_groups','providers','reports','fields','fy_month','conso'));
     }
 
     /**
@@ -325,11 +328,14 @@ class ReportController extends Controller
             }
         }
 
+        $con = Consortium::where("ccp_key", session("ccp_con_key"))->first();
+        $conso = ($con) ? $con->name : '';
+
         // Get list of saved reports for this user
         $saved_reports = SavedReport::where('user_id', auth()->id())->get(['id','title'])->toArray();
         return view(
             'reports.preview',
-            compact('preset_filters', 'fields', 'columns', 'saved_reports', 'title', 'filter_options', 'rangetype')
+            compact('preset_filters', 'fields', 'columns', 'saved_reports', 'title', 'filter_options', 'rangetype', 'conso')
         );
     }
 

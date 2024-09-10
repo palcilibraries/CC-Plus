@@ -1,7 +1,10 @@
 <template>
   <div>
     <v-row class="d-flex mb-1 align-end" no-gutters>
-      <v-col class="d-flex px-1" cols="3">
+      <v-col v-if="myname.length>0" class="d-flex px-1">
+        <h1>{{ myname }} : Saved Reports</h1>
+      </v-col>
+      <v-col v-else class="d-flex px-1">
         <h1>My Reports</h1>
       </v-col>
       <v-col class="d-flex px-1" cols="3">
@@ -59,6 +62,7 @@
     props: {
             reports: { type:Array, default: () => [] },
             counter_reports: { type:Array, default: () => [] },
+            myname: { type:String, default: '' },
            },
     data () {
       return {

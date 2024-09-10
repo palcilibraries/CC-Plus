@@ -1,5 +1,18 @@
 <template>
   <div class="ma-0 pa-0">
+    <v-row class="d-flex mb-1 align-end" no-gutters>
+      <v-col v-if="conso.length>0" class="d-flex px-1">
+        <h1>Usage Report Preview : {{ conso }}</h1>
+      </v-col>
+      <v-col v-else class="d-flex px-1">
+        <h1>Usage Report Preview</h1>
+      </v-col>
+    </v-row>
+    <v-row class="d-flex mb-1 align-end" no-gutters>
+      <v-col v-if="title != ''" class="d-flex px-1">
+        <h3>{{ $title }}</h3>
+      </v-col>
+    </v-row>
     <div class="d-flex flex-row mb-2">
       <div v-if="mutable_rangetype=='' || mutable_rangetype=='Custom'" class="d-flex pa-2">
         <date-range :minym="minYM" :maxym="maxYM" :ymfrom="filter_by_fromYM" :ymto="filter_by_toYM" :key="rangeKey"
@@ -229,6 +242,8 @@
         filter_options: { type:Object, default: () => {} },
         input_save_id: { type:Number, default: 0 },
         rangetype: { type:String, default: '' },
+        title: { type:String, default: '' },
+        conso: { type:String, default: '' },
     },
     data () {
       return {

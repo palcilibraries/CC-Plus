@@ -13,5 +13,6 @@
             :codes="{{ json_encode($codes) }}"
             :job_count="{{ json_encode($job_count) }}"
             :presets="{{ json_encode($presets) }}"
+            :conso="{{ json_encode($conso) }}"
 ></harvesting>
 @endsection

@@ -470,9 +470,9 @@ class GlobalProviderController extends Controller
 
         // Set URL - either just one platform, or all of them
         if (count($global_providers) == 1) {
-            $_url = "https://registry.projectcounter.org/api/v1/platform/" . $global_providers[0]->registry_id . "/?format=json";
+            $_url = "https://registry.countermetrics.org/api/v1/platform/" . $global_providers[0]->registry_id . "/?format=json";
         } else {
-            $_url = "https://registry.projectcounter.org/api/v1/platform/?format=json";
+            $_url = "https://registry.countermetrics.org/api/v1/platform/?format=json";
         }
         // Make the request and validate as JSON
         $json = $this->requestURI($_url);

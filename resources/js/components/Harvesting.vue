@@ -5,16 +5,6 @@
     </h1>
     <v-expansion-panels multiple focusable v-model="panels">
       <!-- Manual Harvest -->
-      <v-expansion-panel v-if="job_count>0 && is_admin">
-        <v-expansion-panel-header>
-          <h2>System Job Queue</h2>
-        </v-expansion-panel-header>
-        <v-expansion-panel-content>
-          <harvestjobs-data-table :institutions="institutions" :providers="providers" :reports="reports" :filters="job_filters"
-          ></harvestjobs-data-table>
-        </v-expansion-panel-content>
-      </v-expansion-panel>
-      <!-- Manual Harvest -->
       <v-expansion-panel>
         <v-expansion-panel-header>
           <h2>Manual Harvesting</h2>
@@ -37,6 +27,16 @@
           <manual-harvest :institutions="harvest_insts" :inst_groups="groups" :providers="harvest_provs" :all_reports="reports"
                           :presets="presets" @new-harvests="addHarvests" @updated-harvests="updateHarvests"
           ></manual-harvest>
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+      <!-- Job Queue -->
+      <v-expansion-panel v-if="job_count>0 && is_admin">
+        <v-expansion-panel-header>
+          <h2>System Job Queue</h2>
+        </v-expansion-panel-header>
+        <v-expansion-panel-content>
+          <harvestjobs-data-table :institutions="institutions" :providers="providers" :reports="reports" :filters="job_filters"
+          ></harvestjobs-data-table>
         </v-expansion-panel-content>
       </v-expansion-panel>
       <!-- Harvest Log -->

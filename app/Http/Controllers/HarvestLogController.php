@@ -123,12 +123,13 @@ class HarvestLogController extends Controller
                $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
                                           ->where('id',$user_inst)->get(['id','name'])->toArray();
            }
-           $provider_data = GlobalProvider::whereIn('id', $possible_providers)->where('is_active', true)
+           $provider_data = GlobalProvider::with('sushiSettings')->whereIn('id', $possible_providers)->where('is_active', true)
                                           ->orderBy('name', 'ASC')->get(['id','name']);
 
            // Add in a flag for whether or not the provider has enabled sushi settings
            $providers = $provider_data->map(function ($rec) {
-               $rec->sushi_enabled = ($rec->status == 'Enabled') ? true : false;
+               $enabled_setting = $rec->sushiSettings->where('status','Enabled')->first();
+               $rec->sushi_enabled = ($enabled_setting) ? true : false;
                return $rec;
            })->toArray();
            if ($show_all) {

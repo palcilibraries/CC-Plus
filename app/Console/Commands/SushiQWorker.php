@@ -108,7 +108,7 @@ class SushiQWorker extends Command
         config(['database.connections.consodb.database' => 'ccplus_' . $consortium->ccp_key]);
         DB::reconnect();
         if (!is_null(config('ccplus.reports_path'))) {
-            $report_path = config('ccplus.reports_path') . $consortium->ccp_key;
+            $report_path = config('ccplus.reports_path') . "ConsortiumID_" . $consortium->id;
         }
 
        // Setup strings for job queries
@@ -281,7 +281,7 @@ class SushiQWorker extends Command
 
            // Set output filename for raw data. Create the folder path, if necessary
             if (!is_null(config('ccplus.reports_path'))) {
-                $full_path = $report_path . '/' . $setting->institution->name . '/' . $setting->provider->name . '/';
+                $full_path = $report_path . '/InstID_' . $setting->inst_id . '/ProvID_' . $setting->prov_id . '/';
                 if (!is_dir($full_path)) {
                     mkdir($full_path, 0755, true);
                 }

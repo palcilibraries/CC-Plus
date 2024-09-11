@@ -789,13 +789,19 @@ class HarvestLogController extends Controller
                return response()->json(['result' => false, 'msg' => 'Error - Not authorized']);
            }
        }
+
+       // Get consortium_id
+       $con = Consortium::where('ccp_key', session('ccp_con_key'))->first();
+       if (!$con) {
+          return response()->json(['result'=>false, 'msg'=>'Error: Current consortium is undefined.']);
+       }
+
        if (!is_null(config('ccplus.reports_path'))) {
            // Set the path and filename based on config and harvest sushsettings
-           $filename  = config('ccplus.reports_path') . session('ccp_con_key') . '/';
-           $filename .= $harvest->sushiSetting->institution->name . '/';
-           $filename .= $harvest->sushiSetting->provider->name . '/';
+           $filename  = config('ccplus.reports_path') . $con->id . '/';
+           $filename .= $harvest->sushiSetting->inst_id . '/' . $harvest->sushiSetting->prov_id . '/';
            $filename .= $harvest->rawfile;
-             // Confirm the file exists and is readable before trying to bzd and return it
+           // Confirm the file exists and is readable before trying to decrypt and return it
            if (!is_readable($filename)) {
                $msg = 'Raw datafile is not accessible.';
            }

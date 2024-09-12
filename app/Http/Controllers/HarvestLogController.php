@@ -123,15 +123,20 @@ class HarvestLogController extends Controller
                $institutions = Institution::with('sushiSettings:id,inst_id,prov_id')
                                           ->where('id',$user_inst)->get(['id','name'])->toArray();
            }
-           $provider_data = GlobalProvider::with('sushiSettings')->whereIn('id', $possible_providers)->where('is_active', true)
+           $provider_data = GlobalProvider::with('sushiSettings','consoProviders','consoProviders.reports')
+                                          ->whereIn('id', $possible_providers)->where('is_active', true)
                                           ->orderBy('name', 'ASC')->get(['id','name']);
 
            // Add in a flag for whether or not the provider has enabled sushi settings
-           $providers = $provider_data->map(function ($rec) {
-               $enabled_setting = $rec->sushiSettings->where('status','Enabled')->first();
-               $rec->sushi_enabled = ($enabled_setting) ? true : false;
-               return $rec;
-           })->toArray();
+           $providers = array();
+           foreach ($provider_data as $gp) {
+              $rec = array('id' => $gp->id, 'name' => $gp->name);
+              $enabled_setting = $gp->sushiSettings->where('status','Enabled')->first();
+              $rec['sushi_enabled'] = ($enabled_setting) ? true : false;
+              $_reports = $gp->enabledReports();
+              $rec['reports'] = $_reports;
+              $providers[] = $rec;
+           }
            if ($show_all) {
                array_unshift($providers, ['id' => 0, 'name' => 'All Consortium Providers', 'inst_id' => 1, 'sushi_enabled' => 1]);
            }
@@ -139,7 +144,7 @@ class HarvestLogController extends Controller
            // Get reports for all that exist in the relationship table
            $table = config('database.connections.consodb.database') . '.' . 'provider_report';
            $report_ids = DB::table($table)->distinct('report_id')->pluck('report_id')->toArray();
-           $reports = Report::whereIn('id', $report_ids)->orderBy('name', 'asc')->get()->toArray();
+           $reports = Report::whereIn('id', $report_ids)->orderBy('dorder', 'ASC')->get()->toArray();
 
            // Query for min and max yearmon values
            $bounds = $this->harvestBounds();
@@ -346,7 +351,7 @@ class HarvestLogController extends Controller
        // Get reports for all that exist in the relationship table
        $table = config('database.connections.consodb.database') . '.' . 'provider_report';
        $report_ids = DB::table($table)->distinct('report_id')->pluck('report_id')->toArray();
-       $all_reports = Report::whereIn('id', $report_ids)->orderBy('id', 'asc')->get()->toArray();
+       $all_reports = Report::whereIn('id', $report_ids)->orderBy('dorder', 'ASC')->get()->toArray();
 
        return view('harvests.create', compact('institutions','inst_groups','providers','all_reports','presets'));
    }

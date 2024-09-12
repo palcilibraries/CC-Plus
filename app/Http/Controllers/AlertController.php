@@ -89,7 +89,7 @@ class AlertController extends Controller
                           ->get(['prv.id','prv.name'])
                           ->toArray();
             }
-            $reports = Report::where('parent_id', '=', 0)->get(['id', 'name'])->toArray();
+            $reports = Report::where('parent_id',0)->orderBy('dorder', 'ASC')->get(['id', 'name'])->toArray();
 
             // Query for min and max yearmon values
             $bounds = array();

@@ -14,7 +14,7 @@ class GlobalProvider extends Model
     public function __construct(array $attributes = array())
     {
         parent::__construct($attributes);
-        $this->global_masters = Report::where('parent_id',0)->get();
+        $this->global_masters = Report::where('parent_id',0)->orderBy('dorder', 'ASC')->get();
     }
   /**
    * The database table used by the model.

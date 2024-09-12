@@ -63,7 +63,7 @@ class FailedHarvestController extends Controller
                 $_name = Report::where('id', '=', $rept)->value('name');
                 $details .= " : " . $_name . " report(s)";
             }
-            $reports = Report::where('parent_id', '=', 0)->get(['id', 'name'])->toArray();
+            $reports = Report::where('parent_id',0)->orderBy('dorder', 'ASC')->get(['id', 'name'])->toArray();
             if (!is_null($ymfr) || !is_null($ymto)) {
                 if (is_null($ymfr)) {
                     $ymfr = $ymto;

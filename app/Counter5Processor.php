@@ -520,7 +520,9 @@ class Counter5Processor extends Model
                 $_plat_name = mb_substr(utf8_encode($input_platform), 0, intval(config('ccplus.max_name_length')));
             }
             // If platform is known, return it's ID. If not, create a new entry
-            $platform = self::$all_platforms->where('name',$_plat_name)->first();
+            $platform = self::$all_platforms->filter(function ($p) use ($_plat_name) {
+                                                return (strtolower($p['name']) == strtolower($_plat_name));
+                                              })->first();
             if (!$platform) {
                 $platform = new Platform(['name' => $_plat_name]);
                 $platform->save();
@@ -551,7 +553,9 @@ class Counter5Processor extends Model
                 $_pub_name = mb_substr(utf8_encode($input_publisher), 0, intval(config('ccplus.max_name_length')));
             }
             // If publisher is known, return it's ID. If not, create a new entry
-            $publisher = self::$all_publishers->where('name',$_pub_name)->first();
+            $publisher = self::$all_publishers->filter(function ($p) use ($_pub_name) {
+                                                return (strtolower($p['name']) == strtolower($_pub_name));
+                                              })->first();
             if (!$publisher) {
                 $publisher = new Publisher(['name' => $_pub_name]);
                 $publisher->save();
@@ -581,7 +585,9 @@ class Counter5Processor extends Model
             } else {        // force to utf-8
                 $_type_name = mb_substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
             }
-            $accesstype = self::$all_accesstypes->where('name',$_type_name)->first();
+            $accesstype = self::$all_accesstypes->filter(function ($t) use ($_type_name) {
+                                                return (strtolower($t['name']) == strtolower($_type_name));
+                                              })->first();
             if (!$accesstype) {
                 $accesstype = new AccessType(['name' => $_type_name]);
                 $accesstype->save();
@@ -611,7 +617,9 @@ class Counter5Processor extends Model
             } else {        // force to utf-8
                 $_method_name = mb_substr(utf8_encode($input_method), 0, intval(config('ccplus.max_name_length')));
             }
-            $accessmethod = self::$all_accessmethods->where('name',$_method_name)->first();
+            $accessmethod = self::$all_accessmethods->filter(function ($m) use ($_method_name) {
+                                                return (strtolower($m['name']) == strtolower($_method_name));
+                                              })->first();
             if (!$accessmethod) {
                 $accessmethod = new AccessMethod(['name' => $_method_name]);
                 $accessmethod->save();
@@ -642,7 +650,9 @@ class Counter5Processor extends Model
         } else {        // force to utf-8
             $_type_name = mb_substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
         }
-        $datatype = self::$all_datatypes->where('name',$_type_name)->first();
+        $datatype = self::$all_datatypes->filter(function ($d) use ($_type_name) {
+                                            return (strtolower($d['name']) == strtolower($_type_name));
+                                          })->first();
         if (!$datatype) {
             $datatype = new DataType(['name' => $_type_name]);
             $datatype->save();
@@ -670,7 +680,9 @@ class Counter5Processor extends Model
             } else {        // force to utf-8
                 $_type_name = mb_substr(utf8_encode($input_type), 0, intval(config('ccplus.max_name_length')));
             }
-            $sectiontype = self::$all_sectiontypes->where('name',$_type_name)->first();
+            $sectiontype = self::$all_sectiontypes->filter(function ($s) use ($_type_name) {
+                                                return (strtolower($s['name']) == strtolower($_type_name));
+                                              })->first();
             if (!$sectiontype) {
                 $sectiontype = new SectionType(['name' => $_type_name]);
                 $sectiontype->save();
@@ -698,7 +710,9 @@ class Counter5Processor extends Model
          } else {
              $_name = utf8_encode($dbname);    // force to utf-8
          }
-         $database = self::$all_databases->where('name',$_name)->first();
+         $database = self::$all_databases->filter(function ($d) use ($_name) {
+                                             return (strtolower($d['name']) == strtolower($_name));
+                                           })->first();
          if ($database) {
              return $database;
          }
@@ -753,7 +767,12 @@ class Counter5Processor extends Model
      */
     private static function titleFindOrCreate($_title, $ident, $pub = "", $ver = "")
     {
+        // Return null if required ident data is missing
         if ($_title == "" && $ident['ISBN'] == "" && $ident['ISSN'] == "" && $ident['eISSN'] == "") {
+            return null;
+        }
+        if ( ($ident['type'] == 'B' && $ident['ISBN'] == "") ||
+             ($ident['type'] == 'J' && $ident['ISSN'] == "" && $ident['eISSN'] == "") ) {
             return null;
         }
 
@@ -767,23 +786,23 @@ class Counter5Processor extends Model
 
         // Query to find an existing title
         $match = null;
-        $nameAndType = array( array('type',$ident['type']), array('Title', $input_title) );
+        $nameAndType = array( array('type',$ident['type']), array('Title', 'LIKE', $input_title) );
         // Book Title
         if ($ident['type'] == 'B' && $ident['ISBN'] != '') {
-            $match = Title::where($nameAndType)->where('ISBN', $ident['ISBN'])->first();
+            $match = Title::where($nameAndType)->where('ISBN', 'LIKE', $ident['ISBN'])->first();
         // Journal or Item Title
         } else {
             $conditions = array();
             // Journals and Items both can have ISSN and eISSN
             if ($ident['ISSN'] != '') {
-                $conditions[] = array('ISSN', $ident['ISSN']);
+                $conditions[] = array('ISSN', 'LIKE', $ident['ISSN']);
             }
             if ($ident['eISSN'] != '') {
-                $conditions[] = array('eISSN', $ident['eISSN']);
+                $conditions[] = array('eISSN', 'LIKE', $ident['eISSN']);
             }
             // Items can have ISBN
             if ($ident['type'] == 'I' && $ident['ISBN'] != '') {
-                $conditions[] = array('ISBN', $ident['ISBN']);
+                $conditions[] = array('ISBN', 'LIKE', $ident['ISBN']);
             }
             if (count($conditions) > 0) {
                 // select * from titles where name and type match AND (one condition is met)
@@ -815,186 +834,4 @@ class Counter5Processor extends Model
             return null;
         }
     }
-
-//     /**
-//      * Function to find-or-create a Title in/from the global table
-//      *
-//      * @param $_title, $ident, $pub, $ver
-//      * @return Title or null for errors/missing input
-//      *
-//      * $title = self::titleFindOrCreate($_title, $ident, $pub, $ver);
-//      */
-//     private static function titleFindOrCreate($_title, $ident, $pub = "", $ver = "")
-//     {
-//         if (
-//             $_title == ""
-//             && $ident['PropID'] = ""
-//             && $ident['ISBN'] == ""
-//             && $ident['ISSN'] == ""
-//             && $ident['eISSN'] == ""
-//             && $ident['DOI'] == ""
-//             && $ident['URI'] == ""
-//         ) {
-//             return null;
-//         }
-//
-//        // UTF8 Encode title if it isnt already UTF-8
-//         $cur_encoding = mb_detect_encoding($_title);
-//         if ($cur_encoding == "UTF-8" && mb_check_encoding($_title, "UTF-8")) {
-//             $input_title = $_title;
-//         } else {
-//             $input_title = utf8_encode($_title);    // force to utf-8
-//         }
-//
-// //NOTE:: this whole section needs re-thinking... we're seeing multiple copies
-// //       with identical ISSN and eISSN and slight diffs in name (like a trademark symbol)
-// //   --> DOI seems to vary by-provider thoough... have to decide if it matters enough to make
-// //       extra copies to be able to distinguish by DOI <--
-//
-//        // Build the query to find an existing title; start by setting up the where clause
-//         $conditions = array();
-//         if ($ident['type'] == 'B' && $ident['ISBN'] != '') {
-//             $conditions[] = array('ISBN', '=', $ident['ISBN']);
-//         }
-//         if ($ident['type'] == 'J') {
-//             if ($ident['ISSN'] != '') {
-//                 $conditions[] = array('ISSN', '=', $ident['ISSN']);
-//             }
-//             if ($ident['eISSN'] != '') {
-//                 $conditions[] = array('eISSN', '=', $ident['eISSN']);
-//             }
-//         }
-//         if ($ident['type'] == 'I') {
-//             if ($ident['ISBN'] != '') {
-//                 $conditions[] = array('ISBN', '=', $ident['ISBN']);
-//             }
-//             if ($ident['ISSN'] != '') {
-//                 $conditions[] = array('ISSN', '=', $ident['ISSN']);
-//             }
-//             if ($ident['eISSN'] != '') {
-//                 $conditions[] = array('eISSN', '=', $ident['eISSN']);
-//             }
-//         }
-//         if ($ident['PropID'] != '') {
-//             $conditions[] = array('PropID', '=', $ident['PropID']);
-//         }
-//         if ($ident['DOI'] != '') {
-//             $conditions[] = array('DOI', '=', $ident['DOI']);
-//         }
-//         if ($ident['URI'] != '') {
-//             $conditions[] = array('URI', '=', $ident['URI']);
-//         }
-//
-//        // Run the query
-//         $matches = Title::where('type', '=', $ident['type'])->where(function ($query) use ($conditions, $input_title) {
-//                               $query->where('Title', '=', $input_title)
-//                                     ->orWhere($conditions);
-//         })->get();
-//
-//        // Loop through all the possibles
-//         $save_it = false;
-//         foreach ($matches as $match) {
-//             $matched = false;
-//            // If Title matches and other input fields are null, call it a match
-//             if (
-//                 $input_title != ""
-//                 && $input_title == $match->Title
-//                 && ( ($ident['PropID'] == ""
-//                 && $ident['ISSN'] == ""
-//                 && $ident['eISSN'] == ""
-//                       && $ident['DOI'] == ""
-//                       && $ident['URI'] == "")
-//                      || ($match->PropID == ""
-//                      && $match->ISSN == ""
-//                      && $match->eISSN == ""
-//                      && $match->ISBN == ""
-//                       && $match->DOI == ""
-//                       && $match->URI == "")
-//                    )
-//             ) {
-//                  $matched = true;
-//
-//            // If URI matches and other input fields are null, call it a match
-//             } else {
-//                 if (
-//                     $ident['URI'] != ""
-//                     && $ident['URI'] == $match->URI
-//                     && ( ($input_title == ""
-//                     && $ident['PropID'] == ""
-//                     && $ident['ISSN'] == ""
-//                           && $ident['eISSN'] == ""
-//                           && $ident['DOI'] == "")
-//                          || ($match->title == ""
-//                          && $match->PropID == ""
-//                          && $match->ISSN == ""
-//                          && $match->ISBN == ""
-//                           && $match->eISSN == ""
-//                           && $match->DOI == "")
-//                        )
-//                 ) {
-//                      $matched = true;
-//                 }
-//             }
-//
-//            // Test the remaining identifiers - except URI. If match is found, update fields in the
-//            // model that we have values for.
-//             if (
-//                 $matched ||
-//                 ($ident['PropID'] != "" &&
-//                 $match->PropID == $ident['PropID']) ||
-//                 ($ident['DOI'] != "" &&
-//                 $match->DOI == $ident['DOI']) ||
-//                 ($ident['ISSN'] != "" &&
-//                 $match->ISSN == $ident['ISSN']) ||
-//                 ($ident['eISSN'] != "" &&
-//                 $match->eISSN == $ident['eISSN'])
-//             ) {
-//                // Check matched fields, don't overwrite non-null model values with null
-//                 if ($input_title != "" && $match->Title != $input_title) {
-//                     $save_it = true;
-//                     $match->Title = $input_title;
-//                 }
-//                 if ($ident['PropID'] != "" && $match->PropID != $ident['PropID']) {
-//                     $save_it = true;
-//                     $match->PropID = $ident['PropID'];
-//                 }
-//                 if ($ident['DOI'] != "" && $match->DOI != $ident['DOI']) {
-//                     $save_it = true;
-//                     $match->DOI = $ident['DOI'];
-//                 }
-//                 if ($ident['ISSN'] != "" && $match->ISSN != $ident['ISSN']) {
-//                     $save_it = true;
-//                     $match->ISSN = $ident['ISSN'];
-//                 }
-//                 if ($ident['eISSN'] != "" && $match->eISSN != $ident['eISSN']) {
-//                     $save_it = true;
-//                     $match->eISSN = $ident['eISSN'];
-//                 }
-//                 if ($ident['URI'] != "" && $match->URI != $ident['URI']) {
-//                     $save_it = true;
-//                     $match->URI = $ident['URI'];
-//                 }
-//                 if ($save_it) {
-//                     $match->save();
-//                 }
-//                 return $match;
-//             }
-//         }
-//
-//        // If we get here, create a new record
-//         try {
-//             $new_title = new Title(['Title' => $input_title, 'ISSN' => $ident['ISSN'], 'eISSN' => $ident['eISSN'],
-//                                     'ISBN' => $ident['ISBN'], 'DOI' => $ident['DOI'],
-//                                     'PropID' => $ident['PropID'], 'URI' => $ident['URI'],
-//                                     'type' => $ident['type'], 'pub_date' => $pub, 'article_version' => $ver]);
-//             $new_title->save();
-//             return $new_title;
-//         } catch (\PDOException $e) {
-//             echo $e->getMessage();
-//             return null;
-//         } catch (Exception $e) {
-//             echo $e->getMessage();
-//             return null;
-//         }
-//     }
 }

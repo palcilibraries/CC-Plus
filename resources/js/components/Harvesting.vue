@@ -112,10 +112,6 @@
     },
     mounted() {
         this.harvest_provs = this.providers.filter(p => p.sushi_enabled);
-        if (this.harvest_provs.length > 1) {
-          this.harvest_provs.unshift({'id': 0, 'name':'All Consortium Providers'});
-          this.harvest_provs.unshift({'id':-1, 'name':'All Providers'});
-        }
         this.harvest_insts = [ ...this.institutions];
 
         // Subscribe to store updates

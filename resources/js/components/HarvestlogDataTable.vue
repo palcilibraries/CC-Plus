@@ -32,8 +32,9 @@
         <v-autocomplete :items="mutable_options['providers']" v-model="mutable_filters['prov']" @change="updateFilters('prov')"
                         multiple label="Provider(s)" item-text="name" item-value="id">
           <template v-slot:prepend-item>
-            <v-list-item>
-              <v-checkbox v-model="allConso" label="All Consortium Providers" @change="filterConsoProv"></v-checkbox>
+            <v-list-item @click="updateAllProvs">
+               <span v-if="allConsoProvs">Disable All</span>
+               <span v-else>All Consortium Providers</span>
             </v-list-item>
             <v-divider class="mt-1"></v-divider>
           </template>
@@ -45,8 +46,15 @@
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
         <v-autocomplete :items="mutable_options['institutions']" v-model="mutable_filters['inst']" @change="updateFilters('inst')"
-                        multiple label="Institution(s)"  item-text="name" item-value="id"
-        ></v-autocomplete>
+                        multiple label="Institution(s)"  item-text="name" item-value="id">
+          <template v-if="is_admin || is_viewer" v-slot:prepend-item>
+            <v-list-item @click="updateAllInsts">
+               <span v-if="allConsoInsts">Disable All</span>
+               <span v-else>All Institutions</span>
+            </v-list-item>
+            <v-divider class="mt-1"></v-divider>
+          </template>
+        </v-autocomplete>
       </v-col>
       <v-col v-if="groups.length>1 && (inst_filter==null || inst_filter=='G') && (is_admin || is_viewer)"
              class="d-flex px-2 align-center" cols="2" sm="2">
@@ -226,7 +234,8 @@
         inst_filter: null,
         mutable_dt_options: {},
         mutable_updated: [],
-        allConso: false,
+        allConsoProvs: false,
+        allConsoInsts: false,
         allCodes: false,
         expanded: [],
         mutable_options: { 'codes': [], 'reports': [], 'statuses': [], 'providers': [], 'institutions': [] },
@@ -270,11 +279,38 @@
         // Changing filters means clearing SelectedRows - otherwise Bulk Actions could affect
         // one of many rows no longer displayed.
         updateFilters(filt) {
+            // if All-insts is enabled, keep other checkboxes clear
+            if ( (filt == "inst" || filt == "group") && this.allConsoInsts) {
+                // All Institutions checkbox just got cleared?
+                if (this.mutable_filters['inst'].length == 0 && filt == "inst") {
+                    this.allConsoInsts = false;
+                    this.mutable_options['institutions'].splice(this.mutable_options['institutions'].findIndex(ii => ii.id==0),1);
+                } else {
+                    this.mutable_filters['inst'] = [0];
+                    this.mutable_filters['group'] = [];
+                    return;
+                }
+            }
+            // if All-provs is enabled, keep other checkboxes clear
+            if (filt == "prov" && this.allConsoProvs) {
+                // All Providers checkbox just got cleared?
+                if (this.mutable_filters['prov'].length == 0) {
+                    this.allConsoProvs = false;
+                    this.mutable_options['providers'].splice(this.mutable_options['providers'].findIndex(ii => ii.id==0),1);
+                } else {
+                    this.mutable_filters['prov'] = [0];
+                    return;
+                }
+            }
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             this.selectedRows = [];
-            if (this.mutable_filters['inst'].length>0) {
+            if (this.mutable_filters['inst'].length>0 || this.allConsoInsts) {
                 this.inst_filter = "I";
                 this.mutable_filters['group'] = [];
+                // Checked the box for all consortium insts - clear other checked insts in the filter
+                if (this.allConsoInsts) {
+                    this.mutable_filters['inst'] = [];
+                }
             } else if (this.mutable_filters['group'].length>0) {
                 this.inst_filter = "G";
                 this.mutable_filters['inst'] = [];
@@ -300,7 +336,8 @@
               this.mutable_options[key] = [...this[key]];
             });
             this.inst_filter = null;
-            this.allConso = false;
+            this.allConsoProvs = false;
+            this.allConsoInsts = false;
             this.allCodes = false;
             this.rangeKey += 1;           // force re-render of the date-range component
         },
@@ -328,6 +365,8 @@
             this.loading = true;
             if (this.filter_by_toYM != null) this.mutable_filters['toYM'] = this.filter_by_toYM;
             if (this.filter_by_fromYM != null) this.mutable_filters['fromYM'] = this.filter_by_fromYM;
+            if (this.allConsoInsts) this.mutable_filters['inst'] = [0];
+            if (this.allConsoProvs) this.mutable_filters['prov'] = [0];
             let _filters = JSON.stringify(this.mutable_filters);
             axios.get("/harvests?json=1&filters="+_filters)
                  .then((response) => {
@@ -445,7 +484,7 @@
         // @change function for filtering/clearing all consortium providers
         filterConsoProv() {
           // Just checked the box for all consortium providers
-          if (this.allConso) {
+          if (this.allConsoProvs) {
             this.consortiumProviders.forEach( (cp) => {
               if (!this.mutable_filters['prov'].includes(cp.id)) {
                 this.mutable_filters['prov'].push(cp.id);
@@ -467,6 +506,31 @@
           } else {
             this.mutable_filters['codes'] = [...this.codes];
             this.allCodes = true;
+          }
+        },
+        // @change function for filtering/clearing all providers
+        updateAllProvs() {
+          this.allConsoProvs = (this.allConsoProvs) ? false : true;
+          // Add/Remove the "All Poviders" from options depending on whether it is on or off
+          if (this.allConsoProvs) {
+            this.mutable_filters['prov'] = [0];
+            this.mutable_options['providers'].unshift({'id': 0, 'name':'All Consortium Providers'});
+          } else {
+            this.mutable_filters['prov'] = [];
+            this.mutable_options['providers'].splice(this.mutable_options['providers'].findIndex(p => p.id==0),1);
+          }
+        },
+        // @change function for filtering/clearing all institutions
+        updateAllInsts() {
+          this.allConsoInsts = (this.allConsoInsts) ? false : true;
+          if (this.allConsoInsts && (this.is_admin || this.is_viewer)) {
+            this.mutable_filters['inst'] = [0];
+            this.mutable_filters['group'] = [];
+            this.mutable_options['institutions'].unshift({'id': 0, 'name':'All Institutions'});
+          } else {
+            this.mutable_filters['inst'] = [];
+            this.mutable_filters['group'] = [];
+            this.mutable_options['institutions'].splice(this.mutable_options['institutions'].findIndex(ii => ii.id==0),1);
           }
         },
     },

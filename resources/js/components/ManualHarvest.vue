@@ -8,9 +8,16 @@
       <div v-if="this.is_admin">
         <v-row class="d-flex align-mid ma-2" no-gutters>
           <v-col v-if="form.inst_group_id==0" class="d-flex px-2" cols="3" sm="3">
-            <v-autocomplete :items="institutions" v-model="form.inst" @change="onInstChange" multiple label="Institution(s)"
-                            item-text="name" item-value="id" hint="Institution(s) to Harvest"
-            ></v-autocomplete>
+            <v-autocomplete :items="institution_options" v-model="form.inst" @change="onInstChange" multiple label="Institution(s)"
+                            item-text="name" item-value="id" hint="Institution(s) to Harvest">
+              <template v-if="is_admin || is_viewer" v-slot:prepend-item>
+                <v-list-item @click="updateAllInsts">
+                   <span v-if="allConsoInsts">Disable All</span>
+                   <span v-else>All Institutions</span>
+                </v-list-item>
+                <v-divider class="mt-1"></v-divider>
+              </template>
+            </v-autocomplete>
           </v-col>
           <v-col v-if="form.inst.length==0 && form.inst_group_id==0 " class="d-flex px-2" cols="1" sm="1">
             <strong>OR</strong>
@@ -32,8 +39,20 @@
       <v-row v-if="available_providers.length>0" class="d-flex ma-2" no-gutters>
         <v-col class="d-flex px-2" cols="3" sm="3">
           <v-autocomplete :items="available_providers" v-model="form.prov" @change="onProvChange" multiple label="Provider(s)"
-                          item-text="name" item-value="id" hint="Provider(s) to Harvest"
-          ></v-autocomplete>
+                          item-text="name" item-value="id" hint="Provider(s) to Harvest">
+            <template v-slot:prepend-item>
+              <v-list-item v-if="allConsoProvs || allProvs" @click="updateAllProvs('Clear')">
+                 <span>Disable All</span>
+              </v-list-item>
+              <v-list-item v-if="!allConsoProvs && !allProvs" @click="updateAllProvs('ALL')">
+                 <span>All Providers</span>
+              </v-list-item>
+              <v-list-item v-if="!allConsoProvs && !allProvs" @click="updateAllProvs('Conso')">
+                 <span>All Consortium Providers</span>
+              </v-list-item>
+              <v-divider class="mt-1"></v-divider>
+            </template>
+          </v-autocomplete>
         </v-col>
       </v-row>
       <v-row v-if="available_reports.length>0" class="d-flex ma-2" no-gutters>
@@ -123,7 +142,11 @@
             toMenu: false,
             maxYM: '',
             inst_name: '',
+            allProvs: false,
+            allConsoProvs: false,
+            allConsoInsts: false,
             available_providers: [ ...this.providers],
+            institution_options: [ ...this.institutions],
             available_reports: [],
             selected_insts: [],
         }
@@ -140,6 +163,12 @@
             this.selections_made = false;
             this.available_providers = [];
             this.available_reports = [];
+            this.allConsoInsts = false;
+            this.institution_options.splice(this.institution_options.findIndex(ii => ii.id == 0),1);
+            this.allProvs = false;
+            this.available_providers.splice(this.available_providers.findIndex(p => p.id == -1),1);
+            this.allConsoProvs = false;
+            this.available_providers.splice(this.available_providers.findIndex(p => p.id == 0),1);
         },
         // Verify provider preset value
         verifyProvPreset() {
@@ -147,7 +176,7 @@
             let prov = this.available_providers.find(p => p.id == preset_id);
             if (prov) {
                 this.form.prov = [preset_id];
-                this.onProvChange([preset_id]);
+                this.onProvChange();
             } else {
                 this.failure = 'The preset provider is not available - verify SUSHI credentials';
                 this.form.prov = [];
@@ -170,58 +199,98 @@
             this.selections_made = true;
         },
         // Update mutable providers when inst changes
-        onInstChange(inst_list) {
-            if (inst_list.length == 0) {
-                this.selected_insts = [];
-                this.available_providers = [ ...this.providers];
-            } else {
-                if (inst_list.some(id => id == 0)) {
+        onInstChange() {
+          this.failure = '';
+          // if All-insts is enabled, keep other checkboxes clear
+          if (this.allConsoInsts) {
+              // All Institutions checkbox just got cleared?
+              if (this.form.inst.length == 0) {
+                  this.allConsoInsts = false;
+                  this.institution_options.splice(this.institution_options.findIndex(ii => ii.id==0),1);
+              } else {
+                  this.form.inst = [0];
+                  this.inst_group_id = 0;
                   this.selected_insts = this.institutions.map(ii => ii.id);
-                } else {
-                  this.selected_insts = [ ...inst_list ];
-                }
-                this.updateProviders();
-            }
-            if (this.presets['prov_id']) this.verifyProvPreset();
-            this.selections_made = true;
+                  return;
+              }
+          }
+          if (this.form.inst.length == 0) {
+              this.selected_insts = [];
+              this.available_providers = [ ...this.providers];
+          } else {
+              if (this.form.inst.includes(0)) {
+                this.selected_insts = this.institutions.map(ii => ii.id);
+                this.form.inst = [0];
+              } else {
+                this.selected_insts = [ ...this.form.inst];
+              }
+              this.updateProviders();
+          }
+          if (this.presets['prov_id']) this.verifyProvPreset();
+          this.selections_made = true;
         },
         // External axios call to return available providers
         updateProviders () {
-            let inst_ids = JSON.stringify(this.form.inst);
+            let inst_ids = (this.allConsoInsts) ? JSON.stringify([0]) : JSON.stringify(this.form.inst);
             axios.get('/available-providers?inst_ids='+inst_ids+'&group_id='+this.form.inst_group_id)
                  .then((response) => {
                      this.available_providers = [ ...response.data.providers];
                  })
                  .catch(error => {});
         },
-        onProvChange(prov_list) {
+        onProvChange() {
+            let prov_list = [ ...this.form.prov];
             this.failure = '';
-            // If no providers, set to available to all
+            // if prov_list is empty, check the All Provider flags in case they need resetting
+            if (prov_list.length == 0) {
+                if (this.allConsoProvs) {
+                    this.allConsoProvs = false;
+                    this.available_providers.splice(this.available_providers.findIndex(p => p.id == 0),1);
+                }
+                if (this.allProvs) {
+                    this.allProvs = false;
+                    this.available_providers.splice(this.available_providers.findIndex(p => p.id == -1),1);
+                }
+            }
+            // Update prov_list if one of the All flags is on
+            if (this.allConsoProvs && prov_list.length>0) {
+                this.form.prov = [0];
+                prov_list = this.providers.filter(p => p.inst_id==1).map(p2 => p2.id);
+            }
+            if (this.allProvs && prov_list.length>0) {
+                this.form.prov = [-1];
+                prov_list = this.providers.map(p => p.id);
+            }
+            // If no providers, set reports to all
             if (prov_list.length == 0) {
                 this.available_reports = [ ...this.all_reports];
-            // Update available reports when providers changes
-            } else {
-                this.available_reports = [];
-                prov_list.forEach(pid => {
-                    let cur_prov = this.providers.find(p => p.id == pid);
-                    // cur_prov has no reports or we've already got all 4 turned on, skip the rest
-                    if (typeof(cur_prov.reports) == 'undefined') return;
-                    if (cur_prov.reports.length == 0) return;
-                    if (this.available_reports.length == 4) return;
-                    this.all_reports.forEach(rpt => {
-                        if (typeof(cur_prov.reports[rpt.name]) == 'undefined') return;
-                        let add = false;
-                        if (cur_prov.reports[rpt.name]=="ALL") {
-                          add = true;
-                        } else if (cur_prov.reports[rpt.name].length > 0) {
-                          cur_prov.reports[rpt.name].forEach( inst => {
-                            if (this.selected_insts.some(id => id == inst.id)) add = true;
-                          });
-                        }
-                        if (add) this.available_reports.push(rpt);
-                    });
-                });
+                this.selections_made = true;
+                return;
             }
+            // Update available reports when providers changes
+            this.available_reports = [];
+            prov_list.forEach(pid => {
+                let cur_prov = this.providers.find(p => p.id == pid);
+                if (typeof(cur_prov) == 'undefined') return;
+                // cur_prov has no reports or we've already got all 4 turned on, skip the rest
+                if (typeof(cur_prov.reports) == 'undefined') return;
+                if (this.available_reports.length == 4) return;
+                // loop across all report-type and check cur_prov to see if it should be enabled
+                this.all_reports.forEach(rpt => {
+                    // if already enabled or cur_prov missing the report in it's list, ship it
+                    if (this.available_reports.some(r => r.name == rpt.name) ||
+                        typeof(cur_prov.reports[rpt.name]) == 'undefined') return;
+                    let add = false;
+                    if (cur_prov.reports[rpt.name]=="ALL") {
+                      add = true;
+                    } else if (cur_prov.reports[rpt.name].length > 0) {
+                      cur_prov.reports[rpt.name].forEach( inst => {
+                        if (this.selected_insts.includes(inst)) add = true;
+                      });
+                    }
+                    if (add) this.available_reports.push(rpt);
+                });
+            });
             this.selections_made = true;
         },
         formSubmit (event) {
@@ -255,15 +324,54 @@
                     }
                 });
         },
+        // @change function for filtering/clearing all provider flags
+        updateAllProvs(scope) {
+          // Clear the flags and form value
+          if (scope == 'Clear') {
+              this.form.prov = [];
+              this.allProvs = false;
+              this.allConsoProvs = false;
+              this.available_providers.splice(this.available_providers.findIndex(p => p.id == 0),1);
+              this.available_providers.splice(this.available_providers.findIndex(p => p.id == -1),1);
+          // Add "All Providers" to options and set form value
+          } else if (scope == 'ALL') {
+              this.allProvs = true;
+              this.allConsoProvs = false;
+              this.form.prov = [-1];
+              this.available_providers.unshift({'id': -1, 'name':'All Providers'});
+          // Add "All Consortium Providers" to options and set form value
+          } else {
+              this.allProvs = false;
+              this.allConsoProvs = true;
+              this.form.prov = [0];
+              this.available_providers.unshift({'id': 0, 'name':'All Consortium Providers'});
+          }
+          this.onProvChange();
+        },
+        // @change function for filtering/clearing all institutions
+        updateAllInsts() {
+          this.allConsoInsts = (this.allConsoInsts) ? false : true;
+          if (this.allConsoInsts && (this.is_admin || this.is_viewer)) {
+            this.form.inst = [0];
+            this.inst_group_id = 0;
+            this.selected_insts = this.institutions.map(ii => ii.id);
+            this.institution_options.unshift({'id': 0, 'name':'All Institutions'});
+          } else {
+            this.form.inst = [];
+            this.selected_insts = [];
+            this.inst_group_id = 0;
+            this.institution_options.splice(this.institution_options.findIndex(ii => ii.id==0),1);
+          }
+        },
     },
     computed: {
-      ...mapGetters(['is_admin']),
+      ...mapGetters(['is_admin', 'is_viewer']),
     },
     mounted() {
       if ( !this.is_admin ) {
           this.form.inst = [this.institutions[0].id];
           this.inst_name = this.institutions[0].name;
-          this.onInstChange([this.form.inst]);
+          this.onInstChange();
       }
       let dt = new Date();
       this.maxYM = dt.getFullYear() + '-' + ('0' + (dt.getMonth()+1)).slice(-2);
@@ -272,7 +380,7 @@
       if (this.presets['inst_id']) {
           let instid = Number(this.presets['inst_id']);
           this.form.inst = [instid];
-          this.onInstChange([instid]);
+          this.onInstChange();
       }
 
       console.log('ManualHarvest Component mounted.');

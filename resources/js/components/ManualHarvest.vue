@@ -125,6 +125,7 @@
             inst_name: '',
             available_providers: [ ...this.providers],
             available_reports: [],
+            selected_insts: [],
         }
     },
     methods: {
@@ -157,7 +158,12 @@
         onGroupChange(groupid) {
             if (groupid == 0) {
                 this.available_providers = [ ...this.providers];
+                this.selected_insts = [];
             } else {
+                let group = this.inst_groups.find(g => g.id == groupid);
+                if (typeof(group) != 'undefined') {
+                    group.institutions.forEach(inst => { this.selected_insts.push(inst.id); });
+                }
                 this.updateProviders();
             }
             if (this.presets['prov_id']) this.verifyProvPreset();
@@ -166,8 +172,14 @@
         // Update mutable providers when inst changes
         onInstChange(inst_list) {
             if (inst_list.length == 0) {
+                this.selected_insts = [];
                 this.available_providers = [ ...this.providers];
             } else {
+                if (inst_list.some(id => id == 0)) {
+                  this.selected_insts = this.institutions.map(ii => ii.id);
+                } else {
+                  this.selected_insts = [ ...inst_list ];
+                }
                 this.updateProviders();
             }
             if (this.presets['prov_id']) this.verifyProvPreset();
@@ -192,18 +204,22 @@
                 this.available_reports = [];
                 prov_list.forEach(pid => {
                     let cur_prov = this.providers.find(p => p.id == pid);
-                    if (typeof(cur_prov.reports) != 'undefined') {
-                        cur_prov.reports.forEach(report =>{
-                            if (!this.available_reports.some(elem => elem.id === report.id)) {
-                                this.available_reports.push(report);
-                            }
-                        });
-                    }
-                });
-                this.available_reports.sort((a,b) => {
-                  if ( a.name < b.name ) return -1;
-                  if ( a.name > b.name ) return 1;
-                  return 0;
+                    // cur_prov has no reports or we've already got all 4 turned on, skip the rest
+                    if (typeof(cur_prov.reports) == 'undefined') return;
+                    if (cur_prov.reports.length == 0) return;
+                    if (this.available_reports.length == 4) return;
+                    this.all_reports.forEach(rpt => {
+                        if (typeof(cur_prov.reports[rpt.name]) == 'undefined') return;
+                        let add = false;
+                        if (cur_prov.reports[rpt.name]=="ALL") {
+                          add = true;
+                        } else if (cur_prov.reports[rpt.name].length > 0) {
+                          cur_prov.reports[rpt.name].forEach( inst => {
+                            if (this.selected_insts.some(id => id == inst.id)) add = true;
+                          });
+                        }
+                        if (add) this.available_reports.push(rpt);
+                    });
                 });
             }
             this.selections_made = true;
@@ -247,7 +263,7 @@
       if ( !this.is_admin ) {
           this.form.inst = [this.institutions[0].id];
           this.inst_name = this.institutions[0].name;
-          this.onInstChange(this.form.inst);
+          this.onInstChange([this.form.inst]);
       }
       let dt = new Date();
       this.maxYM = dt.getFullYear() + '-' + ('0' + (dt.getMonth()+1)).slice(-2);

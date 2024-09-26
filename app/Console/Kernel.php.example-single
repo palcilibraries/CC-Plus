@@ -44,11 +44,19 @@ class Kernel extends ConsoleKernel
       /*
        * Settings for Consortium (ID=1)
        */
+        // Scan providers for consortium:1, daily, to load any scheduled requests into the ccplus_global.jobs table
         $schedule->command('ccplus:sushiloader 1')->daily();
-        $schedule->command('ccplus:sushiqw 1 Conso1_QW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
-                                              ->appendOutputTo('/var/log/ccplus/harvests.log');
-        $schedule->command('ccplus:sushiqw 1 Conso1_QW2 5')->runInBackground()->everyTenMinutes()->withoutOverlapping()
-                                              ->appendOutputTo('/var/log/ccplus/harvests.log');
+        // Scan+Process the global jobs table and requests reports; Raw JSON data files are saved to
+        // ccplus_global.global_settings:report_path . {consortium_id} . "/0_unprocessed/"
+        $schedule->command('ccplus:sushiharvester')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+                                                   ->appendOutputTo('/var/log/ccplus/harvests.log');
+        // Run one processor per consortium - FIFO
+        $schedule->command('ccplus:reportprocessor 1 t ConsoQW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+                                                                 ->appendOutputTo('/var/log/ccplus/harvests.log');
+        // This processor would follow "dorder" assignments in the ccplus_global.reports table
+        // (default as installation would be:  PR, DR, TR, IR), and then FIFO within each master report
+        // $schedule->command('ccplus:reportprocessor 1 d ConsoQW1')->runInBackground()->everyTenMinutes()->withoutOverlapping()
+        //                                                          ->appendOutputTo('/var/log/ccplus/harvests.log');
     }
 
     /**

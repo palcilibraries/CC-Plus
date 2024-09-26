@@ -108,11 +108,11 @@ class UserController extends Controller
                 // Setup array for this user data
                 $user = $rec->toArray();
                 $user['fiscalYr'] = ($rec->fiscalYr) ? $rec->fiscalYr : config('ccplus.fiscalYr');
-                $user['roles'] = $rec->roles->pluck('id')->toArray();  // Get user's roles as array of IDs
 
                 // Set role_string to hold user's highest access right (other than viewer)
                 $access_role_ids = $rec->roles->where('id','<>',$viewRoleId)->pluck('id')->toArray();
                 $user['role_string'] = $all_roles->where('id', max($access_role_ids))->first()->name;
+                $user_is_admin = in_array($user['role_string'],["ServerAdmin", "Admin", "Manager"]);
                 if ($user['role_string'] == 'Manager') $user['role_string'] = "Local Admin";
                 if ($user['role_string'] == 'Admin') $user['role_string'] = "Consortium Admin";
 
@@ -122,6 +122,9 @@ class UserController extends Controller
                         $user['role_string'] .= ", Consortium Viewer";
                     }
                 }
+                // Set user's roles as array of IDs; exclude "User" for admins
+                $user['roles'] = ($user_is_admin) ? $rec->roles->where('id','>',1)->pluck('id')->toArray()
+                                                  : $rec->roles->pluck('id')->toArray();
                 $data[] = $user;
             }
             return response()->json(['users' => $data], 200);
@@ -336,6 +339,17 @@ class UserController extends Controller
                 $input['fiscalYr'] = null;
             }
         }
+                // Setup array for this user data
+                $user = $rec->toArray();
+                $user['fiscalYr'] = ($rec->fiscalYr) ? $rec->fiscalYr : config('ccplus.fiscalYr');
+                $user['roles'] = $rec->roles->pluck('id')->toArray();  // Get user's roles as array of IDs
+
+                // Set role_string to hold user's highest access right (other than viewer)
+                $access_role_ids = $rec->roles->where('id','<>',$viewRoleId)->pluck('id')->toArray();
+                $user['role_string'] = $all_roles->where('id', max($access_role_ids))->first()->name;
+                $user_is_admin = in_array($user['role_string'],["ServerAdmin", "Admin", "Manager"]);
+                if ($user['role_string'] == 'Manager') $user['role_string'] = "Local Admin";
+                if ($user['role_string'] == 'Admin') $user['role_string'] = "Consortium Admin";
 
         // Only admins can change inst_id
         if (!$thisUser->hasRole("Admin")) {
@@ -388,6 +402,7 @@ class UserController extends Controller
         // Set role_string to hold user's highest access right (other than viewer)
         $access_role_ids = $user->roles->where('id','<>',$viewer_role_id)->pluck('id')->toArray();
         $updated_user['role_string'] = $all_roles->where('id', max($access_role_ids))->first()->name;
+        $user_is_admin = in_array($updated_user['role_string'],["ServerAdmin", "Admin", "Manager"]);
         if ($updated_user['role_string'] == 'Manager') $updated_user['role_string'] = "Local Admin";
         if ($updated_user['role_string'] == 'Admin') $updated_user['role_string'] = "Consortium Admin";
         // non-admins with Viewer get it tacked onto their role_string
@@ -396,6 +411,9 @@ class UserController extends Controller
                 $updated_user['role_string'] .= ", Consortium Viewer";
             }
         }
+        // Set user's roles as array of IDs; exclude "User" for admins
+        $updated_user['roles'] = ($user_is_admin) ? $user->roles->where('id','>',1)->pluck('id')->toArray()
+                                                  : $user->roles->pluck('id')->toArray();
 
         return response()->json(['result' => true, 'msg' => 'User settings successfully updated',
                                  'user' => $updated_user]);

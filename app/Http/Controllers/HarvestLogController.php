@@ -646,6 +646,7 @@ class HarvestLogController extends Controller
            return response()->json(['result' => false,
                                     'msg' => 'Invalid request: harvest status cannot be changed.']);
        }
+       $original_status = $harvest->status;
 
        // Stopping a harvest also means deleting any corresponding job thats in the queue
        if ($input['status'] == 'Stopped') {
@@ -669,12 +670,25 @@ class HarvestLogController extends Controller
        }
        $harvest['updated'] = substr($harvest->updated_at,0,10);
 
-       // If we're resetting, so create a Job entry if it doesn't exist
+       // If we're resetting to Queued
        if ($harvest->status == 'Queued') {
+           // Get consortium record
            $con = Consortium::where('ccp_key', '=', session('ccp_con_key'))->first();
            if (!$con) {
                return response()->json(['result' => false, 'msg' => 'Error: Corrupt session or consortium settings']);
            }
+
+           // If the harvest was originally set with status = 'Harvested'
+           if ($original_status == 'Harvested' &&  !is_null(config('ccplus.reports_path'))) {
+               // get rid of the downloaded data file(s)
+               $searchPat = config('ccplus.reports_path') . $con->id . '/0_unprocessed/' . $harvest->id . "_*";
+               $matches = glob($searchPat);
+               foreach ($matches as $_file) {
+                 unlink($_file);
+               }
+           }
+
+           // Create a Job entry if it doesn't exist
            try {
                $newjob = SushiQueueJob::create(['consortium_id' => $con->id,
                                                 'harvest_id' => $harvest->id,
@@ -795,9 +809,19 @@ class HarvestLogController extends Controller
 
        if (!is_null(config('ccplus.reports_path'))) {
            // Set the path and filename based on config and harvest sushsettings
+           $return_name = "";
            $filename  = config('ccplus.reports_path') . $con->id . '/';
-           $filename .= $harvest->sushiSetting->inst_id . '/' . $harvest->sushiSetting->prov_id . '/';
-           $filename .= $harvest->rawfile;
+           if ($harvest->status = 'Harvested') {
+               $searchPat = $filename . "0_unprocessed/" . $harvest->id . "_*";
+               $matches = glob($searchPat);
+               $filename = (count($matches) > 0) ? $matches[0] : "/_xyzzy_/not-found";
+               $return_name = substr($filename, strrpos($filename,'/',0)+1);
+           } else {
+               $filename .= $harvest->sushiSetting->inst_id . '/' . $harvest->sushiSetting->prov_id . '/';
+               $filename .= $harvest->rawfile;
+               $return_name = $harvest->rawfile;
+           }
+
            // Confirm the file exists and is readable before trying to decrypt and return it
            if (!is_readable($filename)) {
                $msg = 'Raw datafile is not accessible.';
@@ -805,7 +829,7 @@ class HarvestLogController extends Controller
 
            return response()->streamDownload(function () use ($filename) {
                echo bzdecompress(Crypt::decrypt(File::get($filename), false));
-           }, $harvest->rawfile);
+           }, $return_name);
        } else {
            $msg = 'System not configured to save raw data, check config value of CCP_REPORTS.';
        }

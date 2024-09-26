@@ -131,7 +131,7 @@
           {{ item.prov_name }}
         </template>
         <template v-slot:item.error_code="{ item }">
-          <span v-if="item.error_code==null && item.status=='Success'">
+          <span v-if="item.error_code==null && (item.status=='Success' || item.status=='Harvested')">
             <v-icon title="Download Raw JSON Data" @click="goURL('/harvests/'+item.id+'/raw')">mdi-download</v-icon>
           </span>
           <span v-else> {{ item.error_code }}</span>
@@ -241,8 +241,8 @@
         mutable_options: { 'codes': [], 'reports': [], 'statuses': [], 'providers': [], 'institutions': [] },
         source: ['Consortium', 'Institution'],
         truncatedResult: false,
-        statuses: ['Active', 'Fail', 'Queued', 'Stopped', 'Success'],
-        status_changeable: ['Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
+        statuses: ['Active', 'Fail', 'Queued', 'Harvested', 'Stopped', 'Success'],
+        status_changeable: ['Harvested', 'Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
         bulk_actions: [ { action:'Stop',    status:'Stopped'},
                         { action:'Restart', status:'Queued'},
                         { action:'Delete',  status:'Delete'}

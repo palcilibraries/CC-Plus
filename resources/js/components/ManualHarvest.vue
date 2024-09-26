@@ -12,7 +12,7 @@
                             item-text="name" item-value="id" hint="Institution(s) to Harvest">
               <template v-if="is_admin || is_viewer" v-slot:prepend-item>
                 <v-list-item @click="updateAllInsts">
-                   <span v-if="allConsoInsts">Disable All</span>
+                   <span v-if="allConsoInsts">Clear Selections</span>
                    <span v-else>All Institutions</span>
                 </v-list-item>
                 <v-divider class="mt-1"></v-divider>
@@ -42,7 +42,7 @@
                           item-text="name" item-value="id" hint="Provider(s) to Harvest">
             <template v-slot:prepend-item>
               <v-list-item v-if="allConsoProvs || allProvs" @click="updateAllProvs('Clear')">
-                 <span>Disable All</span>
+                 <span>Clear Selections</span>
               </v-list-item>
               <v-list-item v-if="!allConsoProvs && !allProvs" @click="updateAllProvs('ALL')">
                  <span>All Providers</span>

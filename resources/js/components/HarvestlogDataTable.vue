@@ -33,7 +33,7 @@
                         multiple label="Provider(s)" item-text="name" item-value="id">
           <template v-slot:prepend-item>
             <v-list-item @click="updateAllProvs">
-               <span v-if="allConsoProvs">Disable All</span>
+               <span v-if="allConsoProvs">Clear Selections</span>
                <span v-else>All Consortium Providers</span>
             </v-list-item>
             <v-divider class="mt-1"></v-divider>
@@ -49,7 +49,7 @@
                         multiple label="Institution(s)"  item-text="name" item-value="id">
           <template v-if="is_admin || is_viewer" v-slot:prepend-item>
             <v-list-item @click="updateAllInsts">
-               <span v-if="allConsoInsts">Disable All</span>
+               <span v-if="allConsoInsts">Clear Selections</span>
                <span v-else>All Institutions</span>
             </v-list-item>
             <v-divider class="mt-1"></v-divider>
@@ -113,7 +113,7 @@
                     label="Error Code">
             <template v-slot:prepend-item>
               <v-list-item @click="filterAllCodes">
-                 <span v-if="allCodes">Disable All</span>
+                 <span v-if="allCodes">Clear Selections</span>
                  <span v-else>Enable All</span>
               </v-list-item>
               <v-divider class="mt-1"></v-divider>

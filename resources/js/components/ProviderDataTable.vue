@@ -79,40 +79,41 @@
         <span v-else>{{ item.name }}</span>
       </template>
       <template v-slot:item.PR_status="{ item }">
-        <v-icon v-if="item.PR_status=='C'" title="PR is enabled for the consortium">
+        <v-icon v-if="item.PR_status=='C'" title="PR is enabled for the consortium" color="gray">
                 mdi-checkbox-multiple-marked-circle-outline</v-icon>
         <v-icon v-else-if="item.PR_status=='I'" title="PR is enabled for this institution" color="green">
                 mdi-checkbox-marked-circle-outline</v-icon>
-        <v-icon v-else-if="item.PR_status=='A'" title="PR is available but not enabled" color="blue">
+        <v-icon v-else-if="item.PR_status=='A'" title="PR is available but not enabled" color="green">
                 mdi-shape-circle-plus</v-icon>
-        <v-icon v-else="item.PR_status=='NA'" title="PR is not available" color="#c9c9c9">mdi-minus-circle-outline</v-icon>
+        <!-- <v-icon v-else="item.PR_status=='NA'" title="PR is not available" color="#c9c9c9">mdi-minus-circle-outline</v-icon> -->
+        <v-icon v-else="item.PR_status=='NA'" title="PR is not available" color="gray">mdi-minus-circle-outline</v-icon>
       </template>
       <template v-slot:item.DR_status="{ item }">
-        <v-icon v-if="item.DR_status=='C'" title="DR is enabled for the consortium">
+        <v-icon v-if="item.DR_status=='C'" title="DR is enabled for the consortium" color="gray">
                 mdi-checkbox-multiple-marked-circle-outline</v-icon>
         <v-icon v-else-if="item.DR_status=='I'" title="DR is enabled for this institution" color="green">
                 mdi-checkbox-marked-circle-outline</v-icon>
-        <v-icon v-else-if="item.DR_status=='A'" title="DR is available but not enabled" color="blue">
+        <v-icon v-else-if="item.DR_status=='A'" title="DR is available but not enabled" color="green">
                 mdi-shape-circle-plus</v-icon>
-        <v-icon v-else="item.DR_status=='NA'" title="DR is not available" color="#c9c9c9">mdi-minus-circle-outline</v-icon>
+        <v-icon v-else="item.DR_status=='NA'" title="DR is not available" color="gray">mdi-minus-circle-outline</v-icon>
       </template>
       <template v-slot:item.TR_status="{ item }">
-        <v-icon v-if="item.TR_status=='C'" title="TR is enabled for the consortium">
+        <v-icon v-if="item.TR_status=='C'" title="TR is enabled for the consortium" color="gray">
                 mdi-checkbox-multiple-marked-circle-outline</v-icon>
         <v-icon v-else-if="item.TR_status=='I'" title="TR is enabled for this institution" color="green">
                 mdi-checkbox-marked-circle-outline</v-icon>
-        <v-icon v-else-if="item.TR_status=='A'" title="TR is available but not enabled" color="blue">
+        <v-icon v-else-if="item.TR_status=='A'" title="TR is available but not enabled" color="green">
                 mdi-shape-circle-plus</v-icon>
-        <v-icon v-else="item.TR_status=='NA'" title="TR is not available" color="#c9c9c9">mdi-minus-circle-outline</v-icon>
+        <v-icon v-else="item.TR_status=='NA'" title="TR is not available" color="gray">mdi-minus-circle-outline</v-icon>
       </template>
       <template v-slot:item.IR_status="{ item }">
-        <v-icon v-if="item.IR_status=='C'" title="IR is enabled for the consortium">
+        <v-icon v-if="item.IR_status=='C'" title="IR is enabled for the consortium" color="gray">
                 mdi-checkbox-multiple-marked-circle-outline</v-icon>
         <v-icon v-else-if="item.IR_status=='I'" title="IR is enabled for this institution" color="green">
                 mdi-checkbox-marked-circle-outline</v-icon>
-        <v-icon v-else-if="item.IR_status=='A'" title="IR is available but not enabled" color="blue">
+        <v-icon v-else-if="item.IR_status=='A'" title="IR is available but not enabled" color="green">
                 mdi-shape-circle-plus</v-icon>
-        <v-icon v-else="item.IR_status=='NA'" title="IR is not available" color="#c9c9c9">mdi-minus-circle-outline</v-icon>
+        <v-icon v-else="item.IR_status=='NA'" title="IR is not available" color="gray">mdi-minus-circle-outline</v-icon>
       </template>
       <template v-slot:item.connection_count="{ item }">
         <span v-if="(typeof(item.connected)=='undefined')">0</span>

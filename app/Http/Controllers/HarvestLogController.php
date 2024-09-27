@@ -823,13 +823,13 @@ class HarvestLogController extends Controller
            }
 
            // Confirm the file exists and is readable before trying to decrypt and return it
-           if (!is_readable($filename)) {
+           if (is_readable($filename)) {
+               return response()->streamDownload(function () use ($filename) {
+                   echo bzdecompress(Crypt::decrypt(File::get($filename), false));
+               }, $return_name);
+           } else {
                $msg = 'Raw datafile is not accessible.';
            }
-
-           return response()->streamDownload(function () use ($filename) {
-               echo bzdecompress(Crypt::decrypt(File::get($filename), false));
-           }, $return_name);
        } else {
            $msg = 'System not configured to save raw data, check config value of CCP_REPORTS.';
        }

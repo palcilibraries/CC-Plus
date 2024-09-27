@@ -811,7 +811,7 @@ class HarvestLogController extends Controller
            // Set the path and filename based on config and harvest sushsettings
            $return_name = "";
            $filename  = config('ccplus.reports_path') . $con->id . '/';
-           if ($harvest->status = 'Harvested') {
+           if ($harvest->status == 'Harvested') {
                $searchPat = $filename . "0_unprocessed/" . $harvest->id . "_*";
                $matches = glob($searchPat);
                $filename = (count($matches) > 0) ? $matches[0] : "/_xyzzy_/not-found";

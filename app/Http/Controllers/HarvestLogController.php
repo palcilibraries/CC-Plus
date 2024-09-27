@@ -818,7 +818,7 @@ class HarvestLogController extends Controller
                $return_name = substr($filename, strrpos($filename,'/',0)+1);
            } else {
                $filename .= $harvest->sushiSetting->inst_id . '/' . $harvest->sushiSetting->prov_id . '/';
-               $filename .= $harvest->rawfile;
+               $filename .= (is_null($harvest->rawfile)) ? 'not-found' : $harvest->rawfile;
                $return_name = $harvest->rawfile;
            }
 

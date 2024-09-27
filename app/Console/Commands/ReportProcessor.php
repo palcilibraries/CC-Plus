@@ -146,7 +146,9 @@ class ReportProcessor extends Command
             if (count($file_glob) == 0) continue;
 
            // sort a glob by time, oldest -> newest
-            usort($file_glob, fn($a, $b) => filemtime($a) - filemtime($b));
+            usort($file_glob, function($a, $b) {
+                return filemtime($a) - filemtime($b);
+            });
 
            // Process the files
             foreach ($file_glob as $jsonFile) {

@@ -13,17 +13,27 @@ use App\Provider;
 use App\GlobalProvider;
 use App\Institution;
 use App\InstitutionGroup;
+use App\Sushi;
 use App\SushiSetting;
 use App\SushiQueueJob;
+use App\ConnectionField;
 use Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Crypt;
 
 class HarvestLogController extends Controller
 {
+   private $connection_fields;
+
    public function __construct()
    {
        $this->middleware('auth');
+       // Load all connection fields
+       try {
+         $this->connection_fields = ConnectionField::get();
+       } catch (\Exception $e) {
+         $this->connection_fields = array();
+       }
    }
 
    /**
@@ -38,8 +48,8 @@ class HarvestLogController extends Controller
        $json = ($request->input('json')) ? true : false;
 
        // Assign optional inputs to $filters array
-       $filters = array('inst' => [], 'prov' => [], 'rept' => [], 'harv_stat' => [], 'updated' => null, 'group' => [],
-                        'fromYM' => null, 'toYM' => null, 'source' => null, 'codes' => []);
+       $filters = array('institutions' => [], 'providers' => [], 'reports' => [], 'harv_stat' => [], 'updated' => null,
+                        'group' => [], 'fromYM' => null, 'toYM' => null, 'source' => null, 'codes' => []);
        if ($request->input('filters')) {
            $filter_data = json_decode($request->input('filters'));
            foreach ($filter_data as $key => $val) {
@@ -69,7 +79,7 @@ class HarvestLogController extends Controller
        $show_all = $thisUser->hasAnyRole(["Admin","Viewer"]);
        if (!$show_all) {
            $user_inst = $thisUser->inst_id;
-           $filters['inst'] = array($user_inst);
+           $filters['institutions'] = array($user_inst);
        }
 
        // Make sure dates are sensible
@@ -162,8 +172,8 @@ class HarvestLogController extends Controller
            $limit_to_insts = array();
            if ($show_all) {
                // if checkbox for all-consortium is on, clear inst and group Filters
-               if (in_array(0,$filters["inst"])) {
-                   $filters['inst'] = array();
+               if (in_array(0,$filters["institutions"])) {
+                   $filters['institutions'] = array();
                    $filters['group'] = array();
                }
                if (sizeof($filters['group']) > 0) {
@@ -178,8 +188,8 @@ class HarvestLogController extends Controller
                            );
                        }
                    }
-               } else if (sizeof($filters['inst']) > 0) {
-                   $limit_to_insts = $filters['inst'];
+               } else if (sizeof($filters['institutions']) > 0) {
+                   $limit_to_insts = $filters['institutions'];
                }
            } else {
                $limit_to_insts[] = $thisUser->inst_id;
@@ -187,11 +197,11 @@ class HarvestLogController extends Controller
 
            // Setup limit_to_provs with the provID's we'll pull settings for
            $limit_to_provs = array();   // default to no limit
-           if ($show_all && in_array(0,$filters["prov"])) {   //  Get all consortium providers?
+           if ($show_all && in_array(0,$filters["providers"])) {   //  Get all consortium providers?
                $limit_to_provs = GlobalProvider::with('sushiSettings', 'sushiSettings.institution:id,is_active')
                                                ->pluck('id')->toArray();
-           } else if (!in_array(-1,$filters["prov"]) && count($filters['prov']) > 0) {
-               $limit_to_provs = $filters['prov'];
+           } else if (!in_array(-1,$filters["providers"]) && count($filters['providers']) > 0) {
+               $limit_to_provs = $filters['providers'];
            }
 
            // Set array of statuses to pull (if filter is set)
@@ -214,12 +224,12 @@ class HarvestLogController extends Controller
                                    })->get(['id','inst_id','prov_id']);
            $settings_ids = $settings->pluck('id')->toArray();
            $harvest_data = HarvestLog::
-               with('report:id,name','sushiSetting','sushiSetting.institution:id,name','sushiSetting.provider:id,name',
+               with('report:id,name','sushiSetting','sushiSetting.institution:id,name','sushiSetting.provider',
                     'lastError','failedHarvests','failedHarvests.ccplusError')
                ->whereIn('sushisettings_id', $settings_ids)
                ->orderBy('updated_at', 'DESC')
-               ->when(sizeof($filters['rept']) > 0, function ($qry) use ($filters) {
-                   return $qry->whereIn('report_id', $filters['rept']);
+               ->when(sizeof($filters['reports']) > 0, function ($qry) use ($filters) {
+                   return $qry->whereIn('report_id', $filters['reports']);
                })
                ->when(sizeof($filters['codes']) > 0, function ($qry) use ($filters) {
                    return $qry->whereIn('error_id', $filters['codes']);
@@ -1069,6 +1079,18 @@ class HarvestLogController extends Controller
        }
        $rec['failed'] = [];
        if ($harvest->failedHarvests) {
+           // Build a URL to test+confirm the error(s); let Sushi class do the work
+           $beg = $harvest->yearmon . '-01';
+           $end = $harvest->yearmon . '-' . date('t', strtotime($beg));
+           $sushi = new Sushi($beg, $end);
+           // setup required connectors for buildUri
+           $rec['cnx-0'] = $this->connection_fields;
+           $prov_connectors = $harvest->sushiSetting->provider->connectors;
+           $rec['cnx-1'] = $prov_connectors;
+           $connectors = $this->connection_fields->whereIn('id',$prov_connectors)->pluck('name')->toArray();
+           $rec['cnx'] = $connectors;
+           $rec['retryUrl'] = $sushi->buildUri($harvest->sushiSetting, $connectors, 'reports', $harvest->report);
+           // Format and save the failed records
            foreach ($harvest->failedHarvests->sortByDesc('created_at') as $fh) {
                $info = array("id" => $fh->id, "ts" => date("Y-m-d H:i:s", strtotime($fh->created_at)),
                              "code" => $fh->ccplusError->id, "message" => $fh->ccplusError->message);

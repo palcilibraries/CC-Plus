@@ -26,33 +26,49 @@
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if="mutable_filters['prov'].length>0" class="x-box">
-            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
+        <div v-if="mutable_filters['providers'].length>0" class="x-box">
+            <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('providers')"/>&nbsp;
         </div>
-        <v-autocomplete :items="mutable_options['providers']" v-model="mutable_filters['prov']" @change="updateFilters('prov')"
-                        multiple label="Provider(s)" item-text="name" item-value="id">
+        <v-autocomplete :items="mutable_options['providers']" v-model="mutable_filters['providers']"
+                        @change="updateFilters('providers')" multiple label="Provider(s)" item-text="name" item-value="id">
           <template v-slot:prepend-item>
-            <v-list-item @click="updateAllProvs">
-               <span v-if="allConsoProvs">Clear Selections</span>
-               <span v-else>All Consortium Providers</span>
+            <v-list-item @click="filterAll('providers')">
+               <span v-if="allSelected.providers">Clear Selections</span>
+               <span v-else>Enable All</span>
             </v-list-item>
             <v-divider class="mt-1"></v-divider>
+          </template>
+          <template v-slot:selection="{ item, index }">
+            <span v-if="index==0 && mutable_options['providers'].length==mutable_filters['providers'].length">All Providers</span>
+            <span v-else-if="index==0 && !allSelected.providers">{{ item.name }}</span>
+            <span v-else-if="index===1 && !allSelected.providers" class="text-grey text-caption align-self-center">
+              &nbsp; +{{ mutable_filters['providers'].length-1 }} more
+            </span>
           </template>
         </v-autocomplete>
       </v-col>
       <v-col v-if="institutions.length>1 && (inst_filter==null || inst_filter=='I')"
              class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if="mutable_filters['inst'].length>0" class="x-box">
-          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
+        <div v-if="mutable_filters['institutions'].length>0" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('institutions')"/>&nbsp;
         </div>
-        <v-autocomplete :items="mutable_options['institutions']" v-model="mutable_filters['inst']" @change="updateFilters('inst')"
-                        multiple label="Institution(s)"  item-text="name" item-value="id">
+        <v-autocomplete :items="mutable_options['institutions']" v-model="mutable_filters['institutions']"
+                        @change="updateFilters('institutions')" multiple label="Institution(s)"  item-text="name" item-value="id">
           <template v-if="is_admin || is_viewer" v-slot:prepend-item>
-            <v-list-item @click="updateAllInsts">
-               <span v-if="allConsoInsts">Clear Selections</span>
-               <span v-else>All Institutions</span>
+            <v-list-item @click="filterAll('institutions')">
+               <span v-if="allSelected.institutions">Clear Selections</span>
+               <span v-else>Enable All</span>
             </v-list-item>
             <v-divider class="mt-1"></v-divider>
+          </template>
+          <template v-if="is_admin || is_viewer" v-slot:selection="{ item, index }">
+            <span v-if="index==0 && mutable_options['institutions'].length==mutable_filters['institutions'].length">
+              All Institutions
+            </span>
+            <span v-else-if="index==0 && !allSelected.institutions">{{ item.name }}</span>
+            <span v-else-if="index===1 && !allSelected.institutions" class="text-grey text-caption align-self-center">
+              &nbsp; +{{ mutable_filters['institutions'].length-1 }} more
+            </span>
           </template>
         </v-autocomplete>
       </v-col>
@@ -62,24 +78,53 @@
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('group')"/>&nbsp;
         </div>
         <v-autocomplete :items="groups" v-model="mutable_filters['group']" @change="updateFilters('group')" multiple
-                        label="Institution Group(s)"  item-text="name" item-value="id"
-        ></v-autocomplete>
+                        label="Institution Group(s)"  item-text="name" item-value="id">
+          <template v-if="is_admin || is_viewer" v-slot:prepend-item>
+            <v-list-item @click="filterAll('group')">
+               <span v-if="allSelected.group">Clear Selections</span>
+               <span v-else>Enable All</span>
+            </v-list-item>
+            <v-divider class="mt-1"></v-divider>
+          </template>
+          <template v-if="is_admin || is_viewer" v-slot:selection="{ item, index }">
+            <span v-if="index==0 && groups.length==mutable_filters['group'].length">All Groups</span>
+            <span v-else-if="index==0 && !allSelected.group">{{ item.name }}</span>
+            <span v-else-if="index===1 && !allSelected.group" class="text-grey text-caption align-self-center">
+              &nbsp; +{{ mutable_filters['group'].length-1 }} more
+            </span>
+          </template>
+        </v-autocomplete>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if="mutable_filters['rept'].length>0" class="x-box">
-          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('rept')"/>&nbsp;
+        <div v-if="mutable_filters['reports'].length>0" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('reports')"/>&nbsp;
         </div>
-        <v-select :items="mutable_options['reports']" v-model="mutable_filters['rept']" @change="updateFilters('rept')" multiple
-                  label="Report(s)" item-text="name" item-value="id"
+        <v-select :items="mutable_options['reports']" v-model="mutable_filters['reports']" multiple
+                  @change="updateFilters('reports')" label="Report(s)" item-text="name" item-value="id"
         ></v-select>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
         <div v-if="mutable_filters['harv_stat'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('harv_stat')"/>&nbsp;
         </div>
-        <v-select :items="mutable_options['statuses']" v-model="mutable_filters['harv_stat']" @change="updateFilters('harv_stat')"
-                  multiple label="Status(es)" item-text="name" item-value="name"
-        ></v-select>
+        <v-select :items="mutable_options['harv_stat']" v-model="mutable_filters['harv_stat']" @change="updateFilters('harv_stat')"
+                  multiple label="Status(es)" item-text="name" item-value="name">
+          <template v-slot:prepend-item>
+            <v-list-item @click="filterAll('harv_stat')">
+               <span v-if="allSelected.harv_stat">Clear Selections</span>
+               <span v-else>Enable All</span>
+            </v-list-item>
+            <v-divider class="mt-1"></v-divider>
+          </template>
+          <template v-slot:selection="{ item, index }">
+            <span v-if="index == 0 && mutable_options['harv_stat'].length == mutable_filters['harv_stat'].length">All Status</span>
+            <span v-else-if="index < 2 && !allSelected.harv_stat">{{ item }}</span>
+            <span v-else-if="index === 2 && !allSelected.harv_stat" class="text-grey text-caption align-self-center">
+              &nbsp; +{{ mutable_filters['harv_stat'].length-2 }} more
+            </span>
+            <span v-if="index <= 1 && index < mutable_filters['harv_stat'].length-1 && !allSelected.harv_stat">, </span>
+          </template>
+        </v-select>
       </v-col>
     </v-row>
     <div v-if='is_admin || is_manager'>
@@ -112,11 +157,19 @@
           <v-select :items="mutable_options['codes']" v-model="mutable_filters['codes']" @change="updateFilters('codes')" multiple
                     label="Error Code">
             <template v-slot:prepend-item>
-              <v-list-item @click="filterAllCodes">
-                 <span v-if="allCodes">Clear Selections</span>
+              <v-list-item @click="filterAll('codes')">
+                 <span v-if="allSelected.codes">Clear Selections</span>
                  <span v-else>Enable All</span>
               </v-list-item>
               <v-divider class="mt-1"></v-divider>
+            </template>
+            <template v-slot:selection="{ item, index }">
+              <span v-if="index == 0 && allSelected.codes">All Error Codes</span>
+              <span v-else-if="index < 2 && !allSelected.codes">{{ item }}</span>
+              <span v-else-if="index === 2 && !allSelected.codes" class="text-grey text-caption align-self-center">
+                &nbsp; +{{ mutable_filters['codes'].length-2 }} more
+              </span>
+              <span v-if="index <= 1 && index < mutable_filters['codes'].length-1 && !allSelected.codes">, </span>
             </template>
           </v-select>
         </v-col>
@@ -145,9 +198,11 @@
         <template v-slot:expanded-item="{ headers, item }">
           <td v-if="item.failed.length>0" :colspan="headers.length">
             <v-row class="d-flex py-2 justify-center" no-gutters>
-              <strong>Failed Harvest Attempts (Harvest ID: {{ item.id }})</strong>
+              <strong>Failed Harvest Attempts (Harvest ID: {{ item.id }})</strong>&nbsp; &nbsp;
               <span>
-                <v-icon title="Download Last JSON Error Message" @click="goURL('/harvests/'+item.id+'/raw')">mdi-download</v-icon>
+                <v-icon title="Download Last JSON Error Message" @click="goURL('/harvests/'+item.id+'/raw')">mdi-code-json</v-icon>
+                &nbsp; &nbsp;
+                <v-icon title="Manual Retry/Confirm Link" @click="goURL(item.retryUrl)">mdi-download</v-icon>
               </span>
             </v-row>
             <v-row class="d-flex pa-1 align-center" no-gutters>
@@ -234,14 +289,12 @@
         inst_filter: null,
         mutable_dt_options: {},
         mutable_updated: [],
-        allConsoProvs: false,
-        allConsoInsts: false,
-        allCodes: false,
         expanded: [],
-        mutable_options: { 'codes': [], 'reports': [], 'statuses': [], 'providers': [], 'institutions': [] },
+        mutable_options: { 'codes': [], 'reports': [], 'harv_stat': [], 'providers': [], 'institutions': [] },
+        allSelected: {'providers': false, 'institutions': false, 'codes': false, 'harv_stat': false, 'group': false},
         source: ['Consortium', 'Institution'],
         truncatedResult: false,
-        statuses: ['Active', 'Fail', 'Queued', 'Harvested', 'Stopped', 'Success'],
+        harv_stat: ['Active', 'Fail', 'Queued', 'Harvested', 'Stopped', 'Success'],
         status_changeable: ['Harvested', 'Stopped', 'Fail', 'New', 'Queued', 'ReQueued'],
         bulk_actions: [ { action:'Stop',    status:'Stopped'},
                         { action:'Restart', status:'Queued'},
@@ -279,47 +332,20 @@
         // Changing filters means clearing SelectedRows - otherwise Bulk Actions could affect
         // one of many rows no longer displayed.
         updateFilters(filt) {
-            // if All-insts is enabled, keep other checkboxes clear
-            if ( (filt == "inst" || filt == "group") && this.allConsoInsts) {
-                // All Institutions checkbox just got cleared?
-                if (this.mutable_filters['inst'].length == 0 && filt == "inst") {
-                    this.allConsoInsts = false;
-                    this.mutable_options['institutions'].splice(this.mutable_options['institutions'].findIndex(ii => ii.id==0),1);
-                } else {
-                    this.mutable_filters['inst'] = [0];
-                    this.mutable_filters['group'] = [];
-                    return;
-                }
-            }
-            // if All-provs is enabled, keep other checkboxes clear
-            if (filt == "prov" && this.allConsoProvs) {
-                // All Providers checkbox just got cleared?
-                if (this.mutable_filters['prov'].length == 0) {
-                    this.allConsoProvs = false;
-                    this.mutable_options['providers'].splice(this.mutable_options['providers'].findIndex(ii => ii.id==0),1);
-                } else {
-                    this.mutable_filters['prov'] = [0];
-                    return;
-                }
-            }
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             this.selectedRows = [];
-            if (this.mutable_filters['inst'].length>0 || this.allConsoInsts) {
+            // Setting an inst or group filter clears the other one
+            if (this.mutable_filters['institutions'].length>0) {
                 this.inst_filter = "I";
                 this.mutable_filters['group'] = [];
-                // Checked the box for all consortium insts - clear other checked insts in the filter
-                if (this.allConsoInsts) {
-                    this.mutable_filters['inst'] = [];
-                }
             } else if (this.mutable_filters['group'].length>0) {
                 this.inst_filter = "G";
-                this.mutable_filters['inst'] = [];
+                this.mutable_filters['institutions'] = [];
             }
-            if (filt == 'codes') {
-              // if all the codes just got turned on, update the allCodes flag
-              if (!this.allCodes && this.mutable_filters['codes'].length == this.mutable_options['codes'].length) {
-                this.allCodes = true;
-              }
+            // update allSelected flag
+            if (typeof(this.allSelected[filt]) != 'undefined') {
+                let optLen = (filt == 'group') ? this.groups.length : this.mutable_options[filt].length;
+                this.allSelected[filt] = ( optLen == this.mutable_filters[filt].length && this.mutable_filters[filt].length > 0);
             }
         },
         clearAllFilters() {
@@ -334,11 +360,9 @@
             // Reset error code options to inbound property
             Object.keys(this.mutable_options).forEach( (key) => {
               this.mutable_options[key] = [...this[key]];
+              if (typeof(this.allSelected[key]) != 'undefined') this.allSelected[key] = false;
             });
             this.inst_filter = null;
-            this.allConsoProvs = false;
-            this.allConsoInsts = false;
-            this.allCodes = false;
             this.rangeKey += 1;           // force re-render of the date-range component
         },
         clearFilter(filter) {
@@ -350,10 +374,11 @@
                 this.mutable_filters[filter] = '';
             } else {
                 this.mutable_filters[filter] = [];
-                if (filter=='inst' || filter=='group') this.inst_filter = null;
+                if (filter=='institutions' || filter=='group') this.inst_filter = null;
                 if ( Object.keys(this.mutable_options).includes(filter) ) {
                   this.mutable_options[filter] = [...this[filter]];
                 }
+                Object.keys(this.allSelected).forEach( (key) =>  { this.allSelected[key] = false; });
             }
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             this.selectedRows = [];
@@ -365,8 +390,6 @@
             this.loading = true;
             if (this.filter_by_toYM != null) this.mutable_filters['toYM'] = this.filter_by_toYM;
             if (this.filter_by_fromYM != null) this.mutable_filters['fromYM'] = this.filter_by_fromYM;
-            if (this.allConsoInsts) this.mutable_filters['inst'] = [0];
-            if (this.allConsoProvs) this.mutable_filters['prov'] = [0];
             let _filters = JSON.stringify(this.mutable_filters);
             axios.get("/harvests?json=1&filters="+_filters)
                  .then((response) => {
@@ -374,10 +397,10 @@
                      this.mutable_updated = response.data.updated;
                      this.truncatedResult = response.data.truncated;
                      this.mutable_options['codes'] = response.data.code_opts;
-                     this.mutable_options['statuses'] = response.data.stat_opts;
+                     this.mutable_options['harv_stat'] = response.data.stat_opts;
                      this.mutable_options['reports'] = this.reports.filter( r => response.data.rept_opts.includes(r.id));
                      this.mutable_options['providers'] = this.providers.filter( p => response.data.prov_opts.includes(p.id));
-                     this.mutable_options['institutions'] = this.institutions.filter( i => response.data.inst_opts.includes(i.id));
+                     this.mutable_options['institution'] = this.institutions.filter( i => response.data.inst_opts.includes(i.id));
                      this.update_button = "Refresh Records";
                      this.loading = false;
                      this.dtKey++;
@@ -484,53 +507,39 @@
         // @change function for filtering/clearing all consortium providers
         filterConsoProv() {
           // Just checked the box for all consortium providers
-          if (this.allConsoProvs) {
+          if (this.allSelected.providers) {
             this.consortiumProviders.forEach( (cp) => {
-              if (!this.mutable_filters['prov'].includes(cp.id)) {
-                this.mutable_filters['prov'].push(cp.id);
+              if (!this.mutable_filters['providers'].includes(cp.id)) {
+                this.mutable_filters['providers'].push(cp.id);
               }
             });
           // Just cleared the box for all consortium providers
           } else {
             this.consortiumProviders.forEach( (cp) => {
-              var idx = this.mutable_filters['prov'].findIndex( p => p == cp.id)
-              if (idx >= 0) this.mutable_filters['prov'].splice(idx,1);
+              var idx = this.mutable_filters['providers'].findIndex( p => p == cp.id)
+              if (idx >= 0) this.mutable_filters['providers'].splice(idx,1);
             });
           }
         },
-        // @change function for filtering/clearing all error codes
-        filterAllCodes() {
-          if (this.allCodes) {
-            this.mutable_filters['codes'] = [];
-            this.allCodes = false;
+        // @change function for filtering/clearing all options on a filter
+        filterAll(filt) {
+          if (typeof(this.allSelected[filt]) == 'undefined') return;
+          // Turned an all-options filter OFF?
+          if (this.allSelected[filt]) {
+            this.mutable_filters[filt] = [];
+            this.allSelected[filt] = false;
+            if (filt == "institutions" || filt == "group") this.inst_filter == null;
+          // Turned an all-options filter ON
           } else {
-            this.mutable_filters['codes'] = [...this.codes];
-            this.allCodes = true;
-          }
-        },
-        // @change function for filtering/clearing all providers
-        updateAllProvs() {
-          this.allConsoProvs = (this.allConsoProvs) ? false : true;
-          // Add/Remove the "All Poviders" from options depending on whether it is on or off
-          if (this.allConsoProvs) {
-            this.mutable_filters['prov'] = [0];
-            this.mutable_options['providers'].unshift({'id': 0, 'name':'All Consortium Providers'});
-          } else {
-            this.mutable_filters['prov'] = [];
-            this.mutable_options['providers'].splice(this.mutable_options['providers'].findIndex(p => p.id==0),1);
-          }
-        },
-        // @change function for filtering/clearing all institutions
-        updateAllInsts() {
-          this.allConsoInsts = (this.allConsoInsts) ? false : true;
-          if (this.allConsoInsts && (this.is_admin || this.is_viewer)) {
-            this.mutable_filters['inst'] = [0];
-            this.mutable_filters['group'] = [];
-            this.mutable_options['institutions'].unshift({'id': 0, 'name':'All Institutions'});
-          } else {
-            this.mutable_filters['inst'] = [];
-            this.mutable_filters['group'] = [];
-            this.mutable_options['institutions'].splice(this.mutable_options['institutions'].findIndex(ii => ii.id==0),1);
+            this.mutable_filters[filt] = (filt == 'group') ? [...this.groups] : [...this[filt]];
+            this.allSelected[filt] = true;
+            if (filt == "institutions") {
+                this.inst_filter = "I";
+                this.mutable_filters['group'] = [];
+            } else if (filt == "group") {
+                this.inst_filter = "G";
+                this.mutable_filters['institutions'] = [];
+            }
           }
         },
     },
@@ -563,7 +572,7 @@
       });
 
       // Inst-filter > Group-filter, if one has a value, set the flag
-      if (this.mutable_filters['inst'].length>0) {
+      if (this.mutable_filters['institutions'].length>0) {
           this.mutable_filters['group'] = [];
           this.inst_filter = 'I';
       } else if (this.mutable_filters['group'].length>0) {

@@ -12,10 +12,19 @@
                             item-text="name" item-value="id" hint="Institution(s) to Harvest">
               <template v-if="is_admin || is_viewer" v-slot:prepend-item>
                 <v-list-item @click="updateAllInsts">
-                   <span v-if="allConsoInsts">Clear Selections</span>
+                   <span v-if="allInsts">Clear Selections</span>
                    <span v-else>All Institutions</span>
                 </v-list-item>
                 <v-divider class="mt-1"></v-divider>
+              </template>
+              <template v-if="is_admin || is_viewer" v-slot:selection="{ item, index }">
+                <span v-if="index==0 && institution_options.length==form.inst.length">
+                  All Institutions
+                </span>
+                <span v-else-if="index==0 && !allInsts">{{ item.name }}</span>
+                <span v-else-if="index===1 && !allInsts" class="text-grey text-caption align-self-center">
+                  &nbsp; +{{ form.inst.length-1 }} more
+                </span>
               </template>
             </v-autocomplete>
           </v-col>
@@ -51,6 +60,15 @@
                  <span>All Consortium Providers</span>
               </v-list-item>
               <v-divider class="mt-1"></v-divider>
+            </template>
+            <template v-slot:selection="{ item, index }">
+              <span v-if="index==0 && allProvs">All Providers</span>
+              <span v-if="index==0 && allConsoProvs">All Consortium Providers</span>
+              <span v-else-if="index<2 && !allConsoProvs && !allProvs">{{ item.name }}</span>
+              <span v-else-if="index===2 && !allConsoProvs && !allProvs" class="text-grey text-caption align-self-center">
+                &nbsp; +{{ form.prov.length-2 }} more
+              </span>
+              <span v-if="index <= 1 && index < form.prov.length-1 && !allConsoProvs && !allProvs">, </span>
             </template>
           </v-autocomplete>
         </v-col>
@@ -102,7 +120,7 @@
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
         <span v-if="working" class="work" role="alert" v-text="working"></span>
       </div>
-      <v-row v-if="form.reports.length>0" no-gutters>
+      <v-row v-if="form.reports.length>0 && form.inst.length>0 && form.prov.length>0" no-gutters>
         <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Submit</v-btn>
       </v-row>
       <v-row v-else-if="form.inst.length>0 && form.prov.length>0 && available_reports.length==0" no-gutters>
@@ -144,7 +162,7 @@
             inst_name: '',
             allProvs: false,
             allConsoProvs: false,
-            allConsoInsts: false,
+            allInsts: false,
             available_providers: [ ...this.providers],
             institution_options: [ ...this.institutions],
             available_reports: [],
@@ -161,14 +179,16 @@
             this.form.fromYM = '';
             this.form.toYM = '';
             this.selections_made = false;
-            this.available_providers = [];
             this.available_reports = [];
-            this.allConsoInsts = false;
-            this.institution_options.splice(this.institution_options.findIndex(ii => ii.id == 0),1);
+            this.allInsts = false;
             this.allProvs = false;
-            this.available_providers.splice(this.available_providers.findIndex(p => p.id == -1),1);
             this.allConsoProvs = false;
-            this.available_providers.splice(this.available_providers.findIndex(p => p.id == 0),1);
+            if (this.form.inst.length == 0) {
+                this.available_providers = [ ...this.providers];
+            } else {
+                this.updateProviders();
+            }
+            if (this.presets['prov_id']) this.verifyProvPreset();
         },
         // Verify provider preset value
         verifyProvPreset() {
@@ -201,29 +221,12 @@
         // Update mutable providers when inst changes
         onInstChange() {
           this.failure = '';
-          // if All-insts is enabled, keep other checkboxes clear
-          if (this.allConsoInsts) {
-              // All Institutions checkbox just got cleared?
-              if (this.form.inst.length == 0) {
-                  this.allConsoInsts = false;
-                  this.institution_options.splice(this.institution_options.findIndex(ii => ii.id==0),1);
-              } else {
-                  this.form.inst = [0];
-                  this.inst_group_id = 0;
-                  this.selected_insts = this.institutions.map(ii => ii.id);
-                  return;
-              }
-          }
+          this.form.inst_group_id = 0;
+          this.allInsts = (this.form.inst.length == this.institutions.length) ? true : false;
+          this.selected_insts = (this.allInsts) ? this.institutions.map(ii => ii.id) : [...this.form.inst];
           if (this.form.inst.length == 0) {
-              this.selected_insts = [];
               this.available_providers = [ ...this.providers];
           } else {
-              if (this.form.inst.includes(0)) {
-                this.selected_insts = this.institutions.map(ii => ii.id);
-                this.form.inst = [0];
-              } else {
-                this.selected_insts = [ ...this.form.inst];
-              }
               this.updateProviders();
           }
           if (this.presets['prov_id']) this.verifyProvPreset();
@@ -231,7 +234,7 @@
         },
         // External axios call to return available providers
         updateProviders () {
-            let inst_ids = (this.allConsoInsts) ? JSON.stringify([0]) : JSON.stringify(this.form.inst);
+            let inst_ids = (this.allInsts) ? JSON.stringify([0]) : JSON.stringify(this.form.inst);
             axios.get('/available-providers?inst_ids='+inst_ids+'&group_id='+this.form.inst_group_id)
                  .then((response) => {
                      this.available_providers = [ ...response.data.providers];
@@ -239,32 +242,23 @@
                  .catch(error => {});
         },
         onProvChange() {
-            let prov_list = [ ...this.form.prov];
             this.failure = '';
-            // if prov_list is empty, check the All Provider flags in case they need resetting
-            if (prov_list.length == 0) {
-                if (this.allConsoProvs) {
-                    this.allConsoProvs = false;
-                    this.available_providers.splice(this.available_providers.findIndex(p => p.id == 0),1);
-                }
-                if (this.allProvs) {
-                    this.allProvs = false;
-                    this.available_providers.splice(this.available_providers.findIndex(p => p.id == -1),1);
-                }
-            }
-            // Update prov_list if one of the All flags is on
-            if (this.allConsoProvs && prov_list.length>0) {
-                this.form.prov = [0];
-                prov_list = this.providers.filter(p => p.inst_id==1).map(p2 => p2.id);
-            }
-            if (this.allProvs && prov_list.length>0) {
-                this.form.prov = [-1];
+            // get the list of conso-provider IDs and set/update the All-Provider flags
+            let conso_list = this.providers.filter(p => p.inst_id==1).map(p2 => p2.id);
+            this.allProvs = (this.providers.length == this.form.prov.length && this.form.prov.length > 0);
+            this.allConsoProvs = (!this.allProvs && conso_list.length == this.form.prov.length && this.form.prov.length > 0);
+            // Setup prov_list with IDs
+            let prov_list = [];
+            if (this.allProvs) {
                 prov_list = this.providers.map(p => p.id);
+            } else if (this.allConsoProvs) {
+                prov_list = [ ...conso_list];
+            } else {
+                prov_list = [ ...this.form.prov];
             }
             // If no providers, set reports to all
             if (prov_list.length == 0) {
                 this.available_reports = [ ...this.all_reports];
-                this.selections_made = true;
                 return;
             }
             // Update available reports when providers changes
@@ -328,39 +322,39 @@
         updateAllProvs(scope) {
           // Clear the flags and form value
           if (scope == 'Clear') {
-              this.form.prov = [];
               this.allProvs = false;
               this.allConsoProvs = false;
-              this.available_providers.splice(this.available_providers.findIndex(p => p.id == 0),1);
-              this.available_providers.splice(this.available_providers.findIndex(p => p.id == -1),1);
-          // Add "All Providers" to options and set form value
+              this.form.prov = [];
+              this.available_providers = [ ...this.providers];
+
+          // Turn on all providers
           } else if (scope == 'ALL') {
               this.allProvs = true;
               this.allConsoProvs = false;
-              this.form.prov = [-1];
-              this.available_providers.unshift({'id': -1, 'name':'All Providers'});
-          // Add "All Consortium Providers" to options and set form value
+              this.form.prov = this.providers.map(p => p.id);
+              this.available_providers = [ ...this.providers];
+          // Turn on all Consortium Providers"
           } else {
               this.allProvs = false;
               this.allConsoProvs = true;
-              this.form.prov = [0];
-              this.available_providers.unshift({'id': 0, 'name':'All Consortium Providers'});
+              this.form.prov = this.providers.filter(p => p.inst_id==1).map(p2 => p2.id);
+              this.available_providers = this.providers.filter(p => this.form.prov.includes(p.id));
           }
           this.onProvChange();
         },
         // @change function for filtering/clearing all institutions
         updateAllInsts() {
-          this.allConsoInsts = (this.allConsoInsts) ? false : true;
-          if (this.allConsoInsts && (this.is_admin || this.is_viewer)) {
-            this.form.inst = [0];
-            this.inst_group_id = 0;
-            this.selected_insts = this.institutions.map(ii => ii.id);
-            this.institution_options.unshift({'id': 0, 'name':'All Institutions'});
-          } else {
+          this.inst_group_id = 0;
+          // All Insts is ON... turn it OFF and reset selected
+          if (this.allInsts) {
+            this.allInsts = false;
             this.form.inst = [];
             this.selected_insts = [];
-            this.inst_group_id = 0;
-            this.institution_options.splice(this.institution_options.findIndex(ii => ii.id==0),1);
+          // All Insts is OFF... turn it ON and reset selected
+          } else if (this.is_admin || this.is_viewer) {
+            this.allInsts = true;
+            this.form.inst = this.institutions.map(ii => ii.id);
+            this.selected_insts = [... this.form.inst];
           }
         },
     },

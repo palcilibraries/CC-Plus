@@ -449,7 +449,7 @@ class SushiSettingController extends Controller
         if ($thisUser->hasRole("Admin")) {
             // If group-filter is set, pull the instIDs for the group and set as the "inst" filter
             if ($filters['group'] > 0) {
-                $group = InstitutionGroup::with('institutions:id')->find($filters['group']);
+                $group = InstitutionGroup::with('institutions')->where('id',$filters['group'])->first();
                 if ($group) {
                     if ($group->institutions) {
                         $filters['inst'] = $group->institutions->pluck('id')->toArray();

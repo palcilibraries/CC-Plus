@@ -61,12 +61,14 @@ class Sushi extends Model
 
        // Make the request and convert into JSON
         try {
-             $result = $client->request('GET', $uri, $options);
+            $result = $client->request('GET', $uri, $options);
         } catch (\Exception $e) {
-            $this->detail = $e->getMessage();
             $this->step = "HTTP";
-            $this->error_code = 9010;
-            $this->message = "SUSHI HTTP request failed, verify URL : ";
+            $this->error_code = (property_exists($e, 'Code')) ? $e->Code : 9000;
+            $this->severity = (property_exists($e, 'Severity')) ? strtoupper($e->Severity) : "ERROR";
+            $this->message = (property_exists($e, 'Message')) ? $e->Message : "SUSHI HTTP request failed, verify URL";
+            $this->detail = (property_exists($e, 'Data')) ? $e->Data : "";
+            $this->help_url = (property_exists($e, 'Help_URL')) ? $e->Help_URL : "";
             return "Fail";
         }
 

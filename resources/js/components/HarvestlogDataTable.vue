@@ -202,7 +202,7 @@
               <span>
                 <v-icon title="Download Last JSON Error Message" @click="goURL('/harvests/'+item.id+'/raw')">mdi-code-json</v-icon>
                 &nbsp; &nbsp;
-                <v-icon title="Manual Retry/Confirm Link" @click="goURL(item.retryUrl)">mdi-download</v-icon>
+                <v-icon title="Manual Retry/Confirm Link" @click="goURL(item.retryUrl)">mdi-barley</v-icon>
               </span>
             </v-row>
             <v-row class="d-flex pa-1 align-center" no-gutters>
@@ -378,8 +378,8 @@
                 if ( Object.keys(this.mutable_options).includes(filter) ) {
                   this.mutable_options[filter] = [...this[filter]];
                 }
-                Object.keys(this.allSelected).forEach( (key) =>  { this.allSelected[key] = false; });
             }
+            if (typeof(this.allSelected[filter]) != 'undefined') this.allSelected[filter] = false;
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
             this.selectedRows = [];
         },

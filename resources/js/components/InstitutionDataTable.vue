@@ -39,9 +39,23 @@
         <div v-if="mutable_filters['groups'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('groups')"/>&nbsp;
         </div>
-        <v-select :items="mutable_groups" v-model="mutable_filters['groups']" @change="updateFilters('groups')" multiple
-                  label="Limit by Group(s)"  item-text="name" item-value="id"
-        ></v-select>
+        <v-autocomplete :items="mutable_groups" v-model="mutable_filters['groups']" @change="updateFilters('groups')" multiple
+                  label="Limit by Group(s)"  item-text="name" item-value="id">
+          <template v-slot:prepend-item>
+            <v-list-item @click="changeAllGroups">
+               <span v-if="allGroups">Clear Selections</span>
+               <span v-else>Enable All</span>
+            </v-list-item>
+            <v-divider class="mt-1"></v-divider>
+          </template>
+          <template v-slot:selection="{ item, index }">
+            <span v-if="index==0 && mutable_groups.length==mutable_filters['groups'].length">All Groups</span>
+            <span v-else-if="index==0 && !allGroups">{{ item.name }}</span>
+            <span v-else-if="index===1 && !allGroups" class="text-grey text-caption align-self-center">
+              &nbsp; +{{ mutable_filters['groups'].length-1 }} more
+            </span>
+          </template>
+        </v-autocomplete>
       </v-col>
     </v-row>
     <div class="status-message" v-if="success || failure">
@@ -196,6 +210,7 @@
         selectedRows: [],
         groupingType: '',
         newGroupName: '',
+        allGroups: false,
         addToGroupID: null,
         status_options: ['ALL', 'Active', 'Inactive'],
         headers: [
@@ -245,13 +260,30 @@
             this.institutionImportDialog = false;
             this.instDialog = true;
         },
-        updateFilters() {
+        updateFilters(filt) {
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            // check/update allGroups flag
+            if (filt == 'groups') {
+                this.allGroups = (this.mutable_filters['groups'].length > 0 &&
+                      this.mutable_filters['groups'].length == this.mutable_groups.length);
+            }
             this.updateRecords();
+        },
+        changeAllGroups() {
+          // Turned allGroups OFF?
+          if (this.allGroups) {
+            this.mutable_filters['groups'] = [];
+            this.allGroups = false;
+          // Turned allGroups ON?
+          } else {
+            this.mutable_filters['groups'] = [...this.mutable_groups];
+            this.allGroups = true;
+          }
         },
         clearFilter(filter) {
             this.mutable_filters[filter] = (filter == 'stat') ? '' : [];
             this.$store.dispatch('updateAllFilters',this.mutable_filters);
+            this.allGroups = false;
             this.updateRecords();
         },
         updateRecords() {

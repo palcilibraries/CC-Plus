@@ -40,23 +40,23 @@ class UserController extends Controller
         $json = ($request->input('json')) ? true : false;
 
         // Assign optional inputs to $filters array
-        $filters = array('inst' => null, 'stat' => 'ALL', 'roles' => []);
+        $filters = array('inst' => [], 'stat' => 'ALL', 'roles' => []);
         if ($request->input('filters')) {
             $filter_data = json_decode($request->input('filters'));
             foreach ($filter_data as $key => $val) {
-                if ($key == 'inst' && (is_null($val) || $val == '')) continue;
+                if ($key == 'inst' && count($val) == 0) continue;
                 if ($key == 'stat' && (is_null($val) || $val == '')) continue;
-                if ($key == 'roles' && sizeof($val) == 0) continue;
+                if ($key == 'roles' && count($val) == 0) continue;
                 $filters[$key] = $val;
             }
         } else {
             $keys = array_keys($filters);
             foreach ($keys as $key) {
                 if ($request->input($key)) {
-                    if ($key == 'inst' || $key == 'stat') {
-                        if (is_null($request->input($key)) || $request->input($key) == '') continue;
-                    } else if ($key == 'roles') {
-                        if (sizeof($request->input('roles')) == 0) continue;
+                    if ($key == 'stat') {
+                        if (is_null($request->input('stat')) || $request->input('stat') == '') continue;
+                    } else if ($key == 'roles' || $key == 'inst') {
+                      if (count($request->input($key)) == 0) continue;
                     }
                     $filters[$key] = $request->input($key);
                 }
@@ -84,8 +84,8 @@ class UserController extends Controller
             }
             $server_admin = config('ccplus.server_admin');
             $user_data = User::with('roles','institution:id,name')
-                             ->when($filters['inst'], function ($qry) use ($filters) {
-                                 return $qry->where('inst_id', $filters['inst']);
+                             ->when(count($filters['inst'])>0, function ($qry) use ($filters) {
+                                 return $qry->whereIn('inst_id', $filters['inst']);
                              })
                              ->when(!is_null($filter_stat), function ($qry) use ($filter_stat) {
                                  return $qry->where('is_active', $filter_stat);
@@ -233,7 +233,13 @@ class UserController extends Controller
         $new_user = $user->toArray();
         $new_user['inst_name'] = $user->institution->name;
         foreach ($user->roles as $role) {
-            $_roles .= $role->name . ", ";
+            $_name = $role->name;
+            $is_admin = $user->roles->whereIn('name', ['Manager', 'Admin'])->first();
+            if ($_name =="User" && $is_admin) continue;
+            if ($_name == "Manager") $_name = "Local Admin";
+            if ($_name == 'Admin') $_name = "Consortium Admin";
+            if ($_name == 'Viewer') $_name = "Consortium Viewer";
+            $_roles .= $_name . ", ";
         }
         $_roles = rtrim(trim($_roles), ',');
         $max_role = $user->maxRoleName();

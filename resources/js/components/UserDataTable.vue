@@ -23,8 +23,26 @@
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
         <v-autocomplete :items="mutable_institutions" v-model="filters['inst']" @change="updateFilters('inst')"
-                        label="Limit by Institution"  item-text="name" item-value="id" multiple
-        ></v-autocomplete>
+                        label="Limit by Institution"  item-text="name" item-value="id" multiple>
+
+          <template v-if="is_admin" v-slot:prepend-item>
+            <v-list-item @click="filterAll('inst')">
+               <span v-if="allSelected.inst">Clear Selections</span>
+               <span v-else>Enable All</span>
+            </v-list-item>
+            <v-divider class="mt-1"></v-divider>
+          </template>
+          <template v-if="is_admin" v-slot:selection="{ item, index }">
+            <span v-if="index==0 && mutable_institutions.length==filters['inst'].length">
+              All Institutions
+            </span>
+            <span v-else-if="index==0 && !allSelected.inst">{{ item.name }}</span>
+            <span v-else-if="index===1 && !allSelected.inst" class="text-grey text-caption align-self-center">
+              &nbsp; +{{ filters['inst'].length-1 }} more
+            </span>
+          </template>
+
+        </v-autocomplete>
       </v-col>
       <v-col class="d-flex px-2 align-center" cols="2" sm="2">
         <v-select :items="status_options" v-model="filters['stat']" @change="updateFilters('stat')"
@@ -35,9 +53,25 @@
         <div v-if="filters['roles'].length>0" class="x-box">
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('roles')"/>&nbsp;
         </div>
-        <v-select :items="allowed_roles" v-model="filters['roles']" @change="updateFilters('inst')" multiple
-                  label="Limit by Role(s)"  item-text="name" item-value="id"
-        ></v-select>
+        <v-select :items="allowed_roles" v-model="filters['roles']" @change="updateFilters('roles')" multiple
+                  label="Limit by Role(s)"  item-text="name" item-value="id">
+          <template v-slot:prepend-item>
+            <v-list-item @click="filterAll('roles')">
+               <span v-if="allSelected.roles">Clear Selections</span>
+               <span v-else>Enable All</span>
+            </v-list-item>
+            <v-divider class="mt-1"></v-divider>
+          </template>
+          <template v-if="is_admin" v-slot:selection="{ item, index }">
+            <span v-if="index==0 && allowed_roles.length==filters['roles'].length">
+              All Roles
+            </span>
+            <span v-else-if="index==0 && !allSelected.roles">{{ item.name }}</span>
+            <span v-else-if="index===1 && !allSelected.roles" class="text-grey text-caption align-self-center">
+              &nbsp; +{{ filters['roles'].length-1 }} more
+            </span>
+          </template>
+        </v-select>
       </v-col>
     </v-row>
     <div class="status-message" v-if="success || failure">
@@ -157,6 +191,7 @@
         udKey: 0,
         search: '',
         status_options: ['ALL', 'Active', 'Inactive'],
+        allSelected: {'inst': false, 'roles': false},
         headers: [
           { text: 'Status', value: 'status' },
           { text: 'User Name ', value: 'name' },
@@ -264,14 +299,43 @@
             this.userDialog = true;
             this.importDialog = false;
         },
-        updateFilters() {
+        updateFilters(filter) {
             this.$store.dispatch('updateAllFilters',this.filters);
+            // update allSelected flag
+            if (filter == 'inst') {
+              this.allSelected['inst'] = (this.filters['inst'].length > 0 &&
+                                          this.filters['inst'].length == this.mutable_institutions.length);
+            } else if (filter == 'roles') {
+              this.allSelected['roles'] = (this.filters['roles'].length > 0 &&
+                                           this.filters['roles'].length == this.allowed_roles.length);
+            }
             this.updateRecords();
         },
         clearFilter(filter) {
-            if (filter == 'inst') this.filters['inst'] = [];
-            if (filter == 'roles') this.filters['roles'] = [];
+            if (filter == 'inst') {
+              this.filters['inst'] = [];
+              this.allSelected['inst'] = false;
+            } else if (filter == 'roles') {
+              this.filters['roles'] = [];
+              this.allSelected['roles'] = false;
+            }
             this.$store.dispatch('updateAllFilters',this.filters);
+            this.updateRecords();
+        },
+        // @click function for filtering/clearing all options on a filter
+        filterAll(filter) {
+            if (typeof(this.allSelected[filter]) == 'undefined') return;
+            // Turned an all-options filter OFF?
+            if (this.allSelected[filter]) {
+              this.filters[filter] = [];
+              this.allSelected[filter] = false;
+            // Turned an all-options filter ON
+            } else {
+              this.filters[filter] = (filter == 'inst')
+                                     ? this.mutable_institutions.map( ii => ii.id )
+                                     : this.allowed_roles.map ( r => r.id );
+              this.allSelected[filter] = true;
+            }
             this.updateRecords();
         },
         updateRecords() {

@@ -38,8 +38,22 @@
           <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('inst')"/>&nbsp;
         </div>
         <v-autocomplete :items="filter_options['inst']" v-model="filters['inst']" @change="updateInstFilter()" multiple
-                  label="Institution(s)"  item-text="name" item-value="id"
-        ></v-autocomplete>
+                  label="Institution(s)"  item-text="name" item-value="id">
+          <template v-slot:prepend-item>
+            <v-list-item @click="filterAll('inst')">
+               <span v-if="allSelected.inst">Clear Selections</span>
+               <span v-else>Enable All</span>
+            </v-list-item>
+            <v-divider class="mt-1"></v-divider>
+          </template>
+          <template v-slot:selection="{ item, index }">
+            <span v-if="index==0 && filter_options['inst'].length==filters['inst'].length">All Institutions</span>
+            <span v-else-if="index==0 && !allSelected.inst">{{ item.name }}</span>
+            <span v-else-if="index===1 && !allSelected.inst" class="text-grey text-caption align-self-center">
+              &nbsp; +{{ filters['inst'].length-1 }} more
+            </span>
+          </template>
+        </v-autocomplete>
       </v-col>
       <v-col v-if="showGroupFilter" class="d-flex px-2 align-center" cols="2">
         <div v-if="filters['group'] != 0" class="x-box">
@@ -54,16 +68,44 @@
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('prov')"/>&nbsp;
         </div>
         <v-autocomplete :items="filter_options['prov']" v-model="filters['prov']" label="Provider(s)" item-text="name"
-                        item-value="id" @change="updateFilters('prov')" multiple
-        ></v-autocomplete>
+                        item-value="id" @change="updateFilters('prov')" multiple>
+          <template v-slot:prepend-item>
+            <v-list-item @click="filterAll('prov')">
+               <span v-if="allSelected.prov">Clear Selections</span>
+               <span v-else>Enable All</span>
+            </v-list-item>
+            <v-divider class="mt-1"></v-divider>
+          </template>
+          <template v-slot:selection="{ item, index }">
+            <span v-if="index==0 && filter_options['prov'].length==filters['prov'].length">All Providers</span>
+            <span v-else-if="index==0 && !allSelected.prov">{{ item.name }}</span>
+            <span v-else-if="index===1 && !allSelected.prov" class="text-grey text-caption align-self-center">
+              &nbsp; +{{ filters['prov'].length-1 }} more
+            </span>
+          </template>
+        </v-autocomplete>
       </v-col>
       <v-col class="d-flex px-4 align-center" cols="2">
         <div v-if="filters['harv_stat'].length>0" class="x-box">
             <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('harv_stat')"/>&nbsp;
         </div>
         <v-select :items="filter_options['harv_stat']" v-model="filters['harv_stat']" @change="updateFilters('harv_stat')"
-                  multiple label="Harvest Status"
-        ></v-select> &nbsp;
+                  multiple label="Harvest Status">
+          <template v-slot:prepend-item>
+            <v-list-item @click="filterAll('harv_stat')">
+               <span v-if="allSelected.harv_stat">Clear Selections</span>
+               <span v-else>Enable All</span>
+            </v-list-item>
+            <v-divider class="mt-1"></v-divider>
+          </template>
+          <template v-slot:selection="{ item, index }">
+            <span v-if="index==0 && filter_options['harv_stat'].length==filters['harv_stat'].length">All Statuses</span>
+            <span v-else-if="index==0 && !allSelected.harv_stat">{{ item }}</span>
+            <span v-else-if="index===1 && !allSelected.harv_stat" class="text-grey text-caption align-self-center">
+              &nbsp; +{{ filters['harv_stat'].length-1 }} more
+            </span>
+          </template>
+        </v-select> &nbsp;
       </v-col>
     </v-row>
     <v-row v-if="is_admin" class="d-flex pa-1 align-center" no-gutters>
@@ -250,6 +292,8 @@
                 filters: {inst: [], group: 0, prov: [], harv_stat: []},
                 statuses: ['Enabled','Disabled','Suspended','Incomplete'],
                 filter_options: {'inst': [], 'prov': [], 'group': [], 'harv_stat': []},
+                allSelected: {'inst': false, 'prov': false, 'group': false, 'harv_stat': false},
+                allOpts: {'inst':'institutions', 'prov':'contextual_providers', 'group':'mutable_groups', 'harv_stat':'statuses'},
                 limit_inst_ids: [],
                 limit_prov_ids: [],
                 mutable_unset: [...this.unset ],
@@ -332,11 +376,12 @@
           // Called onChange inst or group filter
           updateInstFilter() {
               if (this.inst_context != 1) return;
-              let filter = 'inst';
+              let filt = 'inst';
               if (this.filters['inst'].length > 0) {
                   this.limit_inst_ids = [ ...this.filters['inst'] ];
               } else if (this.filters['group'] > 0) {
-                  filter = 'group';
+                  filt = 'group';
+                  this.filters['inst'] = [];
                   this.limit_inst_ids = [];
                   let group = this.mutable_groups.find(g => g.id == this.filters['group']);
                   if (typeof(group) != 'undefined') {
@@ -345,30 +390,56 @@
               } else {
                   this.limit_inst_ids = [];
               }
+              // update allSelected flag
+              this.allSelected[filt] = ( this.filters[filt].length==this[this.allOpts[filt]].length &&
+                                         this.filters[filt].length>0 );
               this.$store.dispatch('updateAllFilters',this.filters);
-              this.updateFilterOptions(filter);
+              this.updateFilterOptions(filt);
           },
           // Called onChange prov or harv_stat filter
-          updateFilters(filter) {
-              if (filter == 'harv_stat') {
-                this.$store.dispatch('updateAllFilters',this.filters);
-                this.updateFilterOptions(filter);
-                return;
+          updateFilters(filt) {
+              if (filt == 'prov') {
+                this.updateConsoLimit(filt); // don't update options twice
               }
-              if (filter == 'prov') {
-                this.updateConsoLimit(filter); // don't update options twice
+              // update allSelected flag
+              if (typeof(this.allSelected[filt]) != 'undefined') {
+                  this.allSelected[filt] = ( this.filters[filt].length==this[this.allOpts[filt]].length &&
+                                             this.filters[filt].length>0 );
               }
               this.$store.dispatch('updateAllFilters',this.filters);
-              this.updateFilterOptions(filter);
+              this.updateFilterOptions(filt);
           },
-          clearFilter(filter) {
-              this.filters[filter] = (filter == 'group') ? 0 : [];
-              if (filter == 'inst' || filter == 'group') this.limit_inst_ids = [];
-              if (filter == 'prov') {
-                this.updateConsoLimit(filter); // don't update options twice
+          clearFilter(filt) {
+              this.filters[filt] = (filt == 'group') ? 0 : [];
+              if (filt == 'inst' || filt == 'group') this.limit_inst_ids = [];
+              if (filt == 'prov') {
+                this.updateConsoLimit(filt); // don't update options twice
               }
               this.$store.dispatch('updateAllFilters',this.filters);
-              this.updateFilterOptions(filter);
+              this.updateFilterOptions(filt);
+              if (typeof(this.allSelected[filt]) != 'undefined') this.allSelected[filt] = false;
+              this.dtKey += 1;           // re-render of the datatable
+          },
+          // @click function for filtering/clearing all options on a filter
+          filterAll(filt) {
+              if (typeof(this.allSelected[filt]) == 'undefined') return;
+              // turning all-Insts  ON  or  OFF means the limit arraaay should be empty
+              if (filt == 'inst') this.limit_inst_ids = [];
+              // Turned an all-options filter OFF?
+              if (this.allSelected[filt]) {
+                this.filters[filt] = [];
+                this.allSelected[filt] = false;
+              // Turned an all-options filter ON
+              } else {
+                this.filters[filt] = (filt=='harv_stat') ? [...this.statuses] : this[this.allOpts[filt]].map(o => o.id);
+                this.allSelected[filt] = true;
+                if (filt == "inst") {
+                    this.filters['group'] = [];
+                } else if (filt == "group") {
+                    this.filters['inst'] = [];
+                }
+              }
+              this.updateFilterOptions(filt);
               this.dtKey += 1;           // re-render of the datatable
           },
           // Update inst, provider, and group filter options
@@ -676,7 +747,7 @@
         computed: {
           ...mapGetters(['all_filters','is_admin','is_manager','datatable_options']),
           showInstFilter() {
-            return this.filters['group']==0 &&
+            return this.filters['group']==0 && this.is_admin &&
                    (this.inst_context==1 || this.filter_options['inst'].length>1);
           },
           showGroupFilter() {

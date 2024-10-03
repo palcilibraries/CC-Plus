@@ -75,7 +75,7 @@
       </v-row>
       <v-row v-if="available_reports.length>0" class="d-flex ma-2" no-gutters>
         <v-col class="d-flex px-2" cols="6" sm="4">
-          <v-select :items="available_reports" v-model="form.reports" item-text="legend" item-value="name" multiple cjips
+          <v-select :items="available_reports" v-model="form.reports" item-text="legend" item-value="name" multiple chips
                     label="Report(s) to Harvest" hint="Choose which master reports to harvest" persistent-hint
           ></v-select>
         </v-col>

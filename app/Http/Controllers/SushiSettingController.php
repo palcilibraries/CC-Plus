@@ -451,7 +451,9 @@ class SushiSettingController extends Controller
             if ($filters['group'] > 0) {
                 $group = InstitutionGroup::with('institutions:id')->find($filters['group']);
                 if ($group) {
-                    $filters['inst'] = $group->institutions->pluck('id')->toArray();
+                    if ($group->institutions) {
+                        $filters['inst'] = $group->institutions->pluck('id')->toArray();
+                    }
                 }
             }
             $provider_insts = array(1);   //default to consortium providers

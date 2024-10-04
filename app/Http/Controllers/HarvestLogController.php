@@ -1070,9 +1070,10 @@ class HarvestLogController extends Controller
                     'prov_name' => $harvest->sushiSetting->provider->name,
                     'prov_inst_id' => $harvest->sushiSetting->provider->inst_id,
                     'report_name' => $harvest->report->name,
-                    'status' => $harvest->status, 'error_code' => null, 'error' => []
+                    'status' => $harvest->status,
+                    'updated' => $harvest->updated_at,
+                    'error_code' => null, 'error' => []
                    );
-       $rec['updated'] = substr($harvest->updated_at,0,10);
        if ($harvest->lastError) {
            $rec['error_code'] = $harvest->error_id;
            $rec['error'] = $harvest->lastError->toArray();
@@ -1084,11 +1085,8 @@ class HarvestLogController extends Controller
            $end = $harvest->yearmon . '-' . date('t', strtotime($beg));
            $sushi = new Sushi($beg, $end);
            // setup required connectors for buildUri
-           $rec['cnx-0'] = $this->connection_fields;
            $prov_connectors = $harvest->sushiSetting->provider->connectors;
-           $rec['cnx-1'] = $prov_connectors;
            $connectors = $this->connection_fields->whereIn('id',$prov_connectors)->pluck('name')->toArray();
-           $rec['cnx'] = $connectors;
            $rec['retryUrl'] = $sushi->buildUri($harvest->sushiSetting, $connectors, 'reports', $harvest->report);
            // Format and save the failed records
            foreach ($harvest->failedHarvests->sortByDesc('created_at') as $fh) {

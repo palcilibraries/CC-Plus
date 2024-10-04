@@ -183,6 +183,9 @@
           </span>
           {{ item.prov_name }}
         </template>
+        <template v-slot:item.updated="{ item }">
+          {{ item.updated.substr(0,10) }}
+        </template>
         <template v-slot:item.error_code="{ item }">
           <span v-if="item.error_code==null && (item.status=='Success' || item.status=='Harvested')">
             <v-icon title="Download Raw JSON Data" @click="goURL('/harvests/'+item.id+'/raw')">mdi-download</v-icon>
@@ -249,6 +252,9 @@
             <v-icon title="Consortium Provider">mdi-account-multiple</v-icon>&nbsp;
           </span>
           {{ item.prov_name }}
+        </template>
+        <template v-slot:item.updated="{ item }">
+          {{ item.updated.substr(0,10) }}
         </template>
       </v-data-table>
     </div>

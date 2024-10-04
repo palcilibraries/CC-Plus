@@ -196,7 +196,16 @@ class ReportProcessor extends Command
 
               // Move the JSON file to its new home
                $newName = $consortium_root . '/' . $inst_id . '/' . $prov_id . '/' . $rawfile;
-               rename($jsonFile, $newName);
+               try {
+                   rename($jsonFile, $newName);
+               } catch (\Exception $e) {
+                   // Rename failed and file is not in the new place, clear rawfile in the harvest record and report error
+                   if (!is_readable($newName)) {
+                       $this->line ($ts  . " " . $ident . "Rename/Move operation for JSON source file failed: " . $jsonFile);
+                       $harvest->rawfile = null;
+                       $harvest->save;
+                   }
+               }
                unset($C5processor);
                // Print confirmation line
                $this->line($ts . " " . $ident . $harvest->sushiSetting->provider->name . " : " . $yearmon . " : " .

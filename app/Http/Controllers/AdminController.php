@@ -47,12 +47,8 @@ class AdminController extends Controller
         $groups = array();
         foreach ($data as $group) {
             $group->count = $group->institutions->count();
-            if ($group->count > 0) {
-                $members = $group->institutions->pluck('id')->toArray();
-                $group->not_members = $institutionData->except($members);
-            } else {
-                $group->not_members = [];
-            }
+            $members = $group->institutions->pluck('id')->toArray();
+            $group->not_members = $institutionData->except($members);
             $groups[] = $group->toArray();
         }
 

@@ -194,8 +194,14 @@ class ReportProcessor extends Command
                $harvest->rawfile = $rawfile;
                $harvest->save();
 
-              // Move the JSON file to its new home
-               $newName = $consortium_root . '/' . $inst_id . '/' . $prov_id . '/' . $rawfile;
+               // Make sure the path for the output file exists
+               $path = $consortium_root . '/' . $inst_id . '/' . $prov_id;
+               if (!file_exists($path) || !is_dir($path)) {
+                   mkdir($path, 0755, true);
+               }
+
+               // Move the JSON file to its new home
+               $newName = $path . '/' . $rawfile;
                try {
                    rename($jsonFile, $newName);
                } catch (\Exception $e) {

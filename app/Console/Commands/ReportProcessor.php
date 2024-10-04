@@ -209,7 +209,7 @@ class ReportProcessor extends Command
                    if (!is_readable($newName)) {
                        $this->line ($ts  . " " . $ident . "Rename/Move operation for JSON source file failed: " . $jsonFile);
                        $harvest->rawfile = null;
-                       $harvest->save;
+                       $harvest->save();
                    }
                }
                unset($C5processor);

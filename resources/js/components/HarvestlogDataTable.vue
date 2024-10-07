@@ -187,7 +187,7 @@
           {{ item.updated.substr(0,10) }}
         </template>
         <template v-slot:item.error_code="{ item }">
-          <span v-if="item.error_code==null && (item.status=='Success' || item.status=='Harvested')">
+          <span v-if="item.error_code==null && item.rawfile!=null && (item.status=='Success' || item.status=='Harvested')">
             <v-icon title="Download Raw JSON Data" @click="goURL('/harvests/'+item.id+'/raw')">mdi-download</v-icon>
           </span>
           <span v-else> {{ item.error_code }}</span>
@@ -203,7 +203,8 @@
             <v-row class="d-flex py-2 justify-center" no-gutters>
               <strong>Failed Harvest Attempts (Harvest ID: {{ item.id }})</strong>&nbsp; &nbsp;
               <span>
-                <v-icon title="Download Last JSON Error Message" @click="goURL('/harvests/'+item.id+'/raw')">mdi-code-json</v-icon>
+                <v-icon v-if="item.rawfile!=null" title="Download Last JSON Error Message"
+                        @click="goURL('/harvests/'+item.id+'/raw')">mdi-code-json</v-icon>
                 &nbsp; &nbsp;
                 <v-icon title="Manual Retry/Confirm Link" @click="goURL(item.retryUrl)">mdi-barley</v-icon>
               </span>

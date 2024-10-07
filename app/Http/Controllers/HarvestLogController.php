@@ -1070,7 +1070,7 @@ class HarvestLogController extends Controller
                     'prov_name' => $harvest->sushiSetting->provider->name,
                     'prov_inst_id' => $harvest->sushiSetting->provider->inst_id,
                     'report_name' => $harvest->report->name,
-                    'status' => $harvest->status,
+                    'status' => $harvest->status, 'rawfile' => $harvest->rawfile,
                     'updated' => $harvest->updated_at,
                     'error_code' => null, 'error' => []
                    );

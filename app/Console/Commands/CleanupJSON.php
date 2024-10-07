@@ -145,7 +145,7 @@ class CleanupJson extends Command
 
                 // If success with existing failed() records, check the last (most recent) one for 3030
                 } else if ($harvest->status == 'Success') {  // check the last (most recent) failed record(s) for 3030
-                    $lastFailed = $harvest->failedHarvests->orderBy('updated_at', 'desc')->first();
+                    $lastFailed = $harvest->failedHarvests->sortBy(['updated_at', 'desc'])->first();
                     if ($lastFailed->error_id == 3030) $deleteFile = true;
 
                 // If status is Fail, set flag to delete

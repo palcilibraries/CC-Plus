@@ -298,6 +298,7 @@ class SushiQHarvester extends Command
                         $job->harvest->error_id = null;
                         // clear out the JSON file
                         unlink($sushi->raw_datafile);
+                        $job->harvest->rawfile = null;
                     }
 
                // If request is pending (in a provider queue, not a CC+ queue), just set harvest status

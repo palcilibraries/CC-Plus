@@ -65,10 +65,8 @@
         {{ item.name }}
       </template>
       <template v-slot:item.connection_count="{ item }">
-        <span v-if="(typeof(item.connections)=='undefined')">0</span>
-        <span v-else-if="item.connections.length==0">0</span>
-        <span v-else>
-          {{ item.connection_count }}
+        {{ item.connection_count }}
+        <span v-if="item.connection_count>0">
           <v-icon title="Show Instances" @click="showConnections(item.id)">mdi-open-in-app</v-icon>
         </span>
       </template>
@@ -630,18 +628,7 @@
             this.connectionsDialog = true;
         },
         goInst(key) {
-            var _args = {'ccp_key' : key};
-            axios.post('/change-instance', _args)
-                 .then((response) => {
-                    if (response.data.result == 'success') {
-                        console.log("Consortium instance changed to: "+this.cur_key);
-                        // Reload whatever page we're on from the server
-                        window.open("/consoadmin", "_blank");
-                    } else {
-                        console.log("Change instance failed! : "+response.data.result);
-                    }
-                })
-               .catch(error => {});
+            window.open('/change-instance/'+key, "_blank");
         },
         formSubmit (event) {
             this.success = '';

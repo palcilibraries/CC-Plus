@@ -100,7 +100,6 @@ class GlobalProviderController extends Controller
 
             // get all the consortium instances and preserve the current instance database setting
             $instances = Consortium::get();
-            $keepDB  = config('database.connections.consodb.database');
 
             // Build the providers array to pass back to the datatable
             $providers = array();
@@ -135,7 +134,6 @@ class GlobalProviderController extends Controller
             }
 
             // Restore the database habdle return the data array
-            config(['database.connections.consodb.database' => $keepDB]);
             return response()->json(['providers' => $providers], 200);
 
           // Not returning JSON, pass only what the index/vue-component needs to initialize the page
@@ -1105,7 +1103,6 @@ class GlobalProviderController extends Controller
 
         // get all the consortium instances and preserve the current instance database setting
         $instances = Consortium::get();
-        $keepDB  = config('database.connections.consodb.database');
 
         // Rebuild full array of global providers to update (needs to match what index() does)
         $updated_providers = array();
@@ -1127,7 +1124,6 @@ class GlobalProviderController extends Controller
             }
             $updated_providers[] = $provider;
         }
-        config(['database.connections.consodb.database' => $keepDB]);
 
         // return the current full list of providers with a success message
         $detail = "";
@@ -1198,18 +1194,17 @@ class GlobalProviderController extends Controller
      */
     private function instanceDetails($instanceKey, $gp) {
 
-        // switch the database connection
-        config(['database.connections.consodb.database' => "ccplus_" . $instanceKey]);
-        try {
-            DB::reconnect('consodb');
-        } catch (\Exception $e) {
-            return response()->json(['result' => 'Error connecting to database for instance with Key: ' . $instanceKey]);
-        }
+        // Query the tables directly for what we're after, starting with connection count
+        $qry = "Select count(*) as num from ccplus_" . $instanceKey . ".sushisettings where prov_id = " . $gp->id;
+        $result = DB::select($qry);
+        $connections = $result[0]->num;
 
-        // Return the provider and the number of harvests
-        $count = $gp->sushiSettings->whereNotNull('last_harvest')->count();
-        $connections = $gp->sushiSettings->count();
+        // Get the number of harvests
+        $qry .= " and last_harvest is not null";
+        $result = DB::select($qry);
+        $count = $result[0]->num;
 
+        // return the numbers
         return array('harvest_count' => $count , 'connections' => $connections);
     }
 

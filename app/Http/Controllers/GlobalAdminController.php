@@ -41,7 +41,6 @@ class GlobalAdminController extends Controller
 
         // Get global providers and preserve the current instance database setting
         $gp_data = GlobalProvider::orderBy('name', 'ASC')->get();
-        $keepDB  = config('database.connections.consodb.database');
 
         // Build the providers array to pass onto the view
         $providers = array();
@@ -65,20 +64,22 @@ class GlobalAdminController extends Controller
             // If any are found, the can_delete flag will be set to false to disable deletion option in the U/I
             $provider['can_delete'] = true;
             $provider['connection_count'] = 0;
+            $connections = array();
             foreach ($consortia as $instance) {
                 // Collect details from the instance for this provider
                 $details = $this->instanceDetails($instance->ccp_key, $gp);
                 if ($details['harvest_count'] > 0) {
                     $provider['can_delete'] = false;
                 }
-                $provider['connection_count'] += $details['connections'];
+                if ($details['connections'] > 0) {
+                    $connections[] = array('key'=>$instance->ccp_key, 'name'=>$instance->name, 'num'=>$details['connections']);
+                    $provider['connection_count'] += 1;
+                }
             }
+            $provider['connections'] = $connections;
             $provider['updated'] = (is_null($gp->updated_at)) ? null : date("Y-m-d h:ia", strtotime($gp->updated_at));
             $providers[] = $provider;
         }
-
-        // Restore the database handle
-        config(['database.connections.consodb.database' => $keepDB]);
 
         $filters = array('stat' => null);
         return view('globaladmin.home', compact('consortia','settings','providers','filters','masterReports','all_connectors'));
@@ -164,18 +165,17 @@ class GlobalAdminController extends Controller
      */
     private function instanceDetails($instanceKey, $gp) {
 
-        // switch the database connection
-        config(['database.connections.consodb.database' => "ccplus_" . $instanceKey]);
-        try {
-            DB::reconnect('consodb');
-        } catch (\Exception $e) {
-            return response()->json(['result' => 'Error connecting to database for instance with Key: ' . $instanceKey]);
-        }
+        // Query the tables directly for what we're after, starting with connection count
+        $qry = "Select count(*) as num from ccplus_" . $instanceKey . ".sushisettings where prov_id = " . $gp->id;
+        $result = DB::select($qry);
+        $connections = $result[0]->num;
 
-        // Return the provider and the number of harvests
-        $count = $gp->sushiSettings->whereNotNull('last_harvest')->count();
-        $connections = $gp->sushiSettings->count();
+        // Get the number of harvests
+        $qry .= " and last_harvest is not null";
+        $result = DB::select($qry);
+        $count = $result[0]->num;
 
+        // return the numbers
         return array('harvest_count' => $count , 'connections' => $connections);
     }
 }

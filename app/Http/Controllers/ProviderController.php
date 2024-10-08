@@ -624,7 +624,9 @@ class ProviderController extends Controller
     /**
      * Remove the specified resource(s) from storage.
      *
-     * @param  \App\Provider  $id   // Global provider ID
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\GlobalProvider  $globalProvID   // Global provider ID
+     * @param  \App\Provider        $instProvID     // Institution-Specific provider ID
      */
     // public function destroy($id)
     public function customDestroy(Request $request, $globalProvID, $instProvID)
@@ -634,18 +636,17 @@ class ProviderController extends Controller
         if (is_null($instProvID) && !$thisUser->hasRole("Admin")) {
             return response()->json(['result' => false, 'msg' => 'Consortium-wide deletion requires Admin Role']);
         }
+
+        // If provider has saved data, return error
+        if ($this->hasSavedReportData($globalProvID, $instProvID)) {
+            return response()->json(['result' => false, 'msg' => 'Provider has saved report data, cannot delete']);
+        }
+
         // Get all provider definitions that match the global $id
         if ($instProvID == 0) {
             $providers = Provider::where('global_id',$globalProvID)->with('globalProv')->get();
         } else {
             $providers = Provider::where('id',$instProvID)->with('globalProv')->get();
-        }
-
-        // If provider has saved data, return error
-        foreach ($providers as $prov) {
-            if ($this->hasSavedReportData($prov->id)) {
-                return response()->json(['result' => false, 'msg' => 'Provider has saved report data, cannot delete']);
-            }
         }
 
         // Delete all authorized providers, and fail silently on individual attempts
@@ -1035,19 +1036,25 @@ class ProviderController extends Controller
 
     /**
      * Return record counts of saved report data for a given provider and/or a record-type
-     * @param  Integer $provider_id
+     * @param  Provider $global_id
+     * @param  Integer $instProvID
      * @param  String  $model   : a single report-name to check, defaults to all
      * @return Boolean
      */
-    private function hasSavedReportData($provider_id, $model = '')
+    private function hasSavedReportData($global_id, $instProvID, $model = '')
     {
         $all_models = ['TR' => '\\App\\TitleReport',    'DR' => '\\App\\DatabaseReport',
                        'PR' => '\\App\\PlatformReport', 'IR' => '\\App\\ItemReport'];
 
         // Get counts and min/max yearmon for each master report
         $models = ($model == '') ? $all_models : array($all_models[$model]);
+        if ($instProvID == 0) {
+            $where = array(['prov_id', $global_id]);
+        } else {
+            $where = array(['prov_id', $global_id], ['inst_id', $instProvID]);
+        }
         foreach ($models as $model) {
-            $result = $model::where('prov_id', $provider_id)->first();
+            $result = $model::where($where)->first();
             if ($result) return true;
         }
         return false;

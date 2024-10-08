@@ -351,7 +351,9 @@ class SushiQHarvester extends Command
                     $deleted = FailedHarvest::where('harvest_id', $job->harvest->id)->delete();
 
                // No valid report data saved. If we failed, update harvest record
-                } else if ($request_status != "Pending") {    // Pending is not failure
+               // (ignore Pending, 3030, and 9030)
+                } else if ($request_status != "Pending" &&
+                           $sushi->error_code != 3030 && $sushi->error_code != 9030) { 
                    // Increment harvest attempts
                     $job->harvest->attempts++;
                     $max_retries = intval(config('ccplus.max_harvest_retries'));

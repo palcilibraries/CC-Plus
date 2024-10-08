@@ -101,7 +101,7 @@ class CcplusErrorsTableSeeder extends Seeder
             ],
             ['id'=>3030, 'message' => 'No Usage Available for Requested Dates', 'severity_id'=>12,
                 'explanation' => 'No usage data for the requested month exists or has been recorded by the provider.',
-                'suggestion' => 'If data should exist, check with the provider if data should be available.',
+                'suggestion' => 'If data should exist, check with the provider.',
                 'new_status' => 'Success'
             ],
             ['id'=>3031, 'message' => 'Usage Not Ready for Requested Dates', 'severity_id'=>12,
@@ -177,7 +177,12 @@ class CcplusErrorsTableSeeder extends Seeder
                  'suggestion' => 'Contact the provider to report this issue.',
                  'new_status' => 'Stopped'
              ],
-             ['id'=>9030, 'message' => 'JSON is not an object', 'severity_id' => 99,
+             ['id'=>9030, 'message' => 'No Usage Reported for Requested Dates', 'severity_id' => 12,
+                 'explanation' => 'No usage data for the requested month was reported by the provider.',
+                 'suggestion' => 'If data should exist, check with the provider.',
+                 'new_status' => 'Success'
+             ],
+             ['id'=>9040, 'message' => 'JSON is not an object', 'severity_id' => 99,
                  'explanation' => 'The SUSHI service returned non-JSON data.',
                  'suggestion' => 'Contact the provider to report this issue.',
                  'new_status' => 'Stopped'

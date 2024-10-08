@@ -173,6 +173,7 @@ class ReportProcessor extends Command
                 $C5processor = new Counter5Processor($prov_id, $inst_id, $begin, $end, 1);
 
                // Run the counter processor on the JSON
+                $ts = date("Y-m-d H:i:s");
                 try {
                     $res = $C5processor->{$report->name}($json);
                // If processor failed, signal 9020 and delete the JSON file

@@ -40,7 +40,7 @@
     <v-data-table v-model="selectedRows" :headers="headers" :items="filtered_providers" show-select :options="mutable_options"
                   :search="search" @update:options="updateOptions" :footer-props="footer_props"
                   :key="dtKey" item-key="id">
-      <template v-slot:item.status="{ item }">
+      <template v-slot:item.active="{ item }">
         <div v-if="item.is_conso">
           <span v-if="item.can_edit && item.is_active">
             <v-icon large color="green" title="Active" @click="changeStatus(item.id,0)">mdi-toggle-switch</v-icon>
@@ -228,7 +228,7 @@
         failure: '',
         inst_name: '',
         headers: [
-          { text: 'Status', value: 'status' },
+          { text: 'Status', value: 'active'},
           { text: 'Abbrev ', value: 'abbrev', align: 'start' },
           { text: 'Provider ', value: 'name', align: 'start' },
           { text: 'Content Provider', value: 'content_provider', align: 'start' },

@@ -228,7 +228,7 @@ class GlobalProviderController extends Controller
       if (!$isActive) {
           $provider->refresh_result = null;
       }
-      if (isset($input['refreshable'])) {
+      if (array_key_exists('refreshable', $input)) {
           $provider->refreshable = ($input['refreshable']) ? 1 : 0;
           if ($provider->refreshable == 0) {
               $provider->refresh_result = null;
@@ -243,7 +243,7 @@ class GlobalProviderController extends Controller
       // NOTE:: adding to the global master list doesn't automatically enable new reports in the instance tables.
       $dropped_reports = array();
       $original_reports = $provider->master_reports;
-      if (isset($input['report_state'])) {
+      if (array_key_exists('report_state', $input)) {
           foreach ($original_reports as $mr) {
               $_master = $masterReports->where('id', $mr)->first();
               if (!$_master) continue;
@@ -265,7 +265,7 @@ class GlobalProviderController extends Controller
       // Turn array of connection checkboxes into an array of IDs
       $new_connectors = array();
       $connectors_changed = false;
-      if (isset($input['connector_state'])) {
+      if (array_key_exists('connector_state', $input)) {
           $extraArgs = false;
           foreach ($all_connectors as $cnx) {
               if (!isset($input['connector_state'][$cnx->name])) continue;
@@ -281,13 +281,13 @@ class GlobalProviderController extends Controller
       // Handle other text values
       $args = array('platform_parm','content_provider','registry_id');
       foreach ($args as $key) {
-          if (isset($input[$key])) {
-              $provider->{$key} = trim($input[$key]);
+          if (array_key_exists($key, $input)) {
+              $provider->{$key} = ($input[$key]) ? trim($input[$key]) : null;
           }
       }
 
       // Turn array of report checkboxes into an array of IDs
-      if (isset($input['report_state'])) {
+      if (array_key_exists('report_state', $input)) {
           $master_reports = array();
           foreach ($masterReports as $rpt) {
             if (!isset($input['report_state'][$rpt->name])) continue;

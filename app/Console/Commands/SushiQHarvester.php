@@ -299,6 +299,7 @@ class SushiQHarvester extends Command
                         // clear out the JSON file
                         unlink($sushi->raw_datafile);
                         $job->harvest->rawfile = null;
+                        $job->harvest->attempts++;
                     }
 
                // If request is pending (in a provider queue, not a CC+ queue), just set harvest status
@@ -354,7 +355,7 @@ class SushiQHarvester extends Command
                // No valid report data saved. If we failed, update harvest record
                // (ignore Pending, 3030, and 9030)
                 } else if ($request_status != "Pending" &&
-                           $sushi->error_code != 3030 && $sushi->error_code != 9030) { 
+                           $sushi->error_code != 3030 && $sushi->error_code != 9030) {
                    // Increment harvest attempts
                     $job->harvest->attempts++;
                     $max_retries = intval(config('ccplus.max_harvest_retries'));

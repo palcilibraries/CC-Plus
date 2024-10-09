@@ -277,6 +277,7 @@ class SushiQHarvester extends Command
                                                            'help_url' => $sushi->help_url, 'created_at' => $ts]);
                                     $this->line($ts . " QueueHarvester: Report failed COUNTER validation : " . $e->getMessage());
                                     $job->harvest->error_id = 9100;
+                                    $error = CcplusError::where('id',9100)->first();
                                 }
                             }
                         }

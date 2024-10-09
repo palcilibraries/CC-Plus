@@ -343,9 +343,10 @@ class GlobalProviderController extends Controller
                   $con_prov->reports()->detach($rpt_id);
               }
 
+              // Get all (.not.disabled) sushi settings for this global from the current conso instances
+              $settings = SushiSetting::with('institution')->where('prov_id',$id)->where('status','<>','Disabled');
+
               // Check, and possibly update, status for related sushi settings (skip disabled settings)
-              $con_prov->load('sushiSettings','sushiSettings.institution');
-              $settings = $con_prov->sushiSettings->where('status','<>','Disabled');
               foreach ($settings as $setting) {
                   // If required connectors all have values, check to see if sushi setting status needs updating
                   $setting_updates = array();

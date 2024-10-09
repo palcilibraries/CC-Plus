@@ -6,6 +6,7 @@ use App\GlobalProvider;
 use App\Consortium;
 use App\Report;
 use App\Provider;
+use App\SushiSetting;
 use App\ConnectionField;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;

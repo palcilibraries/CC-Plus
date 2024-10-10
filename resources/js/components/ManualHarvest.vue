@@ -3,7 +3,7 @@
     <div v-if="selections_made">
       <v-btn color="gray" small @click="resetForm">Reset Selections</v-btn>
     </div>
-  	<form method="POST" action="/sushisettings" @submit.prevent="formSubmit"
+  	<form method="POST" action="" @submit.prevent="formSubmit"
   	      @keydown="form.errors.clear($event.target.name)">
       <div v-if="this.is_admin">
         <v-row class="d-flex align-mid ma-2" no-gutters>
@@ -120,10 +120,10 @@
         <span v-if="failure" class="fail" role="alert" v-text="failure"></span>
         <span v-if="working" class="work" role="alert" v-text="working"></span>
       </div>
-      <v-row v-if="form.reports.length>0 && form.inst.length>0 && form.prov.length>0" no-gutters>
+      <v-row v-if="form.reports.length>0 && (form.inst.length>0 || form.inst_group_id>0) && form.prov.length>0" no-gutters>
         <v-btn small color="primary" type="submit" :disabled="form.errors.any()">Submit</v-btn>
       </v-row>
-      <v-row v-else-if="form.inst.length>0 && form.prov.length>0 && available_reports.length==0" no-gutters>
+      <v-row v-else-if="(form.inst.length>0 || form.inst_group_id>0) && form.prov.length>0 && available_reports.length==0" no-gutters>
         <span class="form-fail" role="alert">No reports defined or available for selected Provider/Institution.</span>
       </v-row>
     </form>

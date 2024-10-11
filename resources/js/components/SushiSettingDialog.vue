@@ -47,9 +47,10 @@
           </v-row>
           <template v-for="cnx in sushi_prov.connectors">
             <v-row class="d-flex mx-2" no-gutters>
-              <v-col class="d-flex px-2" cols="8">
-                <v-text-field v-model="form[cnx.name]" :label='cnx.label' :id='cnx.name' outlined :rules="[required]"
-                ></v-text-field>
+              <v-col v-if="cnx.required || (setting[cnx.name] != null && setting[cnx.name]!='')" class="d-flex px-2" cols="8">
+                <v-text-field v-if="cnx.required" v-model="form[cnx.name]" :label='cnx.label' :id='cnx.name' outlined
+                              :rules="[required]"></v-text-field>
+                <v-text-field v-else v-model="form[cnx.name]" :label='cnx.label' :id='cnx.name' outlined></v-text-field>
               </v-col>
             </v-row>
           </template>
@@ -112,7 +113,6 @@
         form: new window.Form({
             inst_id: null,
             prov_id: null,
-            global_id: null,
             customer_id: '',
             requestor_id: '',
             api_key: '',
@@ -131,7 +131,7 @@
         }
       },
       sushi_prov: function (prov) {
-        this.form.prov_id = (this.mutable_dtype == 'edit') ? this.setting.prov_id : this.sushi_prov.conso_id;
+        this.form.prov_id = (this.mutable_dtype == 'edit') ? this.setting.prov_id : this.sushi_prov.id;
         if (this.all_settings.length>0 && this.form.prov_id != null && this.form.inst_id != null) {
           this.testExisting();
           this.form_key += 1;
@@ -155,13 +155,14 @@
           this.success = '';
           this.failure = '';
           this.form.inst_id = this.sushi_inst.id;
-          this.form.global_id = this.sushi_prov.id;
-          this.form.prov_id = (this.mutable_dtype == 'edit') ? this.setting.prov_id : this.sushi_prov.conso_id;
+          this.form.prov_id = (this.mutable_dtype == 'edit') ? this.setting.prov_id : this.sushi_prov.id;
           this.form.status = this.statusval;
           // All connectors are required - whether they work or not is a matter of testing+confirming
           this.sushi_prov.connectors.forEach( (cnx) => {
-              if (this.form[cnx.name] == '' || this.form[cnx.name] == null) {
-                  this.failure = "Error: "+cnx.name+" must be supplied to connect to this provider!";
+              if (cnx.required) {
+                  if (this.form[cnx.name] == '' || this.form[cnx.name] == null) {
+                      this.failure = "Error: "+cnx.name+" must be supplied to connect to this provider!";
+                  }
               }
           });
           if (this.failure != '') return;
@@ -203,16 +204,16 @@
           this.testStatus = "... Working ...";
           this.showTest = true;
           var testArgs = {'prov_id' : this.form.prov_id};
-          if (this.sushi_prov.connectors.some(c => c.name === 'requestor_id')) {
+          if (this.sushi_prov.connectors.some(c => c.name === 'requestor_id') && c.required) {
             testArgs['requestor_id'] = this.form.requestor_id;
           }
-          if (this.sushi_prov.connectors.some(c => c.name === 'customer_id')) {
+          if (this.sushi_prov.connectors.some(c => c.name === 'customer_id') && c.required) {
             testArgs['customer_id'] = this.form.customer_id;
           }
-          if (this.sushi_prov.connectors.some(c => c.name === 'api_key')) {
+          if (this.sushi_prov.connectors.some(c => c.name === 'api_key') && c.required) {
             testArgs['api_key'] = this.form.api_key;
           }
-          if (this.sushi_prov.connectors.some(c => c.name === 'extra_args')) {
+          if (this.sushi_prov.connectors.some(c => c.name === 'extra_args') && c.required) {
             testArgs['extra_args'] = this.form.extra_args;
           }
           axios.post('/sushisettings-test', testArgs)
@@ -240,12 +241,12 @@
         return (this.institutions.length == 1) ? { ...this.institutions[0] } : {id: null};
       },
       default_prov: function () {
-        return (this.providers.length == 1) ? { ...this.providers[0] } : { id: null, global_id: null };
+        return (this.providers.length == 1) ? { ...this.providers[0] } : { id: null };
       },
       connectable_providers() {
         if (this.mutable_dtype == 'edit' || this.form.inst_id == null) return this.providers;
         return this.providers.filter( p => (p.inst_id == this.form.inst_id || p.inst_id == 1 || p.inst_id == null) &&
-                                            this.filtered_settings.filter( s => s.prov_id == p.conso_id )
+                                            this.filtered_settings.filter( s => s.prov_id == p.id )
                                                                   .every( s2 => { s2.inst_id != this.form.inst_id })
                                     );
       },

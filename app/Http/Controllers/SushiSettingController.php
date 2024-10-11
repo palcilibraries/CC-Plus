@@ -105,11 +105,13 @@ class SushiSettingController extends Controller
             foreach ($providers as $prov) {
                 // There are only 4... if they're all set, skip checking
                 if (sizeof($seen_connectors) < 4) {
-                    $connectors = $global_connectors->whereIn('id',$prov->connectors);
-                    foreach($connectors as $cnx) {
-                        if (!in_array($cnx->name,$seen_connectors)) {
-                            $all_connectors[] = array('name' => $cnx->name, 'label' => $cnx->label);
-                            $seen_connectors[] = $cnx->name;
+                    $required = $prov->connectors;
+                    foreach ($global_connectors as $gc) {
+                        $cnx = array('name' => $gc->name, 'label' => $gc->label);
+                        $cnx['required'] = in_array($gc->id, $required);
+                        $all_connectors[] = $cnx;
+                        if (!in_array($gc->name,$seen_connectors)) {
+                            $seen_connectors[] = $gc->name;
                         }
                     }
                 }
@@ -120,7 +122,13 @@ class SushiSettingController extends Controller
             foreach ($data as $rec) {
                 $setting = $rec->toArray();
                 $setting['can_edit'] = $rec->canManage();
-                $setting['provider']['connectors'] = $rec->provider->connectionFields();
+                $setting['provider']['connectors'] = array();
+                $required = $rec->provider->connectors;
+                foreach ($global_connectors as $gc) {
+                    $cnx = $gc->toArray();
+                    $cnx['required'] = in_array($gc->id, $required);
+                    $setting['provider']['connectors'][] = $cnx;
+                }
                 $settings[] = $setting;
             }
             return response()->json(['settings' => $settings, 'connectors' => $all_connectors], 200);

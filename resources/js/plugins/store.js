@@ -50,7 +50,7 @@ export const store = new Vuex.Store({
                                accessmethod_id: [] },
                      datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [] }
                    },
-          sushi: { filters: {inst: [], group: 0, server_prov: [], inst_prov: [], harv_stat: []},
+          sushi: { filters: {inst: [], group: 0, prov: [], harv_stat: []},
                            datatable: {itemsPerPage: 10, sortBy: [], sortDesc: [], groupBy: [],
                                        groupDesc: [], multiSort: false, mustSort: false }
                  },

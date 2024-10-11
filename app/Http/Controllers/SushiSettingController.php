@@ -234,35 +234,31 @@ class SushiSettingController extends Controller
     public function store(Request $request)
     {
         abort_unless(auth()->user()->hasAnyRole(['Admin','Manager']), 403);
+        $fields = $request->all();
 
-        $form_data = $request->all();
-        $fields = array_except($form_data,array('global_id'));
-
+        // Manager can only create settings for their own institution
         if (!auth()->user()->hasAnyRole(['Admin']) && $fields['inst_id'] != auth()->user()->inst_id) {
             return response()->json(['result' => false, 'msg' => 'You can only assign credentials for your institution']);
         }
-        // if prov_id is missing, try to create a provider record on-the-fly as an institution-specific
-        // provider before creating the sushisetting record.
-        if (!isset($form_data['prov_id']) && !isset($form_data['global_id'])) {
+
+        // Confirm valid provider ID (pointing at a global)
+        if (!isset($fields['prov_id'])) {
             return response()->json(['result' => false, 'msg' => 'Provider assignment is required']);
         }
-        if (!isset($form_data['prov_id'])) {
-            if (!is_null($form_data['global_id'])) {
-                $gp = GlobalProvider::where('id',$form_data['global_id'])->first();
-                if ($gp) {
-                    $provider_data = array('name' => $gp->name, 'global_id' => $gp->id, 'is_active' => $gp->is_active,
-                                           'inst_id' => $fields['inst_id'], 'allow_inst_specific' => 0);
-                    $new_provider = Provider::create($provider_data);
-                    $fields['prov_id'] = $gp->id;
-                } else {
-                    return response()->json(['result' => false, 'msg' => 'Database error! Cannot find global provider record!']);
-                }
-            } else {
-                return response()->json(['result' => false, 'msg' => 'Global provider value is missing or undefined']);
-            }
+        $gp = GlobalProvider::where('id',$fields['prov_id'])->first();
+        if (!$gp) {
+            return response()->json(['result' => false, 'msg' => 'Provider not unknown or undefined']);
         }
+
+        // If there is no existing (conso) Provider definition for the global provider, create it now
+        $consoProvider = Provider::where('global_id',$gp->id)->whereIn('inst_id', [1,$fields['inst_id']])->first();
+        if (!$consoProvider) {
+            $provider_data = array('name' => $gp->name, 'global_id' => $gp->id, 'is_active' => $gp->is_active,
+                                   'inst_id' => $fields['inst_id'], 'allow_inst_specific' => 0);
+            $new_provider = Provider::create($provider_data);
+        }
+
         // Create the new sushi setting record and relate to the GLOBAL ID (get existing if already defined)
-        $fields['prov_id'] = $form_data['global_id'];
         $setting = SushiSetting::firstOrCreate($fields);
         $setting->load('institution', 'provider');
         $setting->provider->connectors = ConnectionField::whereIn('id',$setting->provider->connectors)->get();
@@ -273,6 +269,7 @@ class SushiSettingController extends Controller
             $mon = (date("j") < $setting->provider->day_of_month) ? date("n") : date("n")+1;
             $setting['next_harvest'] = date("d-M-Y", mktime(0,0,0,$mon,$setting->provider->day_of_month,date("Y")));
         }
+        $setting['can_edit'] = true;
         return response()->json(['result' => true, 'msg' => 'Credentials successfully created', 'setting' => $setting]);
     }
 

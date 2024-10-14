@@ -92,29 +92,19 @@ class SushiSettingController extends Controller
                                   })
                                   ->get();
 
-            // Build an array of connection_fields used across all providers (whether connected or not)
-            $all_connectors = array();
-            $seen_connectors = array();
+            // Build an array of connection_fields used across all providers
             $global_connectors = ConnectionField::get();
             $providerIds = $data->unique('prov_id')->pluck('prov_id')->toArray();
             if ( count($filters['prov']) > 0 ) {
                 $providerIds = array_unique(array_merge($providerIds,$filters['prov']));
             }
-            $providers = GlobalProvider::whereIn('id',$providerIds)->orderBy('name', 'ASC')->get();
-
-            foreach ($providers as $prov) {
-                // There are only 4... if they're all set, skip checking
-                if (sizeof($seen_connectors) < 4) {
-                    $required = $prov->connectors;
-                    foreach ($global_connectors as $gc) {
-                        $cnx = array('name' => $gc->name, 'label' => $gc->label);
-                        $cnx['required'] = in_array($gc->id, $required);
-                        $all_connectors[] = $cnx;
-                        if (!in_array($gc->name,$seen_connectors)) {
-                            $seen_connectors[] = $gc->name;
-                        }
-                    }
-                }
+            $all_connectors = array();
+            $required_connectors = array();
+            foreach ($global_connectors as $gc) {
+                $cnx = $gc->toArray();
+                $required = GlobalProvider::whereIn('id',$providerIds)->whereJsonContains('connectors',$gc->id)->first();
+                $cnx['required'] = ($required) ? true : false;
+                $all_connectors[] = $cnx;
             }
 
             // Add provider global connectors and can_edit flag to the settings

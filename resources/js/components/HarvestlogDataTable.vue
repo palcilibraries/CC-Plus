@@ -39,7 +39,7 @@
             <v-divider class="mt-1"></v-divider>
           </template>
           <template v-slot:selection="{ item, index }">
-            <span v-if="index==0 && mutable_options['providers'].length==mutable_filters['providers'].length">All Providers</span>
+            <span v-if="index==0 && allSelected.providers">All Providers</span>
             <span v-else-if="index==0 && !allSelected.providers">{{ item.name }}</span>
             <span v-else-if="index===1 && !allSelected.providers" class="text-grey text-caption align-self-center">
               &nbsp; +{{ mutable_filters['providers'].length-1 }} more
@@ -62,7 +62,7 @@
             <v-divider class="mt-1"></v-divider>
           </template>
           <template v-if="is_admin || is_viewer" v-slot:selection="{ item, index }">
-            <span v-if="index==0 && mutable_options['institutions'].length==mutable_filters['institutions'].length">
+            <span v-if="index==0 && allSelected.institutions">
               All Institutions
             </span>
             <span v-else-if="index==0 && !allSelected.institutions">{{ item.name }}</span>
@@ -74,23 +74,23 @@
       </v-col>
       <v-col v-if="groups.length>1 && (inst_filter==null || inst_filter=='G') && (is_admin || is_viewer)"
              class="d-flex px-2 align-center" cols="2" sm="2">
-        <div v-if="mutable_filters['group'].length>0" class="x-box">
-          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('group')"/>&nbsp;
+        <div v-if="mutable_filters['groups'].length>0" class="x-box">
+          <img src="/images/red-x-16.png" width="100%" alt="clear filter" @click="clearFilter('groups')"/>&nbsp;
         </div>
-        <v-autocomplete :items="groups" v-model="mutable_filters['group']" @change="updateFilters('group')" multiple
+        <v-autocomplete :items="groups" v-model="mutable_filters['groups']" @change="updateFilters('groups')" multiple
                         label="Institution Group(s)"  item-text="name" item-value="id">
           <template v-if="is_admin || is_viewer" v-slot:prepend-item>
-            <v-list-item @click="filterAll('group')">
-               <span v-if="allSelected.group">Clear Selections</span>
+            <v-list-item @click="filterAll('groups')">
+               <span v-if="allSelected.groups">Clear Selections</span>
                <span v-else>Enable All</span>
             </v-list-item>
             <v-divider class="mt-1"></v-divider>
           </template>
           <template v-if="is_admin || is_viewer" v-slot:selection="{ item, index }">
-            <span v-if="index==0 && groups.length==mutable_filters['group'].length">All Groups</span>
-            <span v-else-if="index==0 && !allSelected.group">{{ item.name }}</span>
-            <span v-else-if="index===1 && !allSelected.group" class="text-grey text-caption align-self-center">
-              &nbsp; +{{ mutable_filters['group'].length-1 }} more
+            <span v-if="index==0 && allSelected.groups">All Groups</span>
+            <span v-else-if="index==0 && !allSelected.groups">{{ item.name }}</span>
+            <span v-else-if="index===1 && !allSelected.groups" class="text-grey text-caption align-self-center">
+              &nbsp; +{{ mutable_filters['groups'].length-1 }} more
             </span>
           </template>
         </v-autocomplete>
@@ -117,7 +117,7 @@
             <v-divider class="mt-1"></v-divider>
           </template>
           <template v-slot:selection="{ item, index }">
-            <span v-if="index == 0 && mutable_options['harv_stat'].length == mutable_filters['harv_stat'].length">All Status</span>
+            <span v-if="index == 0 && allSelected.harv_stat">All Status</span>
             <span v-else-if="index < 2 && !allSelected.harv_stat">{{ item }}</span>
             <span v-else-if="index === 2 && !allSelected.harv_stat" class="text-grey text-caption align-self-center">
               &nbsp; +{{ mutable_filters['harv_stat'].length-2 }} more
@@ -297,8 +297,8 @@
         mutable_dt_options: {},
         mutable_updated: [],
         expanded: [],
-        mutable_options: { 'codes': [], 'reports': [], 'harv_stat': [], 'providers': [], 'institutions': [] },
-        allSelected: {'providers': false, 'institutions': false, 'codes': false, 'harv_stat': false, 'group': false},
+        mutable_options: { 'providers': [], 'institutions': [], 'codes': [], 'harv_stat': [], 'reports': [] },
+        allSelected: {'providers': false, 'institutions': false, 'codes': false, 'harv_stat': false, 'groups': false},
         source: ['Consortium', 'Institution'],
         truncatedResult: false,
         harv_stat: ['Active', 'Fail', 'Queued', 'Harvested', 'Stopped', 'Success'],
@@ -344,15 +344,15 @@
             // Setting an inst or group filter clears the other one
             if (this.mutable_filters['institutions'].length>0) {
                 this.inst_filter = "I";
-                this.mutable_filters['group'] = [];
-            } else if (this.mutable_filters['group'].length>0) {
+                this.mutable_filters['groups'] = [];
+            } else if (this.mutable_filters['groups'].length>0) {
                 this.inst_filter = "G";
                 this.mutable_filters['institutions'] = [];
             }
             // update allSelected flag
             if (typeof(this.allSelected[filt]) != 'undefined') {
-                let optLen = (filt == 'group') ? this.groups.length : this.mutable_options[filt].length;
-                this.allSelected[filt] = ( optLen == this.mutable_filters[filt].length && this.mutable_filters[filt].length > 0);
+                this.allSelected[filt] = ( this.mutable_filters[filt].length==this[filt].length &&
+                                           this.mutable_filters[filt].length>0 );
             }
         },
         clearAllFilters() {
@@ -381,7 +381,7 @@
                 this.mutable_filters[filter] = '';
             } else {
                 this.mutable_filters[filter] = [];
-                if (filter=='institutions' || filter=='group') this.inst_filter = null;
+                if (filter=='institutions' || filter=='groups') this.inst_filter = null;
                 if ( Object.keys(this.mutable_options).includes(filter) ) {
                   this.mutable_options[filter] = [...this[filter]];
                 }
@@ -407,7 +407,7 @@
                      this.mutable_options['harv_stat'] = response.data.stat_opts;
                      this.mutable_options['reports'] = this.reports.filter( r => response.data.rept_opts.includes(r.id));
                      this.mutable_options['providers'] = this.providers.filter( p => response.data.prov_opts.includes(p.id));
-                     this.mutable_options['institution'] = this.institutions.filter( i => response.data.inst_opts.includes(i.id));
+                     this.mutable_options['institutions'] = this.institutions.filter( i => response.data.inst_opts.includes(i.id));
                      this.update_button = "Refresh Records";
                      this.loading = false;
                      this.dtKey++;
@@ -535,15 +535,16 @@
           if (this.allSelected[filt]) {
             this.mutable_filters[filt] = [];
             this.allSelected[filt] = false;
-            if (filt == "institutions" || filt == "group") this.inst_filter == null;
+            if (filt == "institutions" || filt == "groups") this.inst_filter == null;
           // Turned an all-options filter ON
           } else {
-            this.mutable_filters[filt] = (filt == 'group') ? [...this.groups] : [...this[filt]];
+            // this.mutable_filters[filt] = (filt == 'groups') ? [...this.groups] : [...this[filt]];
+            this.mutable_filters[filt] = this[filt].map(o => o.id);
             this.allSelected[filt] = true;
             if (filt == "institutions") {
                 this.inst_filter = "I";
-                this.mutable_filters['group'] = [];
-            } else if (filt == "group") {
+                this.mutable_filters['groups'] = [];
+            } else if (filt == "groups") {
                 this.inst_filter = "G";
                 this.mutable_filters['institutions'] = [];
             }
@@ -580,13 +581,13 @@
 
       // Inst-filter > Group-filter, if one has a value, set the flag
       if (this.mutable_filters['institutions'].length>0) {
-          this.mutable_filters['group'] = [];
+          this.mutable_filters['groups'] = [];
           this.inst_filter = 'I';
-      } else if (this.mutable_filters['group'].length>0) {
+      } else if (this.mutable_filters['groups'].length>0) {
           this.inst_filter = 'G';
       }
 
-      // Set initial fitler options
+      // Set initial filter options
       Object.keys(this.mutable_options).forEach( (key) => {
         this.mutable_options[key] = [...this[key]];
       });

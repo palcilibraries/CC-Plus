@@ -224,8 +224,7 @@ class InstitutionController extends Controller
 
         // Get consortium-providers providers; limit to conso+inst_specific if not Admin
         $limit_insts = ($isAdmin) ? [] : [1,$id];
-        $inst_providers = Provider::with('institution:id,name,is_active', 'reports:id,name', 'globalProv',
-                                         'globalProv.sushiSettings:id,prov_id,last_harvest')
+        $inst_providers = Provider::with('institution:id,name,is_active', 'reports:id,name')
                                   ->when(!$isAdmin, function ($query) use ($limit_insts) {
                                       return $query->whereIn('inst_id',$limit_insts);
                                   })
@@ -299,8 +298,9 @@ class InstitutionController extends Controller
                 $combined_ids = array_unique(array_merge($conso_reports, $_inst_reports));
                 $_rec['master_reports'] = $rec->master_reports;
                 $_rec['report_state'] = $this->reportState($master_reports, $conso_reports, $combined_ids);
-                $_rec['last_harvest'] = $prov_data->globalProv->sushiSettings->max('last_harvest');
-                $rec->last_harvest = max($rec->last_harvest,$_rec['last_harvest']);
+                // last harvest is based on THIS INST ($id) sushisettings
+                $_setting = $sushi_settings->where('prov_id',$prov_data->global_id)->first();
+                $_rec['last_harvest'] = ($_setting) ? $_setting->last_harvest : null;
                 $_rec['allow_inst_specific'] = ($prov_data->inst_id == 1) ? $prov_data->allow_inst_specific : 0;
                 // The connected prov is editable if it is conso or specific to this inst
                 // If it is an inst-specific connection for a different inst, mark not editable

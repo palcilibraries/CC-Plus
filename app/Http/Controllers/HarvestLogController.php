@@ -49,7 +49,7 @@ class HarvestLogController extends Controller
 
        // Assign optional inputs to $filters array
        $filters = array('institutions' => [], 'providers' => [], 'reports' => [], 'harv_stat' => [], 'updated' => null,
-                        'group' => [], 'fromYM' => null, 'toYM' => null, 'source' => null, 'codes' => []);
+                        'groups' => [], 'fromYM' => null, 'toYM' => null, 'source' => null, 'codes' => []);
        if ($request->input('filters')) {
            $filter_data = json_decode($request->input('filters'));
            foreach ($filter_data as $key => $val) {
@@ -174,10 +174,10 @@ class HarvestLogController extends Controller
                // if checkbox for all-consortium is on, clear inst and group Filters
                if (in_array(0,$filters["institutions"])) {
                    $filters['institutions'] = array();
-                   $filters['group'] = array();
+                   $filters['groups'] = array();
                }
-               if (sizeof($filters['group']) > 0) {
-                   foreach ($filters['group'] as $group_id) {
+               if (sizeof($filters['groups']) > 0) {
+                   foreach ($filters['groups'] as $group_id) {
                        $group = $all_groups->where('id',$group_id)->first();
                        if ($group) {
                            $_insts = $group->institutions->pluck('id')->toArray();

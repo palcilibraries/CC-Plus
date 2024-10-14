@@ -458,7 +458,12 @@
               });
               // Save filters in the store and reset options
               this.$store.dispatch('updateAllFilters',this.filters);
-              this.dtKey += 1;           // re-render of the datatable
+              // for insitutional context, reload the settings
+              if (this.inst_context > 1) {
+                  this.getSettings();
+              } else {
+                  this.dtKey += 1;           // re-render of the datatable
+              }
           },
           // Update inst, provider, and group filter options
           updateFilterOptions(changed_filter) {
@@ -859,6 +864,11 @@
 
           // Subscribe to store updates
           this.$store.subscribe((mutation, state) => { localStorage.setItem('store', JSON.stringify(state)); });
+
+          // for insitutional context, load the settings now
+          if (this.inst_context > 1) {
+              this.getSettings();
+          }
 
           console.log('SushiSettings Datatable Component mounted.');
       }

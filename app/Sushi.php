@@ -64,7 +64,7 @@ class Sushi extends Model
             $result = $client->request('GET', $uri, $options);
         } catch (\Exception $e) {
             $this->step = "HTTP";
-            $this->error_code = (property_exists($e, 'Code')) ? $e->Code : 9000;
+            $this->error_code = (property_exists($e, 'Code')) ? $e->Code : 9010;
             $this->severity = (property_exists($e, 'Severity')) ? strtoupper($e->Severity) : "ERROR";
             $this->message = (property_exists($e, 'Message')) ? $e->Message : "SUSHI HTTP request failed, verify URL";
             $this->detail = (property_exists($e, 'Data')) ? $e->Data : "";
@@ -237,7 +237,7 @@ class Sushi extends Model
             throw new \Exception("SUSHI error: no Report_Items included in JSON response.");
         } else {
             if (sizeof($this->json->Report_Items) <= 0) {
-                throw new \Exception("SUSHI error: Report_Items in JSON response is empty.");
+                throw new \Exception("SUSHI error: Report_Items present but empty.", 9030);
             }
         }
 

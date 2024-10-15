@@ -99,10 +99,11 @@ class SushiQHarvester extends Command
                 config(['database.connections.consodb.database' => 'ccplus_' . $con->ccp_key]);
                 DB::reconnect();
 
-               // Set the output path and create the folder if it isn't there
-                $report_path = config('ccplus.reports_path') . $con->id . '/0_unprocessed/';
-                if (!is_dir($report_path)) {
-                    mkdir($report_path, 0755, true);
+               // Set the output paths and create the folder if it isn't there
+                $report_path = config('ccplus.reports_path') . $con->id;
+                $unprocessed_path = $report_path . '/0_unprocessed/';
+                if (!is_dir($unprocessed_path)) {
+                    mkdir($unprocessed_path, 0755, true);
                 }
 
                 // If conso is not active
@@ -230,7 +231,7 @@ class SushiQHarvester extends Command
 
                    // Set output filename for raw data. Create the folder path, if necessary
                     $_name = $job->harvest_id . '_' . $report->name . '_' . $begin . '_' . $end . '.json';
-                    $sushi->raw_datafile = $report_path . $_name;
+                    $sushi->raw_datafile = $unprocessed_path . $_name;
 
                    // setup array of required connectors for buildUri
                     $connectors = $this->connection_fields->whereIn('id',$setting->provider->connectors)
@@ -295,11 +296,10 @@ class SushiQHarvester extends Command
                                                    'error_id' => $sushi->error_code ,
                                                    'detail' => $sushi->message . ', ' . $sushi->detail,
                                                    'help_url' => $sushi->help_url, 'created_at' => $ts]);
-                            $job->harvest->error_id = null;
-                            // clear out the JSON file
-                            unlink($sushi->raw_datafile);
-                            $job->harvest->rawfile = null;
+
+                            // Update attempts, record error_id and set Success
                             $job->harvest->attempts++;
+                            $job->harvest->error_id = $sushi->error_code;
                         }
 
                    // If request is pending (in a provider queue, not a CC+ queue), just set harvest status
@@ -368,8 +368,26 @@ class SushiQHarvester extends Command
                         } else {
                             $job->harvest->status = 'ReQueued'; // ReQueue by default
                         }
-                        // clear out the JSON file
-                        unlink($sushi->raw_datafile);
+                    }
+
+                    // Try to move the JSON to the processed folder when an error is set
+                    if ($sushi->error_code > 0) {
+                        $savePath = $report_path . '/' . $setting->inst_id . '/' . $setting->prov_id;
+                        if ($setting->inst_id>0 && $setting->prov_id>0 && !is_dir($savePath)) {
+                            mkdir($savePath, 0755, true);
+                        }
+                        $job->harvest->rawfile = null;  // default to no file saved
+                        if (is_dir($savePath)) {
+                            $newName = $savePath . '/' . $_name;
+                            try {
+                                rename($sushi->raw_datafile, $newName);
+                                $job->harvest->rawfile = $_name;
+                            } catch (\Exception $e) { // rename failed. Try to cleanup the unprocessed folder
+                                try {
+                                    unlink($sushi->raw_datafile);
+                                } catch (\Exception $e2) { }
+                            }
+                        }
                     }
 
                    // Force harvest status to the value from any Error
@@ -392,7 +410,7 @@ class SushiQHarvester extends Command
                 }   // foreach job for the current consortium
             }       // foreach consortium with queued jobs
 
-           // Get  (another 100) Jobs from the Queue
+           // Get (another 100) Jobs from the Queue
             $all_jobs = SushiQueueJob::orderBy('id', 'ASC')->limit(100)->get();
 
         }  // continue while $all_jobs->count() > 0

@@ -538,8 +538,11 @@
             if (filt == "institutions" || filt == "groups") this.inst_filter == null;
           // Turned an all-options filter ON
           } else {
-            // this.mutable_filters[filt] = (filt == 'groups') ? [...this.groups] : [...this[filt]];
-            this.mutable_filters[filt] = this[filt].map(o => o.id);
+            if (filt == 'codes' || filt == 'harv_stat') {
+                this.mutable_filters[filt] = [...this[filt]];
+            } else {
+                this.mutable_filters[filt] = this[filt].map(o => o.id);
+            }
             this.allSelected[filt] = true;
             if (filt == "institutions") {
                 this.inst_filter = "I";

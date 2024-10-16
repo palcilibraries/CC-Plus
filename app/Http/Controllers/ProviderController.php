@@ -525,7 +525,8 @@ class ProviderController extends Controller
         }
 
         // If requested, create a sushi-setting to give a "starting point" for connecting it later
-        $stub = (isset($input['sushi_stub']) && $global_provider->sushiSettings->count()==0) ? $input['sushi_stub'] : 0;
+        $existing_setting = $global_provider->sushiSettings->where('inst_id',$input['inst_id'])->first();
+        $stub = (isset($input['sushi_stub']) && !$existing_setting) ? $input['sushi_stub'] : 0;
         if ($stub) {
             $sushi_setting = new SushiSetting;
             $sushi_setting->inst_id = $input['inst_id'];

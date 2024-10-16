@@ -623,7 +623,7 @@ class GlobalProviderController extends Controller
                 }
                 // The registry API doesn't know about CC+ extra_args. If set in the original Global, preserve it
                 foreach ($global_provider->connectionFields() as $cf) {
-                    if ($cf['name'] == 'extra_args') {
+                    if ($cf['name'] == 'extra_args' && $cf['required']) {
                         $connectors[] = $cf['id'];
                         break;
                     }

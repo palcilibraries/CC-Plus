@@ -11,10 +11,12 @@ class GlobalProvider extends Model
    * Class Constructor
    */
     private $global_masters;
+    private $all_connectors;
     public function __construct(array $attributes = array())
     {
         parent::__construct($attributes);
         $this->global_masters = Report::where('parent_id',0)->orderBy('dorder', 'ASC')->get();
+        $this->all_connectors = ConnectionField::get();
     }
   /**
    * The database table used by the model.
@@ -40,8 +42,13 @@ class GlobalProvider extends Model
     // Return the ConnectionField detail based on connectors array
     public function connectionFields()
     {
+        $connectors = array();
         $cnxs = $this->connectors;
-        return (count($cnxs) == 0) ? [] : ConnectionField::whereIn('id',$cnxs)->get()->toArray();
+        foreach ($this->all_connectors->toArray() as $cnx) {
+            $cnx['required'] = in_array($cnx['id'],$cnxs);
+            $connectors[] = $cnx;
+        }
+        return $connectors;
     }
 
     public function sushiSettings()
@@ -77,8 +84,8 @@ class GlobalProvider extends Model
 
     public function isComplete()
     {
-        $required = $this->provider->connectors;
-        $connectors = $this->global_connectors->whereIn('id',$required)->pluck('name')->toArray();
+        $required = $this->connectors;
+        $connectors = $this->all_connectors->whereIn('id',$required)->pluck('name')->toArray();
         foreach ($connectors as $cnx) {
             if (is_null($this->$cnx) || trim($this->$cnx) == '' || $this->$cnx == '-required-') return false;
         }

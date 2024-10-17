@@ -91,31 +91,27 @@ class Sushi extends Model
                 // throw new \Exception("Failed to save raw data in: ".$this->raw_datafile);
             }
         }
-       // Decode result body into $json, throw and log error if it fails
-//  This could be much simpler...
-//  Will probably also mean we don't need to do ANY validation if the c5tools handle it...
+//  This may be simpler ... IF... we outsource validation to the c5tools as (?)
 //    $this->json = jsonReportFromBuffer($result->getBody());
-//
+       // Decode result body into $json, throw and log error if it fails
+       // Make sure $json is a proper object
         $this->json = json_decode($result->getBody());
         if (json_last_error() !== JSON_ERROR_NONE) {
-              $this->detail = json_last_error_msg();
-              $this->step = "JSON";
-              $this->error_code = 9020;
-              $this->message = "Error decoding JSON : ";
-              return "Fail";
-        }
-        unset($result);
-
-       // Make sure $json is a proper object
-        if (! is_object($this->json)) {
+            $this->detail = json_last_error_msg();
+            $this->step = "JSON";
+            $this->error_code = 9020;
+            $this->message = "Error decoding JSON : ";
+            return "Fail";
+        } else if (!is_object($this->json)) {
             $this->detail = " request returned " . (is_array($this->json) ? 'an array' : 'a scalar');
             $this->step = "JSON";
             $this->message = "JSON is not an object : ";
             $this->error_code = 9030;
             return "Fail";
         }
+        unset($result);
 
-       // Check and/or handle the exception
+       // Check JSON for exceptions
         if ($this->jsonHasExceptions()) {
            // Check for "queued" state response
             if ($this->error_code == 1011) {
@@ -133,6 +129,9 @@ class Sushi extends Model
             // Override JSON severity with value from CC+ Error table if the code is found there.
             // If code unrecognized and severity is non-Fatal, return Success and let caller handle it.
             $known_error = CcplusError::where('id',$this->error_code)->first();
+            if (!$known_error) {  // force to 9000 (unknown error)
+                $known_error = CcplusError::where('id',9000)->first();
+            }
             if ($known_error) {
                 // ANY known exceptions in the JSON (except 1011 and 3030 above, INFO and DEBUG) returns Fail
                 if ($known_error->severity_id != 0 && $known_error->severity_id != 10) {
@@ -277,21 +276,27 @@ class Sushi extends Model
     public function jsonHasExceptions()
     {
         $jException = null;
+        // Standardize the JSON keys (in a copy) before looking for exceptions, leave $this->json unchanged
+        $ucwJson = json_decode(
+                       json_encode(
+                           array_combine(array_map('ucwords', array_keys( (array) $this->json)), (array) $this->json)
+                       )
+                   );
+
         // Code+Message at the root of returned JSON treated-as-Exception
-        if (property_exists($this->json, 'Code') && property_exists($this->json, 'Message')) {
-            $this->saveExceptionData($this->json);
-            $jException = $this->json;
+        if (property_exists($ucwJson, 'Code') && property_exists($ucwJson, 'Message')) {
+            $jException = $ucwJson;
         // Test for Exception(s) at the root of the JSON
-        } elseif (property_exists($this->json, 'Exception') || property_exists($this->json, 'Exceptions')) {
-            $ex_prop = (property_exists($this->json, 'Exception')) ? "Exception" : "Exceptions";
-            if (is_array($this->json->$ex_prop)) {
-                $jException = (count($this->json->$ex_prop)>0) ? $this->json->$ex_prop[0] : null;
+        } elseif (property_exists($ucwJson, 'Exception') || property_exists($ucwJson, 'Exceptions')) {
+            $ex_prop = (property_exists($upperJson, 'Exception')) ? "Exception" : "Exceptions";
+            if (is_array($ucwJson->$ex_prop)) {
+                $jException = (count($ucwJson->$ex_prop)>0) ? $ucwJson->$ex_prop[0] : null;
             } else {
-                $jException = $this->json->$ex_prop;
+                $jException = $ucwJson->$ex_prop;
             }
         // Test for Exception(s) returned in the JSON header
-        } elseif (property_exists($this->json, 'Report_Header')) {
-            $header = $this->json->Report_Header;
+        } elseif (property_exists($ucwJson, 'Report_Header')) {
+            $header = $ucwJson->Report_Header;
             if (is_object($header)) {
                 if (property_exists($header, 'Exception') || property_exists($header, 'Exceptions')) {
                     $ex_prop = (property_exists($header, 'Exception')) ? "Exception" : "Exceptions";

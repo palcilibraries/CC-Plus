@@ -784,7 +784,7 @@ class ProviderController extends Controller
             $providers_sheet->getRowDimension($row)->setRowHeight(15);
             $providers_sheet->setCellValue('A' . $row, $provider->global_id);
             $providers_sheet->setCellValue('B' . $row, $provider->inst_id);
-            $providers_sheet->setCellValue('C' . $row, $provider->name);
+            $providers_sheet->setCellValue('C' . $row, $provider->globalProv->name);
             $_stat = ($provider->is_active) ? "Y" : "N";
             $providers_sheet->setCellValue('D' . $row, $_stat);
             $_ais = ($provider->allow_inst_specific) ? "Y" : "N";

@@ -490,8 +490,6 @@ class SushiSettingController extends Controller
         $status_filters = (count($filters['harv_stat'])>0) ? $filters['harv_stat'] : [];
         $status_name = (count($filters['harv_stat']) == 1) ? $filters['harv_stat'][0] : "";
 
-        // Get all connection fields
-        $all_connectors = ConnectionField::get();
         // Set name if only one provider being exported
         $prov_name = ($providers->count() == 1) ? $providers[0]->name : "";
 
@@ -639,20 +637,19 @@ class SushiSettingController extends Controller
                 // If inst is inactive, skip it
                 if (!$inst->is_active) continue;
                 foreach ($providers as $prov) {
-                    // If prov is inactive or not connected to a globalProv, skip it
+                    // If prov is inactive, skip it
                     if (!$prov->is_active) continue;
                     // If setting exists, skip it
                     if (in_array(array($inst->id, $prov->id), $existing_sushi_pairs)) continue;
                     // Okay, adding the data; get/set connector values
-                    $required_connectors = $all_connectors->whereIn('id',$prov->connectors)
-                                                          ->pluck('name')->toArray();
-                    $custID = (in_array('customer_id',$required_connectors)) ? '-required-' : '';
-                    $reqID  = (in_array('requestor_id',$required_connectors)) ? '-required-' : '';
-                    $apiKey = (in_array('api_key',$required_connectors)) ? '-required-' : '';
-                    $extra_args = (in_array('extra_args',$required_connectors)) ? '-required-' : '';
+                    $cnx = array();
+                    $connectors = $prov->connectionFields();
+                    foreach ($connectors as $c) {
+                        $cnx[$c['name']] = ($c['required']) ? '-required-' : '';
+                    }
                     $data_rows[] = array( 'A' => $inst->id, 'B' => $inst->local_id, 'C' => $prov->id, 'D' => 'Incomplete',
-                                          'E' => $custID, 'F' => $reqID, 'G' => $apiKey, 'H' => $extra_args,
-                                          'J' => $inst->name, 'K' => $prov->name );
+                                          'E' => $cnx['customer_id'], 'F' => $cnx['requestor_id'], 'G' => $cnx['api_key'],
+                                          'H' => $cnx['extra_args'], 'J' => $inst->name, 'K' => $prov->name );
                 }
             }
         }
@@ -767,9 +764,6 @@ class SushiSettingController extends Controller
         }
         $prov_ids = $global_providers->pluck('id')->toArray();
 
-        // Get all connection fields
-        $all_connectors = ConnectionField::get();
-
         // Process the input rows
         $updated = 0;
         $deleted = 0;
@@ -823,12 +817,15 @@ class SushiSettingController extends Controller
 
             // Mark any missing connectors
             $missing_count = 0;
-            $required_connectors = $all_connectors->whereIn('id',$current_prov->connectors)
-                                                  ->pluck('name')->toArray();
-            foreach ($required_connectors as $cnx) {
-                if ( is_null($_args[$cnx]) || trim($_args[$cnx]) == '' ) {
-                    $_args[$cnx] = "-required-";
-                    $missing_count++;
+            $connectors = $current_prov->connectionFields();
+            foreach ($connectors as $c) {
+                if ( !$c->required) {
+                    continue;
+                } else {
+                    if ( is_null($_args[$cnx]) || trim($_args[$cnx]) == '' ) {
+                        $_args[$cnx] = "-required-";
+                        $missing_count++;
+                    }
                 }
             }
 

@@ -24,7 +24,6 @@ use Illuminate\Support\Facades\Crypt;
 class HarvestLogController extends Controller
 {
    private $connection_fields;
-   private $master_reports;
 
    public function __construct()
    {
@@ -34,12 +33,6 @@ class HarvestLogController extends Controller
          $this->connection_fields = ConnectionField::get();
        } catch (\Exception $e) {
          $this->connection_fields = array();
-       }
-       // Load all naster reports
-       try {
-         $this->master_reports = Report::where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
-       } catch (\Exception $e) {
-         $this->master_reports = array();
        }
    }
 
@@ -420,6 +413,9 @@ class HarvestLogController extends Controller
            return response()->json(['result' => false, 'msg' => 'Error: no matching institutions to harvest']);
        }
 
+       // Get detail on (master) reports requested
+       $master_reports = Report::where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
+
        // Get provider info
        if (in_array(0,$input["prov"])) {    //  Get all consortium-enabled global providers?
            $global_ids = Provider::where('is_active',true)->where('inst_id',1)->pluck('global_id')->toArray();
@@ -496,7 +492,7 @@ class HarvestLogController extends Controller
                    }
 
                    // Add a "source" value to $reports
-                   $report_data = $this->master_reports->whereIn('id',$report_ids);
+                   $report_data = $master_reports->whereIn('id',$report_ids);
                    $reports = $report_data->map(function ($rec) use ($conso_reports) {
                        $rec->source = (in_array($rec->id,$conso_reports)) ? "C" : "I";
                        return $rec;
@@ -1048,27 +1044,15 @@ class HarvestLogController extends Controller
 
    // Return an array of bounding yearmon strings based on exsiting Harvestlogs
    //   bounds[0] will hold absolute min and max yearmon for all harvests across all reports
-   //   bounds[N] holds min and max yearmon for harvests, where N is the report_id (1=TR, 2=DR, 3=PR, 4=IR)
    private function harvestBounds() {
 
        $conso_db = config('database.connections.consodb.database');
-
-       // Initialize bounds so that all master reports have an entry
-       $bounds = array('YM_min' => null, 'YM_max' => null);
-       foreach ($this->master_reports as $mr) {
-          $bounds[$mr->id] = array('YM_min' => null, 'YM_max' => null);
-       }
 
        // Query for min and max yearmon values
        $raw_query = "min(yearmon) as YM_min, max(yearmon) as YM_max";
        $result = HarvestLog::selectRaw($raw_query)->get()->toArray();
        $bounds[0] = $result[0];
-       $raw_query = "report_id, " . $raw_query;
-       $rpt_result = DB::table($conso_db . ".harvestlogs")->select(DB::raw($raw_query))
-                                                          ->groupBy('report_id')->get();
-       foreach ($rpt_result as $rpt) {
-           $bounds[$rpt->report_id] = array('YM_min' => $rpt->YM_min, 'YM_max' => $rpt->YM_max);
-       }
+
        return $bounds;
    }
 

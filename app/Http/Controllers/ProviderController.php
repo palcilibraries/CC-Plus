@@ -44,7 +44,7 @@ class ProviderController extends Controller
         $master_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name']);
 
         // Get all (consortium) providers, extract array of global IDs
-        $conso_providers = Provider::with('sushiSettings:id,prov_id,last_harvest','reports:id,name','globalProv',
+        $conso_providers = Provider::with('reports:id,name','globalProv','globalProv.sushiSettings:id,prov_id,last_harvest',
                                           'institution:id,name,is_active')->orderBy('name','ASC')->get();
 
         // Build list of providers, based on globals, that includes extra institution-specific providers
@@ -103,7 +103,7 @@ class ProviderController extends Controller
                 $rec->can_edit = true;
                 $rec->is_active = $prov_data->is_active;
                 $rec->active = ($prov_data->is_active) ? 'Active' : 'Inactive';
-                $rec->last_harvest = $prov_data->sushiSettings->max('last_harvest');
+                $rec->last_harvest = $prov_data->globalProv->sushiSettings->max('last_harvest');
                 $rec->allow_inst_specific = $prov_data->allow_inst_specific;
                 if ($conso_connection) {
                     $rec->can_connect = ($conso_connection->allow_inst_specific && $rec->inst_id == 1) ? true : false;
@@ -139,7 +139,7 @@ class ProviderController extends Controller
        // Build data to be passed based on whether the user is admin or Manager
         $limit_to_insts = null;
         if ($thisUser->hasRole("Admin")) {
-            $sushi_settings = SushiSetting::with('institution')->where('prov_id',$con_prov->id)->get();
+            $sushi_settings = SushiSetting::with('institution')->where('prov_id',$con_prov->global_id)->get();
 
             // Get last_harvest for the provider (ALL insts) as determinant for whether it can be deleted
             $last_harvest = $sushi_settings->max('last_harvest');
@@ -150,7 +150,7 @@ class ProviderController extends Controller
             array_unshift($institutions,array('id' => 1,'name' => 'Consortium'));
 
             // Setup an array of insts without settings for this provider
-            $set_inst_ids = $con_prov->sushiSettings->pluck('inst_id');
+            $set_inst_ids = $con_prov->globalProv->sushiSettings->pluck('inst_id');
             $set_inst_ids[] = 1;
             $unset_institutions = Institution::whereNotIn('id', $set_inst_ids)
                                              ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
@@ -158,7 +158,7 @@ class ProviderController extends Controller
             $user_inst = $thisUser->inst_id;
             $limit_to_insts = array($user_inst);
             $sushi_settings = SushiSetting::with('institution')
-                                          ->where('prov_id',$con_prov->id)->where('inst_id', $user_inst)->get();
+                                          ->where('prov_id',$con_prov->global_id)->where('inst_id', $user_inst)->get();
             $last_harvest = $sushi_settings->max('last_harvest');
             $provider['can_delete'] = ($thisUser->inst_id == $con_prov->inst_id && is_null($last_harvest)) ? true : false;
             $institutions = Institution::where('id', '=', $user_inst)->get(['id','name'])->toArray();
@@ -182,8 +182,7 @@ class ProviderController extends Controller
         $provider['report_state'] = $rpt_state;
 
         // Connection fields is the set defined for the related global provider
-        $connectors = ConnectionField::whereIn('id', $con_prov->globalProv->connectors)->get()->values()->toArray();
-
+        $connectors = $con_prov->globalProv->connectionFields();
         // Get 10 most recent harvests
         $harvests = HarvestLog::with('report:id,name',
                                      'sushiSetting',

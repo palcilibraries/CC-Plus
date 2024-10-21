@@ -1010,8 +1010,12 @@ class ProviderController extends Controller
     private function updateReports($global_id, $conso_ids, $type) {
         $deleted = 0;
         // Loop through all (non-consortium) providers connected to the global
-        $provider_list = Provider::with('reports')->where('global_id',$global_id)->where('inst_id','<>',1)->get();
+        $provider_list = Provider::with('reports')->where('global_id',$global_id)->get();
+        $conso_connection = $provider_list->where('inst_id',1)->first();
         foreach ($provider_list as $prov) {
+
+            // skip conso definitions
+            if ($prov->inst_id == 1) continue;
 
             // Get IDs to add/remove
             $current_ids = $prov->reports->pluck('id')->toArray();
@@ -1025,8 +1029,9 @@ class ProviderController extends Controller
                     $prov->reports()->detach($r);
                 }
             }
-            // No reason to keep the provider definition if there are no reports attached now
-            if ($type == "detach" && $prov->reports()->count() == 0) {
+            // If a consortium provider exists, and there are no remaining reports attached for this provider,
+            // we can delete it
+            if ($conso_connection && $type == "detach" && $prov->reports()->count() == 0) {
                 $prov->delete();
                 $deleted++;
             }

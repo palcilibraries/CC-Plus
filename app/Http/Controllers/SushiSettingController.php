@@ -819,7 +819,7 @@ class SushiSettingController extends Controller
             $missing_count = 0;
             $connectors = $current_prov->connectionFields();
             foreach ($connectors as $c) {
-                if ( !$c->required) {
+                if ( !$c['required']) {
                     continue;
                 } else {
                     if ( is_null($_args[$cnx]) || trim($_args[$cnx]) == '' ) {

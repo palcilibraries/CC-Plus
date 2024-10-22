@@ -149,10 +149,8 @@ class HarvestLogController extends Controller
               $providers[] = $rec;
            }
 
-           // Get reports for all that exist in the relationship table
-           $table = config('database.connections.consodb.database') . '.' . 'provider_report';
-           $report_ids = DB::table($table)->distinct('report_id')->pluck('report_id')->toArray();
-           $reports = Report::whereIn('id', $report_ids)->orderBy('dorder', 'ASC')->get()->toArray();
+           // Get all the master reports
+           $reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get()->toArray();
 
            // Query for min and max yearmon values
            $bounds = $this->harvestBounds();

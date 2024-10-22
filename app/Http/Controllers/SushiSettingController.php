@@ -822,8 +822,8 @@ class SushiSettingController extends Controller
                 if ( !$c['required']) {
                     continue;
                 } else {
-                    if ( is_null($_args[$cnx]) || trim($_args[$cnx]) == '' ) {
-                        $_args[$cnx] = "-required-";
+                    if ( is_null($_args[$c['name']]) || trim($_args[$c['name']]) == '' ) {
+                        $_args[$c['name']] = "-required-";
                         $missing_count++;
                     }
                 }

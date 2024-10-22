@@ -257,7 +257,7 @@
     </v-dialog>
     <v-dialog v-model="sushiDialog" content-class="ccplus-dialog">
       <sushi-dialog :dtype="sushiDialogType" :institutions="sushi_insts" :providers="sushi_provs" :setting="current_setting"
-                    :mutable_settings="settings" @sushi-done="sushiDialogDone" :key="sdKey"
+                    :all_settings="settings" @sushi-done="sushiDialogDone" :key="sdKey"
       ></sushi-dialog>
     </v-dialog>
   </div>

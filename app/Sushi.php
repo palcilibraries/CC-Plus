@@ -288,7 +288,7 @@ class Sushi extends Model
             $jException = $ucwJson;
         // Test for Exception(s) at the root of the JSON
         } elseif (property_exists($ucwJson, 'Exception') || property_exists($ucwJson, 'Exceptions')) {
-            $ex_prop = (property_exists($upperJson, 'Exception')) ? "Exception" : "Exceptions";
+            $ex_prop = (property_exists($ucwJson, 'Exception')) ? "Exception" : "Exceptions";
             if (is_array($ucwJson->$ex_prop)) {
                 $jException = (count($ucwJson->$ex_prop)>0) ? $ucwJson->$ex_prop[0] : null;
             } else {

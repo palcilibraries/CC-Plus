@@ -183,9 +183,6 @@
           </span>
           {{ item.prov_name }}
         </template>
-        <template v-slot:item.updated="{ item }">
-          {{ item.updated.substr(0,10) }}
-        </template>
         <template v-slot:item.error_code="{ item }">
           <span v-if="item.error_code==null && item.rawfile!=null && (item.status=='Success' || item.status=='Harvested')">
             <v-icon title="Download Raw JSON Data" @click="goURL('/harvests/'+item.id+'/raw')">mdi-download</v-icon>
@@ -535,7 +532,7 @@
           if (this.allSelected[filt]) {
             this.mutable_filters[filt] = [];
             this.allSelected[filt] = false;
-            if (filt == "institutions" || filt == "groups") this.inst_filter == null;
+            if (filt == "institutions" || filt == "groups") this.inst_filter = null;
           // Turned an all-options filter ON
           } else {
             if (filt == 'codes' || filt == 'harv_stat') {

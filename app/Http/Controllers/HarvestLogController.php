@@ -351,11 +351,6 @@ class HarvestLogController extends Controller
        $providers = GlobalProvider::whereIn('id', $possible_providers)->where('is_active', true)
                                   ->orderBy('name', 'ASC')->get(['id','name'])->toArray();
 
-       // // Get reports for all that exist in the relationship table
-       // $table = config('database.connections.consodb.database') . '.' . 'provider_report';
-       // $report_ids = DB::table($table)->distinct('report_id')->pluck('report_id')->toArray();
-       // $all_reports = Report::whereIn('id', $report_ids)->orderBy('dorder', 'ASC')->get()->toArray();
-       //
        // Get all the master reports
        $all_reports = Report::where('revision',5)->where('parent_id',0)->orderBy('dorder','ASC')->get(['id','name'])->toArray();
        return view('harvests.create', compact('institutions','inst_groups','providers','all_reports','presets'));
@@ -1065,9 +1060,9 @@ class HarvestLogController extends Controller
                     'prov_inst_id' => $harvest->sushiSetting->provider->inst_id,
                     'report_name' => $harvest->report->name,
                     'status' => $harvest->status, 'rawfile' => $harvest->rawfile,
-                    'updated' => $harvest->updated_at,
                     'error_code' => null, 'error' => []
                    );
+       $rec['updated'] = date("Y-m-d H:i", strtotime($harvest->updated_at));
        if ($harvest->lastError) {
            $rec['error_code'] = $harvest->error_id;
            $rec['error'] = $harvest->lastError->toArray();

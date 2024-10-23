@@ -166,6 +166,10 @@ class ReportProcessor extends Command
                 $prov_id = $harvest->sushiSetting->prov_id;
                 $inst_id = $harvest->sushiSetting->inst_id;
 
+                // Mark the harvest status as "Processing"
+                $harvest->status = 'Processing';
+                $harvest->save();
+
                // Decrypt and load the JSON into a variable
                 $json = json_decode(bzdecompress(Crypt::decrypt(File::get($jsonFile), false)));
 
@@ -183,40 +187,45 @@ class ReportProcessor extends Command
                                            'help_url' => null, 'created_at' => $ts]);
                     $this->line($ts . " " . $ident . "Error processing JSON : " . $e->getMessage());
                     $harvest->error_id = 9020;
+                    $harvest->attempts++;
+                    $harvest->status = 'ReQueued';
+                    $harvest->save();
                     unlink($jsonFile);
                     continue;
                 }
 
-              // Successfully processed the report - clear out any existing "failed" records and update the harvest
-               $deleted = FailedHarvest::where('harvest_id', $harvest->id)->delete();
-               $rawfile = $report->name . '_' . $begin . '_' . $end . ".json";
-               $harvest->error_id = null;
-               $harvest->status = 'Success';
-               $harvest->rawfile = $rawfile;
-               $harvest->save();
+               // Successfully processed the report - clear out any existing "failed" records and update the harvest
+                $deleted = FailedHarvest::where('harvest_id', $harvest->id)->delete();
+                $rawfile = $report->name . '_' . $begin . '_' . $end . ".json";
+                $harvest->error_id = null;
+                $harvest->status = 'Success';
+                $harvest->rawfile = $rawfile;
 
                // Make sure the path for the output file exists
-               $path = $consortium_root . '/' . $inst_id . '/' . $prov_id;
-               if (!file_exists($path) || !is_dir($path)) {
-                   mkdir($path, 0755, true);
-               }
+                $path = $consortium_root . '/' . $inst_id . '/' . $prov_id;
+                if (!file_exists($path) || !is_dir($path)) {
+                    mkdir($path, 0755, true);
+                }
 
                // Move the JSON file to its new home
-               $newName = $path . '/' . $rawfile;
-               try {
-                   rename($jsonFile, $newName);
-               } catch (\Exception $e) {
+                $newName = $path . '/' . $rawfile;
+                try {
+                    rename($jsonFile, $newName);
+                } catch (\Exception $e) {
                    // Rename failed and file is not in the new place, clear rawfile in the harvest record and report error
-                   if (!is_readable($newName)) {
-                       $this->line ($ts  . " " . $ident . "Rename/Move operation for JSON source file failed: " . $jsonFile);
-                       $harvest->rawfile = null;
-                       $harvest->save();
-                   }
-               }
-               unset($C5processor);
+                    if (!is_readable($newName)) {
+                        $this->line ($ts  . " " . $ident . "Rename/Move operation for JSON source file failed: " . $jsonFile);
+                        $harvest->rawfile = null;
+                    }
+                }
+
+               // Update the harvest record
+                $harvest->save();
+
                // Print confirmation line
-               $this->line($ts . " " . $ident . $harvest->sushiSetting->provider->name . " : " . $yearmon . " : " .
-                                 $report->name . " processed for " . $harvest->sushiSetting->institution->name);
+                $this->line($ts . " " . $ident . $harvest->sushiSetting->provider->name . " : " . $yearmon . " : " .
+                                  $report->name . " processed for " . $harvest->sushiSetting->institution->name);
+                unset($C5processor);
             }
         }
         return 1;

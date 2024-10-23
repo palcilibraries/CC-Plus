@@ -32,11 +32,12 @@
       <!-- Job Queue -->
       <v-expansion-panel>
         <v-expansion-panel-header>
-          <h2>System Job Queue</h2>
+          <h2>Harvest Queue</h2>
         </v-expansion-panel-header>
         <v-expansion-panel-content>
-          <harvestjobs-data-table :institutions="institutions" :providers="providers" :reports="reports" :filters="job_filters"
-          ></harvestjobs-data-table>
+          <harvestqueue-data-table :institutions="institutions" :groups="groups" :providers="providers" :reports="reports"
+                                   :codes="codes" :filters="job_filters"
+          ></harvestqueue-data-table>
         </v-expansion-panel-content>
       </v-expansion-panel>
       <!-- Harvest Log -->
@@ -78,7 +79,8 @@
             harvest_insts: [],
             mutable_harvests: [...this.harvests],
             mutable_bounds: [...this.bounds],
-            job_filters: { 'inst': [], 'prov': [], 'rept':[] },
+            job_filters: { 'providers': [], 'institutions': [], 'groups':[], 'reports':[], 'yymms': [], 'statuses':[], 'codes':[],
+                           'created': null },
             harvKey: 1,
         }
     },

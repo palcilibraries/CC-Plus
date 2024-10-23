@@ -1,13 +1,14 @@
 <template>
   <div>
-    <div class="d-flex pa-0 justify-center">
-      <v-col class="d-flex px-4 align-center" cols="2">
+    <v-row no-gutters>
+      <v-col class="d-flex" cols="3">&nbsp;</v-col>
+      <v-col class="d-flex align-center" cols="3">
         <v-btn class='btn' small color="primary" @click="updateRecords()">Refresh Harvests</v-btn>
       </v-col>
-      <v-col class="d-flex px-2 align-center" cols="2">
+      <v-col class="d-flex align-center" cols="3">
         <v-btn class='btn' small type="button" @click="clearAllFilters()">Clear Filters</v-btn>
       </v-col>
-    </div>
+    </v-row>
     <v-row no-gutters>
       <v-col v-if="is_admin" class="d-flex px-2 align-center" cols="2">
         <v-switch v-model="conso_switch" dense label="Limit to Consortium" @change="updateConsoOnly(true)"></v-switch>

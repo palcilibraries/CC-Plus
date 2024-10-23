@@ -17,7 +17,8 @@ class CreateHarvestLogsTable extends Migration
             $global_db = DB::connection('globaldb')->getDatabaseName();
 
             $table->Increments('id');
-            // Status should be: 'Success', 'Fail', 'New', 'Queued', 'Active', 'Harvested', 'Pending', 'Stopped', or 'ReQueued'
+            // Status should be: 'Success', 'Fail', 'New', 'Queued', 'Harvesting', 'Paused', 'Waiting', 'Pending', 'Processing'
+            //                   'Stopped', or 'ReQueued'
             $table->string('status', 10);
             $table->unsignedInteger('sushisettings_id');
             $table->unsignedInteger('report_id');

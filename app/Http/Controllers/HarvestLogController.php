@@ -634,19 +634,14 @@ class HarvestLogController extends Controller
        // The new status will be based on one of 2 possible values:
        //   Queued: resets attempts to zero and requeues the harvest for immediate retrying
        //   Stopped: Sets harvest to "Stopped", regardless of what it was before.
-       $new_status_allowed = array('Queued', 'Stopped');
+       $new_status_allowed = array('Queued', 'Stopped', 'Pause', 'Resume');
        if (!in_array($input['status'], $new_status_allowed)) {
            return response()->json(['result' => false,
                                     'msg' => 'Invalid request: status cannot be set to requested value.']);
        }
 
-       // Harvests w/ status= 'Success', 'Active', or 'Pending' are NOT changed
-       $fixed_status = array('Success', 'Active', 'Pending');
+       // Get the harvest, keep original status
        $harvest = HarvestLog::findOrFail($input['id']);
-       if (in_array($harvest->status, $fixed_status)) {
-           return response()->json(['result' => false,
-                                    'msg' => 'Invalid request: harvest status cannot be changed.']);
-       }
        $original_status = $harvest->status;
 
        // Stopping a harvest also means deleting any corresponding job thats in the queue
@@ -657,10 +652,14 @@ class HarvestLogController extends Controller
                $existing_job->delete();
            }
 
-        // Resetting means attempts get set to zero
-       } else {
+       // Setting Queued means attempts get set to zero
+       } else if ($input['status'] == 'Queued') {
            $harvest->attempts = 0;
            $harvest->status = 'Queued';
+       // Resume leaves attempts unchanged and assumes the SushiQueueJob still exists
+       // Both Pause and Resume only modify the HarvestLog record
+       } else {
+           $harvest->status = ($input['status'] == 'Resume') ? 'Queued' : 'Paused';
        }
 
        // Update the harvest record
@@ -669,23 +668,23 @@ class HarvestLogController extends Controller
        } catch (\Exception $e) {
            return response()->json(['result' => false, 'msg' => 'Error updating harvest!']);
        }
-       $harvest['updated'] = substr($harvest->updated_at,0,10);
+       $harvest['updated'] = date("Y-m-d H:i", strtotime($harvest->updated_at));
 
        // If we're resetting to Queued
-       if ($harvest->status == 'Queued') {
+       if ($harvest->status == 'Queued' && $input['status'] != 'Resume') {
            // Get consortium record
            $con = Consortium::where('ccp_key', '=', session('ccp_con_key'))->first();
            if (!$con) {
                return response()->json(['result' => false, 'msg' => 'Error: Corrupt session or consortium settings']);
            }
 
-           // If the harvest was originally set with status = 'Harvested'
-           if ($original_status == 'Harvested' &&  !is_null(config('ccplus.reports_path'))) {
+           // If the harvest was originally set with status = 'Waiting'
+           if ($original_status == 'Waiting' &&  !is_null(config('ccplus.reports_path'))) {
                // get rid of the downloaded data file(s)
                $searchPat = config('ccplus.reports_path') . $con->id . '/0_unprocessed/' . $harvest->id . "_*";
                $matches = glob($searchPat);
                foreach ($matches as $_file) {
-                 unlink($_file);
+                   unlink($_file);
                }
            }
 

@@ -83,8 +83,9 @@ class SushiQHarvester extends Command
         $severities_error = Severity::where('name', '=', 'Error')->value('id');
 
        // Get  (upto the first 100) Jobs in the Queue
-        $all_jobs = SushiQueueJob::orderBy('id', 'ASC')->limit(100)->get();
-
+        $all_jobs = SushiQueueJob::orderBy('id', 'ASC')->take(100)->get();
+       // Track #-skipped jobs so we don't keep pulling them
+        $skip_count = 0;
         while ($all_jobs->count() > 0) {
 
            // Get consortium info for queued jobs
@@ -122,6 +123,13 @@ class SushiQHarvester extends Command
                 // Add harvest and sushiSetting relations to the jobs collection
                 $jobs->load('harvest','harvest.sushiSetting','harvest.sushiSetting.provider');
                 foreach ($jobs as $job) {
+                   // Skip "Paused" and any "Pending" harvest updated within the last 10 minutes
+                    if ($job->harvest->status == 'Paused' ||
+                        ($job->harvest->status == 'Pending' && strtotime($job->harvest->updated_at) > $ten_ago) ) {
+                        $skip_count++;
+                        continue;
+                    }
+
                    // If the job points to a job with a wrong status (could have changed since creation), or the
                    // the harvest record is AWOL, skip and delete the job record
                     $keepJob = true;
@@ -129,39 +137,55 @@ class SushiQHarvester extends Command
                         $keepJob = false;
                     } else if (!in_array($job->harvest->status, array("New", "Queued", "ReQueued", "Pending"))) {
                         $keepJob = false;
-                    }
-                    if (!$keepJob) {
-                        $job->delete();
-                        continue;
-                    }
-                   // Skip any "ReQueued" harvest that's been updated today
-                    if ($job->harvest->status == 'ReQueued' && (substr($job->harvest->updated_at, 0, 10) == date("Y-m-d"))) {
+                    // Skip any "ReQueued" harvest that's already been updated today, loader will add it next go-round
+                    } else if ($job->harvest->status=='ReQueued' && (substr($job->harvest->updated_at, 0, 10)==date("Y-m-d"))) {
                         $keepJob = false;
                     }
 
-                   // Skip any "Pending" harvest that's been updated within the last 10 minutes
-                    if ($job->harvest->status == 'Pending' && (strtotime($job->harvest->updated_at) > $ten_ago)) {
-                        continue;
+                   // Check sushi settings
+                    if ($keepJob && is_null($job->harvest->sushiSetting)) {     // settings gone? toss the job
+                        $this->line($ts . " QueueHarvester: Unknown Sushi Credentials ID: " . $job->harvest->sushisettings_id .
+                                          " , queue entry removed and harvest deleted.");
+                        $job->harvest->delete();
+                        $keepJob = false;
                     }
 
                    // Skip any harvest(s) related to a sushisetting that is not (or no longer) Active (the settings
                    // may have been changed since the harvest was defined) - if found, set harvest status to Stopped.
-                    if ($job->harvest->sushiSetting->status != 'Enabled') {
-                        $error = CcplusError::where('id',9050)->first();
-                        if ($error) {
-                            FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'Initiation',
-                                                   'error_id' => 9050, 'detail' => $error->explanation . ', ' . $error->suggestion,
-                                                   'created_at' => $ts]);
+                    if ($keepJob) {
+                        if ($job->harvest->sushiSetting->status != 'Enabled') {
+                            $error = CcplusError::where('id',9050)->first();
+                            if ($error) {
+                                FailedHarvest::insert(['harvest_id' => $job->harvest->id, 'process_step' => 'Initiation',
+                                                       'error_id' => 9050, 'created_at' => $ts,
+                                                       'detail' => $error->explanation . ', ' . $error->suggestion]);
+                            }
+                            $job->harvest->error_id = 9050;
+                            $job->harvest->status = 'Stopped';
+                            $keepJob = false;
                         }
-                        $job->harvest->error_id = 9050;
-                        $job->harvest->status = 'Stopped';
-                        $job->harvest->save();
+                    }
+
+                   // Get report
+                    if ($keepJob) {
+                        $report = Report::find($job->harvest->report_id);
+                        if (is_null($report)) {     // report gone? toss entry
+                            $this->line($ts . " QueueHarvester: Unknown Report ID: " . $job->harvest->report_id .
+                                        ' , queue entry removed and harvest status set to Stopped.');
+                            $job->harvest->status = 'Stopped';
+                            $job->harvest->save();
+                            $keepJob = false;
+                        }
+                    }
+
+                   // Remove job and get next one
+                    if (!$keepJob) {
                         $job->delete();
                         continue;
                     }
 
                    // Mark the harvest status as Active while we run the request
-                    $job->harvest->status = 'Active';
+                    $job->harvest->status = 'Harvesting';
                     $job->harvest->save();
 
                    // Setup begin and end dates for sushi request
@@ -169,27 +193,6 @@ class SushiQHarvester extends Command
                     $ts = date("Y-m-d H:i:s");
                     $begin = $yearmon . '-01';
                     $end = $yearmon . '-' . date('t', strtotime($begin));
-
-                   // Get report
-                    $report = Report::find($job->harvest->report_id);
-                    if (is_null($report)) {     // report gone? toss entry
-                        $this->line($ts . " QueueHarvester: Unknown Report ID: " . $job->harvest->report_id .
-                                    ' , queue entry removed and harvest status set to Stopped.');
-                        $job->delete();
-                        $job->harvest->status = 'Stopped';
-                        $job->harvest->save();
-                        continue;
-                    }
-
-                   // Get sushi settings
-                    if (is_null($job->harvest->sushiSetting)) {     // settings gone? toss the job
-                        $this->line($ts . " QueueHarvester: Unknown Sushi Credentials ID: " . $job->harvest->sushisettings_id .
-                                          " , queue entry removed and harvest status set to Stopped.");
-                        $job->delete();
-                        $job->harvest->status = 'Stopped';
-                        $job->harvest->save();
-                        continue;
-                    }
                     $setting = $job->harvest->sushiSetting;
 
                    // If (global) provider or institution is inactive, toss the job and move on
@@ -347,7 +350,7 @@ class SushiQHarvester extends Command
                         }
                         $job->harvest->error_id = null;
                         $job->harvest->attempts++;
-                        $job->harvest->status = "Harvested";
+                        $job->harvest->status = "Waiting";
 
                        // Successfully processed the report - clear out any existing "failed" records
                         $deleted = FailedHarvest::where('harvest_id', $job->harvest->id)->delete();
@@ -364,7 +367,7 @@ class SushiQHarvester extends Command
                         if ($job->harvest->attempts >= $max_retries) {
                             $job->harvest->status = 'Fail';
                             Alert::insert(['yearmon' => $yearmon, 'prov_id' => $setting->prov_id,
-                                           'harvest_id' => $job->harvest->id, 'status' => 'Active', 'created_at' => $ts]);
+                                           'harvest_id' => $job->harvest->id, 'status' => 'Stopped', 'created_at' => $ts]);
                         } else {
                             $job->harvest->status = 'ReQueued'; // ReQueue by default
                         }
@@ -408,10 +411,10 @@ class SushiQHarvester extends Command
                     }
 
                 }   // foreach job for the current consortium
-            }       // foreach consortium with queued jobs
+            }      // foreach consortium with queued jobs
 
            // Get (another 100) Jobs from the Queue
-            $all_jobs = SushiQueueJob::orderBy('id', 'ASC')->limit(100)->get();
+            $all_jobs = SushiQueueJob::orderBy('id', 'ASC')->take(100)->skip($skip_count)->get();
 
         }  // continue while $all_jobs->count() > 0
         return 1;

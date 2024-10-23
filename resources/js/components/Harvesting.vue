@@ -30,7 +30,7 @@
         </v-expansion-panel-content>
       </v-expansion-panel>
       <!-- Job Queue -->
-      <v-expansion-panel v-if="job_count>0 && is_admin">
+      <v-expansion-panel>
         <v-expansion-panel-header>
           <h2>System Job Queue</h2>
         </v-expansion-panel-header>
@@ -66,7 +66,6 @@
             bounds: { type:Array, default: () => [] },
             filters: { type:Object, default: () => {} },
             codes: { type:Array, default: () => [] },
-            job_count: { type:Number, default: 0 },
             presets: { type:Object, default: () => {} },
             conso: { type:String, default: '' },
            },
@@ -106,9 +105,6 @@
           this.harvKey += 1;
         }
       },
-    },
-    computed: {
-        ...mapGetters(['is_manager', 'is_admin']),
     },
     mounted() {
         this.harvest_provs = this.providers.filter(p => p.sushi_enabled);

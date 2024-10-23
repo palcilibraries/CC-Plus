@@ -115,7 +115,7 @@ class CcplusErrorsTableSeeder extends Seeder
                 'explanation' => 'Usage data for the requested month is not available.',
                 'suggestion' => 'Contact the report provider to learn more details about the missing data.' .
                                 ' The dataset could still be available, just not via the SUSHI service.',
-                'new_status' => 'ReQueued'
+                'new_status' => 'Stopped'
             ],
             ['id'=>3040, 'message' => 'Partial Data Returned', 'severity_id' => 11,
                 'explanation' => 'The request did not return a complete report.',

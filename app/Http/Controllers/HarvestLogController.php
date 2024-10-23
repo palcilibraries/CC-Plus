@@ -109,13 +109,8 @@ class HarvestLogController extends Controller
        if (!$json) {
 
            // Get the job-count for the current consortium
-           $conso = null;
-           $job_count = 0;
            $con = Consortium::where("ccp_key", session("ccp_con_key"))->first();
-           if ($con) {
-               $job_count = SushiQueueJob::where('consortium_id', $con->id)->count();
-               $conso = $con->name;
-           }
+           $conso = ($con) ? $con->name : null;
 
            // Get IDs of all possible providers from the sushisettings table
            if ($show_all) {
@@ -160,7 +155,7 @@ class HarvestLogController extends Controller
 
            // Setup the initial page view
            return view('harvests.index', compact('harvests','institutions','groups','providers','reports','bounds','filters',
-                                                 'codes','job_count','presets','conso'));
+                                                 'codes','presets','conso'));
        }
 
        // Skip querying for records unless we're returning json

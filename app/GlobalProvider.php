@@ -105,6 +105,7 @@ class GlobalProvider extends Model
     public function enabledReports()
     {
         // Setup array for each master report
+        $reports = array();
         foreach ($this->global_masters as $mr) {
             $reports[$mr->name] = array();
         }

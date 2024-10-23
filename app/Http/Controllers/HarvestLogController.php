@@ -811,7 +811,7 @@ class HarvestLogController extends Controller
            // Set the path and filename based on config and harvest sushsettings
            $return_name = "";
            $filename  = config('ccplus.reports_path') . $con->id . '/';
-           if ($harvest->status == 'Harvested') {
+           if ($harvest->status == 'Waiting') {
                $searchPat = $filename . "0_unprocessed/" . $harvest->id . "_*";
                $matches = glob($searchPat);
                $filename = (count($matches) > 0) ? $matches[0] : "/_xyzzy_/not-found";
@@ -938,15 +938,16 @@ class HarvestLogController extends Controller
        return response()->json(['count' => $count]);
    }
 
-   /**
-    * Entry point for getting harvests with jobs in the global harvesting queue
-    *
-    * @param  \Illuminate\Http\Request  $request
-    * @return \Illuminate\Http\Response
-    */
-   public function harvestJobs(Request $request)
+    /**
+     * Entry point for returning Harvest Queue records for the current consortium_id
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+   public function harvestQueue(Request $request)
    {
-       abort_unless(auth()->user()->hasAnyRole(["Admin","Manager"]), 403);
+       $thisUser = auth()->user();
+       abort_unless($thisUser->hasAnyRole(["Admin","Manager"]), 403);
 
        // Get and verify input or bail with error in json response
        try {
@@ -956,51 +957,133 @@ class HarvestLogController extends Controller
        }
 
        // Assign optional inputs to $filters array
-       $filters = array("inst" => [], "prov" => [], "rept" => []);
-       if ($request->input("filters")) {
-           $filter_data = json_decode($request->input("filters"));
+       $filters = array('providers' => [], 'institutions' => [], 'groups' => [], 'reports' => [], 'yymms' => [], 'statuses' => [],
+                        'codes' => [], 'created' => null);
+
+       if ($request->input('filters')) {
+           $filter_data = json_decode($request->input('filters'));
            foreach ($filter_data as $key => $val) {
-               if (count($val) > 0) {
+               if (!is_array($filters[$key])) {
+                   if (($key == 'updated' && $val != '') || $val != 0) {
+                       $filters[$key] = $val;
+                   }
+               } else {
                    $filters[$key] = $val;
                }
            }
        }
 
-       // Get consortium_id
-       $con = Consortium::where("ccp_key", session("ccp_con_key"))->first();
-       if (!$con) {
-           return response()->json(["result" => true, "jobs" => [], "prov_ids" => [], "inst_ids" => [], "rept_ids" => [] ]);
+       // Managers and users only see their own insts
+       $show_all = $thisUser->hasAnyRole(["Admin","Viewer"]);
+       if (!$show_all) {
+           $user_inst = $thisUser->inst_id;
+           $filters['institutions'] = array($user_inst);
        }
 
-       // Get jobs from the global queue
-       $consodb = config("database.connections.consodb.database");
-       $globaldb = config("database.connections.globaldb.database");
-       $jobs = DB::table($globaldb . ".jobs as Jobs")->where("consortium_id",$con->id)
-                 ->join($consodb . ".harvestlogs as Harv", "Jobs.harvest_id", "Harv.id")
-                 ->join($consodb . ".sushisettings as Sset", "Harv.sushisettings_id", "Sset.id")
-                 ->join($consodb . ".institutions as Inst", "Sset.inst_id", "Inst.id")
-                 ->join($globaldb . ".global_providers as Prov", "Sset.prov_id", "Prov.id")
-                 ->join($globaldb . ".reports as Rept", "Harv.report_id", "Rept.id")
-                 ->when(count($filters["inst"]) > 0, function ($qry) use ($filters) {
-                     return $qry->whereIn("Sset.inst_id", $filters["inst"]);
-                 })
-                 ->when(count($filters["prov"]) > 0, function ($qry) use ($filters) {
-                     return $qry->whereIn("Sset.prov_id", $filters["prov"]);
-                 })
-                 ->when(count($filters["rept"]) > 0, function ($qry) use ($filters) {
-                     return $qry->whereIn("Harv.report_id", $filters["rept"]);
-                 })
-                 ->orderBy("Jobs.created_at", "ASC")
-                 ->get(["Rept.id as report_id","Rept.name as report_name","Harv.status as harvest_status","Harv.yearmon as yearmon",
-                        "Harv.error_id as last_error","Inst.id as inst_id","Inst.name as inst_name","Prov.id as prov_id",
-                        "Prov.name as prov_name","Jobs.created_at as created_at"]);
+       // Setup limit_to_insts with the instID's we'll pull settings for
+       $limit_to_insts = array();
+       if ($show_all) {
+           // if checkbox for all-consortium is on, clear inst and group Filters
+           if (in_array(0,$filters["institutions"])) {
+               $filters['institutions'] = array();
+               $filters['groups'] = array();
+           }
+           if (sizeof($filters['groups']) > 0) {
+               foreach ($filters['groups'] as $group_id) {
+                   $group = $all_groups->where('id',$group_id)->first();
+                   if ($group) {
+                       $_insts = $group->institutions->pluck('id')->toArray();
+                       $limit_to_insts =  array_merge(
+                           array_intersect($limit_to_insts, $_insts),
+                           array_diff($limit_to_insts, $_insts),
+                           array_diff($_insts, $limit_to_insts)
+                       );
+                   }
+               }
+           } else if (sizeof($filters['institutions']) > 0) {
+               $limit_to_insts = $filters['institutions'];
+           }
+       } else {
+           $limit_to_insts[] = $thisUser->inst_id;
+       }
 
-       // Send back the jobs data, plus unique IDs for U/I to use for filtering the jobs
-       $provs = $jobs->unique('prov_id')->sortBy('prov_id')->pluck('prov_id')->toArray();
-       $insts = $jobs->unique('inst_id')->sortBy('inst_id')->pluck('inst_id')->toArray();
-       $repts = $jobs->unique('report_id')->sortBy('report_id')->pluck('report_id')->toArray();
-       return response()->json(["result" => true, "jobs" => $jobs->toArray(), "prov_ids" => $provs, "inst_ids" => $insts,
-                                "rept_ids" => $repts]);
+       // Get consortium_id; if not set, return empty results
+       $con = Consortium::where("ccp_key", session("ccp_con_key"))->first();
+       if (!$con) {
+           return response()->json(["result" => true, "harvests" => [], "prov_ids" => [], "inst_ids" => [], "rept_ids" => [],
+                                    "statuses" => [], "codes" => []]);
+       }
+
+       // Setup "display names" for internal system status values
+       $displayStatus = array('Queued' => 'Harvest Queue', 'Harvesting' => 'Harvesting', 'Pending' => 'Queued by Vendor',
+                              'Paused' => 'Paused', 'ReQueued' => 'ReQueued', 'Waiting' => 'Process Queue',
+                              'Processing' => 'Processing');
+
+       // Get the harvests, by-status, that we're interested in
+       $data = HarvestLog::with('sushiSetting','sushiSetting.provider:id,name','sushiSetting.institution:id,name','report')
+                             ->whereIn('status',array_keys($displayStatus))
+                             ->when(count($filters["reports"]) > 0, function ($qry) use ($filters) {
+                                 return $qry->whereIn("report_id", $filters["reports"]);
+                             })
+                             ->when(count($filters["statuses"]) > 0, function ($qry) use ($filters) {
+                                 return $qry->whereIn("status", $filters["statuses"]);
+                             })
+                             ->when(count($filters['codes']) > 0, function ($qry) use ($filters) {
+                                 return $qry->whereIn('error_id', $filters['codes']);
+                             })
+                             ->when(count($filters['yymms']) > 0, function ($qry) use ($filters) {
+                                 return $qry->whereIn('yearmon', $filters['yymms']);
+                             })
+                             ->when($filters['created'], function ($qry) use ($filters) {
+                                 if ($filters['created'] == "Last 24 hours") {
+                                     return $qry->whereRaw("created_at >= (now() - INTERVAL 24 HOUR)");
+                                 } else {
+                                     return $qry->where('created_at', 'like', '%' . $filters['created'] . '%');
+                                 }
+                             })
+                             ->orderBy("updated_at", "ASC")
+                             ->get();
+
+       // Get global Queue rows for the harvests (if they have one)
+       $harvest_ids = $data->pluck('id')->toArray();
+       $jobs = SushiQueueJob::where('consortium_id',$con->id)->whereIn('harvest_id',$harvest_ids)->get();
+
+       // map and filter (for inst and prov) the resu;ts
+       $provs = array();
+       $insts = array();
+       $harvests = array();
+       foreach ($data as $rec) {
+          if ( (count($limit_to_insts) > 0 && !in_array($rec->sushiSetting->inst_id, $limit_to_insts)) ||
+               (count($filters["providers"]) > 0 && !in_array($rec->sushiSetting->prov_id, $filters["providers"])) ) {
+               continue;
+          }
+          $active_job = $jobs->where('harvest_id',$rec->id)->first();
+          $rec->created_at = ($active_job) ? $active_job->created_at : $rec->updated_at;
+          $rec->prov_name = $rec->sushiSetting->provider->name;
+          $rec->inst_name = $rec->sushiSetting->institution->name;
+          $rec->report_name = $rec->report->name;
+          $rec->created_at = ($active_job) ? $active_job->created_at : $rec->updated_at;
+          $rec->created = date("Y-m-d H:i", strtotime($rec->created_at));
+          $rec->dStatus = $displayStatus[$rec->status];
+          $harvests[] = $rec->toArray();
+          if (!in_array($rec->sushiSetting->prov_id, $provs)) {
+              $provs[] = $rec->sushiSetting->prov_id;
+          }
+          if (!in_array($rec->sushiSetting->inst_id, $insts)) {
+              $insts[] = $rec->sushiSetting->inst_id;
+          }
+       }
+
+       $repts = $data->unique('report_id')->pluck('report_id')->toArray();
+       $yymms = $data->unique('yearmon')->sortBy('yearmon')->pluck('yearmon')->toArray();
+       $stats = $data->unique('status')->sortBy('status')->pluck('status')->toArray();
+       $codes = $data->unique('error_id')->sortBy('error_id')->pluck('error_id')->toArray();
+       if (count($codes) == 1 && is_null($codes[0])) {
+           $codes = [];
+       }
+
+       return response()->json(["result" => true, "jobs" => $harvests, "prov_ids" => $provs, "inst_ids" => $insts,
+                                "rept_ids" => $repts, "yymms" => $yymms, "statuses" => $stats, "codes" => $codes]);
    }
 
    // Turn a fromYM/toYM range into an array of yearmon strings

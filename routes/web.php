@@ -53,7 +53,7 @@ Route::get('/providers-export', 'ProviderController@export')->name('providers.ex
 Route::resource('/harvests', 'HarvestLogController')->middleware(['auth','cache.headers:no_store']);
 Route::get('/harvests/{id}/raw', 'HarvestLogController@downloadRaw')->name('harvests.download')
      ->middleware(['auth','role:Admin,Manager']);
-Route::get('/harvest-jobs', 'HarvestLogController@harvestJobs')->name('harvests.jobs')->middleware(['auth','role:Admin,Manager']);
+Route::get('/harvest-queue', 'HarvestLogController@harvestQueue')->name('harvests.jobs')->middleware(['auth','role:Admin,Manager']);
 Route::post('/bulk-harvest-delete', 'HarvestLogController@bulkDestroy')->name('harvests.bulkDestroy')
      ->middleware(['auth','role:Admin,Manager']);
 Route::post('/update-harvest-status', 'HarvestLogController@updateStatus')->name('harvests.changeStatus')

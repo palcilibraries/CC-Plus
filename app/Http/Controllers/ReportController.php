@@ -158,6 +158,7 @@ class ReportController extends Controller
     public function preview(Request $request)
     {
         $thisUser = auth()->user();
+        $user_inst = $thisUser->inst_id;
 
         // Start by getting a full filter-set (all elements from the datastore)
         // Saved reports have the active fields and filters built-in
